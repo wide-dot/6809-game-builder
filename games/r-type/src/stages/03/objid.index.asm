@@ -43,6 +43,12 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
         fcb   map.RAM_OVER_CART+stage3.page ; ObjID_warship_core (pilote, unite du main)
+        fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_turret
+        fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_part
+        fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_front
+        fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_fire
+        fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_react
+        fcb   map.RAM_OVER_CART+stage3.cast.imgFlame.page ; ObjID_warship_flamemgr
         ; la couche mscroll : carte et buffers montes en espace cartouche
         ; (RAM_OVER_CART), tilesets montes en fenetre donnees (numero nu) —
         ; la convention du banc examples/mscroll
@@ -98,6 +104,12 @@ Obj_Index_Address
         fdb   patapata.Object ; ObjID_patapata
         fdb   bink.Object ; ObjID_bink
         fdb   warship.pilot ; ObjID_warship_core
+        fdb   turret.Object ; ObjID_warship_turret
+        fdb   part.Object ; ObjID_warship_part
+        fdb   fturret.Object ; ObjID_warship_front
+        fdb   fire.Object ; ObjID_warship_fire
+        fdb   react.Object ; ObjID_warship_react
+        fdb   flamemgr.Object ; ObjID_warship_flamemgr
         fdb   stage3.bship.map.address ; objid.bship.map
         fdb   stage3.bship.tilesA.address ; objid.bship.tilesA
         fdb   stage3.bship.tilesB.address ; objid.bship.tilesB
@@ -145,6 +157,12 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
         ; le pilote et les assets mscroll : jamais animes — remplissage
         fcb   map.RAM_OVER_CART+stage3.page ; ObjID_warship_core
+        fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_turret
+        fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_part
+        fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_front
+        fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_fire
+        fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_react
+        fcb   map.RAM_OVER_CART+stage3.cast.imgFlame.page ; ObjID_warship_flamemgr
         fcb   map.RAM_OVER_CART+stage3.page ; objid.bship.map
         fcb   map.RAM_OVER_CART+stage3.page ; objid.bship.tilesA
         fcb   map.RAM_OVER_CART+stage3.page ; objid.bship.tilesB
@@ -191,6 +209,12 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_patapata
         fdb   Ani_Asd_none ; ObjID_bink
         fdb   Ani_Asd_none ; ObjID_warship_core
+        fdb   Ani_Asd_none ; ObjID_warship_turret
+        fdb   Ani_Asd_none ; ObjID_warship_part
+        fdb   Ani_Asd_none ; ObjID_warship_front
+        fdb   Ani_Asd_none ; ObjID_warship_fire
+        fdb   Ani_Asd_none ; ObjID_warship_react
+        fdb   Ani_Asd_none ; ObjID_warship_flamemgr
         fdb   Ani_Asd_none ; objid.bship.map
         fdb   Ani_Asd_none ; objid.bship.tilesA
         fdb   Ani_Asd_none ; objid.bship.tilesB
@@ -241,6 +265,12 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
         ; le pilote et les assets mscroll : sans images — remplissage
         fcb   map.RAM_OVER_CART+stage3.page ; ObjID_warship_core
+        fcb   map.RAM_OVER_CART+stage3.cast.imgTurret.page ; ObjID_warship_turret
+        fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_part
+        fcb   map.RAM_OVER_CART+stage3.cast.imgFront.page ; ObjID_warship_front
+        fcb   map.RAM_OVER_CART+stage3.cast.imgFire.page ; ObjID_warship_fire
+        fcb   map.RAM_OVER_CART+stage3.cast.imgReactor.page ; ObjID_warship_react
+        fcb   map.RAM_OVER_CART+stage3.cast.imgFlame.page ; ObjID_warship_flamemgr
         fcb   map.RAM_OVER_CART+stage3.page ; objid.bship.map
         fcb   map.RAM_OVER_CART+stage3.page ; objid.bship.tilesA
         fcb   map.RAM_OVER_CART+stage3.page ; objid.bship.tilesB

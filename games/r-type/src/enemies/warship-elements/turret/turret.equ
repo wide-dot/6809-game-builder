@@ -1,0 +1,7 @@
+; Les trois montages de tourelle autonome, portes par le sous-type.
+; Partages entre l'objet (qui les lit) et le script de spawn (qui les pose) :
+; deux unites d'assemblage differentes, donc une equate et non un EXPORT —
+; le meme geste que zoid.equ.
+turret.TOP      equ 0                  ; petite, sur la face haute (arcade e26a)
+turret.BOTTOM   equ 1                  ; petite, sur la face basse (arcade e277)
+turret.BIG      equ 2                  ; la grosse (arcade e129)

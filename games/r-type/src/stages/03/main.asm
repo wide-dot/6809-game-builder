@@ -36,6 +36,14 @@ terrainCollision.bgWorldAdj EXTERNAL
 ; La chorégraphie caméra du warship (unité stage3.camscript, montée comme la
 ; wave — le pilote la lit par page montée).
 warship.camera.script  EXTERNAL
+warship.spawn          EXTERNAL
+bship.collisionFollow  EXTERNAL
+turret.Object          EXTERNAL
+part.Object            EXTERNAL
+fturret.Object         EXTERNAL
+fire.Object            EXTERNAL
+react.Object           EXTERNAL
+flamemgr.Object        EXTERNAL
 
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT
@@ -336,7 +344,10 @@ stage.setup
         ; double test, sentinelle 0x7D0 au fond. Doc : bship-collision-plan.md
         lda   #1
         sta   globals.backgroundSolid
-        jsr   bship.collisionFollow    ; cale les registres avant la 1re trame
+        ; (les registres du plan de fond sont cales par la boucle, juste
+        ;  apres mscroll.move et AVANT que le moindre objet ne tourne —
+        ;  l'appel qui etait ici faisait double emploi, et l'unite
+        ;  residente du stage n'a plus un octet)
         ldd   #map.even
         std   scroll_map_even
         ldd   #map.odd
@@ -388,37 +399,6 @@ stage.handOver
 ; par consultation (celles d'ici sont par TRAME).
 ; Etude : doc/bship-collision-plan.md
 ; -----------------------------------------------------------------------------
-        INCLUDE "src/stages/03/collision/collision.equ"
-
-bship.collisionFollow
-        ; --- x : base en octets de 24 px, reste en px (camera bornee 0..480) ---
-        ldd   mscroll.camera.x
-        clr   terrainCollision.bgColBase
-@x      subd  #24
-        bmi   >
-        inc   terrainCollision.bgColBase
-        bra   @x
-!       addd  #24                      ; D = camera.x mod 24
-        stb   terrainCollision.bgSubX
-        ; --- y : base en lignes de 6 px, reste en px ---
-        ; camera.y est REPLIEE par mscroll dans [0,384[ : jamais negative, et
-        ; la base sort donc naturellement dans 0..63 — le modulo de la couture
-        ; est deja fait, c'est la CARTE qui porte la repetition des lignes.
-        ldd   mscroll.camera.y
-        ldx   #0
-@y      subd  #6
-        bmi   >
-        leax  bship.COLSTRIDE,x        ; une ligne de plus, en octets
-        bra   @y
-!       addd  #6                       ; D = camera.y mod 6
-        stb   terrainCollision.bgSubY
-        stx   terrainCollision.bgRowBase
-        ; --- le pont entre les deux reperes, pour l'impact rendu par checkXaxis
-        ldd   glb_camera_x_pos
-        subd  mscroll.camera.x
-        std   terrainCollision.bgWorldAdj
-        rts
-
 ; Le bloc de paramètres de la couche battleship (mscroll.setup) — la
 ; géométrie vient du .equ écrit par les conversions <mscroll> du config.
 bship.params

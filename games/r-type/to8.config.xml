@@ -486,12 +486,19 @@
             <section name="INDEX1" track="0" face="1" sector="10"/>
             <!-- Les repertoires des stages 3-8 : une piste en fin de disque,
                  2 secteurs chacun (mesure stage 2). -->
+            <!-- Les repertoires se suivent sur la piste 79 et valent DEUX
+                 secteurs chacun, sauf INDEX3 (le stage 3) qui en prend
+                 TROIS : le cast du vaisseau lui a fait passer les 512
+                 octets. Ils
+                 sont libres de bouger — le loader lit leurs positions dans
+                 la table generee (gen/directories/locations.asm), c'est ce
+                 que dit storage.xml. Quinze secteurs sur seize occupes. -->
             <section name="INDEX3" track="79" face="0" sector="1"/>
-            <section name="INDEX4" track="79" face="0" sector="3"/>
-            <section name="INDEX5" track="79" face="0" sector="5"/>
-            <section name="INDEX6" track="79" face="0" sector="7"/>
-            <section name="INDEX7" track="79" face="0" sector="9"/>
-            <section name="INDEX8" track="79" face="0" sector="11"/>
+            <section name="INDEX4" track="79" face="0" sector="4"/>
+            <section name="INDEX5" track="79" face="0" sector="6"/>
+            <section name="INDEX6" track="79" face="0" sector="8"/>
+            <section name="INDEX7" track="79" face="0" sector="10"/>
+            <section name="INDEX8" track="79" face="0" sector="12"/>
             <!-- dir2 a REJOINT cette piste le 25/08/2026 : il tenait dans les
                  secteurs 14-15 de la piste 0 face 1, derriere dir1, et la piste
                  s'arrete a 16 — le gouger y a ajoute quatre entrees et il
@@ -499,7 +506,7 @@
                  secteurs 13 a 16, le double, la piste 79 n'etant occupee que
                  jusqu'au 12. Le loader lit les emplacements dans la table
                  generee (gen/directories/locations.asm), rien n'est cable. -->
-            <section name="INDEX2" track="79" face="0" sector="13"/>
+            <section name="INDEX2" track="79" face="0" sector="14"/>
             <section name="SCENE" track="1" face="0" sector="1"/>
             <section name="LINK"  track="2" face="0" sector="1"/>
             <!-- DATA en piste 8 : LINK a besoin des pistes 2 a 7 (le controle
@@ -3371,6 +3378,143 @@
                      warship/camera-script.asm) — consommee par le pilote
                      (warship/pilot.asm, unite stage3) par page montee, comme la
                      wave. -->
+                <!-- Le script de spawn des pieces du vaisseau (genere par
+                     tools/gen_warship_spawn.py depuis l'export re.arcade) —
+                     parcouru par le pilote, page montee comme le camscript. -->
+                <file name="stage3.spawnscript" linkdata="LINK" arena="stage3.foes">
+                    <lwasm gensource="gen/stages/03/stage03-spawnscript.asm">
+                        <asm filename="src/stages/03/warship/spawner.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Les poses des tourelles : neuf par montage (la roue de
+                     visee est palindromique, comme en arcade — voir
+                     tools/gen_turret_sets.py). PAS de variantes shifts
+                     (decision auteur, 28/08/2026) : avec l'arrondi de couche
+                     (layer.evenX) la parite d'une tourelle est FIXE — au
+                     pire un ecart constant d'1 px sur les ancres impaires,
+                     invisible, qui ne vaut pas 7,4 Ko de page. -->
+                <file name="stage3.cast.imgTurret" linkdata="LINK" arena="stage3.foes">
+                    <lwasm gensource="gen/enemies/stage3-cast-imgturret.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage3.cast.imgTurret" gendir="gen/enemies/stage3-cast-imgturret"
+                                 gensource="gen/enemies/stage3-cast-imgturret/includes.asm"
+                                 genindex="gen/enemies/stage3-cast-imgturret/index.asm">
+                            <images dir="src/enemies/warship-elements/images/small-turret-top-wheel" names="small_turret_top"/>
+                            <images dir="src/enemies/warship-elements/images/small-turret-bottom-wheel" names="small_turret_bottom"/>
+                            <images dir="src/enemies/warship-elements/images/big-turret-wheel" names="big_turret"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- Les poses de la PROUE : cinq roues dedupliquees (c et e
+                     partagent leurs poses — voir gen_warship_frontmulti.py). -->
+                <file name="stage3.cast.imgFront" linkdata="LINK" arena="stage3.foes">
+                    <lwasm gensource="gen/enemies/stage3-cast-imgfront.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage3.cast.imgFront" gendir="gen/enemies/stage3-cast-imgfront"
+                                 gensource="gen/enemies/stage3-cast-imgfront/includes.asm"
+                                 genindex="gen/enemies/stage3-cast-imgfront/index.asm">
+                            <images dir="src/enemies/warship-elements/images/front-turret-a-wheel" names="front_turret_a"/>
+                            <images dir="src/enemies/warship-elements/images/front-turret-b-wheel" names="front_turret_b"/>
+                            <images dir="src/enemies/warship-elements/images/front-turret-c-wheel" names="front_turret_c"/>
+                            <images dir="src/enemies/warship-elements/images/front-turret-d-wheel" names="front_turret_d"/>
+                            <images dir="src/enemies/warship-elements/images/front-turret-e-wheel" names="front_turret_e"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- La multi (barillet 4 poses x 4 montages), la boule de feu
+                     et son eclat de bouche : une page partagee par les trois
+                     identifiants. -->
+                <file name="stage3.cast.imgFire" linkdata="LINK" arena="stage3.foes">
+                    <lwasm gensource="gen/enemies/stage3-cast-imgfire.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage3.cast.imgFire" gendir="gen/enemies/stage3-cast-imgfire"
+                                 gensource="gen/enemies/stage3-cast-imgfire/includes.asm"
+                                 genindex="gen/enemies/stage3-cast-imgfire/index.asm">
+                            <images dir="src/enemies/warship-elements/images/multi-turret-top-left" names="multi_tl"/>
+                            <images dir="src/enemies/warship-elements/images/multi-turret-bottom-left" names="multi_bl"/>
+                            <images dir="src/enemies/warship-elements/images/multi-turret-top-right" names="multi_tr"/>
+                            <images dir="src/enemies/warship-elements/images/multi-turret-bottom-right" names="multi_br"/>
+                            <images dir="src/enemies/warship-elements/images/fire-ball" names="fire_ball"/>
+                            <images dir="src/enemies/warship-elements/images/fireball-flash" names="fireball_flash"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- TOUT LE GROUPE `react` DANS UNE PAGE : les deux reacteurs
+                     et leurs enfants, la capsule de survie, son laser et les
+                     detachables. Ce n'est pas un choix de rangement mais une
+                     CONTRAINTE : ces objets partagent un identifiant, et
+                     Img_Page_Index n'en donne qu'une page d'images par
+                     identifiant (voir warship-elements/groups.asm). -->
+                <file name="stage3.cast.imgReactor" linkdata="LINK" arena="stage3.foes">
+                    <lwasm gensource="gen/enemies/stage3-cast-imgreactor.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <gfxcomp file="stage3.cast.imgReactor" gendir="gen/enemies/stage3-cast-imgreactor"
+                                 gensource="gen/enemies/stage3-cast-imgreactor/includes.asm"
+                                 genindex="gen/enemies/stage3-cast-imgreactor/index.asm">
+                            <images dir="src/enemies/warship-elements/images/rear-reactor" names="rear_reactor"/>
+                            <images dir="src/enemies/warship-elements/images/reactor-startup" names="reactor_startup"/>
+                            <images dir="src/enemies/warship-elements/images/reactor-flame-0" names="reactor_flame_0"/>
+                            <images dir="src/enemies/warship-elements/images/reactor-flame-1" names="reactor_flame_1"/>
+                            <images dir="src/enemies/warship-elements/images/reactor-white-bullet" names="reactor_white_bullet"/>
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom" names="bottom_reactor_bottom"/>
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-left" names="bottom_reactor_bottom_left"/>
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-right" names="bottom_reactor_bottom_right"/>
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-left-full" names="bottom_reactor_bottom_left_full"/>
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-right-full" names="bottom_reactor_bottom_right_full"/>
+                            <images dir="src/enemies/warship-elements/images/escape-capsule" names="escape_capsule"/>
+                            <images dir="src/enemies/warship-elements/images/small-escape-capsule" names="small_escape_capsule"/>
+                            <images dir="src/enemies/warship-elements/images/falling-triangle" names="falling_triangle"/>
+                            <images dir="src/enemies/warship-elements/images/horizontal-laser" names="horizontal_laser"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- LES GERBES DES REACTEURS DE VENTRE, ART ET MANAGER DANS
+                     LA MEME ENTREE. Elles etaient trois direntries et trois
+                     ObjID : dix poses de 24x48 par orientation, 36 Ko en tout,
+                     plus du double d'une page.
+                     Deux gestes les ramenent a une (gen_warship_flames.py) :
+                     la chaine arcade ne designe que QUATRE poses uniques sur
+                     ses dix pas, et chaque pose est tranchee en quatre sans
+                     changer de canevas — 15,5 Ko, une page.
+                     LE CODE DU MANAGER EST ICI, avec l'art, et pas dans le
+                     cast : BuildSprites monte la page d'images de l'objet
+                     avant d'appeler sa routine de dessin, donc le dessin et
+                     ce qu'il dessine doivent partager la page. Le cast n'y
+                     entre jamais ; il arme des slots dans le resident.
+                     Voir enemies/warship-elements/reactor/flamemgr.asm. -->
+                <file name="stage3.cast.imgFlame" linkdata="LINK" arena="stage3.foes">
+                    <lwasm gensource="gen/enemies/stage3-cast-imgflame.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/warship-elements/reactor/flamemgr.unit.asm"/>
+                        <gfxcomp file="stage3.cast.imgFlame" gendir="gen/enemies/stage3-cast-imgflame"
+                                 gensource="gen/enemies/stage3-cast-imgflame/includes.asm"
+                                 genindex="gen/enemies/stage3-cast-imgflame/index.asm">
+                            <images dir="src/enemies/warship-elements/images/flame-wheel" names="fl"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- La table des gerbes : residente, parce que le cast l'arme
+                     et que la page ci-dessus la lit. Chargee en zeros comme
+                     stage2.outslay.res. -->
+                <file name="stage3.flame.res" linkdata="LINK" arena="stage3.res">
+                    <lwasm gensource="gen/stages/03/flame-res.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/warship-elements/reactor/flameslots.asm"/>
+                    </lwasm>
+                </file>
+
+                <file name="stage3.cast" linkdata="LINK" arena="stage3.foes">
+                    <lwasm gensource="gen/stages/03/stage03-cast.asm">
+                        <asm filename="src/stages/03/cast.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <file name="stage3.camscript" linkdata="LINK" arena="stage3.gfx">
                     <unit name="stage3.camscript" symbol="warship.camera.script" section="code">
                         <asm filename="src/stages/03/warship/camera-script.asm"/>
@@ -3454,6 +3598,14 @@
                     <load name="stage3.bship.bufA"/>
                     <load name="stage3.bship.bufB"/>
                     <load name="stage3.camscript"/>
+                    <load name="stage3.spawnscript"/>
+                    <load name="stage3.cast.imgTurret"/>
+                    <load name="stage3.cast.imgFront"/>
+                    <load name="stage3.cast.imgFire"/>
+                    <load name="stage3.cast.imgReactor"/>
+                    <load name="stage3.cast.imgFlame"/>
+                    <load name="stage3.flame.res"/>
+                    <load name="stage3.cast"/>
                     <load name="stage3.collision"/>
                     <load name="stage3.music.ymm"/>
                     <load name="stage3"/>

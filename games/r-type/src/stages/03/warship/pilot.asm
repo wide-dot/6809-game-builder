@@ -38,6 +38,29 @@ pilot.cursor   equ ext_variables   ; WORD position dans le script
 pilot.counter  equ ext_variables+2 ; WORD trames restantes du segment courant
 pilot.sx       equ ext_variables+4 ; WORD vitesse x du segment courant (8.8)
 pilot.sy       equ ext_variables+6 ; WORD vitesse y du segment courant (8.8)
+pilot.spawn    equ ext_variables+8 ; WORD curseur dans le script de spawn
+; LA CAMERA A LA NAISSANCE DU PILOTE. L'arcade fait naitre son maitre a X=0
+; APRES l'autoscroll d'entree (~192 px arcade de camera deja consommes, ts
+; $2048), et les seuils du script de spawn se comparent a -X : la COURSE
+; DEPUIS SA NAISSANCE, jamais la camera absolue. Comparer a camera.x brut
+; faisait partir d'un coup toutes les entrees de seuil <= 72 : une colonne de
+; tourelles au meme x, etagees en y — vu a l'ecran le 28/08/2026.
+; Meme principe en y : les dy du script sont des ecarts de COQUE, relatifs au
+; maitre qui derive avec la couche.
+pilot.camX0    equ ext_variables+10 ; WORD camera.x a la naissance
+pilot.camY0    equ ext_variables+12 ; WORD camera.y a la naissance
+; L'AGE DU MAITRE, en trames de jeu depuis sa naissance. Le script
+; d'orientation des reacteurs de ventre s'y compare (seuils 0..3684) : les
+; quatre reacteurs naissent a des instants differents et doivent pourtant
+; tourner ENSEMBLE, donc la reference est le maitre, pas eux.
+pilot.age      equ ext_variables+14 ; WORD
+
+; L'ancre des pieces : l'arcade fait naitre chacune a `parent.Y + dy` et pose
+; son maitre a Y=0xF0 (create_warship 40:c46e), soit 297 - 0,75 x 240 = 117.
+warship.BASEY  equ 120                 ; arcade Y=0xF0 -> 117 par la formule
+                                       ; du champ tilemap ; la couche a son
+                                       ; propre cadre vertical, +3 mesures a
+                                       ; l'ecran contre l'art (28/08/2026)
 
 
 warship.pilot
@@ -54,6 +77,16 @@ Routines
 pilotInit
         ldd   #warship.camera.script
         std   pilot.cursor,u
+        ldd   #0                       ; le curseur de spawn : zero veut dire
+        std   pilot.spawn,u            ; « pas encore arme », le parcours le
+                                       ; pose lui-meme — l'etiquette de la
+                                       ; table vit dans SA page, pas ici
+        ldd   mscroll.camera.x
+        std   pilot.camX0,u
+        ldd   mscroll.camera.y
+        std   pilot.camY0,u
+        ldd   #0
+        std   pilot.age,u
         ldd   #1                       ; premiere trame -> premier segment
         std   pilot.counter,u
         ldd   #0
@@ -68,6 +101,11 @@ pilotInit
         rts
 
 pilotLive
+        ; les pieces qui naissent de la course : le parcours vit AVEC ses
+        ; donnees, dans le direntry du script (l'unite du stage etait pleine).
+        lda   #map.RAM_OVER_CART+stage3.spawnscript.page
+        _SetCartPageA
+        jsr   warship.spawn
         ; (la silhouette de collision est desormais servie par le plan a
         ; camera propre — voir doc/bship-collision-plan.md ; le pilote n'a
         ; plus de bases a ecrire)
@@ -78,6 +116,11 @@ pilotLive
         ; l'ordre d'appel qui est en jeu : stage.setup fait tourner RunObjects
         ; AVANT le premier gfxlock.loop, et frameDrop.count n'est pose par
         ; personne d'autre.
+        ; l'age avance meme sans trame ecoulee a depiler
+        ldb   gfxlock.frameDrop.count
+        clra
+        addd  pilot.age,u
+        std   pilot.age,u
         tst   gfxlock.frameDrop.count
         bne   >
         rts
@@ -142,3 +185,4 @@ pilotLive
         bra   @done
 pilotDone
         rts
+

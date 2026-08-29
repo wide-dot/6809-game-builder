@@ -17,16 +17,44 @@ ObjID_bink equ 36
 * Le pilote de la couche battleship (warship/pilot.asm) — instancie par la
 * wave comme en arcade (create_warship 0xc46e).
 ObjID_warship_core equ 37
+* Les tourelles autonomes de la coque : un seul objet, trois montages portes
+* par le sous-type (haut, bas, grosse). Le script de spawn les fait naitre.
+ObjID_warship_turret equ 38
+* Les 27 sous-parties de coque : des boites de collision sans sprite — leur
+* corps visible EST la couche. Le sous-type porte leur rang, qui designe la
+* boite (src/enemies/warship-elements/part/boxes.asm, extraite de la ROM).
+ObjID_warship_part equ 39
+* Les tourelles de PROUE (le sous-type est la variante).
+ObjID_warship_front equ 40
+* DEUX GROUPES. Un identifiant coute sept octets de tables d'index, dans
+* l'unite RESIDENTE du stage — la plus etroite. Ce qui force un identifiant
+* n'est pas le code mais Img_Page_Index, qui n'en donne qu'UNE page d'images :
+* des objets qui partagent leur direntry d'images peuvent partager leur
+* identifiant, un aiguilleur lisant leur famille dans le sous-type
+* (src/enemies/warship-elements/groups.asm).
+*   fire  : tourelle multiple, boule de feu, eclat de bouche
+*   react : les deux reacteurs, leurs enfants, la capsule, son laser, les
+*           detachables
+ObjID_warship_fire equ 41
+ObjID_warship_react equ 42
+* Le MANAGER des gerbes : un seul identifiant pour les trois orientations et
+* leurs quatre tranches. Les trente poses ne tenaient pas dans une page — la
+* deduplication de la chaine arcade (quatre poses uniques sur dix pas) les y
+* fait tenir, et Img_Page_Index n'en donne qu'UNE par identifiant. Cet objet
+* ne se lance pas depuis un script : le premier armement le fait naitre.
+* Voir enemies/warship-elements/reactor/flamemgr.asm.
+ObjID_warship_flamemgr equ 43
+
 * Les cinq assets de la couche mscroll : PAS des objets (jamais lances) —
 * des entrees d'index que mscroll.setup resout en pages/adresses, le
 * patron du banc examples/mscroll.
-objid.bship.map    equ 38
-objid.bship.tilesA equ 39
-objid.bship.tilesB equ 40
-objid.bship.bufA   equ 41
-objid.bship.bufB   equ 42
+objid.bship.map    equ 44
+objid.bship.tilesA equ 45
+objid.bship.tilesB equ 46
+objid.bship.bufA   equ 47
+objid.bship.bufB   equ 48
 
-objid.count equ 42
+objid.count equ 48
 objid.animation equ ObjID_animation
 
 * GARDE-FOU (26/08/2026). Les cinq entrees bship ne sont pas des objets, mais
@@ -37,7 +65,7 @@ objid.animation equ ObjID_animation
 * de la couche battleship ont ete resolus sur les mauvaises pages et le stage 3
 * s'est fige au chargement, ecran noir. Le controle de densite des tables ne
 * pouvait pas le voir — les longueurs restaient justes.
- IFNE objid.bship.map-(ObjID_warship_core+1)
+ IFNE objid.bship.map-(ObjID_warship_flamemgr+1)
         ERROR les cinq entrees bship doivent suivre le dernier objet, sans trou
  ENDC
  IFNE objid.count-objid.bship.bufB

@@ -1,0 +1,14 @@
+; Les gerbes des reacteurs de ventre — les constantes partagees par les DEUX
+; cotes : le cast, qui arme (flamemgr.Arm), et la page des flammes, qui dessine
+; (flamemgr.asm). La table elle-meme est residente (flameslots.asm).
+ IFNDEF WARSHIP_FLAME_EQU
+WARSHIP_FLAME_EQU equ 1
+
+flamemgr.SLOTS   equ 8                 ; quatre reacteurs tirent ensemble ; huit
+                                       ; laisse la marge des bouffees d'epave
+flamemgr.SLOTSZ  equ 8                 ; vie, zone, lx(2), y0(2), cam0(2)
+flamemgr.LIFE    equ 50                ; dix pas de chaine, CINQ trames chacun
+flamemgr.STEP    equ 5
+flamemgr.TRANCHES equ 4
+
+ ENDC
