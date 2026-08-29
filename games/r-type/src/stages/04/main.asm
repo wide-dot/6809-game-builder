@@ -359,6 +359,9 @@ stage.setup
         ; (releve en RAM : 6 au lieu de 1).
         lda   #1
         sta   globals.foeBgSolid
+        ; CE STAGE A SON BOSS : pas de victoire au compteur. Le Compiler se
+        ; bat, et le stage ne finit que par la mort de ses trois pieces.
+        sta   globals.realBoss
 
         ; LE CROCHET : les armes du joueur mangent le champ. C'est la table de
         ; relais RESIDENTE qu'on designe, jamais pscroll.erase nu — l'arme vit

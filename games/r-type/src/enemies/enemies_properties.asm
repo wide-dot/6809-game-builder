@@ -107,6 +107,18 @@ cancer_hitbox_y		equ 13
 cancer_hitdamage	equ 1
 ; geld : AABB arcade 24x24 centree (0x1000:407E, +-12 px) -> +-4,5 px v2 en X
 ; et +-9 lignes en Y ; un seul coup le tue (liste one-shot v1).
+compilerwave_hitbox_x     equ 3   ; 6 px de large
+compilerwave_hitbox_y     equ 3   ; 6 lignes
+compilerwave_hitdamage    equ 1
+
+compilerturret_hitbox_x   equ 9   ; 18 px de large
+compilerturret_hitbox_y   equ 12  ; 24 lignes
+compilerturret_hitdamage  equ 1
+
+compilerlaser_hitbox_x    equ 9   ; 18 px de long -> demi-largeur 9
+compilerlaser_hitbox_y    equ 3   ; 6 lignes de haut
+compilerlaser_hitdamage   equ 1   ; il tue le joueur au contact (E6AB)
+
 geld_hitbox_x		equ 4
 geld_hitbox_y		equ 9
 geld_hitdamage		equ 1

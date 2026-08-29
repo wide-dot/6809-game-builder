@@ -1649,6 +1649,88 @@
                                     <image name="compiler_left" filename="src/enemies/compiler/images/left/00.png" index="2">
                                         <encoder name="draw" mirror="none" shift="0"/>
                                     </image>
+                                    <image name="compiler_laser_0" filename="src/enemies/compiler/images/laser/00.png" index="3">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_laser_1" filename="src/enemies/compiler/images/laser/01.png" index="4">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_laser_2" filename="src/enemies/compiler/images/laser/02.png" index="5">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_laser_3" filename="src/enemies/compiler/images/laser/03.png" index="6">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_wave_0" filename="src/enemies/compiler/images/wave/00.png" index="23">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_wave_1" filename="src/enemies/compiler/images/wave/01.png" index="24">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_wave_2" filename="src/enemies/compiler/images/wave/02.png" index="25">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_wave_3" filename="src/enemies/compiler/images/wave/03.png" index="26">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                </gfxcomp>
+                    </lwasm>
+                </file>
+                <file name="lib.compiler.turret" linkdata="LINK" arena="stage4.gfx">
+                    <lwasm gensource="gen/enemies/compilerturret.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/compiler/turret.unit.asm"/>
+                                <gfxcomp file="lib.compiler.turret" gendir="gen/enemies/compilerturret"
+                                         gensource="gen/enemies/compilerturret/includes.asm"
+                                         genindex="gen/enemies/compilerturret/index.asm">
+                                                                                                                                                <image name="compiler_turret_0" filename="src/enemies/compiler/images/turret/00.png" index="7">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_turret_1" filename="src/enemies/compiler/images/turret/01.png" index="8">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_turret_2" filename="src/enemies/compiler/images/turret/02.png" index="9">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_turret_3" filename="src/enemies/compiler/images/turret/03.png" index="10">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_turret_4" filename="src/enemies/compiler/images/turret/04.png" index="11">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_turret_5" filename="src/enemies/compiler/images/turret/05.png" index="12">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_turret_6" filename="src/enemies/compiler/images/turret/06.png" index="13">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_turret_7" filename="src/enemies/compiler/images/turret/07.png" index="14">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_turret_8" filename="src/enemies/compiler/images/turret/08.png" index="15">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_turret_9" filename="src/enemies/compiler/images/turret/09.png" index="16">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_turret_10" filename="src/enemies/compiler/images/turret/10.png" index="17">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_turret_11" filename="src/enemies/compiler/images/turret/11.png" index="18">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_turret_12" filename="src/enemies/compiler/images/turret/12.png" index="19">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_turret_13" filename="src/enemies/compiler/images/turret/13.png" index="20">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_turret_14" filename="src/enemies/compiler/images/turret/14.png" index="21">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="compiler_turret_15" filename="src/enemies/compiler/images/turret/15.png" index="22">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
                                 </gfxcomp>
                     </lwasm>
                 </file>
@@ -2008,6 +2090,7 @@
                     <load name="lib.cytron"/>
                     <load name="lib.geld"/>
                     <load name="lib.compiler"/>
+                    <load name="lib.compiler.turret"/>
                 </scene>
                 <scene name="scenes.lot.bugpstaff" section="SCENE" gensource="gen/scenes/lot-bugpstaff.asm">
                     <load name="lib.bug"/>

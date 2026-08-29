@@ -34,9 +34,15 @@ ObjID_geld equ 42
 * engendre les trois parties, qui sont ce que l'on voit.
 ObjID_compiler     equ 43
 ObjID_compilerpart equ 44
+* Le laser horizontal des pieces droite et gauche.
+ObjID_compilerlaser equ 45
+* Les trois tourelles portees par les pieces du bas et de gauche.
+ObjID_compilerturret equ 46
+* Les segments du laser roulant de la piece gauche.
+ObjID_compilerwave equ 47
 
 ObjID_bugrender equ 49 ; le renderer des chaines de bug — meme valeur que
-                       ; l'equ de bug.unit.asm (47 partout) ; 45..48 libres
+                       ; l'equ de bug.unit.asm (47 partout) ; 48 libre
 objid.count equ 49
 objid.animation equ ObjID_animation
 
