@@ -100,7 +100,11 @@ cpl.INTRO_DUR equ $0160
 ; PUISSANCE DE DEUX : la cadence se lit alors dans l'horloge de jeu par un
 ; simple ET, sans compteur a stocker — et l'espace d'objet du boss n'en avait
 ; plus un seul a offrir.
-cpl.FIRE_PERIOD equ 32         ; trames entre deux salves
+cpl.FIRE_PERIOD equ 48         ; trames entre deux salves
+;   5844 : compiler_difficulty_cadence_table = 48/40/32/24 selon la difficulte.
+;   Nous prenons la premiere, comme tout le cast. J'avais pris 32 — la
+;   troisieme — parce qu'il me fallait une puissance de deux pour le modulo
+;   d'une cadence sans etat : le boss tirait 50% trop vite (releve auteur).
 
 ; Les fenetres de tir, en px arcade converties (x0,75 sur l'axe y) : la piece
 ; droite accepte 0..0x50 px sous elle, la gauche 0..0x30 — elle vise plus

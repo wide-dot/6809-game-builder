@@ -68,7 +68,11 @@ cpl.hp.prev   equ ext_variables+16     ; PV a la trame precedente
 cpl.hit       equ ext_variables+17     ; trames de clignotement restantes
 ; LE CURSEUR DE COMBAT (AFE6) : la config tiree au spawn, le script courant
 ; dans cette config, et la position dans ce script.
-cpl.vy        equ ext_variables+14     ; WORD : la vitesse y du segment (8.8)
+cpl.vy        equ ext_variables+14     ; OCTET SIGNE : la vitesse y du segment
+;   Elle tenait un mot, mais les 9 scripts ne portent que des vitesses dans
+;   [-120,+120] (mesure sur la table generee) : la fraction 8.8 d'un mouvement
+;   sous le pixel par trame. L'octet ainsi rendu paie le compteur de cadence.
+cpl.cad       equ ext_variables+15     ; trames restantes avant la salve
 cpl.cfg       equ ext_variables+18     ; index de la config tiree (0..2)
 cpl.cursor    equ ext_variables+19     ; script<<5 | segment
 cpl.CUR_SEG   equ 31                   ; le masque du segment
@@ -106,6 +110,15 @@ Routines
 ; Elle n'affiche RIEN elle-meme : ce sont les parties qu'on voit.
 ; ---------------------------------------------------------------------------
 BossInit
+        ; 5ABA : LA VARIANTE, tiree UNE SEULE FOIS — voir globals.cplVariant.
+        jsr   RandomNumber
+        andb  #3
+        cmpb  #3
+        bne   >
+        clrb                           ; le tirage rend 0..3, on replie sur 0..2
+!       stb   globals.cplVariant
+        clr   globals.cplWave          ; le laser roulant repart au repos
+        clr   globals.cplWavePair
         ldb   #3                       ; les trois parties, dans l'ordre
         stb   cpl.part,u               ;   arcade : droite, bas, gauche
 @spawn  ldb   cpl.part,u
@@ -269,16 +282,14 @@ PartInit
         std   cpl.vx,u
         ldd   #cpl.INTRO_DUR
         std   cpl.timer,u
-        ; A775 : LA VARIANTE. La borne tire un slot au sort parmi huit, qui
-        ; designe une config par piece ; les huit slots ne portent que TROIS
-        ; configs distinctes, remaniees. On tire donc directement parmi les
-        ; trois — le resultat est le meme, sans la table de remaniement.
-        jsr   RandomNumber
-        andb  #3
-        cmpb  #3
-        bne   >
-        clrb                           ; le tirage rend 0..3, on replie sur 0..2
-!       stb   cpl.cfg,u
+        ; FIX #12 (29/08) : la verticale n'etait jamais posee. L'intro heritait
+        ; donc du reliquat de l'objet precedent dans le slot, et derivait.
+        clr   cpl.vy,u
+        lda   #cpl.FIRE_PERIOD         ; A7D9 : le compteur part plein
+        sta   cpl.cad,u
+        ; A775 : la lettre du boss, tiree par l'orchestrateur pour les trois.
+        ldb   globals.cplVariant
+        stb   cpl.cfg,u
         clr   cpl.cursor,u
         ; l'image de CETTE partie : une pose chacune, la silhouette est faite
         ; de leur assemblage
@@ -347,21 +358,16 @@ PartLive
         ldd   #0                       ; le segment est fini
 !       std   cpl.timer,u
         ; le pas du segment, compense par le frame drop
-        ldb   cpl.vx+1,u
-        lda   gfxlock.frameDrop.count
-        mul
-        tst   cpl.vx,u                 ; l'octet haut porte le signe
-        bpl   >
-        _negd
-!       jsr   moveXPos8.8
+        ldd   cpl.vx,u
+        lbsr  cpl.step
+        jsr   moveXPos8.8
         ; ET LA VERTICALE : l'intro n'en avait pas, les scripts de combat si.
-        ldb   cpl.vy+1,u
-        lda   gfxlock.frameDrop.count
-        mul
-        tst   cpl.vy,u
-        bpl   >
-        _negd
-!       jsr   moveYPos8.8
+        ldb   cpl.vy,u
+        sex                            ; l'octet signe redevient un 8.8
+        aslb
+        rola                           ; B03B : le x2 de combat (voir @segment)
+        lbsr  cpl.step
+        jsr   moveYPos8.8
 PartLive.armed
         ; LES ARMES DE LA PIECE. La DROITE (0) et la GAUCHE (2) envoient leurs
         ; lasers horizontaux ; la gauche a en plus son laser roulant. La piece
@@ -390,6 +396,43 @@ PartLive.armed
 ; le gel A L'HEURE DE WAVE DU BOSS). Pendant la derive d'intro, chaque piece
 ; apparait quand son bord gauche franchit le bord de l'ecran ; sa position
 ; finale (x = 116) est entiere a l'ecran.
+; ---------------------------------------------------------------------------
+; cpl.step — le pas d'un tick, pour une vitesse 8.8 SIGNEE
+; ---------------------------------------------------------------------------
+; entree : [d] la vitesse du segment, signee     sortie : [d] le pas du tour
+;
+; Le piege qu'elle ferme (29/08) : l'idiome maison `ldb #PAS / mul / _negd`
+; suppose une MAGNITUDE dans B, et les ennemis l'emploient avec une constante
+; positive. Les scripts du boss, eux, portent des vitesses signees en
+; complement a deux — et l'octet bas de -72 ($FFB8) vaut 184, pas 72. Les
+; segments negatifs partaient donc DEUX FOIS ET DEMIE trop vite, et les pieces
+; sortaient de l'ecran en quelques secondes (releve auteur ; l'intro, dont la
+; vitesse est positive, etait juste — c'est ce qui a mis sur la piste).
+; On prend donc la valeur absolue, on multiplie, on remet le signe.
+; ---------------------------------------------------------------------------
+; Le produit est 16x8 (29/08) : il etait 8x8, l'octet bas seul passait au
+; MUL. Suffisant pour les scripts (magnitudes <= 240 une fois doublees), faux
+; pour le laser horizontal ($0120 = 288 -> il volait sur son octet bas, 32,
+; NEUF fois trop lent) et pour le laser roulant (wav.life $0358 = 856 -> 88).
+; Domaine : magnitude x trames doit tenir en 16 bits (ici <= 856 x 8).
+cpl.step
+        pshs  a                        ; le signe d'origine (PSHS ne touche
+        bpl   >                        ;   pas les indicateurs du LDD)
+        _negd                          ; D = la magnitude
+!       pshs  b                        ; l'octet bas, pour le second produit
+        ldb   gfxlock.frameDrop.count
+        mul                            ; octet haut x trames : tient dans B
+        tfr   b,a                      ;   et pese 256 fois plus
+        puls  b                        ; l'octet bas de la magnitude
+        pshs  a                        ; le produit haut, en attente
+        lda   gfxlock.frameDrop.count
+        mul                            ; D = octet bas x trames
+        adda  ,s+                      ; + (haut x trames) << 8
+        tst   ,s+
+        bpl   >
+        _negd                          ; et le signe revient
+!       rts
+
 ; ---------------------------------------------------------------------------
 ; cpl.motion.next — AFE6 : le segment suivant du script de combat
 ; ---------------------------------------------------------------------------
@@ -454,12 +497,25 @@ cpl.motion.next
         sta   cpl.cursor,u             ; (segment = 0, il vient d'etre efface)
         bra   cpl.motion.next          ; et on lit son premier segment
 @segment
+        ; B032/B044 — LE TEMPO DE COMBAT EST DOUBLE (rate, puis releve le
+        ; 29/08). A chaque lecture de segment, la borne DOUBLE les deux
+        ; vitesses et DIVISE la duree par deux : meme deplacement, joue deux
+        ; fois plus vite. Seule l'intro (chargee par l'init, sans passer par
+        ; ce chemin) reste a vitesse simple. Sans ce doublement, toute la
+        ; choregraphie se jouait a la moitie du tempo — en side-by-side avec
+        ; l'arcade, la sequence devenait meconnaissable (releve auteur). Les
+        ; tables generees restent les valeurs ROM brutes : le doublement est
+        ; un geste d'execution, comme sur la borne.
+        aslb
+        rola                           ; vx x2
         std   cpl.vx,u
         ldd   4,x                      ; la duree
+        lsra
+        rorb                           ; duree /2
         std   cpl.timer,u
-        ldd   2,x                      ; la vitesse y : appliquee tout de
-        std   cpl.vy,u                 ;   suite, le segment court deja
-        inc   cpl.cursor,u             ; segment suivant (bits bas)
+        ldb   2+1,x                    ; la vitesse y : appliquee tout de
+        stb   cpl.vy,u                 ;   suite (doublee a l'application —
+        inc   cpl.cursor,u             ;   x2 deborde de l'octet au stockage)
         rts
 
 ; ---------------------------------------------------------------------------
@@ -490,8 +546,7 @@ cpl.motion.suicide
         inc   globals.compilerDead     ; sa mort est annoncee, comme un abattage
 @deja   ldd   #cpl.SUICIDE_VX
         std   cpl.vx,u
-        ldd   #0
-        std   cpl.vy,u
+        clr   cpl.vy,u
         ldd   #$FFFF                   ; une duree que rien n'epuise
         std   cpl.timer,u
         rts
@@ -511,43 +566,55 @@ cpl.motion.suicide
 ; vers la gauche a 3 px/trame arcade.
 ; ---------------------------------------------------------------------------
 cpl.fire
-        ; LA CADENCE NE COUTE AUCUN CHAMP (correctif du 29/08). Elle vivait
-        ; dans cpl.timer — le MEME mot que la duree du segment de mouvement.
-        ; Les deux pieces qui tirent ecrasaient donc leur script a chaque
-        ; salve : elles restaient bloquees sur le premier segment tandis que
-        ; celle du bas, qui n'a que ses tourelles, deroulait sa chaine
-        ; normalement (releve sous toje : p0 et p2 figees a scr=0 seg=0 apres
-        ; 21000 trames, p1 arrivee au bout et ayant renonce).
-        ; L'espace d'objet est plein — la cadence se lit donc dans l'horloge
-        ; de jeu, sans etat : une salve chaque fois que le compteur franchit
-        ; un multiple de la periode, decale par piece pour qu'elles ne tirent
-        ; pas ensemble. La periode est une puissance de deux, le modulo tient
-        ; en un ET.
+        ; ORDRE DES CONTROLES (AB01, releve le 29/08) : la borne teste les
+        ; positions AVANT de toucher au compteur. Le compteur GELE donc tant
+        ; que le joueur n'est pas en vue — sortir de la fenetre et y revenir
+        ; ne vaut pas une salve immediate. Ma premiere version lisait une
+        ; cadence sans etat dans l'horloge de jeu, ce qui inversait cet ordre.
+        ;
+        ; GARDE DE VISIBILITE — ECART ASSUME. La borne n'en a pas besoin : ses
+        ; pieces naissent POSEES a x=0x100, donc a droite du joueur, et le
+        ; controle « joueur devant » les fait taire jusqu'au combat. Notre
+        ; intro les fait ENTRER par la gauche (SPAWN_X = -16) : le meme
+        ; controle devient vrai des la naissance, et le boss tirait pendant
+        ; toute son approche, hors de l'ecran (releve auteur ; mesure sous
+        ; toje : 3 lasers nes alors que la piece etait encore a x ecran -8).
+        ldd   x_pos,u
+        subd  glb_camera_x_pos         ; x ecran du centre
+        bmi   @wait                    ; le centre n'est meme pas entre
+        pshs  x,b,a
+        ldx   #cpl.halfw
         ldb   cpl.part,u
-        aslb                           ; le decalage : 8 trames par piece
-        aslb
-        aslb
-        addb  gfxlock.frame.gameCount+1
-        andb  #cpl.FIRE_PERIOD-1
-        cmpb  gfxlock.frameDrop.count
-        bhs   @wait                    ; le multiple n'est pas franchi ce tour
-        ; --- le joueur est-il devant, et dans la fenetre ? ---------------
+        abx
+        clra
+        ldb   ,x                       ; D = la demi-largeur de CETTE piece
+        cmpd  ,s                       ; face au x ecran empile
+        puls  a,b,x                    ; (PULS ne touche pas aux indicateurs)
+        bhi   @wait                    ; pas encore ENTIEREMENT entree
+        ; --- AB01 : le joueur devant, et dans la fenetre ------------------
         ldd   player1+x_pos
         subd  x_pos,u
-        bmi   @rearm                   ; il est DERRIERE la piece
+        bmi   @wait                    ; il est DERRIERE la piece
         ldd   player1+y_pos
         subd  y_pos,u
         addd  #cpl.FIRE_WINY0
-        bmi   @rearm                   ; au-dessus de la fenetre
+        bmi   @wait                    ; au-dessus de la fenetre
         ldb   cpl.part,u
-        cmpb  #2                        ; 2 = la piece GAUCHE, fenetre serree
+        cmpb  #2                       ; 2 = la piece GAUCHE, fenetre serree
         beq   @gauche
         cmpd  #cpl.FIRE_WINY_R
         bra   @teste
 @gauche cmpd  #cpl.FIRE_WINY_L
-@teste  bhi   @rearm                   ; sous la fenetre
+@teste  bhi   @wait                    ; sous la fenetre
+        ; --- AB19 : et seulement maintenant, la cadence -------------------
+        lda   cpl.cad,u
+        suba  gfxlock.frameDrop.count
+        bhi   @garde                   ; le compte n'est pas epuise
+        lda   #cpl.FIRE_PERIOD         ; AB1E : il se recharge sur la salve
+        sta   cpl.cad,u
         bsr   cpl.laser.spawn
-@rearm
+        rts
+@garde  sta   cpl.cad,u
 @wait   rts
 
 ; ---------------------------------------------------------------------------
@@ -618,22 +685,22 @@ cpl.wave.tick
         ; trames de jeu : un compteur qui avance de sept ne tombe jamais
         ; PILE sur un multiple de seize, et rien ne partait (constat sous
         ; toje). Meme piege que la fenetre d'engagement du geld.
-        ; Les deux champs sont libres sur une piece — seul l'orchestrateur se
-        ; sert de ceux du dome.
-        lda   cpl.tur.dir,u
+        ; Ses deux compteurs sont GLOBAUX : voir globals.cplWave dans
+        ; variables.asm — sur la piece ils tombaient sur cpl.vy.
+        lda   globals.cplWave
         suba  gfxlock.frameDrop.count
         bhi   @wait
         bsr   cpl.wave.pair
         ; QUATRE paires puis un silence : c'est le rythme de la borne, sa
         ; fenetre de 0x40 trames en laissant partir une toutes les seize.
-        inc   cpl.dome.left,u
-        lda   cpl.dome.left,u
+        inc   globals.cplWavePair
+        lda   globals.cplWavePair
         anda  #3
         bne   >
         lda   #cpl.WAVE_PAUSE          ; la fenetre se referme
         bra   @wait
 !       lda   #cpl.WAVE_GAP            ; seize trames jusqu'a la suivante
-@wait   sta   cpl.tur.dir,u
+@wait   sta   globals.cplWave
         rts
 
 ; ---------------------------------------------------------------------------
@@ -738,10 +805,9 @@ LaserInit
         inc   routine,u                ; -> LaserFly
 LaserFly
         ; il avance, puis se montre — l'ordre de la borne
-        ldb   cpl.laser.vx+1,u
-        lda   gfxlock.frameDrop.count
-        mul
+        ldd   cpl.laser.vx,u
         _negd                          ; vers la gauche
+        lbsr  cpl.step
         jsr   moveXPos8.8
         ; quatre poses, deux trames chacune (frame_duration 2 au catalogue)
         lda   gfxlock.frame.count+1
@@ -883,19 +949,15 @@ WaveInit
         std   AABB_0+AABB.rx,u
         inc   routine,u                ; -> WaveFly
 WaveFly
-        ; l'horizontale : sa vitesse ne change pas
-        ldb   cpl.wav.vx+1,u
-        lda   gfxlock.frameDrop.count
-        mul
-        tst   cpl.wav.vx,u             ; l'octet haut porte le signe
-        bpl   >
-        _negd
-!       jsr   moveXPos8.8
+        ; l'horizontale : sa vitesse ne change pas, et elle est SIGNEE — le
+        ; cote de depart est tire au sort.
+        ldd   cpl.wav.vx,u
+        lbsr  cpl.step
+        jsr   moveXPos8.8
         ; la verticale : la vitesse EST le compte a rebours, il ralentit
-        ldb   cpl.wav.life+1,u
-        lda   gfxlock.frameDrop.count
-        mul
+        ldd   cpl.wav.life,u
         _negd                          ; il monte (l'axe y de la borne monte)
+        lbsr  cpl.step
         jsr   moveYPos8.8
         ldd   cpl.wav.life,u
         subd  #cpl.WAVE_DECAY

@@ -178,6 +178,24 @@ globals.compilerDead       equ GLOBAL_VARIABLES+157 ; 1 octet, 0..3
 * ce drapeau a son entree ; ceux qui attendent encore leur boss le laissent a
 * zero et gardent le filet.
 globals.realBoss           equ GLOBAL_VARIABLES+158 ; 1 octet, 0 = substitution
+; LE RYTHME DU LASER ROULANT DU COMPILER — deux octets GLOBAUX, et non des
+; champs d'objet. Ils vivaient sur la piece GAUCHE, seule a porter cette arme,
+; dans deux offsets crus « libres sur une piece » : ils tombaient en fait sur
+; cpl.vy et sur le compteur de cadence (FIX #13, 29/08). La piece gauche
+; ecrasait donc sa propre vitesse verticale a chaque tour de cette arme, et
+; DERIVAIT vers le bas sans fin — releve auteur (« les elements sortent hors
+; ecran »), mesure sous toje : y = 300, 493, 768, 1052, 1399, 1626 pendant que
+; ses deux soeurs restaient dans le cadre, avec des vitesses (+2, +3, +6, +10)
+; qu'aucun script ne contient. L'espace d'objet est plein et il n'y a qu'UN
+; boss a la fois : le rythme d'une de ses armes est un etat de partie.
+globals.cplWave            equ GLOBAL_VARIABLES+159 ; 1 octet, trames avant la paire
+globals.cplWavePair        equ GLOBAL_VARIABLES+160 ; 1 octet, paires laches
+; 5ABA : LA VARIANTE DU COMPILER, tiree UNE FOIS pour le boss entier. La borne
+; tire un slot parmi huit ; chaque slot donne la MEME lettre (A/B/C) aux trois
+; pieces, chacune avec son propre script. Je tirais la lettre separement dans
+; chaque piece : rien n'empechait la droite d'etre en A et la gauche en C,
+; assemblage que la borne ne produit jamais (releve 29/08).
+globals.cplVariant         equ GLOBAL_VARIABLES+161 ; 1 octet, 0..2 (A/B/C)
 globals.ARMAMENT_SIZE      equ 5                    ; ce que checkpoint.armament efface
 
  ENDC
