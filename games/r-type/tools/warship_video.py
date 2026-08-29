@@ -70,6 +70,19 @@ if os.path.exists(out):
     os.remove(out)
 
 t = Toje()
+# UNE SESSION D'EMULATEUR SE PARTAGE. Un point d'arret ou un watchpoint laisse
+# par une sonde precedente fige les run_frames de celle-ci, en silence : le
+# 28/08/2026 un watchpoint oublie a fait echouer quatre captures d'affilee sur
+# des builds sains. On repart propre.
+for i in range(1, 9):
+    try:
+        t.call('clear_watchpoint', {'id': i})
+    except Exception:
+        pass
+    try:
+        t.call('clear_breakpoint', {'id': i})
+    except Exception:
+        pass
 t.boot_floppy(os.path.abspath(sys.argv[1]))
 page, addr = cheat_state_addr()
 t.call('run_frames', {'n': 2700})
@@ -108,16 +121,27 @@ print('capture armee sur mscroll.setup ($%04X) :' % SETUP, r, flush=True)
 # perdu deux captures de cette facon le 28/08/2026 — le film etait bon, le
 # script concluait « stage 3 jamais seme ». Le declencheur pc, lui, est sans
 # ambiguite : mscroll.setup n'est appele que par le stage 3.
-for _ in range(40):
+# LE CHEAT SE POSE, PUIS ON VERIFIE, PUIS ON APPUIE. Le title CYCLE (logo,
+# textes, scores) et chaque bascule reecrit sa page : un appui lance juste
+# apres une pose peut tomber sur une page deja effacee, et le jeu part au
+# stage 1 — ou nulle part. Poser et appuyer dans la foulee rendait le semis
+# ALEATOIRE (28/08/2026 : trois builds sur cinq n'entraient jamais, dont deux
+# qui etaient bons). On relit donc la page juste avant l'appui, et on repose
+# tant qu'elle ne tient pas.
+for essai in range(60):
     poke_cheat()
+    t.call('run_frames', {'n': 10})
+    if not cheat_holds():
+        continue                       # la page vient d'etre effacee : reposer
     t.press(hold=8)
     t.call('run_frames', {'n': 250})
     if t.call('video_capture_status').get('state') == 'recording':
         break                          # mscroll.setup n'appartient qu'au stage 3
-    if t.read(hex(BENCH), 1)[0] == 0xCA:
-        st = t.read(hex(BSTAGE), 1)[0]
-        if st not in (0, 3):
-            raise SystemExit('parti au stage %d — le cheat n\'a pas pris' % st)
+    b = t.read(hex(BENCH), 2)
+    print('  essai %d : temoin %02X stage %d' % (essai, b[0], b[1]), flush=True)
+    if b[0] == 0xCA:
+        if b[1] not in (0, 3):
+            raise SystemExit('parti au stage %d — le cheat n\'a pas pris' % b[1])
 else:
     raise SystemExit('stage 3 jamais seme')
 
