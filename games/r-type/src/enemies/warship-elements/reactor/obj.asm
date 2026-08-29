@@ -100,7 +100,7 @@ rreactor.Live
         ldd   x_pos,u
         subd  glb_camera_x_pos
         stb   rreactor.AABB+AABB.cx,u
-        cmpd  #159
+        cmpd  #layer.XGONE
         lbhi  rreactor.Vanish
         ldd   y_pos,u
         stb   rreactor.AABB+AABB.cy,u
@@ -338,7 +338,7 @@ breactor.Live
         ldd   x_pos,u
         subd  glb_camera_x_pos
         stb   breactor.AABB+AABB.cx,u
-        cmpd  #159
+        cmpd  #layer.XGONE
         lbhi  breactor.Vanish
         ldd   y_pos,u
         stb   breactor.AABB+AABB.cy,u

@@ -200,7 +200,7 @@ capsule.Box
         ldd   x_pos,u
         subd  glb_camera_x_pos
         stb   capsule.AABB+AABB.cx,u
-        cmpd  #159
+        cmpd  #layer.XGONE
         bhi   @part
         ldd   y_pos,u
         stb   capsule.AABB+AABB.cy,u
@@ -383,7 +383,7 @@ detach.Live
         ldd   x_pos,u
         subd  glb_camera_x_pos
         stb   detach.AABB+AABB.cx,u
-        cmpd  #159
+        cmpd  #layer.XGONE
         lbhi  detach.Vanish
         ldd   y_pos,u
         stb   detach.AABB+AABB.cy,u

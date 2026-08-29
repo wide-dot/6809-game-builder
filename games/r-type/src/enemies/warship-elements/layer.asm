@@ -40,6 +40,28 @@
 ; d'orientation des reacteurs de ventre.
 warship.age0   equ ext_variables+18
 
+; LA BORNE DE SORTIE DES PIECES — elle ne condamne que la sortie par la GAUCHE
+;
+; Une piece de la couche ENTRE PAR LA DROITE : deux entrees du script naissent
+; hors bande (le reacteur de queue a x=162, la capsule de survie a x=174) et
+; c'est la course de la couche qui les amene. Le test « x ecran > 159 » les
+; tuait donc a leur toute premiere trame, avant d'avoir rien montre — le
+; reacteur de queue, premiere piece de tout le combat, n'est jamais apparu
+; (constat auteur, 29/08/2026).
+;
+; La sortie par la gauche, elle, passe x en negatif : en non signe cela donne
+; $FFxx, tres au-dessus de toute borne raisonnable. Une borne haute suffit
+; donc a distinguer les deux cas, sans etat ni latch.
+;
+; POURQUOI 255 ET PAS PLUS. L'octet BAS de x ecran est range tel quel dans
+; AABB.cx. Au-dela de 255 il retombe dans [0,159] — le champ de jeu — et la
+; piece y poserait une boite de collision fantome. 255 est donc le plus grand
+; ecart tolerable, et il couvre largement les deux naissances hors bande.
+; Les projectiles (boule de feu, laser de capsule, balle blanche) gardent la
+; borne serree : ils naissent DANS la bande, et mourir au bord droit est leur
+; comportement juste.
+layer.XGONE     equ 255
+
 ; layer.evenX — camera.x quantifiee comme la couche l'affiche (bit 0 masque).
 ; Rend D. Ne touche que D.
 layer.evenX

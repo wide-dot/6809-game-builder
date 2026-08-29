@@ -146,7 +146,7 @@ turret.Live
         ldd   x_pos,u
         subd  glb_camera_x_pos
         stb   turret.AABB+AABB.cx,u
-        cmpd  #159
+        cmpd  #layer.XGONE
         lbhi  turret.Vanish
         ldd   y_pos,u
         ; LE CENTRE DE LA BOITE est excentre vers le canon : l'axe y arcade

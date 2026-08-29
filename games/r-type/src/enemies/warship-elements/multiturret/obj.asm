@@ -94,7 +94,7 @@ multi.Live
         ldd   x_pos,u
         subd  glb_camera_x_pos
         stb   multi.AABB+AABB.cx,u
-        cmpd  #159
+        cmpd  #layer.XGONE
         lbhi  multi.Vanish
         ldd   y_pos,u
         stb   multi.AABB+AABB.cy,u

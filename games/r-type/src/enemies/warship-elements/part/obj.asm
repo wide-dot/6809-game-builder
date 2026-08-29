@@ -128,7 +128,7 @@ part.Live
         addb  part.cx,u
         stb   part.AABB+AABB.cx,u
         subb  part.cx,u
-        cmpd  #159
+        cmpd  #layer.XGONE
         lbhi  part.Vanish
         ldd   y_pos,u
         addb  part.cy,u

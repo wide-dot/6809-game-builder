@@ -87,7 +87,7 @@ fturret.Live
         ldd   x_pos,u
         subd  glb_camera_x_pos
         stb   fturret.AABB+AABB.cx,u
-        cmpd  #159
+        cmpd  #layer.XGONE
         lbhi  fturret.Vanish
         ldd   y_pos,u
         stb   fturret.AABB+AABB.cy,u
