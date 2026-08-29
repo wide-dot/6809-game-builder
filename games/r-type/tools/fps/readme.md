@@ -76,6 +76,25 @@ C'est ce relevé qui sert de **référence avant le manager de tirs**
 (`doc/analyse-bullet-manager.md`) : `stage3-2026-08-29.csv`, tracé dans
 `stage3-2026-08-29.svg`.
 
+## Le manager de tirs, mesuré (29/08/2026)
+
+| Régime jeu réel | avant (`stage3-2026-08-29`) | avec manager (`-mgr`) |
+|---|---|---|
+| moyenne | 6,62 fps | **6,73 fps** |
+| médiane | 7,0 | 7,0 |
+
+Par tranche de caméra (le seul rapprochement honnête), le delta va de −0,1 à
++0,36 fps : **un gain réel mais marginal**, dans l'épaisseur du trait. C'est
+conforme à l'analyse (`doc/analyse-bullet-manager.md`) : le gain est
+proportionnel au nombre de balles vivantes, et le stage 3 n'en tient que 8 à
+16 aux pics — son goulot est le blast de la couche mscroll, pas les tirs.
+
+Ce que le manager rapporte vraiment sur ce stage n'est pas de la cadence :
+c'est **24 slots d'objets rendus au pool** (une balle ne coûte plus un OST de
+117 octets mais 21 octets résidents), sur un stage dont le vaisseau seul
+culmine à 44 pièces sur 60 slots. Le verdict cadence se rejouera sur un stage
+saturé de tirs.
+
 ## L'état au 22/08/2026
 
 | Stage | Jeu réel | Traversée | Boss | Durée |
