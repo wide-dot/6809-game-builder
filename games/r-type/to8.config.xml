@@ -456,7 +456,7 @@
                  pointeurs pourris en ecrivant AABB.p n'importe ou (gel du
                  29/08/2026, pile retrouvee en $168D). 24 slots de 21 octets
                  dans la marge de la demi-page 0, derriere les OST statiques. -->
-            <reserved name="objects.bullets" page="$00" address="$1D40" size="$01F8"/>
+            <reserved name="objects.bullets" page="$00" address="$1D40" size="$0200"/>
             <!-- L'AUTRE MOITIE, prise par la part $4000 de pscroll. C'est le
                  meme silicium que <region pscroll.vid>, decrit dans l'autre
                  systeme de coordonnees : ce <reserved> est ce qui EMPECHE

@@ -1027,6 +1027,9 @@ stage.state.checkpoint
         ; dans le decor. Une roulette de phase d'IRQ : la partition des
         ; repertoires n'a fait que deplacer le tirage perdant.
         jsr   IrqOff
+        ; (la table du manager de tirs, elle, est remise a neuf par
+        ; Collision_ClearLists — l'invariant vit avec les tetes de listes,
+        ; chez le moteur resident, pour que chaque appelant l'obtienne)
         ; LES CELLULES PATCHABLES REVIENNENT A L'ETAT DU NIVEAU, avant que
         ; checkpoint.load ne repeigne. La carte en RAM est la SEULE copie et un
         ; checkpoint ne recharge rien depuis la disquette : sans ca le decor

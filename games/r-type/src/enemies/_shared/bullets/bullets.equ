@@ -2,12 +2,42 @@
  IFNDEF BULLETS_EQU
 BULLETS_EQU equ 1
 
+; La structure AABB : les offsets de boite des slots en derivent. Son en-tete
+; porte sa propre garde de double inclusion — concu pour etre inclus partout.
+        INCLUDE "engine/collision/struct_AABB.equ"
+
 ; COMBIEN DE BALLES A LA FOIS. Chaque slot coute 21 octets dans la page du
 ; manager, la ou une balle-objet coutait 117 octets de pool — un rapport de
 ; cinq et demi, et surtout des octets qui ne sont plus pris aux ennemis. 24
 ; laisse de la marge au-dela de ce que l'arcade met a l'ecran, pour 504 octets.
 bullet.SLOTS    equ 24
 bullet.SLOTSZ   equ 21
+
+; La table vit en RAM RESIDENTE (<reserved objects.bullets>, demi-page 0) —
+; les boites AABB qu'elle porte sont parcourues par Collision_Do avec la page
+; de collisionpass montee, elles ne peuvent pas vivre en page montee. Le
+; BATTEMENT et le temps mort y vivent AUSSI : le rechargement de checkpoint
+; (resident) doit pouvoir les perimer sans monter la page du manager.
+bullet.Slots    equ objects.bullets.address+$4000
+bullet.beat     equ bullet.Slots+bullet.SLOTS*bullet.SLOTSZ
+bullet.idle     equ bullet.beat+2
+; LE SENTINEL « MORT ». Un battement a zero ne veut PAS dire mort : les
+; horloges de trame REPARTENT A ZERO a l'entree d'un stage, et « 0 » y est
+; un battement frais — au stage 4 les premiers tirs tombent avant la trame
+; 256 et s'armaient sans manager (personne ne les fait vivre), puis la
+; premiere vraie naissance wipait une table deja chainee : liste circulaire
+; (gel du 30/08/2026). Collision_ClearLists pose CE sentinel, et bullet.Arm
+; fait naitre le manager des qu'il le voit — la fenetre n'existe plus.
+bullet.DEAD     equ $FFFF
+
+; Un slot : la boite du moteur puis l'etat de la balle.
+bullet.AABB     equ 0
+bullet.used     equ 9
+bullet.delay    equ 10
+bullet.x        equ 11
+bullet.y        equ 14
+bullet.vx       equ 17
+bullet.vy       equ 19
 ; Les quatre trames invisibles du tir de la tourelle multiple (arcade dc99).
 bullet.MULTIDELAY equ 4
 bullet.RADIUS   equ 2                  ; le rayon de boite de la balle-objet

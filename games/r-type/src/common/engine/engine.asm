@@ -36,6 +36,9 @@ ENGINE_RESIDENT equ 1
         INCLUDE "engine/system/thomson/bootloader/loader.macro.asm"
 
         INCLUDE "gen/layout.asm"
+        ; Les ancres residentes du manager de tirs (bullet.Slots) : la remise
+        ; a neuf de sa table vit dans Collision_ClearLists.
+        INCLUDE "src/enemies/_shared/bullets/bullets.equ"
         INCLUDE "engine/sound/ymm.const.asm"
 
 ; The scroll reads these two when InitScroll works out its default camera cap.
@@ -201,6 +204,27 @@ Collision_ClearLists
 !       std   ,y++
         leax  -1,x
         bne   <
+        ; LA TABLE DU MANAGER DE TIRS SE VIDE AVEC LES TETES — ici meme, pour
+        ; que CHAQUE appelant obtienne l'invariant sans y penser. Ses boites
+        ; sont chainees dans AABB_list_foefire : vider les tetes en laissant
+        ; la table (slots `used`, vieux liens, battement frais qui fait croire
+        ; le manager vivant alors que le balayage du pool l'a tue) fabrique
+        ; une liste CIRCULAIRE a la renaissance suivante, et Collision_Do ne
+        ; rend plus la main — gel du rechargement de checkpoint, 30/08/2026,
+        ; cycle photographie slot a slot. Les echanges de STAGE ne montraient
+        ; rien : leur chargement disque depasse la peremption du battement —
+        ; une protection de hasard, pas un contrat. Le memset couvre la
+        ; reserve entiere : slots, battement, temps mort.
+        ldy   #bullet.Slots
+!       std   ,y++
+        cmpy  #bullet.Slots+$200
+        blo   <
+        ; ...et le battement porte le sentinel « mort », pas zero : les
+        ; horloges repartent a zero a l'entree d'un stage, un battement nul y
+        ; serait FRAIS — des tirs s'armeraient sans manager pour les faire
+        ; vivre (bullets.equ raconte le gel du stage 4).
+        ldd   #bullet.DEAD
+        std   bullet.beat
         rts
 
 ; La passe de detection, elle, a quitte le resident : elle vit dans l'unite

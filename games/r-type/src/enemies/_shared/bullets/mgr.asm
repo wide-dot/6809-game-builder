@@ -58,27 +58,12 @@
 ; +17 vx      2  vitesse 8.8 signee
 ; +19 vy      2
 ;-------------------------------------------------------------------------------
-bullet.AABB     equ 0
-bullet.used     equ 9
-bullet.delay    equ 10
-bullet.x        equ 11
-bullet.y        equ 14
-bullet.vx       equ 17
-bullet.vy       equ 19
+; Les offsets de slot et les ancres residentes vivent dans bullets.equ :
+; le rechargement de checkpoint (stage-main) en a besoin autant que nous.
 
-; LA TABLE EST RESIDENTE — surtout pas dans cette page. Les boites AABB
-; qu'elle porte sont chainees dans AABB_list_foefire et parcourues par
-; Collision_Do avec la page de COLLISIONPASS montee : une boite en page montee
-; fait lire d'autres octets et suivre des pointeurs pourris, avec ecriture de
-; AABB.p a travers eux — la pile s'est retrouvee en $168D et chaque bsr/rts
-; enjambant un montage de page rendait une adresse d'une autre page (gel du
-; 29/08/2026). outslay.boxes vit dans l'arene residente pour la meme raison.
-; La zone (<reserved objects.bullets>, demi-page 0) N'EST PAS ZEROEE au boot :
-; la naissance du manager remet toute la table a neuf, et bullet.Arm ne peut
-; pas armer avant lui (il le fait naitre d'abord).
-bullet.Slots    equ objects.bullets.address+$4000
-bullet.beat     fdb 0                  ; la trame du dernier tour du manager
-bullet.idle     fcb 0                  ; tours consecutifs sans une seule balle
+; La table, le battement et le temps mort sont RESIDENTS — bullets.equ dit
+; pourquoi, et le rechargement de checkpoint (stage-main) les remet a neuf.
+; bullet.beat / bullet.idle : RESIDENTS, voir bullets.equ.
 bullet.frame    fcb 0                  ; LE compteur d'animation, partage
 bullet.di       fcb 0                  ; le parcours du TICK
 bullet.sp       fdb 0
@@ -101,6 +86,28 @@ bullet.pose     fdb 0                  ; la routine compilee de la trame
 ; Sortie : C=0 si la table etait pleine (l'arcade ne tire pas non plus quand
 ; son pool est plein).
 ;*******************************************************************************
+bullet.Reset
+        ; Slots libres, boites sans potentiel ni liens, temps mort a zero, une
+        ; pose valide avant le premier tick (BuildSprites peut nous appeler des
+        ; cette trame). Les tetes de liste appartiennent au moteur : c'est
+        ; Collision_ClearLists qui les vide, avec la table — ici on ne remet a
+        ; neuf que NOTRE etat, pour la renaissance en cours de partie.
+        ldx   #bullet.Slots
+        ldb   #bullet.SLOTS
+!       clr   bullet.used,x
+        clr   bullet.AABB+AABB.p,x
+        clr   bullet.AABB+AABB.prev,x
+        clr   bullet.AABB+AABB.prev+1,x
+        clr   bullet.AABB+AABB.next,x
+        clr   bullet.AABB+AABB.next+1,x
+        leax  bullet.SLOTSZ,x
+        decb
+        bne   <
+        clr   bullet.idle
+        ldd   bullet.Poses
+        std   bullet.pose
+        rts
+
 bullet.Arm
         ; LES PARAMETRES SE METTENT A L'ABRI TOUT DE SUITE. Ni D ni Y ne
         ; survivent a ce qui suit : le test de battement lit une horloge dans
@@ -121,17 +128,25 @@ bullet.Arm
         ; balles six fois trop rapides. Le manager DATE son passage, et cette
         ; date fait foi : elle survit a son retrait, a une purge d'objets et a
         ; un changement de stage.
+        ldd   bullet.beat              ; le sentinel « mort » court-circuite
+        cmpd  #bullet.DEAD             ; l'arithmetique : voir bullets.equ
+        beq   @naitre
         ldd   gfxlock.frame.count
         subd  bullet.beat
         cmpd  #bullet.BEAT
         bls   @vivant
-        jsr   LoadObject_x
+@naitre jsr   LoadObject_x
         beq   @plein
         lda   #ObjID_foefire
         sta   id,x
         clr   routine,x
         ldd   gfxlock.frame.count      ; vivant des maintenant, sinon deux tirs
         std   bullet.beat              ; de la meme trame en creeraient deux
+        ; LA TABLE REPART VIERGE — ICI, avant d'armer la balle de CE tir.
+        ; Un wipe APRES l'armement (l'ancienne naissance differee) detruisait
+        ; le slot arme en laissant sa boite chainee. L'ordre wipe-puis-arme
+        ; est le contrat.
+        bsr   bullet.Reset
 @vivant
         ldx   #bullet.Slots
         ldb   #bullet.SLOTS
@@ -214,30 +229,25 @@ foefire.Object
         sta   y_pixel,u
         ldb   #2                       ; la priorite des balles d'avant
         stb   priority,u
-        ; LA TABLE REPART VIERGE. Le manager renait apres une purge d'objets ou
-        ; un changement de stage, et il y trouverait sinon des slots encore
-        ; marques occupes et des boites encore chainees dans la liste du
-        ; moteur — des balles fantomes, invisibles et mortelles.
-        ldx   #bullet.Slots
-        ldb   #bullet.SLOTS
-!       clr   bullet.used,x
-        clr   bullet.AABB+AABB.p,x
-        clr   bullet.AABB+AABB.prev,x
-        clr   bullet.AABB+AABB.prev+1,x
-        clr   bullet.AABB+AABB.next,x
-        clr   bullet.AABB+AABB.next+1,x
-        leax  bullet.SLOTSZ,x
-        decb
-        bne   <
-        clr   bullet.idle
-        ldd   bullet.Poses             ; une pose valide AVANT le premier tick :
-        std   bullet.pose              ; BuildSprites peut nous appeler des
-        inc   routine,u                ; cette trame-ci
+        ; PAS DE REMISE A NEUF ICI. Cette naissance est DIFFEREE (RunObjects) :
+        ; bullet.Arm a deja arme la balle du tir qui nous a fait naitre. Wiper
+        ; la table maintenant remettait son `used` a zero en laissant sa boite
+        ; chainee tete de liste — le tir suivant reutilisait le slot et
+        ; reinserait la MEME boite : queue.next = elle-meme, liste circulaire,
+        ; Collision_Do ne rend plus la main (gel du 30/08/2026, cam figee a
+        ; 128 des la premiere salve du stage 1, coupable photographie par
+        ; watchpoint sur slot0.used). La remise a neuf vit dans bullet.Reset,
+        ; que Arm appelle AVANT d'armer — l'ordre est la seule chose qui
+        ; compte.
+        inc   routine,u
         jmp   DisplaySprite
 
 bullet.Live
         ldd   gfxlock.frame.count      ; LE BATTEMENT — voir bullet.Arm
-        std   bullet.beat
+        cmpd  #bullet.DEAD             ; la trame du wrap ne doit pas dater
+        bne   >                        ; le battement du sentinel « mort »
+        subd  #1
+!       std   bullet.beat
         ldb   gfxlock.frameDrop.count
         bne   >
         incb
