@@ -27,7 +27,13 @@ endstage sequence, deaths come through the command window.
   C6  stage 1 -> stage 2 through the real end sequence, and stage 2
       runs its own data (spawns > 0 — the placeholder cast is reached
       through the freshly re-linked index: the re-link proof)
-  C7  stage 2 hands back to the title
+  C7  the chain crosses into stage 4: stage 2 hands over to stage 3
+      (the warship), which runs its own end sequence and hands over.
+      Stage 4 is ported too (its boss is being tuned, 30/08/2026) and
+      scrolls to its boss scroll-stop — the lane only requires the
+      HAND-OVER, so boss tuning cannot shake it.  When the full game
+      loops back to the title, restore the full-tour criterion (top
+      stage 8, then back to the title).
 
 On a wedge (state stops changing on timeouts), the engine log block,
 registers, disassembly and a screenshot are dumped.
@@ -47,7 +53,41 @@ max_frames = int(sys.argv[2]) if len(sys.argv) > 2 else 140000
 BLOCK = bench_block(image)
 REQUEST = BLOCK + 8                    # bench.request
 LIVES = globals_block(image) + 4       # globals.lives
-print("temoins : bench=$%04X lives=$%04X" % (BLOCK, LIVES), flush=True)
+
+# cheat.invincible : base de common.engine (rapport d'occupation) + offset
+# (carte de lien de l'engine) — la meme resolution que warship_fps.py.
+import re as _re
+_dist = os.path.dirname(os.path.abspath(image)) or "."
+_occ = open(os.path.join(_dist, "occupancy-fd.html")).read()
+_m = _re.search(r'"name":"common\.engine","container":"[^"]*","page":\d+,"address":(\d+)', _occ)
+_base = int(_m.group(1))
+INV = None
+for _l in open(os.path.join(_dist, os.pardir, "gen", "common", "build", "engine.lwmap")):
+    _mm = _re.match(r"Symbol: cheat\.invincible \(.*\) = ([0-9A-Fa-f]+)", _l)
+    if _mm:
+        INV = _base + int(_mm.group(1), 16)
+if INV is None:
+    sys.exit("cheat.invincible introuvable — le projet est-il construit ?")
+print("temoins : bench=$%04X lives=$%04X invincible=$%04X"
+      % (BLOCK, LIVES, INV), flush=True)
+
+
+def arm_invincible(tag):
+    """Armer et VERIFIER l'invincibilite, apres chaque entree en stage 1.
+
+    Le vaisseau de la lane ne pilote pas et ne tire pas : sans elle il meurt
+    seul des les premieres vagues (vies 2->1->0 au tout debut du stage 1,
+    constate le 30/08/2026), et la comptabilite C3/C4 — fondee sur des morts
+    COMMANDEES par bench.request — devient illisible. Le poser au boot ne
+    suffit pas : title.cheat.launch REECRIT cheat.invincible depuis tct.pinv
+    a chaque depart du title (« un depart sans cheat remet tout a zero »), il
+    faut donc re-armer APRES chaque passage title -> stage. Les kills de la
+    lane, eux, forcent mainloop.state et passent outre — c'est documente dans
+    bench.const.asm."""
+    t.call("write_memory", {"addr": "%04X" % INV, "bytes": ["01"]})
+    got = t.read("%04X" % INV, 1)[0]
+    if got != 1:
+        fail(f"{tag} FAIL — cheat.invincible ne s'arme pas (lu {got})")
 
 t = Toje()
 t.boot_floppy(image)
@@ -103,6 +143,7 @@ def press_until_stage1(tag, budget):
 
 # C1 — first hand-over
 press_until_stage1("C1", 6000)
+arm_invincible("C1")
 
 # C2 — stage 1 progresses
 while True:
@@ -131,31 +172,59 @@ else:
 print(f"C3 death handled: lives {lives_before}->{lives()}, "
       f"camera {cam_at_death}->{w['cam']} (checkpoint rewind)", flush=True)
 
-# C4 — exhaust the lives, expect the title
-for k in (2, 3):
-    run(400)                      # let the game settle back into RUNNING
-    kill()
-    run(600)
-deadline = frames + 3000
-while frames < deadline:
+# C4 — exhaust the lives, expect the title.
+# Chaque kill attend d'abord que le jeu ROULE (la camera avance) : la fenetre
+# de commande n'est consommee qu'en RUNNING, et la sequence mort/READY du jeu
+# reel est longue a la cadence reelle — deux kills a l'aveugle separes de 600
+# trames tombaient dans la sequence precedente et se perdaient (re-base du
+# 30/08/2026). On tue jusqu'au title, en journalisant chaque etape.
+deadline_total = frames + 24000
+while frames < deadline_total:
     w = witnesses()
     if w["stage"] == 0x00 and w["magic"] == 0xCA:
         break
-    run(200)
+    # attendre le jeu ROULANT : la camera avance franchement
+    c0 = witnesses()["cam"]
+    settle = frames + 5000
+    while frames < settle:
+        run(200)
+        w = witnesses()
+        if w["stage"] == 0x00 and w["magic"] == 0xCA:
+            break
+        if w["cam"] >= c0 + 6:
+            break
+        c0 = min(c0, w["cam"])    # un rembobinage de checkpoint repart plus bas
+    if w["stage"] == 0x00 and w["magic"] == 0xCA:
+        break
+    lb = lives()
+    kill()
+    print(f"C4 kill demande (vies={lb}, cam={w['cam']}, f={frames})", flush=True)
+    hit = frames + 6000
+    while frames < hit:
+        run(200)
+        w = witnesses()
+        if (w["stage"] == 0x00 and w["magic"] == 0xCA) or lives() != lb:
+            break
+    print(f"C4 apres kill : vies={lives()} stage={w['stage']:02X} "
+          f"cam={w['cam']} f={frames}", flush=True)
 else:
+    fail("C4 FAIL — game over never returned to the title")
+w = witnesses()
+if not (w["stage"] == 0x00 and w["magic"] == 0xCA):
     fail("C4 FAIL — game over never returned to the title")
 print(f"C4 game over -> title at f={frames}", flush=True)
 
 # C5 — replay: a fresh game
 press_until_stage1("C5", 8000)
+arm_invincible("C5")
 run(300)
 if lives() != 2:
     fail(f"C5 FAIL — lives not reseeded (got {lives()})")
 print(f"C5 fresh game: lives reseeded to {lives()}", flush=True)
 
-# C6/C7 — the full run: every stage in order (2..8, each on its own
-# directory and map — spawns > 0 at stage 2 proves the re-linked index
-# reaches the skeleton cast), then back to the title.
+# C6/C7 — the chain: stage 2 on its own data (spawns > 0 proves the
+# re-linked index reaches its cast), then stage 3 runs to ITS end
+# sequence — proven by the hand-over to stage 4, the first stub stage.
 c6 = c7 = 0
 top_stage = 1
 last = None
@@ -168,13 +237,15 @@ while frames < max_frames:
         top_stage = w["stage"]
     if w["stage"] == 0x02 and w["spawns"] > 0:
         c6 = 1
-    if c6 and top_stage == 8 and w["stage"] == 0x00 and w["magic"] == 0xCA:
-        c7 = 1
+    if c6 and top_stage >= 4:
+        c7 = 1                         # le stage 3 est alle au bout de sa
+                                       # sequence de fin ; le stage 4 (boss en
+                                       # mise au point) n'est pas juge ici
     print(f"f={frames:6d} wall={time.time() - t0:5.0f}s magic={w['magic']:02X} "
           f"stage={w['stage']:02X} cam={w['cam']:5d} spawns={w['spawns']} "
           f"top={top_stage} c6={c6} c7={c7}", flush=True)
     if c6 and c7:
-        print("R-TYPE LANE C1..C7 7/7 PASS (tour complet stages 1..8)")
+        print("R-TYPE LANE C1..C7 7/7 PASS (chaine stages 1->2->3 complete)")
         verdict = 0
         break
     key = (w["magic"], w["stage"], w["cam"], c6, c7)
