@@ -283,6 +283,7 @@ Collision_Run EXTERNAL
         _api AABB_list_bonus
         _api AABB_list_foefire
         _api AABB_list_forcepod
+        _api AABB_list_target
 
         ; --- la chaine de tir ennemi : residente, comme dans le main v1
         ; (main.asm:565-568). tryFoeFire est appele par l'ennemi, qui tourne

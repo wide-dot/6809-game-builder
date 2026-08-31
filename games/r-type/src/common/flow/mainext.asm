@@ -45,6 +45,7 @@ doInit
 * ---------------------------------------------------------------------------
 doCollision
         _Collision_Do AABB_list_friend,AABB_list_ennemy
+        _Collision_Do AABB_list_friend,AABB_list_target ; points faibles : armes seulement
         _Collision_Do AABB_list_player,AABB_list_bonus
         _Collision_Do AABB_list_player,AABB_list_foefire
         _Collision_Do AABB_list_player,AABB_list_ennemy_unkillable

@@ -193,6 +193,12 @@ AABB_list_player             fdb   0,0
 AABB_list_bonus              fdb   0,0
 AABB_list_foefire            fdb   0,0
 AABB_list_forcepod           fdb   0,0
+; LE DUAL d'ennemy_unkillable : les POINTS FAIBLES — tuables par les armes,
+; inoffensifs au contact du joueur. Aucune passe player×target n'existe : le
+; contact-joueur est impossible PAR CONSTRUCTION. L'arcade teste ces boites
+; par do_collision_with_player_and_weapons_v3_skip_player ($F7E4) — l'orbe du
+; gomander (stage 2) et le coeur du cuirasse (stage 3, tranche 6) y passent.
+AABB_list_target             fdb   0,0
 
 ; Leur remise a zero en bloc, au rechargement d'un checkpoint. Porte du game
 ; mode v1 (Collision_ClearLists, main.asm) : les listes vivent ici, leur
@@ -200,7 +206,7 @@ AABB_list_forcepod           fdb   0,0
 Collision_ClearLists
         ldd   #0
         ldy   #AABB_list_friend
-        ldx   #7*2                     ; sept listes de deux mots
+        ldx   #8*2                     ; huit listes de deux mots
 !       std   ,y++
         leax  -1,x
         bne   <

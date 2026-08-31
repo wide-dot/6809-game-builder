@@ -83,6 +83,14 @@ WeaponContactTick
         ; The gate throttles the pod/bits only against enemies that survive a hit;
         ; a 1-HP enemy dies on contact exactly as a single basic shot would.
         ldx   AABB_list_ennemy           ; head of the enemy list
+        bsr   wctk_walkList
+        ; LA LISTE DES POINTS FAIBLES (target) prend le MEME contact pod/bits :
+        ; l'arcade teste l'orbe du gomander et le coeur du cuirasse par le meme
+        ; dispatcher (v3 skip_player, $F7E4), avec la meme porte 1/16 — seule
+        ; la passe joueur manque, et elle ne passe pas par ici. X charge puis
+        ; on TOMBE dans la marche : son rts rend la main a l'appelant.
+        ldx   AABB_list_target
+wctk_walkList
         beq   @rts                       ; empty -> nothing to do
 @eloop
         lda   AABB.p,x
