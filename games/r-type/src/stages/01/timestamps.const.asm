@@ -42,9 +42,17 @@ timestamp.ERASE_NERV_START equ $1BDF+456+$900 ; nerves auto-effacees (free-life)
                                      ;   +0x3E ($900) part de l'armement de la nerve, donc il suit
                                      ;   NERV_VULNERABLE. Filet de securite : en jeu normal halfDamage
                                      ;   (monstre mi-vie) ou le tir du joueur tue les nerves bien avant.
-timestamp.MOVEALIEN_DELAY  equ 140   ; frames between last nerve death and alien move out
-timestamp.MOVEALIEN_SPEED  equ $18   ; followDobkeratops leftward speed, 8.8 fixed (=24/256 px/frame)
-timestamp.MOVEALIEN_DIST   equ 60    ; px the boss travels left before it stops on the butee to explode
+timestamp.MOVEALIEN_DELAY  equ 0     ; arcade : run_dobkeratops relance le scroll du fond LA TRAME
+                                     ;   MEME ou la derniere nerve meurt (poke 0x2ef4=0x40, $9A8C) —
+                                     ;   les 140 trames de grace etaient une invention du portage
+timestamp.MOVEALIEN_SPEED  equ $18   ; arcade 0x40/256 px/trame x 144/384 : la conversion X exacte
+timestamp.MOVEALIEN_DIST   equ 71    ; la course de l'etau. Le corps (centre ecran 111, 80 px de
+                                     ;   large) a son bord gauche a 71 px : 71 px de course posent
+                                     ;   ce bord SUR le mur gauche — l'ecrasement arcade complet
+                                     ;   (60 s'arretait 11 px avant le mur). La butee reste l'evenement
+                                     ;   de gameplay du portage : elle tue P1 (MonsterMouth) et borne
+                                     ;   le suivi de collision fond — l'arcade, elle, tue par contact
+                                     ;   et ne s'arrete jamais, mais a ce point l'etau est deja ferme.
 timestamp.BOSS_ESCAPE      equ $1BDF+$1000 ; boss escape / end-stage. Arcade: parent run_dobkeratops
                                      ;   +0x3E engagement timeout $1000 depuis T0 (= spawn monstre $1BDF)
 

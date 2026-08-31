@@ -137,6 +137,17 @@ Run
         lda   globals.bossDefeated
         bne   @frozen          ; boss killed: stop repainting, the overlay paint
         ldx   gfxlock.frame.gameCount ; persists and the tile-erase blits eat it
+        ; LA PASSATION DES BANDES AU CORPS ENTIER. Les bandes d'apparition
+        ; (subtypes 9-12) se suppriment a DELETE_ALIEN_BODY, camera a l'arret ;
+        ; a partir de la, c'est CET objet qui repeint l'alien complet a chaque
+        ; trame (le clear efface tout le champ, ce qui n'est pas repeint
+        ; disparait). Avant : l'image pleine n'arrivait qu'a la reprise du
+        ; scroll (MoveAlien) et le corps s'evanouissait pendant tout le combat.
+        cmpx  #timestamp.DELETE_ALIEN_BODY
+        blo   @bandes
+        ldd   #Img_dobkeratops_alien
+        std   image_set,u
+@bandes
         cmpx  #timestamp.ERASE_NERV_START
         blo   @checkEyes
         bsr   Run.killEyes     ; nerve free-life timeout (arcade: nerve +0x3E expires)
