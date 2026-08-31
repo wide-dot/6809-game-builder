@@ -3322,6 +3322,16 @@
                     </lwasm>
                 </file>
 
+                <!-- Brood + wick, sortis du cast plein a l'octet (31/08/2026,
+                     campagne gomander) : zero couplage de label, un seul
+                     direntry pour les deux — le repertoire est la denree
+                     rare. -->
+                <file name="stage2.cast.broodwick" linkdata="LINK" arena="stage2.foes">
+                    <lwasm gensource="gen/stages/02/stage02-cast-broodwick.asm">
+                        <asm filename="src/stages/02/cast-broodwick.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <!-- Les BLANCHES de coup du brood et du zoid (l'arcade
                      echange la palette 0x55, la notre est globale : on
                      echange l'image, comme le gouger). Brood : fermee +
@@ -3409,6 +3419,7 @@
                     <load name="stage2.cast.imgWick"/>
                     <load name="stage2.cast.imgZoid"/>
                     <load name="stage2.cast.zoid"/>
+                    <load name="stage2.cast.broodwick"/>
                     <load name="stage2.cast.imgBroodHit"/>
                     <load name="stage2.cast.imgZoidHit"/>
                     <load name="stage2.cast.imgGougerTLtop"/>

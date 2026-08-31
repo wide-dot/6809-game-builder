@@ -344,10 +344,8 @@ brood.Tick
 ; ENTRELACEE par montage et nos PNG en sortant tels quels.
 ; -----------------------------------------------------------------------------
 brood.Show
-        ldb   brood.blink,u            ; l'eclat : une trame sur quatre du
-        beq   @norm                    ; compteur de coup (8035)
-        andb  #3
-        bne   @norm
+        ldb   brood.blink,u            ; la trame de hit : blanche tant que
+        beq   @norm                    ; le compteur vit (un tick)
         ldb   brood.frame,u            ; fermee (pose 0) ou MI-OUVERTE pour
         beq   >                        ; toutes les poses non fermees —
         ldb   #2                       ; decision auteur, 26/08/2026
@@ -388,14 +386,12 @@ brood.Frame
         cmpa  brood.lastP,u
         beq   >
         sta   brood.lastP,u
-        ldb   #12
-        stb   brood.blink,u
-!       ldb   brood.blink,u
-        beq   @vif
-        subb  brood.drop+1
-        bgt   >
-        clrb
-!       stb   brood.blink,u
+        ldb   #2                       ; UNE trame de hit, pas de strobe
+        stb   brood.blink,u            ;   (decision auteur, 31/08/2026).
+!       ldb   brood.blink,u            ;   SEME A DEUX : le decrement juste
+        beq   @vif                     ;   dessous tourne DANS le tick de
+        decb                           ;   detection — a 1 la blanche mourait
+        stb   brood.blink,u            ;   avant meme le dessin (vecu)
 @vif    ldd   x_pos,u
         subd  glb_camera_x_pos
         stb   brood.AABB+AABB.cx,u

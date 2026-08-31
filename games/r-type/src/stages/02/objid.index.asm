@@ -41,8 +41,8 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_wick
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood
+        fcb   map.RAM_OVER_CART+stage2.cast.broodwick.page ; ObjID_wick
+        fcb   map.RAM_OVER_CART+stage2.cast.broodwick.page ; ObjID_brood
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gomander
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_segment
@@ -59,9 +59,9 @@ Obj_Index_Page.gouger_tl
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tr_bottom
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_bl_bottom
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_br_bottom
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_wick_unit
+        fcb   map.RAM_OVER_CART+stage2.cast.broodwick.page ; ObjID_wick_unit
         fcb   map.RAM_OVER_CART+stage2.cast.zoid.page ; ObjID_zoid
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood_hit
+        fcb   map.RAM_OVER_CART+stage2.cast.broodwick.page ; ObjID_brood_hit
         fcb   map.RAM_OVER_CART+stage2.cast.zoid.page ; ObjID_zoid_hit
 Obj_Index_Page.end
 
@@ -169,8 +169,8 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage2.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_wick
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood
+        fcb   map.RAM_OVER_CART+stage2.cast.broodwick.page ; ObjID_wick
+        fcb   map.RAM_OVER_CART+stage2.cast.broodwick.page ; ObjID_brood
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gomander
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay_segment
@@ -187,9 +187,9 @@ Ani_Page_Index.gouger_tl
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_tr_bottom
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_bl_bottom
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger_br_bottom
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_wick_unit
+        fcb   map.RAM_OVER_CART+stage2.cast.broodwick.page ; ObjID_wick_unit
         fcb   map.RAM_OVER_CART+stage2.cast.zoid.page ; ObjID_zoid
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_brood_hit
+        fcb   map.RAM_OVER_CART+stage2.cast.broodwick.page ; ObjID_brood_hit
         fcb   map.RAM_OVER_CART+stage2.cast.zoid.page ; ObjID_zoid_hit
 Ani_Page_Index.end
 
@@ -301,7 +301,7 @@ Img_Page_Index
 * etre DENSE jusqu'a objid.count — le garde-fou en fin de fichier le verifie
 * maintenant.
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gouger ; bascule des l init
-        fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_wick
+        fcb   map.RAM_OVER_CART+stage2.cast.broodwick.page ; ObjID_wick
         fcb   map.RAM_OVER_CART+stage2.cast.imgBrood.page ; ObjID_brood
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_outslay
         fcb   map.RAM_OVER_CART+stage2.cast.page ; ObjID_gomander
