@@ -32,7 +32,14 @@ Object
 * ---------------------------------------------------------------------------
 
 InitSequence
-        ldd   #timestamp.ERASE_NERV_START+timestamp.MOVEALIEN_DELAY
+        ; « jamais » : seul allEyesDead pose la vraie date, a la FIN de la
+        ; derniere sequence d'effacement (contrat arcade). L'ancienne valeur
+        ; ERASE_NERV_START+DELAY etait la date du TIMEOUT free-life : quand
+        ; les nerfs mouraient par lui, machoire/monstre/queue (gardes sur ce
+        ; timestamp) partaient pendant les effacements — allEyesDead prend le
+        ; MIN et ne pouvait pas la repousser. Le corps, garde sur eyesAlive,
+        ; attendait, lui : le boss se demembrait (vu en video, 31/08).
+        ldd   #$FFFF
         std   main.timestamp.moveAlienStart
         ldd   #timestamp.MOVEALIEN_DIST*256       ; distance the body owes to the butee (8.8)
         std   main.dobkeratops.move.left
@@ -55,9 +62,6 @@ InitSequence
         clr   main.dobkeratops.explode
         clr   globals.bossDefeated
         clr   terrainCollision.disabled         ; debut niveau : terrain actif (re-arme apres fin de stage)
-        clr   erase.rectArmed
-        clr   erase.rectDelay
-        clr   erase.bigRect
         clr   main.endstage.scoreArmed
         clr   main.endstage.scoreDone
         lda   #SCORE_HOLD_FRAMES               ; arme la pause ecran noir post fade-out
@@ -336,15 +340,11 @@ ResetYM
 * ---------------------------------------------------------------------------
 * Boss erase (arcade: run_boss_erase_tile_background)
 *
-* The arcade wipes the boss body tile by tile; here the body is an overlay
-* paint, so once the death is released we slam a single big black rectangle
-* over the boss room - much cheaper than a per-tile sweep and visually fine.
-*
-* Called every frame from the main loop INSIDE the gfx lock, right after
-* EraseSprites and before DrawSprites: the rect lands under the sprites and is
-* captured into their background backups, so backup/restore never resurrects
-* erased pixels. The rect is drawn on erase.bigRect consecutive frames (4 = two
-* full passes over the two video buffers).
+* L'arcade efface le corps du boss tuile par tuile ; ici le clearBlast
+* nettoie le champ chaque trame — une piece qui cesse de se dessiner
+* disparait seule, il n'y a rien a effacer. Ne restent que les phases 3
+* (dissolve) et 4 (readout) ; le rectangle noir de salle a ete retire le
+* 31/08/2026 (il mordait le decor pendant le scroll de fin).
 * ---------------------------------------------------------------------------
 
 Blit
@@ -357,31 +357,13 @@ Blit
         cmpa  #4
         lbeq  BlitPhase4
 @notFade
-        lda   main.dobkeratops.explode       ; erase only after the death is released
-        lbeq  @rts                          ; (boss alive or still frozen): nothing to do
-        ; arm, then draw the boss-room black rectangle on 2 consecutive frames
-        ; (one per video buffer), delayed a few frames so the explosions read first
-        lda   erase.rectArmed
-        beq   @arm
-        lda   erase.rectDelay               ; push the rectangle back
-        beq   @drawRect
-        dec   erase.rectDelay
-        rts
-@drawRect
-        lda   erase.bigRect
-        beq   @rts
-        lda   #1                            ; the rect rewrites a large bg area: force a
-        sta   <glb_force_sprite_refresh     ; full sprite refresh so the new backups go black
-        jsr   BigBlackRect
-        dec   erase.bigRect
-@rts    rts
-@arm
-        lda   #1
-        sta   erase.rectArmed
-        lda   #8
-        sta   erase.rectDelay
-        lda   #4
-        sta   erase.bigRect
+        ; phases 0-2 : PLUS RIEN (31/08/2026, decision auteur). Le rectangle
+        ; noir de salle etait l'heritage bg-erase — en overlay le clearBlast
+        ; efface le champ chaque trame : une piece du boss qui cesse de se
+        ; dessiner disparait seule. Le rectangle, pose en coordonnees ECRAN
+        ; sur 4 trames pendant que la camera glisse, mordait le decor deplace
+        ; (lignes 23-178, plafond et sol compris) que la tilemap ne repeint
+        ; pas : les trous voyageurs du scroll de fin, vus en video.
         rts
 
 * ---------------------------------------------------------------------------
@@ -426,60 +408,6 @@ BlitPhase4
         rts
 
 * ---------------------------------------------------------------------------
-* BigBlackRect - solid fill, top-left (28,23) to bottom-right (147,178) in
-* screen px/scanline. Filled bottom-to-top.
-*
-* BM16: 1 byte = 2 px, two interleaved planes. group g = x>>2 ;
-*   RAMA byte $C000+line*40+g = px 4g, 4g+1 ; RAMB byte $A000+line*40+g = px
-*   4g+2, 4g+3. RAMA = RAMB+$2000. Both edges are group-aligned (px 28 = start
-*   of group 7, px 147 = end of group 36), so the fill is pixel-exact with whole
-*   bytes only: groups 7..36 = 30 bytes/plane = 5*(d,x,y). Trashes a,b,d,x,y,u.
-* ---------------------------------------------------------------------------
-rect.G0       equ 7                          ; x>>2 of left edge (px 28, start of group 7)
-rect.G1       equ 36                         ; x>>2 of right edge (px 147, end of group 36)
-rect.Y0       equ 23
-rect.Y1       equ 178
-rect.RAMB_END equ $A000+rect.Y1*40+rect.G1+1 ; bottom line: exclusive end of the run
-rect.LINES    equ rect.Y1-rect.Y0+1          ; 156 scanlines
-rect.FILL     equ $0000                      ; index 0, le noir. L'index 15 ($ffff) servait
-                                             ; de repere d'alignement et ne se voyait pas :
-                                             ; il etait noir lui aussi dans l'ancienne
-                                             ; palette. Il vaut #9ECC00 dans la nouvelle.
-
-BigBlackRect
-        ldx   #rect.FILL
-        ldy   #rect.FILL                     ; X=Y=fill for every pshu (never clobbered)
-        ldd   #rect.RAMB_END
-        std   rect.ptr
-        lda   #rect.LINES
-        sta   rect.lineCnt
-@line   ldd   #rect.FILL                     ; D=fill (pointer math below clobbers it)
-        ldu   rect.ptr                        ; RAMB bank ($A000), run end = base+G1+1
-        pshu  d,x,y
-        pshu  d,x,y
-        pshu  d,x,y
-        pshu  d,x,y
-        pshu  d,x,y                          ; 30 RAMB bytes [G0..G1] (px 28..147)
-        ldu   rect.ptr
-        leau  $2000,u                        ; RAMA bank ($C000)
-        pshu  d,x,y
-        pshu  d,x,y
-        pshu  d,x,y
-        pshu  d,x,y
-        pshu  d,x,y                          ; 30 RAMA bytes [G0..G1]
-        ldd   rect.ptr
-        subd  #40                            ; up one scanline
-        std   rect.ptr
-        dec   rect.lineCnt
-        bne   @line
-        rts
-
-* rectangle wipe state (lives in this RAM bank, reset by InitSequence)
-erase.rectArmed  fcb 0  ; set once the death is released
-erase.rectDelay  fcb 0  ; frames to wait before drawing the rectangle (push-back)
-erase.bigRect    fcb 0  ; remaining boss-room rectangle frames (one per buffer)
-rect.ptr         fdb 0  ; BigBlackRect rolling RAMB run-end pointer
-rect.lineCnt     fcb 0  ; BigBlackRect scanline counter
 
 
 * ---------------------------------------------------------------------------
