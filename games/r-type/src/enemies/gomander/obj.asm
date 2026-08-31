@@ -55,12 +55,14 @@
 ; « le champ vient d'etre efface, le decor DOIT se repeindre chaque trame »).
 ; A NE PAS defaire : c'est ce qui autorise un boss a l'arret.
 ;
-; V2-DEVIATION : l'arcade teste la boite de l'orbe avec
+; L'arcade teste la boite de l'orbe avec
 ; `do_collision_with_player_and_weapons_v3_skip_player` — le JOUEUR est
 ; ignore, parce que le corps du boss est du decor et que c'est la collision
-; terrain qui l'arrete. La v2 n'a pas de liste « armes seulement » : notre
-; boite vit dans AABB_list_ennemy, donc elle blesse aussi au contact. A
-; revoir le jour ou le corps arrive.
+; terrain qui l'arrete. La boite vit donc dans AABB_list_target (creee pour
+; ca le 31/08/2026) : armes et pod/bits la touchent (passe friend×target +
+; WeaponContactTick), le contact joueur est impossible par construction —
+; aucune passe player×target n'existe. L'ancienne deviation (boite dans
+; ennemy, letale au contact) est levee.
 ;
 ; NOMMAGE : tout le cast du stage 2 est assemble dans une seule unite, donc
 ; chaque etiquette porte le prefixe `gomander.` (voir outslay/obj.asm).
@@ -79,7 +81,9 @@ gomander.delay    equ ext_variables+14   ; 14,15 compte a rebours du prochain
                                          ;       serpent (arcade [+0x22])
 gomander.hp       equ ext_variables+16   ; 16    PV restants — miroir de AABB.p,
                                          ;       qui passe a -128 hors fenetre
-gomander.savedVel equ ext_variables+17   ; 17,18 la vitesse de scroll d'avant
+gomander.d2nd     equ ext_variables+17   ; 17    la 2e deflagration est faite
+                                         ;       (l'ex-savedVel : la fin arcade
+                                         ;       ne re-scrolle jamais)
 
 ; L'ANIMATION DU TUBE. L'arcade repeint un rectangle de sa tilemap de fond
 ; (gomander_helper_blit_recipe, 0x40:A578) : le corps du boss est du DECOR, ce
@@ -94,6 +98,10 @@ gomander.savedVel equ ext_variables+17   ; 17,18 la vitesse de scroll d'avant
 ; l'applique une fois par trame depuis la boucle de jeu.
 engulf            EXTERNAL
 blink             EXTERNAL
+; La porte de l'orbe, dans l'unite collision du stage (meme scene) : le
+; loader resout l'adresse, l'index d'objets donne la page (ObjID_collision).
+collision.orbGate.open  EXTERNAL
+collision.orbGate.close EXTERNAL
 tube0             EXTERNAL
 tube1             EXTERNAL
 tube2             EXTERNAL
@@ -106,7 +114,21 @@ gomander.orbCursor equ ext_variables+19
 gomander.ORB_FIRST   equ $01E0           ; a265 : 480, la premiere ouverture
 gomander.ORB_OPEN    equ $00E0           ; 224, les suivantes
 gomander.PHASE       equ 15              ; a2a3 / a2cd : les deux demi-phases
-gomander.ENGULF      equ $00E0           ; a2df + a3b3 : 224 apres un coup
+gomander.WINDOW      equ 30              ; la fenetre VULNERABLE (OrbArm).
+                                         ; L'arcade dit 15 — mais a 60 fps ce
+                                         ; sont 15 passes de collision, la ou
+                                         ; notre frameDrop n'en laisse que 2.
+                                         ; Doublee (decision auteur, 31/08) :
+                                         ; ~4 passes, le rythme du cycle
+                                         ; inchange.
+gomander.ENGULF      equ 15              ; a2da : la TRAVERSEE apres un coup
+                                         ; dure 15 trames — le « 224 » est
+                                         ; l'attente OrbOpen qui SUIT (a3ea),
+                                         ; pas l'engloutissement lui-meme
+gomander.ORB_IDLE    equ 15              ; a3a6 : l'attente entre deux pulses
+                                         ; sans coup — l'oeil bat toutes les
+                                         ; 49 trames, pas toutes les 284
+gomander.DEATH_2NDBLAST equ $0100        ; a52b : la 2e deflagration de la mort
 gomander.WAVE_FIRST  equ $0164           ; a260 : 356, le premier serpent
 gomander.LATCH       equ $1740           ; a424 : le niveau enchaine
 gomander.TIMEOUT     equ $1780           ; a465 : delai depasse, aucun score
@@ -151,13 +173,19 @@ gomander.Init
         clr   priority,u
         lda   #render_playfieldcoord_mask
         sta   render_flags,u
-        ; a23d : le boss fige le defilement (voir l'en-tete pour l'ecart).
-        ldd   scroll_vel
-        std   gomander.savedVel,u
+        ; a23d : le boss fige le defilement — et il ne repartira JAMAIS
+        ; visiblement : la fin arcade se joue sur place (Finish pose
+        ; scroll_max sur la camera), l'ancienne sauvegarde de vitesse a
+        ; disparu avec le scroll-out.
         ldd   #0
         std   scroll_vel
+        ; (d2nd part a zero gratuitement : LoadObject zere l'OST)
+        ; LA PORTE SE REFERME D'OFFICE : un checkpoint ne recharge pas la
+        ; carte depuis la disquette — mourir pendant la fenetre laissait le
+        ; trou ouvert pour toute la reprise.
+        jsr   gomander.GateClose
         ; a256 : 8 PV. La boite est celle de l'orbe (1000:54ea).
-        _Collision_AddAABB gomander.AABB,AABB_list_ennemy
+        _Collision_AddAABB gomander.AABB,AABB_list_target
         _ldd  gomander_hitbox_x,gomander_hitbox_y
         std   gomander.AABB+AABB.rx,u
         lda   #gomander_hitdamage
@@ -196,15 +224,9 @@ gomander.Init
         ; et le SECOND `sta` qui le consomme (la boite recevait n'importe quoi),
         ; en empilant U APRES l'avoir charge (le `puls u` rendait alors
         ; l'adresse d'engulf.odd, et tout le reste de l'init ecrivait dedans).
-        pshs  u
         lda   #tanim.BACKWARD          ; l'oeil part FERME : a l'envers, `arm`
-        sta   tanim.flags,u            ; pose la derniere image
-        ldx   #engulf
-        lda   #engulf.FRAMES
-        ldb   #engulf.HOLD
-        jsr   tilemap.anim.arm
-        puls  u
-        rts
+        jsr   gomander.EyeArm          ; pose la derniere image — arm/request
+        rts                            ; preservent U (clobbent a, b, x, y)
 
 ; --- orbe ouvert : 224 trames, VULNERABLE (40:a290) --------------------------
 gomander.OrbOpen
@@ -225,30 +247,25 @@ gomander.OrbOpen
         ; d'origine, calque sur la table `fwd` de l'arcade, laissait l'oeil
         ; ouvert pendant l'attente et ferme pendant la fenetre de tir.
         lda   #tanim.BACKWARD          ; ferme -> ouvert
-        sta   tanim.flags,u
-        ldx   #engulf
-        lda   #engulf.FRAMES
-        ldb   #engulf.HOLD
-        jsr   tilemap.anim.arm
+        jsr   gomander.EyeArm
         lda   #gomander.rt.phaseA
         sta   routine,u
-        jsr   gomander.Shield
+        lda   gomander.hp,u            ; les phases tube ENCAISSENT (le pod
+        sta   gomander.AABB+AABB.p,u   ; broie), seule l'attente est a l'abri
         lbra  gomander.CombatJoin
 
-; --- phase A : 15 trames d'animation, AUCUN test de coup (40:a334) -----------
+; --- phase A : 15 trames d'animation, boite ACTIVE (queue a278) --------------
 gomander.PhaseA
-        ldx   #engulf                  ; l'horloge du decor, sur l'OST du boss
-        lda   #engulf.FRAMES
-        ldb   #engulf.HOLD
-        jsr   tilemap.animate
+        jsr   gomander.HitCheck        ; la queue commune arcade teste ici aussi
+        jsr   gomander.EyeStep         ; l'horloge du decor, sur l'OST du boss
         jsr   gomander.Countdown
         lbgt  gomander.CombatJoin
-        ldd   #gomander.PHASE          ; a2cd
+        ldd   #gomander.WINDOW         ; a2cd (15 arcade -> 30, voir l'equate)
         std   gomander.timer,u
         lda   #gomander.rt.orbArm
         sta   routine,u
-        jsr   gomander.Expose
-        lbra  gomander.CombatJoin
+        jsr   gomander.GateOpen        ; l'oeil est ouvert : le decor s'ouvre
+        lbra  gomander.CombatJoin      ; (la boite, elle, encaisse deja)
 
 ; --- orbe arme : 15 trames, VULNERABLE (40:a2b0) -----------------------------
 gomander.OrbArm
@@ -257,37 +274,34 @@ gomander.OrbArm
         lbgt  gomander.CombatJoin
         ldd   #gomander.PHASE
         std   gomander.timer,u
-        clr   tanim.flags,u            ; l'oeil se referme : la meme, a l'endroit
-        ldx   #engulf
-        lda   #engulf.FRAMES
-        ldb   #engulf.HOLD
-        jsr   tilemap.anim.arm
+        clra                           ; l'oeil se referme : la meme, a l'endroit
+        jsr   gomander.EyeArm
         lda   #gomander.rt.phaseB
         sta   routine,u
-        jsr   gomander.Shield
-        lbra  gomander.CombatJoin
+        jsr   gomander.GateClose       ; l'oeil se referme : le decor aussi —
+        lbra  gomander.CombatJoin      ; la boite, elle, encaisse toujours
 
-; --- phase B : 15 trames d'animation (40:a375) -------------------------------
+; --- phase B : 15 trames d'animation, boite ACTIVE (40:a375) -----------------
 gomander.PhaseB
-        ldx   #engulf                  ; l'horloge du decor, sur l'OST du boss
-        lda   #engulf.FRAMES
-        ldb   #engulf.HOLD
-        jsr   tilemap.animate
+        jsr   gomander.HitCheck        ; la queue commune arcade teste ici aussi
+        jsr   gomander.EyeStep         ; l'horloge du decor, sur l'OST du boss
         jsr   gomander.Countdown
         lbgt  gomander.CombatJoin
-        jsr   gomander.ReopenOrb
+        ldd   #gomander.ORB_IDLE       ; a3a6 : 15 — le pulse rapide, l'oeil
+        jsr   gomander.ReopenOrb       ; rebat dans 49 trames
         lbra  gomander.CombatJoin
 
 ; --- engloutissement : 224 trames apres un coup, invulnerable (40:a3b3) ------
 gomander.Engulf
-        jsr   gomander.Countdown
+        jsr   gomander.HitCheck        ; un coup pendant la traversee la
+        jsr   gomander.Countdown       ; RE-ARME — la queue a278 de l'arcade
         lbgt  gomander.CombatJoin
-        jsr   gomander.ReopenOrb
+        ldd   #gomander.ORB_OPEN       ; a3ea : 224 — la longue pause qui suit
+        jsr   gomander.ReopenOrb       ; un coup encaisse
         lbra  gomander.CombatJoin
 
-gomander.ReopenOrb
-        ldd   #gomander.ORB_OPEN
-        std   gomander.timer,u
+gomander.ReopenOrb                     ; D = l'attente OrbOpen : ORB_IDLE au
+        std   gomander.timer,u         ;   fil du pulse, ORB_OPEN apres un coup
         lda   #gomander.rt.orbOpen
         sta   routine,u
         ; ET LA BOITE SE REFERME. La cascade tombait ici dans Expose — « les
@@ -298,14 +312,31 @@ gomander.ReopenOrb
         jmp   gomander.Shield
 
 ; La boite prend les PV restants : un tir la fait descendre, HitCheck lit la
-; difference. Hors fenetre elle passe negative — invulnerable, jamais modifiee.
-gomander.Expose
-        lda   gomander.hp,u
-        sta   gomander.AABB+AABB.p,u
-        rts
+; difference — et il ne tourne QUE fenetre ouverte (OrbArm), jamais sous
+; bouclier. Hors fenetre la boite passe a ZERO : Collision_Do la saute, le
+; tir TRAVERSE sans etre consomme — c'est l'arcade exacte, qui n'appelle
+; meme pas la collision pendant les phases tube. (L'ancien bouclier a -128
+; etait une boite invincible : elle absorbait les tirs au passage.)
 gomander.Shield
-        lda   #-128
-        sta   gomander.AABB+AABB.p,u
+        clr   gomander.AABB+AABB.p,u
+        rts
+; LA PORTE TERRAIN, DECOUPLEE DE L'EXPOSITION (31/08/2026, cadence arcade) :
+; la boite encaisse pendant TOUTES les phases tube — la queue commune a278
+; de l'arcade teste la collision dans ces etats, c'est ainsi que le pod
+; broie en continu — mais le decor n'est traversable que l'oeil
+; VISUELLEMENT ouvert (OrbArm).
+gomander.GateOpen
+        ldd   #collision.orbGate.open
+        bra   gomander.orbGate
+gomander.GateClose
+        ldd   #collision.orbGate.close
+gomander.orbGate
+        std   PSR_Address
+        lda   Obj_Index_Page+ObjID_collision
+        sta   PSR_Page
+        pshs  u
+        jsr   RunPgSubRoutine          ; monte la page de la carte, poke, revient
+        puls  u
         rts
 
 ; Le compte a rebours de l'etat, en trames video (Z/N poses a la sortie).
@@ -324,19 +355,44 @@ gomander.HitCheck
         beq   @none                    ; rien de neuf cette trame
         sta   gomander.hp,u            ; a2c0 : instantane des degats
         beq   @dead                    ; PV epuises -> a4cd
-        ldd   #gomander.ENGULF         ; a2df : 224 trames a l'abri
+        ldd   #gomander.ENGULF         ; a2da : 15 trames de traversee
         std   gomander.timer,u
         lda   #gomander.rt.engulf
         sta   routine,u
-        jsr   gomander.Shield
+        ; PAS de bouclier : l'arcade laisse la boite active pendant toute la
+        ; traversee (le pod continue de broyer, un coup re-arme). Seule la
+        ; PORTE terrain se referme — l'oeil n'est plus visuellement ouvert.
+        jsr   gomander.GateClose
         ; a2e9..a331 : l'arcade seme ici DEUX acteurs de flash de palette
         ; (bancs 7 et 8 -> banc 4, 16 trames, une peinture sur 4). Une seule
         ; palette chez nous et aucune case propre au boss : le flash est un
         ; patch de tuiles recolorees (blink, trame 0 = le decor du niveau,
         ; trame 1 = le blanc/cyan du banc 4). final=0 : le pulse arcade finit
         ; lui aussi sur la palette normale.
+        jsr   gomander.Flash
+@none   rts
+@dead   leas  2,s                      ; on ne revient pas dans l'etat
+        lbra  gomander.ArmDeath
+
+; L'animation de l'oeil, factorisee (la page du cast est PLEINE) :
+; EyeArm arme l'anim avec A = tanim.flags (0 a l'endroit, BACKWARD a
+; l'envers), EyeStep la fait avancer d'un tick.
+gomander.EyeArm
+        sta   tanim.flags,u
+        ldx   #engulf
+        lda   #engulf.FRAMES
+        ldb   #engulf.HOLD
+        jmp   tilemap.anim.arm
+gomander.EyeStep
+        ldx   #engulf
+        lda   #engulf.FRAMES
+        ldb   #engulf.HOLD
+        jmp   tilemap.animate
+
+; Le flash blink, partage entre le coup encaisse et le strobe d'agonie.
+gomander.Flash
         jsr   LoadObject_x
-        beq   @none                    ; pool plein : pas de flash, tant pis
+        beq   @ret                     ; pool plein : pas de flash, tant pis
         lda   #ObjID_tilemapanim
         sta   id,x
         ldd   #blink
@@ -344,9 +400,21 @@ gomander.HitCheck
         ldd   #16                      ; [SI+10] arcade : 16 trames
         std   tanimobj.life,x
         clr   tanimobj.final,x
-@none   rts
-@dead   leas  2,s                      ; on ne revient pas dans l'etat
-        lbra  gomander.ArmDeath
+@ret    rts
+
+; La grosse explosion sur le corps, partagee entre la mort et la 2e
+; deflagration (l'arcade seme une cascade de 352 trames ; sans corps a
+; faire exploser on en pose une a chaque jalon).
+gomander.Boom
+        jsr   LoadObject_x
+        beq   @ret
+        _ldd  ObjID_explosion,explosion.subtype.big
+        std   id,x
+        ldd   x_pos,u
+        std   x_pos,x
+        ldd   y_pos,u
+        std   y_pos,x
+@ret    rts
 
 ; --- la queue commune : chaque etat y saute (40:a3f4) ------------------------
 gomander.CombatJoin
@@ -460,21 +528,13 @@ gomander.WaveSpawn
 
 ; --- la mort par les armes (40:a4cd puis 40:a523) ----------------------------
 gomander.ArmDeath
+        jsr   gomander.GateClose       ; la mort peut tomber porte ouverte
         ldb   #gomander_scoreIdx       ; a4d5 : 0x8718
         jsr   AwardScore
         _soundFX.play soundFX.ExplosionSound,2
-        ; a4db : l'arcade pose un acteur de cascade — 352 trames d'explosions
-        ; sur un script de positions autour du corps. Sans corps a faire
-        ; exploser on en pose UNE ; la cascade viendra avec l'art du boss.
-        jsr   LoadObject_x
-        beq   >
-        _ldd  ObjID_explosion,explosion.subtype.big
-        std   id,x
-        ldd   x_pos,u
-        std   x_pos,x
-        ldd   y_pos,u
-        std   y_pos,x
-!       ldd   #gomander.DEATH          ; a518 : 384 trames
+        jsr   gomander.Boom            ; a4db : la cascade arcade, reduite a
+                                       ; une explosion par jalon (cf. Boom)
+        ldd   #gomander.DEATH          ; a518 : 384 trames
         std   gomander.timer,u
         lda   #gomander.rt.death
         sta   routine,u
@@ -485,18 +545,42 @@ gomander.Death
         jsr   gomander.Countdown
         lble  gomander.Finish          ; a528 : compte a rebours fini
         cmpd  #gomander.DEATH_LATCH
-        bhi   >
-        lda   #1                       ; a545 : le niveau enchaine
-        sta   globals.bossDefeated
-!       rts
+        bls   @finale
+        ; a52b : la 2e deflagration, au passage sous $100 — UNE fois
+        cmpd  #gomander.DEATH_2NDBLAST
+        bhi   @ret
+        tst   gomander.d2nd,u
+        bne   @ret
+        inc   gomander.d2nd,u
+        jsr   gomander.Boom            ; a56c : la 2e deflagration
+        bra   @ret
+@finale
+        lda   #1                       ; a545 : le niveau enchaine (fondu,
+        sta   globals.bossDefeated     ; autopilote et releve par obj_endlevel)
+        ; LA SECOUSSE (a54a : le scroll Y du fond alterne violemment chaque
+        ; paire de trames). Notre overlay n'a pas de scroll vertical fin :
+        ; V2-DEVIATION, l'agonie est un STROBE du decor — le flash blink
+        ; retire toutes les 8 trames pendant les 128 dernieres.
+        ldb   gomander.timer+1,u
+        andb  #7
+        bne   @ret
+        jsr   gomander.Flash
+@ret    rts
 
 ; --- la sortie, commune aux deux chemins (40:a473) ---------------------------
 gomander.Finish
-        ldd   gomander.savedVel,u      ; a484 : l'autoscroll repart
-        std   scroll_vel
+        ; a484 relance l'autoscroll — mais l'ecran arcade est alors DEJA fondu
+        ; au noir : aucun scroll n'est jamais visible sur ce niveau. La fin se
+        ; joue sur place : scroll_max descend SUR la camera (les deux buffers
+        ; y reposent, le scroll est fige depuis le spawn), la condition de
+        ; glissement d'obj_endlevel est vraie immediatement, et la sequence
+        ; commune s'arme sans un pixel de defilement. scroll_vel reste a zero.
+        jsr   gomander.GateClose
+        ldd   glb_camera_x_pos
+        std   scroll_max
         lda   #1
         sta   globals.bossDefeated
-        _Collision_RemoveAABB gomander.AABB,AABB_list_ennemy
+        _Collision_RemoveAABB gomander.AABB,AABB_list_target
         lda   #gomander.rt.deleted
         sta   routine,u
         jmp   UnloadObject_u           ; rien n'a ete dessine : pas de DeleteObject
