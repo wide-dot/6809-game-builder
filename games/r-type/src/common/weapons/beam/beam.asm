@@ -31,6 +31,10 @@ Beam
         ldx   #Beam_Routines
         jmp   [a,x]
 
+; Le depart du pas courant, garde le temps d'un tick pour la boite balayee
+; (meme patron que weapon.sweepFrom — un seul beam a la fois dans Live).
+beam.sweepFrom fdb 0
+
 Beam_Routines
         fdb   Init
         fdb   Live
@@ -56,8 +60,10 @@ Init
 	adda  #4                       ; arcade: subtype*4+4 = {4,8,12,16,20} (= image_id)
         sta   AABB_0+AABB.p,u
 
-        ; hitbox size
-        _ldd  15,6                     ; set hitbox xy radius (x should be dynamic, but deactivatedfor framerate compensation)
+        ; hitbox size — ry seul compte : rx est reecrit par la boite BALAYEE
+        ; du premier tick (l'Init tombe dans Live), l'ancien 15 statique etait
+        ; la compensation de frame rate, remplacee par le balayage (31/08/2026)
+        _ldd  3,6                      ; set hitbox xy radius
         std   AABB_0+AABB.rx,u
 
         ; compute x position ; spawn tier = subtype (p = subtype*4+4 -> tier = subtype)
@@ -102,12 +108,17 @@ beam.gum.call equ *-2
         ldd   terrainCollision.impact.x
         std   impactX,u
         inc   routine,u
-        bra   >
+        ; ET LE PREMIER TICK TOUT DE SUITE — on TOMBE dans Live entier (meme
+        ; geste que le tir simple) : rattrapage du frame drop des la trame de
+        ; naissance, boite balayee de la position initiale a la position
+        ; rattrapee. L'ancien `bra >` sautait le deplacement.
 
 Live
-        ; delete beam if no more damage potential
+        ; LE DERNIER COUP S'AFFICHE — meme retour que le tir simple : quand le
+        ; budget de penetration tombe a zero dans la passe, le beam finissait
+        ; en Delete muet ; il pose desormais son impact a la position courante.
         lda   AABB_0+AABB.p,u
-        lbeq  Delete
+        lbeq  beam.HitFeedback
 
         ; current power tier (arcade image_id band): tier = (p-1)>>2 -> {1..4}=0 ... {17..20}=4
         deca
@@ -140,6 +151,7 @@ Live
         ; 0x40:027A). Le moteur audio n'est pas porte : rien ici. Ce n'est PAS
         ; du score, verifie sur la plate de erase_green_ball_cell_stage4.
         ldx   x_pos,u
+        stx   beam.sweepFrom           ; le depart du pas : la boite balayee
         pshs  x                        ; le depart, avant le deplacement
 
         ; update beam position
@@ -180,22 +192,55 @@ beam.gum.call2 equ *-2
         subd  #3 ; half width of the beam
         addd  impactX,u
         std   x_pos,u
-        subd  glb_camera_x_pos         ; recaler la hitbox sur le point d'impact : cette
-        stb   AABB_0+AABB.cx,u         ;   branche ne l'ecrivait pas (cx = 0 si le beam nait
-                                       ;   dans le mur -> boite active au bord gauche)
+        ; LA TRAME D'IMPACT GARDE SA BOITE BALAYEE — du depart du pas au point
+        ; d'impact, largeur du beam comprise. Meme correctif que le tir simple :
+        ; la branche court-circuitait la pose de boite, un beam ne a moins d'un
+        ; pas du mur ne touchait rien du segment traverse (l'orbe du gomander).
+        ldd   beam.sweepFrom
+        subd  glb_camera_x_pos
+        pshs  b                        ; l'arriere du segment (ecran, un octet)
+        ldd   x_pos,u
+        subd  glb_camera_x_pos         ; l'avant = le point d'impact
+        subb  ,s                       ; B = la longueur du segment
+        bpl   @sbiOk
+        clrb                           ; recul d'impact colle au mur : ponctuel
+@sbiOk  lsrb                           ; B = le demi-segment
+        pshs  b
+        addb  halfWidth+1,u
+        stb   AABB_0+AABB.rx,u         ; rx = demi-segment + demi-largeur du beam
+        puls  b
+        addb  ,s+                      ; cx = arriere + demi-segment
+        stb   AABB_0+AABB.cx,u
         ldd   #set_beam_impact_0
         std   image_set,u
         inc   routine,u
         jmp   DisplaySprite
 !
-        ; update hitbox position
+        ; update hitbox position — LA BOITE BALAYEE (voir le tir simple) :
+        ; centre au milieu du pas, rx = demi-segment + demi-largeur du tier.
+        ; Un beam qui penetre y gagne double : la boite large du segment peut
+        ; toucher PLUSIEURS ennemis dans la meme passe, comme l'arcade.
         ldd   x_pos,u
         subd  glb_camera_x_pos
-        stb   AABB_0+AABB.cx,u
-
-        ; delete beam if out of screen range
         cmpd  #160-8/2                 ; delete beam if out of screen range
         bhs   Delete
+        pshs  b                        ; l'avant du segment (ecran, un octet)
+        ldd   beam.sweepFrom
+        subd  glb_camera_x_pos
+        negb
+        addb  ,s                       ; B = la longueur du segment
+        bpl   @sbvOk
+        clrb                           ; camera en avance sur un pas nul
+@sbvOk  lsrb                           ; B = le demi-segment
+        pshs  b
+        addb  halfWidth+1,u
+        stb   AABB_0+AABB.rx,u         ; rx = demi-segment + demi-largeur
+        puls  b
+        negb
+        addb  ,s+                      ; cx = avant - demi-segment
+        bpl   @sbvCl
+        clrb                           ; ne au bord gauche : cale a zero
+@sbvCl  stb   AABB_0+AABB.cx,u
         ldb   beamTier,u                ; sprite tier = current power band (arcade unified image_id)
         aslb
         ldx   #Ani_Beams
@@ -207,6 +252,12 @@ beam.gum.call2 equ *-2
         aslb
         ldd   b,x
         std   image_set,u
+        jmp   DisplaySprite
+
+beam.HitFeedback
+        ldd   #set_beam_impact_0
+        std   image_set,u
+        inc   routine,u                ; Live -> Impact : la fin d'anim commune
         jmp   DisplaySprite
 
 Impact

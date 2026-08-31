@@ -28,6 +28,10 @@ Weapon
         ldx   #Weapon_Routines
         jmp   [a,x]
 
+; Le depart du pas courant, garde le temps d'un tick pour la boite balayee
+; (un seul tir a la fois dans Live : un scratch partage suffit).
+weapon.sweepFrom fdb 0
+
 Weapon_Routines
         fdb   Init
         fdb   Live
@@ -55,11 +59,18 @@ Init
         
         lda   #1                       ; set damage potential for this hitbox
         sta   AABB_0+AABB.p,u
-        _ldd  15,1                     ; set hitbox xy radius (x should be 3, but 15 for framerate compensation)
+        ; rx = 3, la demi-largeur REELLE du projectile. L'ancien 15 etait une
+        ; compensation de frame rate (boite grasse pour boucher les trous
+        ; entre deux echantillons) ; depuis le 31/08/2026 la boite est BALAYEE
+        ; par Live — elle couvre tout le segment parcouru dans la trame — et
+        ; la compensation statique n'a plus de raison d'etre.
+        _ldd  3,1                      ; set hitbox xy radius
         std   AABB_0+AABB.rx,u
 
         ldb   y_pos+1,u
         stb   AABB_0+AABB.cy,u
+        ; (cx n'est pas pose ici : l'Init tombe dans Live — voir plus bas —
+        ; et le premier tick ecrit la boite balayee de la trame de naissance)
 
         ; --- LE DESTIN DU TIR, calcule UNE FOIS a la naissance
         ; La sonde de ligne rend le bord gauche de la premiere cellule 3x6
@@ -90,15 +101,30 @@ Init
         inc   gumHit,u
 @destiny
         inc   routine,u
-        bra   >
+        ; ET LE PREMIER TICK TOUT DE SUITE — on TOMBE dans Live entier, pas
+        ; dans sa queue. L'arcade fait exactement ca (create_force_pod_simple_
+        ; fire $3EA7 « falls through for an immediate first tick ») : le tir
+        ; rattrape son frame drop des la trame de naissance, et la boite
+        ; balayee s'etire de la position INITIALE (bouche du canon, sondee
+        ; pour le destin ci-dessus) a la position rattrapee. L'ancien `bra >`
+        ; sautait le deplacement : le tir restait une trame a la bouche, et
+        ; le balayage y partait meme a l'envers (centre - demi-pas).
 
 Live
-        ; delete weapon if no more damage potential
+        ; LE COUP ENCAISSE S'AFFICHE. Quand un ennemi consomme le tir (p=0 a
+        ; la passe de collision), l'arcade pose un impact immediat
+        ; (create_fire_impact_yellow) ; ici le tir mourait en silence et le
+        ; joueur ne voyait jamais son coup porter — le ressenti « ca lag »
+        ; sur l'orbe du gomander (31/08/2026). Meme sequence d'images que
+        ; l'impact mur, a la position courante ; p reste a 0, la boite est
+        ; inerte et Delete la retirera en fin d'anim.
         lda   AABB_0+AABB.p,u
-        lbeq  Delete                   ; le corps a grossi : portee courte
-                                       ; insuffisante
+        lbeq  weapon.HitFeedback
 
         ; update weapon position
+        ldd   x_pos,u
+        std   weapon.sweepFrom         ; le depart du pas : la boite balayee
+                                       ; s'etire d'ici, impact compris
         lda   #6
         ldb   gfxlock.frameDrop.count
         mul
@@ -140,23 +166,63 @@ Live
         subd  #3 ; half width of the weapon
         addd  impactX,u
         std   x_pos,u
-        subd  glb_camera_x_pos         ; recaler la hitbox sur le point d'impact : cette
-        stb   AABB_0+AABB.cx,u         ;   branche ne l'ecrivait pas, et sur la trame de
-                                       ;   naissance (tir ne DANS le mur) elle restait a 0,
-                                       ;   soit une boite active au bord gauche de la camera
+        ; LA TRAME D'IMPACT GARDE SA BOITE BALAYEE — du depart du pas au point
+        ; d'impact. La branche court-circuitait la pose de boite : un tir qui
+        ; atteignait le mur mourait avec un point sur le mur, et tout ce qu'il
+        ; avait TRAVERSE dans le pas (l'orbe du gomander, posee devant le
+        ; decor du corps) ne voyait jamais sa boite. Avec le rattrapage de
+        ; naissance, un tir parti a moins d'un pas du mur ne pouvait plus
+        ; RIEN toucher (31/08/2026). p reste arme : la passe de collision de
+        ; la trame suivante teste ce segment, puis Impact/Delete le retire.
+        ldd   weapon.sweepFrom
+        subd  glb_camera_x_pos
+        pshs  b                        ; l'arriere du segment (ecran, un octet)
+        ldd   x_pos,u
+        subd  glb_camera_x_pos         ; l'avant = le point d'impact
+        subb  ,s                       ; B = la longueur du segment
+        bpl   @swiOk                   ; l'aleas du recul d'impact peut la
+        clrb                           ; rendre negative d'un ou deux pixels :
+@swiOk  lsrb                           ; boite ponctuelle dans ce cas
+        addb  #3
+        stb   AABB_0+AABB.rx,u         ; rx = demi-segment + demi-largeur
+        subb  #3
+        addb  ,s+                      ; cx = arriere + demi-segment
+        stb   AABB_0+AABB.cx,u
         ldd   #set_weapon_impact0
         std   image_set,u
         inc   routine,u
         jmp   DisplaySprite
 !
-        ; update hitbox position
+        ; update hitbox position — LA BOITE BALAYEE. Un seul echantillon par
+        ; trame et un pas de 6*frameDrop : une boite posee sur la seule
+        ; position courante laisse des trous des que le pas depasse sa
+        ; largeur. La boite couvre donc LE SEGMENT PARCOURU : centre au
+        ; milieu du pas, rayon = demi-pas + demi-largeur (3). A 50 fps c'est
+        ; l'ancienne boite (rx 6) ; a 7 fps elle s'etire a rx 27 — aucun
+        ; ennemi ne passe plus entre deux trames, et le bout portant est
+        ; couvert par la position de naissance posee par Init.
         ldd   x_pos,u
         subd  glb_camera_x_pos
-        stb   AABB_0+AABB.cx,u
-
-        ; delete weapon if out of screen range
         cmpd  #160-8/2                 ; delete weapon if out of screen range
         bhs   Delete
+        pshs  b                        ; le bord courant (ecran, < 160 : un octet)
+        lda   #3
+        ldb   gfxlock.frameDrop.count
+        mul                            ; B = le demi-pas (A reste 0, <= 24)
+        addb  #3
+        stb   AABB_0+AABB.rx,u         ; rx = demi-pas + demi-largeur
+        subb  #3
+        negb
+        addb  ,s+                      ; centre = bord courant - demi-pas
+        bpl   @swvOk                   ; sous zero (tir ne au bord gauche a
+        clrb                           ; bas regime) : cale a 0 — deborder a
+@swvOk  stb   AABB_0+AABB.cx,u         ; droite oui, s'enrouler jamais
+        jmp   DisplaySprite
+
+weapon.HitFeedback
+        ldd   #set_weapon_impact0
+        std   image_set,u
+        inc   routine,u                ; Live -> Impact : la fin d'anim commune
         jmp   DisplaySprite
 
 Impact
