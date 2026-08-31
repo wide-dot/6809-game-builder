@@ -215,6 +215,28 @@ BuildSprites
         ; V2-DEVIATION (24/08/2026) : les bornes sont PRECALCULEES (BS_xlo..).
         ; La v1 recombinait ici, par sprite, la camera et ses offsets — quatre
         ; valeurs qui ne bougent pas de la passe.
+        ;
+        ; V2-DEVIATION (31/08/2026) : xloop en repere PLAYFIELD = des tests de
+        ; RECOUVREMENT. Le test strict exige le sprite ENTIER dans la fenetre :
+        ; une bande du dobkeratops entrant par la droite restait invisible
+        ; jusqu'au dernier pixel puis POPPAIT d'un bloc. Avec xloop, un sprite
+        ; qui CHEVAUCHE la fenetre passe — le dessin gere le debordement (wrap
+        ; de ligne, invisible sur le ciel noir de la salle). On ne SAUTE pas
+        ; les tests pour autant : un sprite entierement dehors reste elimine,
+        ; la conversion playfield->ecran tronque a l'octet et aliaserait les
+        ; lointains dans la fenetre.
+        lda   <_render_flags
+        bita  #render_xloop_mask
+        beq   @xStrict
+        ldd   <_x_pos
+        addd  <_x1_pixel
+        cmpd  BS_xhi
+        bge   @nextobject              ; bord gauche deja au-dela de la fenetre
+        addd  <_x_size
+        cmpd  BS_xlo
+        blt   @nextobject              ; bord droit avant la fenetre
+        bra   @yTests
+@xStrict
         ldd   <_x_pos
         addd  <_x1_pixel
         cmpd  BS_xlo
@@ -224,7 +246,7 @@ BuildSprites
         cmpd  BS_xhi
         bge   @nextobject
 ;
-        ldd   <_y_pos
+@yTests ldd   <_y_pos
         addd  <_y1_pixel
         cmpd  BS_ylo
         blt   @nextobject
