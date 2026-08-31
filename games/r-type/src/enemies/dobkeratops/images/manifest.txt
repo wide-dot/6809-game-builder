@@ -1,0 +1,32 @@
+# overlay/ — assets du dobkeratops, generes par tools/gen_overlay_nerves.py
+# un systeme d'oeil = un repertoire eye-N (nerf + avant-plan fusionnes),
+# morceaux numerotes de 00 dans l'ordre de disparition. Effacement = un
+# tick par pas, -- = tick sans retrait, a+b = deux morceaux le meme tick.
+# sequences transcrites des tables EraserImages/ForegroundImages de obj.asm
+#
+# plan d'encodage (decision auteur, 31/08/2026 — le frame drop absorbe) :
+#   bands/ (face) et eye-N/bands/  : draw shift 0 + 1 (scroll au pixel)
+#   eye-N/NN (morceaux)            : draw shift 0 OU 1, UN SEUL — la parite
+#     de la camera a l'arret du scroll, a fixer a l'integration
+#   jaw/, monster/                 : draw shift 0 + 1
+#   face complete (00-dk-alien)    : draw shift 0 + 1 (inchange)
+#   etat intact = bandes ; effacement = morceaux restants ; fini = rien
+
+face.png (ex new_pal/boss.png, cale +16,+12) ; bands/00..03.png : la face en 4 bandes de 16 px (x16-31/32-47/48-63/64-79)
+
+eye-0/ : 16 morceaux (00-15) — nerf 0
+  effacement : 00 01 02 03 04 05 06 07 08 -- -- -- 09 10 11 12 13 14 15
+  bandes (intact) : 00=x0-15 01=x16-31 02=x32-47 03=x48-63 04=x64-79
+eye-1/ : 13 morceaux (00-12) — nerf 1 + ex dk-eye-1-0
+  effacement : 00 01 -- -- -- 02 03 04 05 06 07 08 09 10 -- -- 11 12
+  avant-plan : 00<-dk-eye-1-0/00 01<-dk-eye-1-0/01 08<-dk-eye-1-0/02 09<-dk-eye-1-0/03 10<-dk-eye-1-0/04
+  bandes (intact) : 00=x32-47 01=x48-63 02=x64-79
+eye-2/ : 12 morceaux (00-11) — nerf 2
+  effacement : 00 01 02 -- -- -- -- 03 04 05 06 07 08 09 -- -- -- 10 11
+  bandes (intact) : 00=x32-47 01=x48-63 02=x64-79
+eye-3/ : 19 morceaux (00-18) — nerf 3 + ex dk-eye-3-0 + ex dk-eye-3-1 + ex dk-eye-3-2
+  effacement : 00 01 02 03 04 05 06+07 08+09 10 11 12 13 14 15+16 17 18
+  avant-plan : 00<-dk-eye-3-0/00 01<-dk-eye-3-0/01 02<-dk-eye-3-1/00 03<-dk-eye-3-1/01 04<-dk-eye-3-1/02 05<-dk-eye-3-1/03 07<-dk-eye-3-2/00 09<-dk-eye-3-2/01 16<-dk-eye-3-2/02
+  bandes (intact) : 00=x0-15 01=x16-31 02=x32-47 03=x48-63 04=x64-79
+
+jaw/00-02, monster/00-05, saw/00-03, tail/00-02+end : assets primaires (non generes)

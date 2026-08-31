@@ -55,6 +55,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsmonster.page ; ObjID_dobkeratops_monster
         fcb   map.RAM_OVER_CART+stage1.page ; ObjID_starfield
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (49)
+        fcb   map.RAM_OVER_CART+stage1.dobkeratops.eyemgr.page ; ObjID_dobkeratops_eyes (50)
 Obj_Index_Page.end
 
 Obj_Index_Address
@@ -114,6 +115,7 @@ Obj_Index_Address
         fdb   dobkeratopsMonster.Object ; ObjID_dobkeratops_monster
         fdb   stage.starfieldSpawner ; ObjID_starfield
         fdb   bug.Render ; ObjID_bugrender (49)
+        fdb   eyemgr.Object ; ObjID_dobkeratops_eyes (50)
 Obj_Index_Address.end
 
 Ani_Page_Index
@@ -167,6 +169,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsmonster.page ; ObjID_dobkeratops_monster
         fcb   map.RAM_OVER_CART+stage1.page ; ObjID_starfield
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (49)
+        fcb   map.RAM_OVER_CART+stage1.dobkeratops.eyemgr.page ; ObjID_dobkeratops_eyes (50)
 Ani_Page_Index.end
 
 Ani_Asd_Index
@@ -220,6 +223,7 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_dobkeratops_monster
         fdb   Ani_Asd_none ; ObjID_starfield
         fdb   Ani_Asd_none ; ObjID_bugrender (49)
+        fdb   Ani_Asd_none ; ObjID_dobkeratops_eyes (50)
 Ani_Asd_Index.end
 
 Ani_Asd_none
@@ -276,6 +280,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsmonster.page ; ObjID_dobkeratops_monster
         fcb   map.RAM_OVER_CART+stage1.page ; ObjID_starfield
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (49)
+        fcb   map.RAM_OVER_CART+stage1.dobkeratops.eyemgr.page ; ObjID_dobkeratops_eyes (50)
 Img_Page_Index.end
 
 * GARDE-FOU. Les cinq tables sont indexees par l'identifiant d'objet : le

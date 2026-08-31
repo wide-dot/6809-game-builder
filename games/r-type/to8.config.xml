@@ -2402,191 +2402,371 @@
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
                                  gensource="gen/enemies/dobkeratops/includesFace.asm">
-                            <image name="dobkeratops_alien" filename="src/enemies/dobkeratops/final/00-dk-alien.png">
+                            <image name="dobkeratops_alien" filename="src/enemies/dobkeratops/images/face.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                                 <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
                 </file>
-                <!-- Le visage a l'etat de nerfs 0 -->
-                <file name="stage1.dobkeratops.imgNerves0" linkdata="LINK" arena="stage1.foes">
-                    <lwasm gensource="gen/enemies/dobkeratops-imgnerves0.asm">
+                <!-- Les bandes d'apparition : la face SANS nerfs, redecoupee de
+                     00-dk-alien.png (chantier nerfs-overlay — les nerfs sont dessines
+                     par eyemgr, au meme canevas). -->
+                <!-- Les bandes d'apparition : la face SANS nerfs, redecoupee de
+                     00-dk-alien.png (chantier nerfs-overlay — les nerfs sont dessines
+                     par eyemgr, au meme canevas). Deux direntries : les quatre
+                     bandes aux deux parites depassent 16 Ko ensemble. -->
+                <file name="stage1.dobkeratops.imgBandsA" linkdata="LINK" arena="stage1.foes">
+                    <lwasm gensource="gen/enemies/dobkeratops-imgbandsA.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
-                                 gensource="gen/enemies/dobkeratops/includesNerves0.asm">
-                            <image name="dobkeratops_alienN0" filename="src/enemies/dobkeratops/final/dk-alien-nerves/00.png">
+                                 gensource="gen/enemies/dobkeratops/includesBandsA.asm">
+                            <image name="dobkeratops_band0" filename="src/enemies/dobkeratops/images/bands/00.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dobkeratops_band1" filename="src/enemies/dobkeratops/images/bands/01.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                                 <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
                 </file>
-                <!-- Le visage a l'etat de nerfs 1 -->
-                <file name="stage1.dobkeratops.imgNerves1" linkdata="LINK" arena="stage1.foes">
-                    <lwasm gensource="gen/enemies/dobkeratops-imgnerves1.asm">
+                <file name="stage1.dobkeratops.imgBandsB" linkdata="LINK" arena="stage1.foes">
+                    <lwasm gensource="gen/enemies/dobkeratops-imgbandsB.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
-                                 gensource="gen/enemies/dobkeratops/includesNerves1.asm">
-                            <image name="dobkeratops_alienN1" filename="src/enemies/dobkeratops/final/dk-alien-nerves/01.png">
+                                 gensource="gen/enemies/dobkeratops/includesBandsB.asm">
+                            <image name="dobkeratops_band2" filename="src/enemies/dobkeratops/images/bands/02.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dobkeratops_band3" filename="src/enemies/dobkeratops/images/bands/03.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                                 <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
                 </file>
-                <!-- Le visage a l'etat de nerfs 2 -->
-                <file name="stage1.dobkeratops.imgNerves2" linkdata="LINK" arena="stage1.foes">
-                    <lwasm gensource="gen/enemies/dobkeratops-imgnerves2.asm">
+                <!-- LE MANAGER DES NERFS : un objet, quatre systemes (bandes de
+                     l'etat intact + sequences d'effacement). Ses images de bandes
+                     vivent chez lui — table adr_* locale, pas d'index, comme
+                     tailmgr. Les morceaux, trop gros pour la meme page, vivent
+                     dans stage1.dobkeratops.eyepieces. -->
+                <!-- L'etat resident des systemes d'oeil : locataire de l'arene
+                     residente du stage (le main touche la plage du banc). -->
+                <file name="stage1.eyemgr.res" linkdata="LINK" arena="stage1.res">
+                    <lwasm gensource="gen/stages/01/eyemgr-res.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
-                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
-                                 gensource="gen/enemies/dobkeratops/includesNerves2.asm">
-                            <image name="dobkeratops_alienN2" filename="src/enemies/dobkeratops/final/dk-alien-nerves/02.png">
-                                <encoder name="draw" mirror="none" shift="0"/>
-                                <encoder name="draw" mirror="none" shift="1"/>
-                            </image>
-                        </gfxcomp>
+                        <asm filename="src/stages/01/eyemgr-res.unit.asm"/>
                     </lwasm>
                 </file>
-                <!-- Le visage a l'etat de nerfs 3 -->
-                <file name="stage1.dobkeratops.imgNerves3" linkdata="LINK" arena="stage1.foes">
-                    <lwasm gensource="gen/enemies/dobkeratops-imgnerves3.asm">
+                <file name="stage1.dobkeratops.eyemgr" linkdata="LINK" arena="stage1.foes">
+                    <lwasm gensource="gen/enemies/dobkeratops-eyemgr.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
-                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
-                                 gensource="gen/enemies/dobkeratops/includesNerves3.asm">
-                            <image name="dobkeratops_alienN3" filename="src/enemies/dobkeratops/final/dk-alien-nerves/03.png">
-                                <encoder name="draw" mirror="none" shift="0"/>
-                                <encoder name="draw" mirror="none" shift="1"/>
-                            </image>
-                        </gfxcomp>
-                    </lwasm>
-                </file>
-                <!-- Le visage a l'etat de nerfs 4 -->
-                <file name="stage1.dobkeratops.imgNerves4" linkdata="LINK" arena="stage1.foes">
-                    <lwasm gensource="gen/enemies/dobkeratops-imgnerves4.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
-                                 gensource="gen/enemies/dobkeratops/includesNerves4.asm">
-                            <image name="dobkeratops_alienN4" filename="src/enemies/dobkeratops/final/dk-alien-nerves/04.png">
-                                <encoder name="draw" mirror="none" shift="0"/>
-                                <encoder name="draw" mirror="none" shift="1"/>
-                            </image>
-                        </gfxcomp>
-                    </lwasm>
-                </file>
-                <!-- Les yeux : les quatre nerfs optiques, la seule cible du joueur -->
-                <file name="stage1.dobkeratops.imgEyes" linkdata="LINK" arena="stage1.foes">
-                    <lwasm gensource="gen/enemies/dobkeratops-imgeyes.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
-                                 gensource="gen/enemies/dobkeratops/includesEyes.asm">
-                            <image name="dobkeratops_eye100" filename="src/enemies/dobkeratops/final/dk-eye-1-0/00.png">
-                                <encoder name="draw" mirror="none" shift="0"/>
-                                <encoder name="draw" mirror="none" shift="1"/>
-                            </image>
-                            <image name="dobkeratops_eye101" filename="src/enemies/dobkeratops/final/dk-eye-1-0/01.png">
+                        <asm filename="src/enemies/dobkeratops/eyemgr.unit.asm"/>
+                        <gfxcomp gendir="gen/enemies/dkeyes"
+                                 gensource="gen/enemies/dkeyes/includesBandsEven.asm">
+                            <image name="dkeyes_b00" filename="src/enemies/dobkeratops/images/eye-0/bands/00.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
-                            <image name="dobkeratops_eye102" filename="src/enemies/dobkeratops/final/dk-eye-1-0/02.png">
+                            <image name="dkeyes_b01" filename="src/enemies/dobkeratops/images/eye-0/bands/01.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
-                            <image name="dobkeratops_eye103" filename="src/enemies/dobkeratops/final/dk-eye-1-0/03.png">
+                            <image name="dkeyes_b02" filename="src/enemies/dobkeratops/images/eye-0/bands/02.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
-                            <image name="dobkeratops_eye104" filename="src/enemies/dobkeratops/final/dk-eye-1-0/04.png">
+                            <image name="dkeyes_b03" filename="src/enemies/dobkeratops/images/eye-0/bands/03.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
-                            <image name="dobkeratops_eye300" filename="src/enemies/dobkeratops/final/dk-eye-3-0/00.png">
-                                <encoder name="draw" mirror="none" shift="0"/>
-                                <encoder name="draw" mirror="none" shift="1"/>
-                            </image>
-                            <image name="dobkeratops_eye301" filename="src/enemies/dobkeratops/final/dk-eye-3-0/01.png">
+                            <image name="dkeyes_b04" filename="src/enemies/dobkeratops/images/eye-0/bands/04.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
-                            <image name="dobkeratops_eye310" filename="src/enemies/dobkeratops/final/dk-eye-3-1/00.png">
-                                <encoder name="draw" mirror="none" shift="0"/>
-                                <encoder name="draw" mirror="none" shift="1"/>
-                            </image>
-                            <image name="dobkeratops_eye311" filename="src/enemies/dobkeratops/final/dk-eye-3-1/01.png">
+                            <image name="dkeyes_b10" filename="src/enemies/dobkeratops/images/eye-1/bands/00.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
-                            <image name="dobkeratops_eye312" filename="src/enemies/dobkeratops/final/dk-eye-3-1/02.png">
+                            <image name="dkeyes_b11" filename="src/enemies/dobkeratops/images/eye-1/bands/01.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
-                            <image name="dobkeratops_eye313" filename="src/enemies/dobkeratops/final/dk-eye-3-1/03.png">
+                            <image name="dkeyes_b12" filename="src/enemies/dobkeratops/images/eye-1/bands/02.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
-                            <image name="dobkeratops_eye320" filename="src/enemies/dobkeratops/final/dk-eye-3-2/00.png">
-                                <encoder name="draw" mirror="none" shift="0"/>
-                                <encoder name="draw" mirror="none" shift="1"/>
-                            </image>
-                            <image name="dobkeratops_eye321" filename="src/enemies/dobkeratops/final/dk-eye-3-2/01.png">
+                            <image name="dkeyes_b20" filename="src/enemies/dobkeratops/images/eye-2/bands/00.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
-                            <image name="dobkeratops_eye322" filename="src/enemies/dobkeratops/final/dk-eye-3-2/02.png">
+                            <image name="dkeyes_b21" filename="src/enemies/dobkeratops/images/eye-2/bands/01.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_b22" filename="src/enemies/dobkeratops/images/eye-2/bands/02.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_b30" filename="src/enemies/dobkeratops/images/eye-3/bands/00.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_b31" filename="src/enemies/dobkeratops/images/eye-3/bands/01.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_b32" filename="src/enemies/dobkeratops/images/eye-3/bands/02.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_b33" filename="src/enemies/dobkeratops/images/eye-3/bands/03.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_b34" filename="src/enemies/dobkeratops/images/eye-3/bands/04.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
                 </file>
-                <!-- Le nettoyage du boss : trop large pour un effacement par sprite —
-                     une bande par tranche de decor, un fichier par bande. -->
-                <file name="stage1.dobkeratops.imgWipe0" linkdata="LINK" arena="stage1.foes">
-                    <lwasm gensource="gen/enemies/dobkeratops-imgwipe0.asm">
+                <!-- La parite impaire des bandes de nerf : memes images, encodees
+                     decalees — les deux jeux depassent 16 Ko ensemble, chaque
+                     parite a son unite et son hook (cadre D1 du descripteur). -->
+                <file name="stage1.dobkeratops.eyemgrodd" linkdata="LINK" arena="stage1.foes">
+                    <lwasm gensource="gen/enemies/dobkeratops-eyemgrodd.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
-                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
-                                 gensource="gen/enemies/dobkeratops/includesWipe0.asm">
-                            <images dir="src/enemies/dobkeratops/final/eraser-0" names="dobkeratops_erase0" encoder="draw" index="none"/>
+                        <asm filename="src/enemies/dobkeratops/eyemgrodd.unit.asm"/>
+                        <gfxcomp gendir="gen/enemies/dkeyes"
+                                 gensource="gen/enemies/dkeyes/includesBandsOdd.asm">
+                            <image name="dkeyes_b00" filename="src/enemies/dobkeratops/images/eye-0/bands/00.png">
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dkeyes_b01" filename="src/enemies/dobkeratops/images/eye-0/bands/01.png">
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dkeyes_b02" filename="src/enemies/dobkeratops/images/eye-0/bands/02.png">
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dkeyes_b03" filename="src/enemies/dobkeratops/images/eye-0/bands/03.png">
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dkeyes_b04" filename="src/enemies/dobkeratops/images/eye-0/bands/04.png">
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dkeyes_b10" filename="src/enemies/dobkeratops/images/eye-1/bands/00.png">
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dkeyes_b11" filename="src/enemies/dobkeratops/images/eye-1/bands/01.png">
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dkeyes_b12" filename="src/enemies/dobkeratops/images/eye-1/bands/02.png">
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dkeyes_b20" filename="src/enemies/dobkeratops/images/eye-2/bands/00.png">
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dkeyes_b21" filename="src/enemies/dobkeratops/images/eye-2/bands/01.png">
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dkeyes_b22" filename="src/enemies/dobkeratops/images/eye-2/bands/02.png">
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dkeyes_b30" filename="src/enemies/dobkeratops/images/eye-3/bands/00.png">
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dkeyes_b31" filename="src/enemies/dobkeratops/images/eye-3/bands/01.png">
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dkeyes_b32" filename="src/enemies/dobkeratops/images/eye-3/bands/02.png">
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dkeyes_b33" filename="src/enemies/dobkeratops/images/eye-3/bands/03.png">
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="dkeyes_b34" filename="src/enemies/dobkeratops/images/eye-3/bands/04.png">
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
                         </gfxcomp>
                     </lwasm>
                 </file>
-                <!-- Bande 1 : 7 tranches (meme mecanisme que la bande 0). -->
-                <file name="stage1.dobkeratops.imgWipe1" linkdata="LINK" arena="stage1.foes">
-                    <lwasm gensource="gen/enemies/dobkeratops-imgwipe1.asm">
+                <!-- Les morceaux d'effacement : parite unique (la camera est a
+                     l'arret quand un nerf s'efface — abscisse d'ancre PAIRE,
+                     variante non decalee). -->
+                <file name="stage1.dobkeratops.eyepieces" linkdata="LINK" arena="stage1.foes">
+                    <lwasm gensource="gen/enemies/dobkeratops-eyepieces.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
-                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
-                                 gensource="gen/enemies/dobkeratops/includesWipe1.asm">
-                            <image name="dobkeratops_erase1_2" filename="src/enemies/dobkeratops/final/eraser-1/00.png">
+                        <asm filename="src/enemies/dobkeratops/eyepieces.unit.asm"/>
+                        <gfxcomp gendir="gen/enemies/dkeyes"
+                                 gensource="gen/enemies/dkeyes/includesPieces.asm">
+                            <image name="dkeyes_p0_00" filename="src/enemies/dobkeratops/images/eye-0/00.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
-                            <image name="dobkeratops_erase1_3" filename="src/enemies/dobkeratops/final/eraser-1/01.png">
+                            <image name="dkeyes_p0_01" filename="src/enemies/dobkeratops/images/eye-0/01.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
-                            <image name="dobkeratops_erase1_4" filename="src/enemies/dobkeratops/final/eraser-1/02.png">
+                            <image name="dkeyes_p0_02" filename="src/enemies/dobkeratops/images/eye-0/02.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
-                            <image name="dobkeratops_erase1_5" filename="src/enemies/dobkeratops/final/eraser-1/03.png">
+                            <image name="dkeyes_p0_03" filename="src/enemies/dobkeratops/images/eye-0/03.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
-                            <image name="dobkeratops_erase1_6" filename="src/enemies/dobkeratops/final/eraser-1/04.png">
+                            <image name="dkeyes_p0_04" filename="src/enemies/dobkeratops/images/eye-0/04.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
-                            <image name="dobkeratops_erase1_10" filename="src/enemies/dobkeratops/final/eraser-1/05.png">
+                            <image name="dkeyes_p0_05" filename="src/enemies/dobkeratops/images/eye-0/05.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
-                            <image name="dobkeratops_erase1_11" filename="src/enemies/dobkeratops/final/eraser-1/06.png">
+                            <image name="dkeyes_p0_06" filename="src/enemies/dobkeratops/images/eye-0/06.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
-                        </gfxcomp>
-                    </lwasm>
-                </file>
-                <!-- Bande 2 : 12 tranches (meme mecanisme que la bande 0). -->
-                <file name="stage1.dobkeratops.imgWipe2" linkdata="LINK" arena="stage1.foes">
-                    <lwasm gensource="gen/enemies/dobkeratops-imgwipe2.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
-                                 gensource="gen/enemies/dobkeratops/includesWipe2.asm">
-                            <images dir="src/enemies/dobkeratops/final/eraser-2" names="dobkeratops_erase2" encoder="draw" index="none"/>
-                        </gfxcomp>
-                    </lwasm>
-                </file>
-                <!-- Bande 3 : 10 tranches (meme mecanisme que la bande 0). -->
-                <file name="stage1.dobkeratops.imgWipe3" linkdata="LINK" arena="stage1.foes">
-                    <lwasm gensource="gen/enemies/dobkeratops-imgwipe3.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <gfxcomp imageset="dobkeratops" gendir="gen/enemies/dobkeratops"
-                                 gensource="gen/enemies/dobkeratops/includesWipe3.asm">
-                            <images dir="src/enemies/dobkeratops/final/eraser-3" names="dobkeratops_erase3" encoder="draw" index="none"/>
+                            <image name="dkeyes_p0_07" filename="src/enemies/dobkeratops/images/eye-0/07.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p0_08" filename="src/enemies/dobkeratops/images/eye-0/08.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p0_09" filename="src/enemies/dobkeratops/images/eye-0/09.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p0_10" filename="src/enemies/dobkeratops/images/eye-0/10.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p0_11" filename="src/enemies/dobkeratops/images/eye-0/11.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p0_12" filename="src/enemies/dobkeratops/images/eye-0/12.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p0_13" filename="src/enemies/dobkeratops/images/eye-0/13.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p0_14" filename="src/enemies/dobkeratops/images/eye-0/14.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p0_15" filename="src/enemies/dobkeratops/images/eye-0/15.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p1_00" filename="src/enemies/dobkeratops/images/eye-1/00.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p1_01" filename="src/enemies/dobkeratops/images/eye-1/01.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p1_02" filename="src/enemies/dobkeratops/images/eye-1/02.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p1_03" filename="src/enemies/dobkeratops/images/eye-1/03.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p1_04" filename="src/enemies/dobkeratops/images/eye-1/04.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p1_05" filename="src/enemies/dobkeratops/images/eye-1/05.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p1_06" filename="src/enemies/dobkeratops/images/eye-1/06.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p1_07" filename="src/enemies/dobkeratops/images/eye-1/07.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p1_08" filename="src/enemies/dobkeratops/images/eye-1/08.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p1_09" filename="src/enemies/dobkeratops/images/eye-1/09.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p1_10" filename="src/enemies/dobkeratops/images/eye-1/10.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p1_11" filename="src/enemies/dobkeratops/images/eye-1/11.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p1_12" filename="src/enemies/dobkeratops/images/eye-1/12.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p2_00" filename="src/enemies/dobkeratops/images/eye-2/00.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p2_01" filename="src/enemies/dobkeratops/images/eye-2/01.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p2_02" filename="src/enemies/dobkeratops/images/eye-2/02.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p2_03" filename="src/enemies/dobkeratops/images/eye-2/03.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p2_04" filename="src/enemies/dobkeratops/images/eye-2/04.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p2_05" filename="src/enemies/dobkeratops/images/eye-2/05.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p2_06" filename="src/enemies/dobkeratops/images/eye-2/06.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p2_07" filename="src/enemies/dobkeratops/images/eye-2/07.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p2_08" filename="src/enemies/dobkeratops/images/eye-2/08.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p2_09" filename="src/enemies/dobkeratops/images/eye-2/09.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p2_10" filename="src/enemies/dobkeratops/images/eye-2/10.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p2_11" filename="src/enemies/dobkeratops/images/eye-2/11.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_00" filename="src/enemies/dobkeratops/images/eye-3/00.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_01" filename="src/enemies/dobkeratops/images/eye-3/01.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_02" filename="src/enemies/dobkeratops/images/eye-3/02.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_03" filename="src/enemies/dobkeratops/images/eye-3/03.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_04" filename="src/enemies/dobkeratops/images/eye-3/04.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_05" filename="src/enemies/dobkeratops/images/eye-3/05.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_06" filename="src/enemies/dobkeratops/images/eye-3/06.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_07" filename="src/enemies/dobkeratops/images/eye-3/07.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_08" filename="src/enemies/dobkeratops/images/eye-3/08.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_09" filename="src/enemies/dobkeratops/images/eye-3/09.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_10" filename="src/enemies/dobkeratops/images/eye-3/10.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_11" filename="src/enemies/dobkeratops/images/eye-3/11.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_12" filename="src/enemies/dobkeratops/images/eye-3/12.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_13" filename="src/enemies/dobkeratops/images/eye-3/13.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_14" filename="src/enemies/dobkeratops/images/eye-3/14.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_15" filename="src/enemies/dobkeratops/images/eye-3/15.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_16" filename="src/enemies/dobkeratops/images/eye-3/16.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_17" filename="src/enemies/dobkeratops/images/eye-3/17.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dkeyes_p3_18" filename="src/enemies/dobkeratops/images/eye-3/18.png">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
                         </gfxcomp>
                     </lwasm>
                 </file>
@@ -2637,7 +2817,7 @@
                                 <encoder name="draw" mirror="none" shift="0"/>
                                 <encoder name="draw" mirror="none" shift="1"/>
                             </image>
-                            <image name="tail_end" filename="src/enemies/dobkeratops/images/00-end_2.png">
+                            <image name="tail_end" filename="src/enemies/dobkeratops/images/tail/end.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                                 <encoder name="draw" mirror="none" shift="1"/>
                             </image>
@@ -2832,16 +3012,12 @@
                     <load name="stage1.tabrokcanon"/>
                     <load name="stage1.endstage"/>
                     <load name="stage1.dobkeratops.imgFace"/>
-                    <load name="stage1.dobkeratops.imgNerves0"/>
-                    <load name="stage1.dobkeratops.imgNerves1"/>
-                    <load name="stage1.dobkeratops.imgNerves2"/>
-                    <load name="stage1.dobkeratops.imgNerves3"/>
-                    <load name="stage1.dobkeratops.imgNerves4"/>
-                    <load name="stage1.dobkeratops.imgEyes"/>
-                    <load name="stage1.dobkeratops.imgWipe0"/>
-                    <load name="stage1.dobkeratops.imgWipe1"/>
-                    <load name="stage1.dobkeratops.imgWipe2"/>
-                    <load name="stage1.dobkeratops.imgWipe3"/>
+                    <load name="stage1.dobkeratops.imgBandsA"/>
+                    <load name="stage1.dobkeratops.imgBandsB"/>
+                    <load name="stage1.eyemgr.res"/>
+                    <load name="stage1.dobkeratops.eyemgr"/>
+                    <load name="stage1.dobkeratops.eyemgrodd"/>
+                    <load name="stage1.dobkeratops.eyepieces"/>
                     <load name="stage1.dobkeratops"/>
                     <load name="stage1.dobkeratopsjaw"/>
                     <load name="stage1.tailmgr"/>

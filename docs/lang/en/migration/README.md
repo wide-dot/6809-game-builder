@@ -114,6 +114,10 @@ practice; this is a reading order, not a schedule.
     them](resident-render-structures.md) — v1 reloaded them with its game
     mode binary; in v2 they outlive the pool they name, and a stale priority
     level stays poisoned for good.
+24. [Overlay: erase by omission, not by repaint](overlay-erase-by-omission.md)
+    — v1 hid things by painting background patches over them; in overlay the
+    canvas is redrawn every frame, so the hidden thing becomes removable
+    pieces owned by a manager, and the v1 eraser masks are the cutting guide.
 
 
 ## Not cases, but next door

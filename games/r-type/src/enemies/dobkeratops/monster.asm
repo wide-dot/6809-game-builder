@@ -179,13 +179,11 @@ MonsterMouth
         jsr   main.followDobkeratops
         ldd   main.dobkeratops.move.left      ; butee reached at the pixel? (frame-drop safe)
         bne   >
- IFDEF invincible
-        jmp   MonsterKill                     ; invincible test mode: the boss explodes on the butee
- ELSE
-        clr   player1+ext_variables+AABB.p    ; normal play: the boss reaching the butee kills P1
-        lda   #rtnid.WaitEndStage             ; (boss stays frozen on the butee, firing saws)
-        sta   routine,u
- ENDC
+        ; butee : explosions SANS ATTENTE et enchainement de la fin de stage
+        ; (decision auteur 31/08) — plus d'ecrasement de P1 ni d'attente du
+        ; timeout d'echappee ; le contact de l'etau reste mortel pendant la
+        ; marche via la hitbox. C'etait le comportement du mode de test.
+        jmp   MonsterKill
 !
 WaitEndStage
         ; the endstage engagement timeout (BOSS_ESCAPE) can raise bossDefeated while the

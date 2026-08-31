@@ -42,17 +42,33 @@ timestamp.ERASE_NERV_START equ $1BDF+456+$900 ; nerves auto-effacees (free-life)
                                      ;   +0x3E ($900) part de l'armement de la nerve, donc il suit
                                      ;   NERV_VULNERABLE. Filet de securite : en jeu normal halfDamage
                                      ;   (monstre mi-vie) ou le tir du joueur tue les nerves bien avant.
-timestamp.MOVEALIEN_DELAY  equ 0     ; arcade : run_dobkeratops relance le scroll du fond LA TRAME
-                                     ;   MEME ou la derniere nerve meurt (poke 0x2ef4=0x40, $9A8C) —
-                                     ;   les 140 trames de grace etaient une invention du portage
+timestamp.MOVEALIEN_DELAY  equ 1     ; arcade : run_dobkeratops relance le scroll du fond quand son
+                                     ;   compteur de nerfs tombe a 0 (poke 0x2ef4=0x40, $9A8C) — et
+                                     ;   ce compteur ne tombe qu'au MARQUEUR DE FIN du script
+                                     ;   d'effacement du dernier nerf, pas a l'impact —
+                                     ;   les 140 trames de grace etaient une invention du portage.
+                                     ;   UNE trame ici, pas zero : moveAlienStart est pose EN COURS
+                                     ;   de passe d'objets, et les quatre suiveurs (tails, face,
+                                     ;   jaw, monster) ne testent leur garde qu'a leur tour — a 0,
+                                     ;   jaw et monster (apres le manager) partaient la trame meme
+                                     ;   quand face (bascule de routine differee) et tails (deja
+                                     ;   passees) partaient la suivante : un pas d'avance permanent,
+                                     ;   la bouche se desolidarisait d'un pixel pendant la marche.
+                                     ;   Avec +1, personne ne suit la trame du 4e nerf et toutes
+                                     ;   les gardes s'ouvrent ENSEMBLE la suivante. Le delai v1 de
+                                     ;   140 masquait ce meme defaut.
 timestamp.MOVEALIEN_SPEED  equ $18   ; arcade 0x40/256 px/trame x 144/384 : la conversion X exacte
-timestamp.MOVEALIEN_DIST   equ 71    ; la course de l'etau. Le corps (centre ecran 111, 80 px de
-                                     ;   large) a son bord gauche a 71 px : 71 px de course posent
-                                     ;   ce bord SUR le mur gauche — l'ecrasement arcade complet
-                                     ;   (60 s'arretait 11 px avant le mur). La butee reste l'evenement
-                                     ;   de gameplay du portage : elle tue P1 (MonsterMouth) et borne
-                                     ;   le suivi de collision fond — l'arcade, elle, tue par contact
-                                     ;   et ne s'arrete jamais, mais a ce point l'etau est deja ferme.
+timestamp.MOVEALIEN_DIST   equ 96    ; la course de l'etau (decision auteur 31/08). Le CONTENU de
+                                     ;   la face demarre a 88 px du bord gauche de la fenetre
+                                     ;   (descripteur : ancre ecran 111, x1=-23 — la colonne 0-15
+                                     ;   du canevas est VIDE, l'ancien 71 posait le bord du CANEVAS
+                                     ;   sur le mur et le corps s'arretait 16 px trop tot) ; 96 =
+                                     ;   contenu au bord + 8 px utiles boucles a droite (le wrap de
+                                     ;   ligne du dessin xloop, tolere par l'auteur). A la butee :
+                                     ;   gel affiche + MonsterKill sans attente (explosions et fin
+                                     ;   de stage enchainees) — l'ancien couple « P1 ecrase puis
+                                     ;   attente du timeout d'echappee » est abandonne ; l'etau
+                                     ;   reste mortel par CONTACT pendant la marche (hitbox).
 timestamp.BOSS_ESCAPE      equ $1BDF+$1000 ; boss escape / end-stage. Arcade: parent run_dobkeratops
                                      ;   +0x3E engagement timeout $1000 depuis T0 (= spawn monstre $1BDF)
 

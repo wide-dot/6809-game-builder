@@ -145,6 +145,7 @@ tailmgr.Object              EXTERNAL
 dobkeratopsMonster.Object   EXTERNAL
 dobkeratopsSaw.Object       EXTERNAL
 dobkeratopsExplosion.Object EXTERNAL
+eyemgr.Object               EXTERNAL
 
 ; Le sequenceur de fin du niveau : objet MONTE, appele avec une commande en B.
 ; Il porte le compte a rebours, l'autopilote, le fondu et le releve de score.
@@ -507,7 +508,8 @@ main.dobkeratops.halfDamage   fcb 0  ; set when the monster is past half damage
 main.dobkeratops.nervesErasing fcb 0 ; orbit-nerve erase animations still playing
 main.dobkeratops.explode       fcb 0 ; 0: boss frozen (bossDefeated) but explosions held
                                       ;   while the nerves erase; 1: release jaw/tail/boss
-                                      ;   explosions + the boss-room rectangle wipe
+                                      ;   explosions (le clearBlast efface seul ce qui cesse
+                                      ;   de se dessiner — le wipe rectangle est retire)
 
 
  ENDSECTION

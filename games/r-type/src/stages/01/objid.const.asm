@@ -32,7 +32,11 @@ ObjID_starfield equ 48
 
 ObjID_bugrender equ 49 ; le renderer des chaines de bug — meme valeur que
                        ; l'equ de bug.unit.asm (47 partout)
-objid.count equ 49
+
+; le manager des nerfs optiques du dobkeratops (chantier nerfs-overlay)
+ObjID_dobkeratops_eyes equ 50
+
+objid.count equ 50
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id
