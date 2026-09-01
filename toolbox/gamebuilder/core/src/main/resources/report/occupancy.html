@@ -71,6 +71,12 @@ section.view { flex: 1; overflow: auto; padding: 18px 22px 60px; }
   padding: 14px 12px 4px; color: var(--dim); font-size: 11px;
   text-transform: uppercase; letter-spacing: .08em;
 }
+select.state {
+  display: block; width: calc(100% - 24px); margin: 6px 0 2px;
+  background: var(--panel); color: var(--ink); border: 1px solid var(--rule);
+  border-radius: 4px; padding: 4px 6px; font: inherit; font-size: 12px;
+  text-transform: none; letter-spacing: 0;
+}
 .nodest .item { cursor: default; padding-left: 12px; }
 .nodest .item:hover { background: none; }
 
@@ -183,11 +189,64 @@ DATA.ram.reserved.forEach(r => ramItems.push({
    the panel was scrolled, or every click folds the tree back */
 const openGroups = new Set();
 
+/* The declared RAM state being looked at, null for "everything declared".
+   A composition is what the machine really holds at one time — a scene alone
+   is only a part of it — so picking one checks exactly its elements and lists
+   nothing else. Unchecking from there is how you look underneath. */
+const compositions = DATA.ram.compositions || [];
+/* One picks a COMPOSITION, never a scene : a scene is a list of loads, an
+   état de RAM is what the machine holds. When the configuration declares
+   none, the tree falls back to the scenes — the old view, for a build that
+   has not said what is resident together. */
+let ramState = compositions.length ? compositions[0].name : null;
+
+function compositionOf(name) {
+  return compositions.find(c => c.name === name) || null;
+}
+
+function applyState(name) {
+  ramState = name;
+  const c = compositionOf(name);
+  ramItems.forEach(i => {
+    i.checked = c ? (i.kind === "load" && c.scenes.indexOf(i.group) >= 0) : false;
+  });
+  if (c) {
+    c.scenes.forEach(sc => openGroups.add(sc));
+  }
+  render();
+}
+
+function stateSelector() {
+  if (!compositions.length) {
+    return;
+  }
+  const box = $("div", { class: "sidetitle" }, side);
+  $("span", { text: "état de RAM" }, box);
+  const sel = $("select", { class: "state" }, box);
+  compositions.forEach(c => {
+    const opt = $("option", { value: c.name, text: c.name }, sel);
+    if (c.name === ramState) {
+      opt.selected = true;
+    }
+  });
+  sel.addEventListener("change", () => applyState(sel.value));
+  const c = compositionOf(ramState);
+  if (c) {
+    $("span", { class: "n", text: c.scenes.length + " scène" + (c.scenes.length > 1 ? "s" : "") },
+      box);
+  }
+}
+
 function ramSide() {
   const scroll = side.scrollTop;
   side.innerHTML = "";
-  $("div", { class: "sidetitle", text: "éléments — cocher pour afficher" }, side);
-  const groups = [...new Set(ramItems.map(i => i.group))];
+  stateSelector();
+  const state = compositionOf(ramState);
+  $("div", { class: "sidetitle",
+             text: state ? "éléments de l'état — décocher pour regarder dessous"
+                         : "éléments — cocher pour afficher" }, side);
+  const groups = [...new Set(ramItems.map(i => i.group))]
+      .filter(g => !state || state.scenes.indexOf(g) >= 0 || g === "machine");
   groups.forEach(g => {
     const items = ramItems.filter(i => i.group === g);
     const det = $("details", openGroups.has(g) ? { open: "" } : {}, side);
@@ -509,6 +568,12 @@ function mediaView() {
 let tab = "ram";
 const bRam = document.getElementById("tab-ram");
 const bMedia = document.getElementById("tab-media");
+/* the page opens ON a state, checked : that is the memory the machine holds.
+   applyState() renders, so the bootstrap render() below is only for the
+   configurations that declare no composition. */
+if (ramState) {
+  applyState(ramState);
+}
 bRam.addEventListener("click", () => { tab = "ram"; render(); });
 bMedia.addEventListener("click", () => { tab = "media"; render(); });
 

@@ -195,6 +195,10 @@ public class Target {
 				}
 				// a file that dropped linkdata must not still be imported
 				ctx.linkSymbols.checkImportsResolvable();
+				// the declared RAM states : here, and not earlier, because it
+				// takes the scenes of every directory of the target and the
+				// measured sizes at once
+				com.widedot.m6809.gamebuilder.plugin.layout.CompositionChecks.verify(ctx);
 			} catch (Exception e) {
 				for (java.nio.file.Path p : discoveryOutputs) {
 					ctx.outputs.record(p);

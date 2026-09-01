@@ -245,7 +245,95 @@ the game code sequences them in an order the builder cannot see. So :
     legal (page-switch tricks) ;
 - **sequencing belongs to the game code** : regions may overlap, two scenes
   may carve the same page differently. Nothing is checked across scenes —
-  that would amount to demanding a single memory map for the whole game.
+  that would amount to demanding a single memory map for the whole game ;
+- **compositions are checked** when the configuration declares them (below) :
+  what a scene could not say is what else is in memory beside it.
+
+## The composition : what is resident together
+
+A scene is a list of loads. It was taken for the whole of memory as well —
+the packer places a file at an address free "in every composition it appears
+in", and read *composition = scene*. A game that loads several scenes on top
+of one another breaks that reading : two files no single scene loads together
+are taken for alternatives and given the same bytes, and when the game keeps
+both, the second load lands on the first. Silently, because a file carrying no
+link data never registers and so evicts nothing — leaving the loader's global
+re-link to patch a stale slot into the new content. Measured on r-type : two
+bytes of a compiled tile turned into an address, one `PSHU` short, and a strip
+of pixels painted at the wrong end of the screen a minute later.
+
+A `<composition>` says it :
+
+```xml
+<layout>
+    <region .../>
+    <arena .../>
+
+    <composition name="stage1">
+        <scene name="scenes.stage1"/>
+        <scene name="scenes.lot.bink"/>
+        <scene name="scenes.lot.cancer"/>
+    </composition>
+</layout>
+```
+
+It lives in the `<layout>`, beside the regions and the arenas, because it
+describes memory and not content ; the scenes it names are declared further
+down in the media, and resolved at the end of the target.
+
+**A composition is only worth the scenes it can name**, which is a constraint
+back on the scenes themselves : a scene has to be homogeneous in lifetime. One
+that carries both what stays and what is replaced cannot appear in a state —
+naming it drags the transient along, leaving it out leaves the resident
+undeclared. Measured on r-type : its boot scene held the resident engine *and*
+the title screen, so the boot entry had to become a resident relay that asks
+for the title as an ordinary screen change, and the title became a scene like
+any other. Twelve bytes, and every state now describes the whole of RAM. Three checks, and no
+more :
+
+- a composition names scenes that exist ;
+- **every scene belongs to at least one composition** — the missing
+  declaration is exactly the failure the mechanism exists to catch, so it is a
+  build error, not a warning ;
+- inside a composition, no two files land on each other : the same pairwise
+  test `SceneChecks` runs inside one scene, over the union. One file loaded by
+  two of its scenes is not a collision — reloading a file onto its own bytes is
+  what dedup is for.
+
+What is **not** checked is that a composition tells the truth. Omitting a scene
+the game really loads on top gives a reference that is too small, and no static
+analysis can tell : the game code does the sequencing. Generating what the game
+consumes from these declarations is what closes that door. Over-declaring is
+the safe direction — naming a scene that is only sometimes there constrains the
+placement more, never less.
+
+A configuration that declares no composition is **not refused** — everything
+written before this stays valid — but it is not passed over in silence either.
+The build then counts the pairs of files from *different* scenes that share
+bytes, and says so :
+
+```
+WARN  no <composition> declared : 2 pair(s) of files from different scenes share
+      bytes, and nothing says whether those scenes are in memory together.
+      Declare the RAM states to have them checked.
+        'assets.sounds.title.ymm' (scenes.title) and 'assets.sounds.level1.ymm'
+        (scenes.level1) share page 6
+```
+
+Those pairs are exactly what the packer decided on its own, and exactly what
+nobody has confirmed. A configuration whose scenes share no byte says nothing,
+because there is nothing to confirm. An unverified build must not read like a
+clean one.
+
+The line is drawn where it belongs — the builder owns the space (what may be in
+RAM at one time), the loader owns the time (what replaces what, `LOAD_OVERLAP`).
+So the sequence *title → stage → title* is not a build check : loading over a
+still-indexed file freezes at run time, and the scene that ends is the one that
+declares what it drops.
+
+The occupancy report reads the same declarations : pick a state and it lists
+the elements of that state, checked, and paints that memory — untick them one
+by one to look underneath.
 
 ## The occupancy map
 
@@ -339,6 +427,7 @@ still link it — and the answers are independent.
 | `<layout>` | `gensymbols` (optional) : generated file of `<region>.page` / `<region>.address` equates for the game code to include |
 | `<region>` | `name`, `page`, `address` (required) ; `size` : byte budget, checked ; `bulk` : the region takes an ordered list per scene, laid out one after the other — the list is the unit of replacement, members are not individually replaceable |
 | `<reserved>` | `name`, `page`, `address`, `size` (all required) : a range the game occupies without loading anything into it — object pool, globals, stack, direct page. Nothing may be loaded on top, and the check is on the *declarations*, so a region declared over the pool is an error even while its content stays small |
+| `<composition>` | `name` (required) ; holds `<scene name="..."/>` children : the scenes that are resident TOGETHER. Declared in the `<layout>` |
 | `<scene>` | `name` (required), `section`, `gensource` (defaults to `gen/scenes/<name>.asm`) |
 | `<load>` | `name` (required), nothing else : the file's attributed place says where it lands ; a file that declares none is export-only (it must then carry no data) |
 

@@ -135,6 +135,8 @@ public final class Handlers {
 			.req("page", INT, "page holding this range")
 			.req("address", INT, "where the range starts")
 			.req("size", INT, "how many bytes it offers"));
+		spec(element("composition").doc("a declared RAM state : the scenes that are resident TOGETHER. A scene says what it loads ; a composition says what else is there beside it. Two files may only share bytes when no composition holds both")
+			.req("name", STRING, "composition name, used in build errors and in the occupancy report"));
 		spec(element("reserved").doc("a range the game occupies without loading into it — object pool, globals, stack, direct page ; nothing may be placed on top")
 			.req("name", STRING, "range name, emitted as <name>.address / <name>.size equates")
 			.req("page", INT, "page holding the range")

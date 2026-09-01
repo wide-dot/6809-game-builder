@@ -52,6 +52,15 @@ public class RamMap {
 		scenes.remove(scene);
 	}
 
+	/**
+	 * Make a scene known even when it places nothing. A scene loading only
+	 * export-only files occupies no byte, but it exists — and a composition
+	 * naming it must not be told that no such scene was declared.
+	 */
+	public void ensure(String scene) {
+		scenes.computeIfAbsent(scene, s -> new ArrayList<Load>());
+	}
+
 	public void record(String scene, Load load) {
 		scenes.computeIfAbsent(scene, s -> new ArrayList<Load>()).add(load);
 	}

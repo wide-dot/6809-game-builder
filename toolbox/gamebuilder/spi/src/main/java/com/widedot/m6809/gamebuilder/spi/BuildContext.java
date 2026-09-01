@@ -15,6 +15,7 @@ import com.widedot.m6809.gamebuilder.spi.globals.LinkSymbols;
 import com.widedot.m6809.gamebuilder.spi.globals.Occupancy;
 import com.widedot.m6809.gamebuilder.spi.globals.Outputs;
 import com.widedot.m6809.gamebuilder.spi.globals.RamMap;
+import com.widedot.m6809.gamebuilder.spi.globals.Compositions;
 import com.widedot.m6809.gamebuilder.spi.globals.Regions;
 import com.widedot.m6809.gamebuilder.spi.globals.StaticLink;
 
@@ -55,6 +56,9 @@ public class BuildContext {
 	/** memory layout declared by the target, referenced by scene loads */
 	public final Regions regions;
 
+	/** the declared RAM states : which scenes are resident together */
+	public final Compositions compositions;
+
 	/** what the target machine declares : RAM pages, the page byte's prefix */
 	public final Machines machines;
 
@@ -93,11 +97,11 @@ public class BuildContext {
 	}
 
 	public BuildContext(String path, Settings settings, SourceMap sources) {
-		this(path, settings, sources, new LinkSymbols(), new FileIds(), new DirReservations(), new Regions(), new Machines(), new Cuts(), new StaticLink(), new FilePlaces(), new ImageSets(), new LinkReport(), new RamMap(), new Occupancy(), new Outputs(), new Defaults(), new Defines());
+		this(path, settings, sources, new LinkSymbols(), new FileIds(), new DirReservations(), new Regions(), new Compositions(), new Machines(), new Cuts(), new StaticLink(), new FilePlaces(), new ImageSets(), new LinkReport(), new RamMap(), new Occupancy(), new Outputs(), new Defaults(), new Defines());
 	}
 
 	private BuildContext(String path, Settings settings, SourceMap sources, LinkSymbols linkSymbols,
-			FileIds fileIds, DirReservations dirReservations, Regions regions, Machines machines, Cuts cuts, StaticLink staticLink,
+			FileIds fileIds, DirReservations dirReservations, Regions regions, Compositions compositions, Machines machines, Cuts cuts, StaticLink staticLink,
 			FilePlaces filePlaces, ImageSets imageSets, LinkReport linkReport, RamMap ramMap, Occupancy occupancy,
 			Outputs outputs, Defaults defaults, Defines defines) {
 		this.path = path;
@@ -107,6 +111,7 @@ public class BuildContext {
 		this.fileIds = fileIds;
 		this.dirReservations = dirReservations;
 		this.regions = regions;
+		this.compositions = compositions;
 		this.machines = machines;
 		this.cuts = cuts;
 		this.staticLink = staticLink;
@@ -125,7 +130,7 @@ public class BuildContext {
 	 *         everything else shared
 	 */
 	public BuildContext child() {
-		return new BuildContext(path, settings, sources, linkSymbols, fileIds, dirReservations, regions, machines, cuts, staticLink,
+		return new BuildContext(path, settings, sources, linkSymbols, fileIds, dirReservations, regions, compositions, machines, cuts, staticLink,
 				filePlaces, imageSets, linkReport, ramMap, occupancy, outputs,
 				new Defaults(defaults.values), new Defines(defines.values));
 	}
@@ -144,6 +149,7 @@ public class BuildContext {
 		dirReservations.clear();
 		linkSymbols.clear();
 		regions.clear();
+		compositions.clear();
 		machines.clear();
 		cuts.clear();
 		staticLink.clear();

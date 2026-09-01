@@ -157,6 +157,7 @@ public class DirectoryPlugin {
 			// without forgetting made every load appear once per pass
 			for (SceneCheck scene : pendingScenes) {
 				ctx.ramMap.forget(scene.sceneName);
+				ctx.ramMap.ensure(scene.sceneName);
 			}
 			for (SceneCheck scene : pendingScenes) {
 				for (SceneCheck.Load load : scene.loads) {
