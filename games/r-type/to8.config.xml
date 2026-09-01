@@ -424,6 +424,11 @@
             <!-- La fenetre du moteur resident. C'est une REGION depuis que le
                  bootloader y entre : son adresse est publiee par le layout, et
                  n'est plus recopiee a la main dans la declaration du loader. -->
+            <!-- La page directe du MONITEUR ($60 : registres disque, cf.
+                 map.REG.DP et docs/lang/en/direct-page.md). C'est la raison pour
+                 laquelle la fenetre du moteur commence a $6100 et pas $6000 —
+                 elle n'etait dite nulle part, le rapport la montrait libre. -->
+            <reserved name="monitor.dp" page="$01" address="$6000" size="$0100"/>
             <region name="engine" page="$01" address="$6100"/>
             <reserved name="bench"        page="$01" address="$87F2" size="$0009"/>
             <!-- Les variables inter-main et les temoins du banc, en equates dans le
