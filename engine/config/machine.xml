@@ -5,20 +5,58 @@
     <!-- One file for every machine, exactly like storage.xml holds every  -->
     <!-- media ; a target picks one with <machine name="…"/>.              -->
     <!--                                                                   -->
+    <!-- A WINDOW is what the processor sees, and how the page it shows is -->
+    <!-- chosen. The position of a byte inside its page is NOT declared —  -->
+    <!-- it is computed, (address - window) + window's own offset, modulo  -->
+    <!-- the page size. On a Thomson that reduces to « the low 14 bits of  -->
+    <!-- the CPU address ARE the position » : the 8 KB video window pushes -->
+    <!-- what follows off the 16 KB grid, so $6000 lands mid-page. That is -->
+    <!-- the whole of what emulators call the non-linear segment order.    -->
+    <!--                                                                   -->
     <!-- pagebyte : what a generated table writes in front of a page       -->
-    <!-- number so the byte can go straight to the window register. It is  -->
-    <!-- a NAME plus the header defining it, never a value — the number    -->
-    <!-- (%01100000 today, on both machines) stays in the asm header, its  -->
-    <!-- single home, and a machine whose bits differ only changes here.   -->
+    <!-- number. It is a NAME plus the header defining it, never a value.  -->
+    <!-- Its home is now the cartridge window's 'or' ; the top-level       -->
+    <!-- element stays until the generators are moved over.                -->
 
     <machine name="to8">
-        <ram pages="32"/>   <!-- 512 KB in 16 KB pages -->
+        <ram pages="32" pagesize="$4000"/>   <!-- 512 KB in 16 KB pages -->
         <pagebyte expr="map.RAM_OVER_CART+" include="engine/system/to8/map.const.asm"/>
+
+        <window name="cart" address="$0000" size="$4000" page="register:$E7E6"
+                or="map.RAM_OVER_CART" include="engine/system/to8/map.const.asm"/>
+
+        <!-- 8 KB of a 16 KB page : a CPU address does not say which half,   -->
+        <!-- and the hardware numbers them backwards — bit 1 shows the FIRST -->
+        <!-- half. Measured under toje, and stated by its update_screen().   -->
+        <window name="video" address="$4000" size="$2000" page="0" select="register:$E7C3" bit="0">
+            <slice index="0" value="1"/>
+            <slice index="1" value="0"/>
+        </window>
+
+        <window name="resident" address="$6000" size="$4000" page="1"/>
+        <window name="data"     address="$A000" size="$4000" page="register:$E7E5"/>
     </machine>
 
     <machine name="mo6">
-        <ram pages="8"/>    <!-- 128 KB in 16 KB pages -->
+        <ram pages="8" pagesize="$4000"/>    <!-- 128 KB in 16 KB pages -->
         <pagebyte expr="map.RAM_OVER_CART+" include="engine/system/mo6/map.const.asm"/>
+
+        <!-- NOT VERIFIED on a machine : there is no MO6 emulator here. The  -->
+        <!-- geometry below is the one map.const.asm declares ; the position -->
+        <!-- of a byte in its page follows from it by the same rule as the   -->
+        <!-- TO8, which is a PREDICTION of the model rather than a reading.  -->
+        <!-- Nothing depends on it yet : an MO6 image is built from the CPU  -->
+        <!-- address the target declares, and that address comes back        -->
+        <!-- unchanged through the computation.                              -->
+        <window name="video" address="$0000" size="$2000" page="0" select="register:$A7C0" bit="0">
+            <slice index="0" value="1"/>
+            <slice index="1" value="0"/>
+        </window>
+
+        <window name="resident" address="$2000" size="$4000" page="1"/>
+        <window name="data"     address="$6000" size="$4000" page="register:$A7E5"/>
+        <window name="cart"     address="$B000" size="$4000" page="register:$A7E6"
+                or="map.RAM_OVER_CART" include="engine/system/mo6/map.const.asm"/>
     </machine>
 
 </configuration>
