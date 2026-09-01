@@ -11,11 +11,17 @@ qui pose le problème. Le plan d'exécution est dans
 Une ressource pose trois questions distinctes, et le format actuel n'en
 exprime clairement aucune :
 
-| besoin | attribut | qui l'écrit | exemple |
-|---|---|---|---|
-| dans quelle RAM elle vit, absolument | `page` | l'auteur | `$17` |
-| à quelle adresse elle s'exécute, pour cuire les adresses | `address` | l'auteur, telle qu'il l'utilise | `$6100` |
-| dans quel espace le loader la copie | `window` | l'auteur | `resident` |
+| besoin | comment il s'exprime | exemple |
+|---|---|---|
+| dans quelle RAM elle vit, absolument | `page`, écrit | `$17` |
+| à quelle adresse elle s'exécute, pour cuire les adresses | `address`, écrit tel que le code l'utilise | `$6100` |
+| dans quel espace le loader la copie | **déduit de l'adresse** | `$6100` → fenêtre résidente |
+
+Le troisième ne s'écrit pas : les fenêtres de la machine occupent des plages
+CPU disjointes, donc une adresse en désigne une et une seule. Le seul cas où
+l'adresse ne suffit pas est une fenêtre **plus petite qu'une page** — la vidéo
+montre 8 Ko d'une page de 16, et `$4000` ne dit pas laquelle des deux moitiés ;
+d'où l'attribut `slice`, écrit dans l'ordre naturel de la page.
 
 **Rien d'autre n'est écrit.** En particulier, la position de la ressource dans
 la page — le référentiel absolu qui sert à détecter les collisions — n'est
@@ -105,32 +111,32 @@ taille d'une page, donc aucune tranche :
 
 ## 4. Syntaxe : le fichier du jeu
 
-Le `<layout>` porte la fenêtre par défaut ; une place ne la répète que si elle
-en sort. `page` ne s'écrit que là où la fenêtre ne le fixe pas déjà.
+`page` ne s'écrit que là où la fenêtre déduite ne le fixe pas déjà : la
+résidente est la page 1, la vidéo la page 0.
 
 ```xml
-<layout window="cart" gensymbols="gen/layout.asm">
+<layout gensymbols="gen/layout.asm">
 
     <!-- Cartouche : page + adresse CPU, inchangees. -->
     <region name="collision" page="$17" address="$0000" size="$4000"/>
 
     <!-- Residente : la fenetre fixe la page 1, on ne l'ecrit pas. L'adresse
          est celle que le code utilise. -->
-    <region   name="engine"     window="resident" address="$6100"/>
-    <reserved name="monitor.dp" window="resident" address="$6000" size="$0100"/>
+    <region   name="engine"     address="$6100"/>
+    <reserved name="monitor.dp" address="$6000" size="$0100"/>
 
     <!-- Video : 8 Ko d'une page de 16, donc on dit laquelle des deux moities,
          numerotee dans l'ordre de la page. -->
-    <region   name="pscroll.vid"   window="video" slice="0" address="$4000" size="$2000"/>
-    <reserved name="objects.pool"  window="video" slice="1" address="$4000" size="$1B6C"/>
+    <region   name="pscroll.vid"   slice="0" address="$4000" size="$2000"/>
+    <reserved name="objects.pool"  slice="1" address="$4000" size="$1B6C"/>
 
     <!-- Donnees : page + adresse CPU. -->
-    <reserved name="framebuffer.2.form" window="data" page="$02" address="$C000" size="$1F40"/>
+    <reserved name="framebuffer.2.form" page="$02" address="$C000" size="$1F40"/>
 
     <!-- Le loader, code ET tas : son pool TLSF est un `equ *` a la fin de son
          binaire, il court jusqu'a la fin de la fenetre. Sa place les couvre
          tous les deux, sinon le builder croirait la moitie de page libre. -->
-    <reserved name="loader" window="data" page="$04" address="$C000" size="$2000"/>
+    <reserved name="loader" page="$04" address="$C000" size="$2000"/>
 
     <arena name="objects">
         <zone page="$04" address="$2000" size="$2000"/>
@@ -154,6 +160,14 @@ en sort. `page` ne s'écrit que là où la fenêtre ne le fixe pas déjà.
    le contrôle qui manquait, celui qui relie la page 1 vue en résident et la
    même page 1 montée en cartouche ;
 4. la place ne mord pas sur ce que la machine se réserve.
+
+La fenêtre étant déduite, chaque fenêtre exige ses propres attributs, ce qui
+attrape presque toutes les fautes de frappe qui changent d'espace : la
+résidente et la vidéo refusent un `page`, la cartouche et les données
+l'exigent, la vidéo exige un `slice`. **Limite acceptée** (arbitrée) : entre
+cartouche et données, les deux fenêtres qui prennent une page, une adresse
+fautive reste acceptée — `page="$0B" address="$A000"` au lieu de `$2000`
+désigne le même silicium mais cuit l'adresse et monte la page ailleurs.
 
 Une place peut **enjamber la fin de la page** : les neuf écrans de r-type sont
 chargés en `$7C00` et dépassent `$8000`, donc ils remplissent la fin de la

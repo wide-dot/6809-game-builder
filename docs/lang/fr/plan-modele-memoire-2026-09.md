@@ -20,10 +20,9 @@ loader.
 ## Ampleur réelle
 
 Les quatre fenêtres du TO8 occupent des plages CPU disjointes, donc **la
-fenêtre se déduit de l'adresse** : elle ne s'écrit que si l'on veut que le
-fichier le dise à voix haute, et le builder vérifie alors qu'elle concorde.
-Conséquence : la très grande majorité des déclarations ne change pas d'un
-caractère.
+fenêtre se déduit de l'adresse** et ne s'écrit nulle part (décision auteur,
+option A). Conséquence : la très grande majorité des déclarations ne change
+pas d'un caractère.
 
 | ce qui change | combien |
 |---|---|
@@ -153,8 +152,9 @@ v1 n'avait pas de fenêtres déclarées, il n'y a pas d'idiome v1 à traduire.
 
 ## Points ouverts
 
-1. **La fenêtre : déduite ou écrite ?** Elle est déductible de l'adresse dans
-   tous les cas. Proposition : facultative et vérifiée si présente. À confirmer.
+1. *(tranché — la fenêtre est déduite, jamais écrite ; la limite acceptée est
+   qu'une confusion cartouche/données reste indétectable, les deux étant les
+   seules fenêtres à prendre un `page`.)*
 2. **L'enjambement de fin de page : le rapport l'explique, sans rien exiger.**
    Le vrai danger — une place qui déborde sa **fenêtre** — est un contrôle
    séparé et une erreur dure.
