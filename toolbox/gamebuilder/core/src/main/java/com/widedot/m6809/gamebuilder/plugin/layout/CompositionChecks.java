@@ -77,6 +77,8 @@ public final class CompositionChecks {
 		List<String> errors = new ArrayList<String>();
 		Set<String> named = new LinkedHashSet<String>();
 
+		errors.addAll(loaderSpace(ctx, windows(ctx)));
+
 		for (Compositions.Composition c : ctx.compositions.all()) {
 			for (String scene : c.scenes) {
 				named.add(scene);
@@ -93,6 +95,8 @@ public final class CompositionChecks {
 						+ " memory beside it, even if the answer is that scene alone");
 			}
 		}
+
+		errors.addAll(loaderSpace(ctx, windows(ctx)));
 
 		for (Compositions.Composition c : ctx.compositions.all()) {
 			errors.addAll(sharedFiles(c, scenes));
@@ -284,5 +288,51 @@ public final class CompositionChecks {
 			}
 		}
 		return out;
+	}
+
+	/**
+	 * Nothing may be loaded into the window the loader runs from.
+	 *
+	 * The loader's spaces are not declared anywhere : they are the machine's
+	 * windows MINUS its own. Mounting another page in the window it executes
+	 * from would unmap it mid-copy — which is why the Thomson loader serves
+	 * the cartridge, the video and the resident spaces and not the data one,
+	 * where it lives. On a machine whose loader lived elsewhere the list would
+	 * differ, with nothing here to change.
+	 */
+	private static List<String> loaderSpace(BuildContext ctx, WindowMap windows)
+			throws Exception {
+		// one report per file : a file loaded by several scenes clashes
+		// identically in each, and repeating it helps nobody
+		Set<String> errors = new LinkedHashSet<String>();
+		String declared = ctx.defines.values.get("loader.ADDRESS");
+		if (windows == null || declared == null) {
+			return new ArrayList<String>(errors);
+		}
+		com.widedot.m6809.gamebuilder.spi.globals.Machines.Window home;
+		try {
+			home = windows.of(com.widedot.m6809.gamebuilder.spi.configuration.Values
+					.parseInt(declared));
+		} catch (Exception e) {
+			return new ArrayList<String>(errors);
+		}
+		for (Map.Entry<String, List<RamMap.Load>> scene : ctx.ramMap.scenes().entrySet()) {
+			for (RamMap.Load load : scene.getValue()) {
+				if (load.size <= 0) {
+					continue;
+				}
+				try {
+					if (windows.of(load.address) == home) {
+						errors.add("'" + load.name + "' loads at $"
+								+ String.format("%04X", load.address) + ", in the '" + home.name
+								+ "' window — the loader runs from there, and mounting a page in"
+								+ " it would unmap the loader mid-copy");
+					}
+				} catch (Exception e) {
+					// an address in no window : already reported elsewhere
+				}
+			}
+		}
+		return new ArrayList<String>(errors);
 	}
 }

@@ -197,4 +197,27 @@ class CompositionChecksTest {
 		assertTrue(e.getMessage().contains("title.main"), e.getMessage());
 		assertTrue(e.getMessage().contains("globals"), e.getMessage());
 	}
+
+	@Test
+	@DisplayName("nothing may be loaded into the window the loader runs from")
+	void nothingLoadsIntoTheLoadersWindow() throws Exception {
+		BuildContext ctx = context();
+		ctx.defines.values.put("loader.ADDRESS", "$C000");   // the data window
+		load(ctx, "scenes.boot", "some.file", 5, 0xA000, 0x0100);
+		compose(ctx, "boot", "scenes.boot");
+		Exception e = assertThrows(Exception.class, () -> CompositionChecks.verify(ctx));
+		assertTrue(e.getMessage().contains("some.file"), e.getMessage());
+		assertTrue(e.getMessage().contains("'data' window"), e.getMessage());
+	}
+
+	@Test
+	@DisplayName("the other windows are exactly the loader's spaces")
+	void theOtherWindowsAreFine() throws Exception {
+		BuildContext ctx = context();
+		ctx.defines.values.put("loader.ADDRESS", "$C000");
+		load(ctx, "scenes.boot", "cart.file", 5, 0x0000, 0x0100);
+		load(ctx, "scenes.boot", "resident.file", 1, 0x6100, 0x0100);
+		compose(ctx, "boot", "scenes.boot");
+		CompositionChecks.verify(ctx);
+	}
 }

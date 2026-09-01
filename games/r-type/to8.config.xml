@@ -4,6 +4,13 @@
         <default name="machine.definitions" value="engine/config/machine.xml"/>
         <machine name="to8"/>
 
+        <!-- Ou vit le loader. Ces deux symboles sont ce contre quoi son binaire
+             est assemble, donc ils precedent tout ; le <reserved name="loader">
+             de la carte memoire decrit la MEME place pour les controles, et le
+             builder verifie que les deux concordent. -->
+        <define symbol="loader.PAGE" value="4"/>
+        <define symbol="loader.ADDRESS" value="$C000"/>
+
         <!-- La carte memoire dit la frontiere de chargement : 'common' est chargee
              une fois au boot (moteur + etat persistant) ; 'stage' et les regions de
              tuiles sont des interfaces — leurs unites sont des alternatives
@@ -485,6 +492,14 @@
                  moitie, 192 octets libres en fin de chaque moitie — reserves
                  plage par plage pour que la carte les montre). Le loader se
                  reserve par son <data>. -->
+            <!-- LE LOADER, code ET tas. Son pool TLSF est un `equ *` a la fin
+                 de son binaire, dimensionne pour courir jusqu'au bout du
+                 segment : code $C000-$D0FD puis pool $D0FF-$E000, soit la
+                 premiere moitie ENTIERE de la page 4 en physique. Sans cette
+                 ligne, rien n'empechait d'y poser une place — l'arene des
+                 objets partage cette page. Les deux <define> plus bas disent
+                 la meme chose au code ; le builder verifie qu'ils concordent. -->
+            <reserved name="loader" page="$04" address="$C000" size="$2000"/>
             <reserved name="framebuffer.2.couleur" page="$02" address="$0000" size="$1F40"/>
             <reserved name="framebuffer.2.forme"   page="$02" address="$2000" size="$1F40"/>
             <reserved name="framebuffer.3.couleur" page="$03" address="$0000" size="$1F40"/>
@@ -643,8 +658,6 @@
                  (object_rsvd_size 59 -> 5) — voir glb.const.asm/constants.asm. -->
             <define symbol="OverlayMode"/>
             <define symbol="LOG_INFO"/>
-            <define symbol="loader.PAGE" value="4"/>
-            <define symbol="loader.ADDRESS" value="$C000"/>
 
             <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
                 <default name="file.section" value="DATA"/>

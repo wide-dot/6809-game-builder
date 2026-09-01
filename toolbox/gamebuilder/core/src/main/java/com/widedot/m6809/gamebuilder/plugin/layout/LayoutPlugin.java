@@ -29,12 +29,14 @@ public class LayoutPlugin {
 		// does not produce.
 		for (ImmutableNode child : node.getChildren()) {
 			if ("reserved".equals(child.getNodeName())) {
-				ctx.regions.reserve(new Regions.Reserved(
+				Regions.Reserved range = new Regions.Reserved(
 						Attribute.getString(child, ctx, "name"),
 						Attribute.getInteger(child, ctx, "page"),
 						Attribute.getInteger(child, ctx, "address"),
 						Attribute.getInteger(child, ctx, "size"),
-						Attribute.getIntegerOpt(child, ctx, "slice")));
+						Attribute.getIntegerOpt(child, ctx, "slice"));
+				agreesWithDefines(ctx, child, range);
+				ctx.regions.reserve(range);
 				continue;
 			}
 			// A composition names the scenes that are resident TOGETHER. It is
@@ -144,6 +146,17 @@ public class LayoutPlugin {
 			// consumers over the whole corpus (phase 9 sweep, 2026-08-13) —
 			// re-add one the day a game reads it, not before
 			for (Regions.Reserved r : ctx.regions.reservedRanges()) {
+				// The game may already declare this symbol itself : the loader
+				// lives at an address its own binary is assembled against, long
+				// before any layout exists, so the target defines it by hand.
+				// The builder does not redeclare what the game declares — it
+				// VERIFIED the two agree when the range was read, and stays
+				// quiet here. (lwasm ignores case, so loader.ADDRESS and
+				// loader.address are one symbol : emitting both is an error,
+				// and that error is what made this rule explicit.)
+				if (declaredByTheGame(ctx, r.name + ".address")) {
+					continue;
+				}
 				out.append(r.name).append(".address equ $")
 				   .append(String.format("%04X", r.address)).append(System.lineSeparator());
 			}
@@ -169,5 +182,43 @@ public class LayoutPlugin {
 		}
 
 		log.debug("End of processing layout");
+	}
+
+	/**
+	 * A reserved range whose name is also an assembler symbol pair —
+	 * {@code <name>.PAGE} and {@code <name>.ADDRESS} — must agree with it.
+	 *
+	 * The loader is the case that pays for this : it lives at a page and an
+	 * address the game writes by hand as two defines, because its own binary
+	 * is assembled long before any layout exists. Declaring the same place a
+	 * second time is what lets the memory checks see its bytes at all — and
+	 * two descriptions of one place are exactly what this whole model exists
+	 * to stop drifting apart.
+	 */
+	private static void agreesWithDefines(BuildContext ctx, ImmutableNode node,
+			Regions.Reserved range) throws Exception {
+		String page = ctx.defines.values.get(range.name + ".PAGE");
+		String address = ctx.defines.values.get(range.name + ".ADDRESS");
+		if (page != null && com.widedot.m6809.gamebuilder.spi.configuration.Values
+				.parseInt(page) != range.page) {
+			throw new Exception(ctx.sources.locate(node) + ": reserved range '" + range.name
+					+ "' says page " + range.page + " but " + range.name + ".PAGE says " + page);
+		}
+		if (address != null && com.widedot.m6809.gamebuilder.spi.configuration.Values
+				.parseInt(address) != range.address) {
+			throw new Exception(ctx.sources.locate(node) + ": reserved range '" + range.name
+					+ "' starts at $" + String.format("%04X", range.address) + " but "
+					+ range.name + ".ADDRESS says " + address);
+		}
+	}
+
+	/** whether the target already defines this assembler symbol, case aside */
+	private static boolean declaredByTheGame(BuildContext ctx, String symbol) {
+		for (String declared : ctx.defines.values.keySet()) {
+			if (declared.equalsIgnoreCase(symbol)) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

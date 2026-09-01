@@ -170,6 +170,39 @@ décrivaient pas exactement la place réelle du loader, l'écart apparaît ici.
 froid, `rtype_bench` 7/7, et une lecture machine de la table de saut du loader
 à l'adresse calculée.
 
+### Ce qui a réellement été fait (01/09/2026), et les écarts
+
+**Aucun octet n'a bougé** — donc les deux `<define>` décrivaient bien la place
+réelle du loader. Les trois comportements sont vérifiés sur le jeu :
+
+- une zone d'arène qui mord sur le loader est refusée, et le message relie les
+  deux fenêtres : *region 'objects' [$0100-$3FFF] runs into the reserved range
+  'loader' [$C000-$DFFF] — both are page 4 +$0000-$1FFF*. C'est exactement le
+  scénario que j'avais pris pour « 3 840 octets libres » ;
+- les deux descriptions ne peuvent plus diverger : *reserved range 'loader'
+  starts at $C000 but loader.ADDRESS says $A000* ;
+- un chargement dans la fenêtre du loader est refusé, en disant pourquoi :
+  *loads at $A000, in the 'data' window — the loader runs from there, and
+  mounting a page in it would unmap the loader mid-copy*.
+
+Trois écarts :
+
+1. **`loader.PAGE` et `loader.ADDRESS` restent des `<define>`**, contrairement
+   à ce que cette phase annonçait. Le binaire du loader est assemblé contre eux
+   bien avant qu'un layout existe, et son unité n'inclut pas `gen/layout.asm`.
+   Mieux : lwasm ignore la casse, donc l'équate `loader.address` qu'une
+   réservation émet **est** le symbole `loader.ADDRESS` — les émettre tous deux
+   est une erreur d'assemblage, et c'est cette erreur qui a rendu la règle
+   explicite : *le builder ne redéclare pas ce que le jeu déclare, il vérifie
+   que les deux concordent*. La duplication devient une vérification, ce qui
+   était le but.
+2. **Les deux `<define>` remontent avant le `<layout>`** : ils décrivent la
+   mémoire, et la vérification a besoin d'eux quand elle lit la réservation.
+3. **La taille est déclarée, pas déduite.** L'étendue du pool vient d'une
+   formule d'assembleur propre à la machine (`loader.ADDRESS -
+   loader.memoryPool + $2000` sur TO8, `+$4000` sur MO6) : le builder ne peut
+   pas l'inférer sans lire la carte de symboles du loader.
+
 ## Phase 4 — le rapport dans le référentiel absolu
 
 `occupancy-<cible>.html` passe à **une ligne par page physique** (32 sur TO8),
