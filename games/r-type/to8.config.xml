@@ -268,14 +268,20 @@
                      ennemis en cascade (mesure le 18/08). -->
                 <zone page="$0C" address="$0000" size="$0A80"/>
                 <!-- La queue de la page collision ($17) : les collisions des huit
-                     stages sont des ALTERNATIVES a $0000 (la plus grosse, stage 1,
-                     finit a $136F, l'init du stage a $13F7) — au-dela de $1400 la
-                     page est libre sur TOUTES les scenes. Ouverte au commun le
+                     stages sont des ALTERNATIVES a $0000 — au-dela, la page est
+                     libre sur TOUTES les scenes. FRONTIERE RELEVEE A $1D00 le
+                     01/09/2026 : la collision du stage 3 (le cuirasse) a grossi
+                     jusqu'a $1BB2 et l'init de stage la suit jusqu'a $1C6C, alors
+                     que la borne etait restee a $1400, mesuree quand la plus grosse
+                     etait celle du stage 1. Le commun mordait donc les octets du
+                     stage 3, en silence : c'est le controle de composition qui l'a
+                     dit (firechain, fade et collisionpass recouverts). Le commun
+                     rend 2 304 octets ici et tient toujours. Ouverte au commun le
                      18/08, quand les gfx etoffes de pow/optionbox et la duree+fondu
                      arcade du champ d'etoiles (~280 o) ont depasse le mou de
                      l'arene. Derniere zone : le packer n'y deborde que ce qui ne
                      tient plus ailleurs. -->
-                <zone page="$17" address="$1400" size="$2C00"/>
+                <zone page="$17" address="$1D00" size="$2300"/>
             </arena>
             <!-- L'ARENE DES ENNEMIS DU STAGE 1 : le cast du niveau et son boss.
                  Elle commence ou la commune s'arrete ($0A80). -->
@@ -1146,7 +1152,7 @@
                                  gensource="gen/weapons/bitdevice/includes.asm"
                                  genindex="gen/weapons/bitdevice/index.asm"
                                  file="common.bitdevice">
-                            <images dir="src/common/weapons/bitdevice/images"/>
+                            <images dir="src/common/weapons/bitdevice/images" shifts="0,1"/>
                         </gfxcomp>
                         <animation name="Ani_bitdevice1" duration="4" end="reset">
                             <frame image="bitdevice_0"/>
