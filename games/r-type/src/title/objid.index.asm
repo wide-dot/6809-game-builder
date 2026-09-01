@@ -11,39 +11,39 @@ title.scores.Object     EXTERNAL
 title.loading.Object    EXTERNAL
 
 Obj_Index_Page
-        fcb   map.RAM_OVER_CART+title.main.page ; id 0 : reserved slot, never run
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_animation
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_explosion
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_fade
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_Player1
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_Weapon
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_commonmissile
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_beamcharge
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_beamp
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_emitter_flash
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_collision
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_createFoeFire
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_loadFirePreset
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_foefire
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_initlevel1
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_engineflames
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_messages
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_endstage
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_pow_optionbox
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_bitdevice
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod_simplefire
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod_reboundlaser
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod_counterairlaser
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_scantfire
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_tabrokcanon
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_shellEraser
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_commonmissileflame
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_dobkeratops_saw
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_dobkeratops_explosion
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod_groundlaser
+        fcb   map.RAM_OVER_CART+stage.page ; id 0 : reserved slot, never run
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_animation
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_explosion
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_fade
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_Player1
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_Weapon
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_commonmissile
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_beamcharge
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_beamp
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_emitter_flash
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_collision
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_createFoeFire
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_loadFirePreset
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_foefire
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_initlevel1
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_engineflames
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_messages
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_endstage
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_pow_optionbox
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_bitdevice
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_simplefire
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_reboundlaser
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_counterairlaser
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_scantfire
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_tabrokcanon
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_shellEraser
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_commonmissileflame
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_saw
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_groundlaser
         fcb   0 ; 31 : reserve commune libre
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_logo
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_logo
         fcb   map.RAM_OVER_CART+title.text.page ; ObjID_text
         fcb   map.RAM_OVER_CART+title.pushbutton.page ; ObjID_push_button
         fcb   map.RAM_OVER_CART+title.scores.page ; ObjID_scores
@@ -91,43 +91,43 @@ Obj_Index_Address
 Obj_Index_Address.end
 
 Ani_Page_Index
-        fcb   map.RAM_OVER_CART+title.main.page ; id 0 : reserved slot, never run
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_animation
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_explosion
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_fade
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_Player1
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_Weapon
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_commonmissile
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_beamcharge
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_beamp
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_emitter_flash
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_collision
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_createFoeFire
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_loadFirePreset
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_foefire
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_initlevel1
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_engineflames
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_messages
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_endstage
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_pow_optionbox
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_bitdevice
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod_simplefire
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod_reboundlaser
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod_counterairlaser
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_scantfire
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_tabrokcanon
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_shellEraser
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_commonmissileflame
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_dobkeratops_saw
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_dobkeratops_explosion
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod_groundlaser
+        fcb   map.RAM_OVER_CART+stage.page ; id 0 : reserved slot, never run
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_animation
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_explosion
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_fade
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_Player1
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_Weapon
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_commonmissile
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_beamcharge
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_beamp
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_emitter_flash
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_collision
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_createFoeFire
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_loadFirePreset
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_foefire
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_initlevel1
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_engineflames
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_messages
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_endstage
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_pow_optionbox
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_bitdevice
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_simplefire
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_reboundlaser
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_counterairlaser
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_scantfire
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_tabrokcanon
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_shellEraser
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_commonmissileflame
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_saw
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_groundlaser
         fcb   0 ; 31 : reserve commune libre
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_logo
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_text
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_logo
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_text
         fcb   map.RAM_OVER_CART+title.pushbutton.page ; ObjID_push_button
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_scores
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_loading
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_scores
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_loading
 Ani_Page_Index.end
 
 Ani_Asd_Index
@@ -174,40 +174,40 @@ Ani_Asd_none
         fdb   0
 
 Img_Page_Index
-        fcb   map.RAM_OVER_CART+title.main.page ; id 0 : reserved slot, never run
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_animation
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_explosion
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_fade
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_Player1
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_Weapon
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_commonmissile
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_beamcharge
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_beamp
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_emitter_flash
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_collision
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_createFoeFire
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_loadFirePreset
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_foefire
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_initlevel1
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_engineflames
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_messages
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_endstage
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_pow_optionbox
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_bitdevice
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod_simplefire
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod_reboundlaser
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod_counterairlaser
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_scantfire
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_tabrokcanon
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_shellEraser
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_commonmissileflame
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_dobkeratops_saw
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_dobkeratops_explosion
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_forcepod_groundlaser
+        fcb   map.RAM_OVER_CART+stage.page ; id 0 : reserved slot, never run
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_animation
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_explosion
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_fade
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_Player1
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_Weapon
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_commonmissile
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_beamcharge
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_beamp
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_emitter_flash
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_collision
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_createFoeFire
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_loadFirePreset
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_foefire
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_initlevel1
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_engineflames
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_messages
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_endstage
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_pow_optionbox
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_bitdevice
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_simplefire
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_reboundlaser
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_counterairlaser
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_scantfire
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_tabrokcanon
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_shellEraser
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_commonmissileflame
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_saw
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_groundlaser
         fcb   0 ; 31 : reserve commune libre
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_logo
-        fcb   map.RAM_OVER_CART+title.main.page ; ObjID_text
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_logo
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_text
         fcb   map.RAM_OVER_CART+title.pushbutton.page ; ObjID_push_button
         fcb   map.RAM_OVER_CART+title.scores.page ; ObjID_scores
         fcb   map.RAM_OVER_CART+title.loading.page ; ObjID_loading

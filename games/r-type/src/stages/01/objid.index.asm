@@ -31,7 +31,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+common.counterairlaser.page ; ObjID_forcepod_counterairlaser
         fcb   map.RAM_OVER_CART+lib.scantfire.page ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+stage1.tabrokcanon.page ; ObjID_tabrokcanon
-        fcb   map.RAM_OVER_CART+stage1.page ; ObjID_shellEraser (OVERLAY : effaceur retire)
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_shellEraser (OVERLAY : effaceur retire)
         fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage1.dobkeratopssaw.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page ; ObjID_dobkeratops_explosion
@@ -53,7 +53,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage1.dobkeratops.page ; ObjID_dobkeratops
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsjaw.page ; ObjID_dobkeratops_jaw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsmonster.page ; ObjID_dobkeratops_monster
-        fcb   map.RAM_OVER_CART+stage1.page ; ObjID_starfield
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_starfield
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (49)
         fcb   map.RAM_OVER_CART+stage1.dobkeratops.eyemgr.page ; ObjID_dobkeratops_eyes (50)
 Obj_Index_Page.end
@@ -119,7 +119,7 @@ Obj_Index_Address
 Obj_Index_Address.end
 
 Ani_Page_Index
-        fcb   map.RAM_OVER_CART+stage1.page
+        fcb   map.RAM_OVER_CART+stage.page
         fcb   map.RAM_OVER_CART+common.anim.page ; ObjID_animation
         fcb   map.RAM_OVER_CART+common.explosion.page ; ObjID_explosion
         fcb   map.RAM_OVER_CART+common.fade.page ; ObjID_fade
@@ -145,7 +145,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+common.counterairlaser.page ; ObjID_forcepod_counterairlaser
         fcb   map.RAM_OVER_CART+lib.scantfire.page ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+stage1.tabrokcanon.page ; ObjID_tabrokcanon
-        fcb   map.RAM_OVER_CART+stage1.page ; ObjID_shellEraser (OVERLAY : effaceur retire)
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_shellEraser (OVERLAY : effaceur retire)
         fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage1.dobkeratopssaw.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page ; ObjID_dobkeratops_explosion
@@ -155,7 +155,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
-        fcb   map.RAM_OVER_CART+stage1.page ; id 34 : libre
+        fcb   map.RAM_OVER_CART+stage.page ; id 34 : libre
         fcb   map.RAM_OVER_CART+lib.scant.page ; ObjID_scant
         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
         fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
@@ -167,7 +167,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage1.dobkeratops.page ; ObjID_dobkeratops
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsjaw.page ; ObjID_dobkeratops_jaw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsmonster.page ; ObjID_dobkeratops_monster
-        fcb   map.RAM_OVER_CART+stage1.page ; ObjID_starfield
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_starfield
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (49)
         fcb   map.RAM_OVER_CART+stage1.dobkeratops.eyemgr.page ; ObjID_dobkeratops_eyes (50)
 Ani_Page_Index.end
@@ -230,7 +230,7 @@ Ani_Asd_none
         fdb   0
 
 Img_Page_Index
-        fcb   map.RAM_OVER_CART+stage1.page
+        fcb   map.RAM_OVER_CART+stage.page
         fcb   map.RAM_OVER_CART+common.anim.page ; ObjID_animation
         fcb   map.RAM_OVER_CART+common.explosion.page ; ObjID_explosion
         fcb   map.RAM_OVER_CART+common.fade.page ; ObjID_fade
@@ -256,7 +256,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+common.counterairlaser.page ; ObjID_forcepod_counterairlaser
         fcb   map.RAM_OVER_CART+lib.scantfire.page ; ObjID_scantfire
         fcb   map.RAM_OVER_CART+stage1.tabrokcanon.page ; ObjID_tabrokcanon
-        fcb   map.RAM_OVER_CART+stage1.page ; ObjID_shellEraser (OVERLAY : effaceur retire)
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_shellEraser (OVERLAY : effaceur retire)
         fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage1.dobkeratopssaw.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page ; ObjID_dobkeratops_explosion
@@ -266,7 +266,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
-        fcb   map.RAM_OVER_CART+stage1.page ; id 34 : libre
+        fcb   map.RAM_OVER_CART+stage.page ; id 34 : libre
         fcb   map.RAM_OVER_CART+lib.scant.page ; ObjID_scant
         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
         fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
@@ -278,7 +278,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage1.dobkeratops.page ; ObjID_dobkeratops
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsjaw.page ; ObjID_dobkeratops_jaw
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsmonster.page ; ObjID_dobkeratops_monster
-        fcb   map.RAM_OVER_CART+stage1.page ; ObjID_starfield
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_starfield
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender (49)
         fcb   map.RAM_OVER_CART+stage1.dobkeratops.eyemgr.page ; ObjID_dobkeratops_eyes (50)
 Img_Page_Index.end

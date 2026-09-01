@@ -430,6 +430,17 @@
                  elle n'etait dite nulle part, le rapport la montrait libre. -->
             <reserved name="monitor.dp" page="$01" address="$6000" size="$0100"/>
             <region name="engine" page="$01" address="$6100"/>
+            <!-- LE CRENEAU D'ECHANGE : le title et les huit stages y sont des
+                 ALTERNATIVES, une seule a la fois. C'etait neuf adresses ecrites
+                 en dur ($8000) ; c'est la definition meme d'une region — une
+                 destination fixe partagee — donc la frontiere se deplace ici, en
+                 une ligne. Descendue a $7C00 le 01/09/2026 : le plus gros ecran
+                 finissait 15 octets avant le bloc du banc, pendant que le moteur
+                 avait 2 468 octets libres devant lui. Le controle de composition
+                 rend l'arbitrage sur : moteur et ecran sont co-residents dans
+                 chaque etat, donc un moteur qui mordrait la frontiere refuse le
+                 build au lieu de se faire ecraser en silence. -->
+            <region name="stage" page="$01" address="$7C00"/>
             <reserved name="bench"        page="$01" address="$87F2" size="$0009"/>
             <!-- Les variables inter-main et les temoins du banc, en equates dans le
                  meme bloc (variables.asm, bench.const.asm). $94 et pas $90 :
@@ -2129,7 +2140,7 @@
 
                 <!-- L'unite du title : la troisieme alternative du creneau
                      d'echange ($01/$8000, comme stage1 et stage2). -->
-                <file name="title.main" linkdata="LINK" page="$01" address="$8000">
+                <file name="title.main" linkdata="LINK" region="stage">
                     <lwasm gensource="gen/title/title-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir1/entries.asm"/>
@@ -3055,7 +3066,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage1" linkdata="LINK" page="$01" address="$8000">
+                <file name="stage1" linkdata="LINK" region="stage">
                     <lwasm gensource="gen/stages/01/stage01-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir1/entries.asm"/>
@@ -3638,7 +3649,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage2" linkdata="LINK" page="$01" address="$8000">
+                <file name="stage2" linkdata="LINK" region="stage">
                     <lwasm gensource="gen/stages/02/stage02-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir2/entries.asm"/>
@@ -3942,7 +3953,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage3" linkdata="LINK" page="$01" address="$8000">
+                <file name="stage3" linkdata="LINK" region="stage">
                     <lwasm gensource="gen/stages/03/stage03-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir3/entries.asm"/>
@@ -4048,7 +4059,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage4" linkdata="LINK" page="$01" address="$8000">
+                <file name="stage4" linkdata="LINK" region="stage">
                     <lwasm gensource="gen/stages/04/stage04-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir4/entries.asm"/>
@@ -4297,7 +4308,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage5" linkdata="LINK" page="$01" address="$8000">
+                <file name="stage5" linkdata="LINK" region="stage">
                     <lwasm gensource="gen/stages/05/stage05-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir5/entries.asm"/>
@@ -4392,7 +4403,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage6" linkdata="LINK" page="$01" address="$8000">
+                <file name="stage6" linkdata="LINK" region="stage">
                     <lwasm gensource="gen/stages/06/stage06-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir6/entries.asm"/>
@@ -4484,7 +4495,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage7" linkdata="LINK" page="$01" address="$8000">
+                <file name="stage7" linkdata="LINK" region="stage">
                     <lwasm gensource="gen/stages/07/stage07-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir7/entries.asm"/>
@@ -4584,7 +4595,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage8" linkdata="LINK" page="$01" address="$8000">
+                <file name="stage8" linkdata="LINK" region="stage">
                     <lwasm gensource="gen/stages/08/stage08-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir8/entries.asm"/>

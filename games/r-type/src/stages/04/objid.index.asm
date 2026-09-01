@@ -19,7 +19,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+common.foefire.page ; ObjID_createFoeFire
         fcb   map.RAM_OVER_CART+common.firechain.page ; ObjID_loadFirePreset
         fcb   map.RAM_OVER_CART+common.foefire.page ; ObjID_foefire
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_initlevel1
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+common.engineflames.page ; ObjID_engineflames
         fcb   map.RAM_OVER_CART+common.messages.page ; ObjID_messages
         fcb   map.RAM_OVER_CART+common.endlevel.page ; ObjID_endstage
@@ -29,23 +29,23 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+common.simplefire.page ; ObjID_forcepod_simplefire
         fcb   map.RAM_OVER_CART+common.reboundlaser.page ; ObjID_forcepod_reboundlaser
         fcb   map.RAM_OVER_CART+common.counterairlaser.page ; ObjID_forcepod_counterairlaser
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_scantfire
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_tabrokcanon
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_shellEraser
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_scantfire
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_tabrokcanon
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_shellEraser
         fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_dobkeratops_saw
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_saw
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
         fcb   0 ; 31 : reserve commune libre
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_checkpoint
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
         fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_starfield
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_starfield
         fcb   map.RAM_OVER_CART+lib.cytron.page ; ObjID_cytron (41)
         fcb   map.RAM_OVER_CART+lib.geld.page ; ObjID_geld (42)
         fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compiler (43)
@@ -118,7 +118,7 @@ Obj_Index_Address
 Obj_Index_Address.end
 
 Ani_Page_Index
-        fcb   map.RAM_OVER_CART+stage4.page
+        fcb   map.RAM_OVER_CART+stage.page
         fcb   map.RAM_OVER_CART+common.anim.page ; ObjID_animation
         fcb   map.RAM_OVER_CART+common.explosion.page ; ObjID_explosion
         fcb   map.RAM_OVER_CART+common.fade.page ; ObjID_fade
@@ -132,7 +132,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+common.foefire.page ; ObjID_createFoeFire
         fcb   map.RAM_OVER_CART+common.firechain.page ; ObjID_loadFirePreset
         fcb   map.RAM_OVER_CART+common.foefire.page ; ObjID_foefire
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_initlevel1
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+common.engineflames.page ; ObjID_engineflames
         fcb   map.RAM_OVER_CART+common.messages.page ; ObjID_messages
         fcb   map.RAM_OVER_CART+common.endlevel.page ; ObjID_endstage
@@ -142,23 +142,23 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+common.simplefire.page ; ObjID_forcepod_simplefire
         fcb   map.RAM_OVER_CART+common.reboundlaser.page ; ObjID_forcepod_reboundlaser
         fcb   map.RAM_OVER_CART+common.counterairlaser.page ; ObjID_forcepod_counterairlaser
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_scantfire
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_tabrokcanon
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_shellEraser
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_scantfire
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_tabrokcanon
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_shellEraser
         fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_dobkeratops_saw
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_saw
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
         fcb   0 ; 31 : reserve commune libre
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_checkpoint
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
         fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_starfield
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_starfield
         fcb   map.RAM_OVER_CART+lib.cytron.page ; ObjID_cytron (41)
         fcb   map.RAM_OVER_CART+lib.geld.page ; ObjID_geld (42)
         fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compiler (43)
@@ -223,7 +223,7 @@ Ani_Asd_none
         fdb   0
 
 Img_Page_Index
-        fcb   map.RAM_OVER_CART+stage4.page
+        fcb   map.RAM_OVER_CART+stage.page
         fcb   map.RAM_OVER_CART+common.anim.page ; ObjID_animation
         fcb   map.RAM_OVER_CART+common.explosion.page ; ObjID_explosion
         fcb   map.RAM_OVER_CART+common.fade.page ; ObjID_fade
@@ -237,7 +237,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+common.foefire.page ; ObjID_createFoeFire
         fcb   map.RAM_OVER_CART+common.firechain.page ; ObjID_loadFirePreset
         fcb   map.RAM_OVER_CART+common.foefire.page ; ObjID_foefire
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_initlevel1
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_initlevel1
         fcb   map.RAM_OVER_CART+common.engineflames.page ; ObjID_engineflames
         fcb   map.RAM_OVER_CART+common.messages.page ; ObjID_messages
         fcb   map.RAM_OVER_CART+common.endlevel.page ; ObjID_endstage
@@ -247,23 +247,23 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+common.simplefire.page ; ObjID_forcepod_simplefire
         fcb   map.RAM_OVER_CART+common.reboundlaser.page ; ObjID_forcepod_reboundlaser
         fcb   map.RAM_OVER_CART+common.counterairlaser.page ; ObjID_forcepod_counterairlaser
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_scantfire
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_tabrokcanon
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_shellEraser
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_scantfire
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_tabrokcanon
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_shellEraser
         fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_dobkeratops_saw
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_saw
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
         fcb   0 ; 31 : reserve commune libre
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_checkpoint
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
         fcb   map.RAM_OVER_CART+lib.cancer.page ; ObjID_cancer
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.pstaff.page ; ObjID_pstaff
-        fcb   map.RAM_OVER_CART+stage4.page ; ObjID_starfield
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_starfield
         fcb   map.RAM_OVER_CART+lib.cytron.page ; ObjID_cytron (41)
         fcb   map.RAM_OVER_CART+lib.geld.page ; ObjID_geld (42)
         fcb   map.RAM_OVER_CART+lib.compiler.page ; ObjID_compiler (43)
