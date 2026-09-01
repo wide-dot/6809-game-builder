@@ -31,7 +31,7 @@ caractère.
 | `<region name="pscroll.vid">` : `page="$01"` (un bit de demi-page) → `slice="0"` | 1 |
 | `<reserved>` de la page 0 : positions dans la page → adresses CPU + `slice="1"` | 3 |
 | `<reserved name="pscroll.vid.half1">` : redondant avec la région, supprimé | 1 |
-| `<reserved>` framebuffers : positions → adresses CPU, et les deux noms remis à l'endroit | 4 |
+| `<reserved>` framebuffers : positions → adresses CPU, noms remis à l'endroit et mis en anglais (`form`/`color`) | 4 |
 | le loader : deux `<define>` manuscrits → une place déclarée | 1 |
 | code assembleur | **1 ligne**, et c'est une simplification |
 
@@ -84,13 +84,21 @@ corrigée dans la déclaration, jamais contournée par une exception.
 ## Phase 3 — le loader devient une place
 
 ```xml
-<reserved name="loader" window="data" page="$04" address="$C000"/>
+<reserved name="loader" window="data" page="$04" address="$C000" size="$2000"/>
 ```
 
 `loader.PAGE` et `loader.ADDRESS` cessent d'être deux `<define>` manuscrits :
-ce sont des équates générées depuis cette place. La taille n'a pas à être
-écrite — le builder assemble le loader, il la connaît ; une valeur écrite qui
-contredit le binaire est une erreur.
+ce sont des équates générées depuis cette place.
+
+**La taille couvre le code ET le tas.** Le pool TLSF du loader est un
+`equ *` à la fin de son binaire (`loader.memoryPool`), dimensionné par
+`loader.ADDRESS - loader.memoryPool + $2000` : il court jusqu'à la fin de la
+fenêtre. Sur r-type, code `$C000-$D0FD` puis pool `$D0FF-$E000`, soit la
+**première moitié entière de la page 4** en physique (`+$0000-$1FFF`). Ce pool
+est aujourd'hui totalement invisible au builder — rien n'empêcherait d'y
+déclarer une place. Le contrôle qui vient avec : la somme du binaire et du
+pool doit tenir dans la taille déclarée, et le pool ne doit pas déborder la
+fenêtre.
 
 Deux choses en découlent sans règle en dur : les octets du loader entrent dans
 le contrôle de recouvrement (rien ne les protégeait, et l'arène des objets

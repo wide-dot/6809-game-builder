@@ -125,8 +125,12 @@ en sort. `page` ne s'écrit que là où la fenêtre ne le fixe pas déjà.
     <reserved name="objects.pool"  window="video" slice="1" address="$4000" size="$1B6C"/>
 
     <!-- Donnees : page + adresse CPU. -->
-    <reserved name="framebuffer.2.forme" window="data" page="$02" address="$C000" size="$1F40"/>
-    <reserved name="loader"              window="data" page="$04" address="$C000"/>
+    <reserved name="framebuffer.2.form" window="data" page="$02" address="$C000" size="$1F40"/>
+
+    <!-- Le loader, code ET tas : son pool TLSF est un `equ *` a la fin de son
+         binaire, il court jusqu'a la fin de la fenetre. Sa place les couvre
+         tous les deux, sinon le builder croirait la moitie de page libre. -->
+    <reserved name="loader" window="data" page="$04" address="$C000" size="$2000"/>
 
     <arena name="objects">
         <zone page="$04" address="$2000" size="$2000"/>
