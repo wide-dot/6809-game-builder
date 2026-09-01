@@ -254,9 +254,11 @@ cartouche étant linéaire.
 
 1. la fenêtre existe ; elle peut montrer cette page (`window="video" page="$01"`
    est refusé : la vidéo n'a pas de sélecteur de page) ;
-2. la place tient dans une vue (une place à cheval sur deux vues non contiguës
-   est refusée — sur TO8, une place résidente de 16 Ko est légale, une place de
-   12 Ko à partir de `$1000` ne l'est pas) ;
+2. la place tient dans la fenêtre. Elle peut **enjamber deux vues** — les neuf
+   écrans de r-type le font, chargés à `$7C00` et dépassant `$8000` — et son
+   empreinte physique est alors un **ensemble de plages** (`title.main` :
+   `+$3C00-$3FFF` et `+$0000-$03E3`). Les contrôles s'appliquent plage par
+   plage ;
 3. les places ne se recouvrent pas **en physique**, toutes fenêtres confondues,
    et ne mordent pas sur une zone que la machine se réserve ;
 4. aucune destination de chargement n'est dans la fenêtre d'où le loader

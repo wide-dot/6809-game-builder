@@ -72,7 +72,9 @@ Quatre contrôles, dans l'ordre où ils coûtent :
 
 1. déclaration hors d'atteinte (fenêtre inconnue, page impossible, place à
    cheval sur deux vues) ;
-2. place hors des bornes de la RAM déclarée (`pages × pagesize`) ;
+2. place hors des bornes de la RAM déclarée (`pages × pagesize`) — une place
+   qui enjambe deux vues est **légale**, son empreinte est alors un ensemble de
+   plages (voir les points ouverts) ;
 3. **recouvrement en physique, toutes fenêtres confondues** — le contrôle qui
    n'existait pas ;
 4. recouvrement avec une zone que la machine se réserve.
@@ -153,18 +155,56 @@ soit la façon dont elle est écrite.
 
 ## Points ouverts, à trancher en cours de route
 
+### Tranchés depuis, par lecture du code
+
+**La demi-page de la page 0.** `engine/irq/Irq.asm:153` force `map.HALFPAGE`
+bit 0 à **0** pour la durée de l'IRQ, en commentant « demi-page 0 : l'OST ».
+Bit 0 = 0 donne `screenPage = 0`, donc le décalage `+$2000`. Les objets sont
+donc physiquement en **page 0, `+$2000-$3FFF`**, et `pscroll.vid` (monté avec
+B=1) en **`+$0000-$1FFF`**. Les deux `<reserved>` de la page 0 portent
+aujourd'hui les décalages inversés. L'énoncé relatif est juste (« ils sont dans
+des moitiés différentes »), donc rien n'est cassé ; seules les coordonnées
+absolues sont fausses, et la phase 5 les remet à l'endroit.
+
+**Les plans forme et couleur.** `screenPage = 1` sélectionne RAM A, la
+**forme**, en `+$0000` ; la couleur est en `+$2000`. Confirmé deux fois par la
+source de toje (`updateScreen`, et la fenêtre `$A000` qui montre « couleur
+($A000) puis forme ($C000) »). Les quatre `<reserved name="framebuffer.*">` de
+r-type ont donc leurs deux noms échangés. Aucun octet ne bouge — ce sont des
+réservations qui couvrent les deux moitiés dans les deux cas — mais le nom
+devient juste.
+
+### Une place peut enjamber deux vues — et neuf le font déjà
+
+Le contrôle « une place à cheval sur deux vues non contiguës est refusée »,
+écrit en phase 2, est **faux**. Les neuf écrans de r-type sont chargés à
+`$7C00` dans la fenêtre résidente et dépassent `$8000` : `title.main`
+(2 019 o) occupe physiquement `+$3C00-$3FFF` **et** `+$0000-$03E3`. C'est
+légitime — le processeur les lit d'un bloc — et c'est la norme ici, pas
+l'exception.
+
+Le modèle doit donc admettre qu'une place a pour empreinte **un ensemble de
+plages physiques**, pas une seule. Les contrôles de recouvrement s'appliquent
+plage par plage ; le rapport dessine les morceaux et dit qu'ils appartiennent
+au même fichier.
+
+### Restent ouverts
+
 1. **La non-linéarité des fenêtres MO6** n'est pas mesurée (pas d'émulateur MO6
-   ici). Déclarée comme sur TO8 en phase 0 ; à confirmer le jour où une machine
-   ou un émulateur MO6 est disponible. N'engage que les contrôles : les images
-   MO6 ne changent pas, puisque le calcul part de l'adresse CPU déclarée.
-2. **Quelle demi-page de la page 0 porte quoi** (`objects.pool` vs
-   `pscroll.vid`) : les deux déclarations actuelles ne peuvent pas être vraies
-   ensemble. À établir en phase 2 en lisant ce que l'engine monte réellement,
-   pas en choisissant.
-3. **Les noms `framebuffer.N.couleur` / `.forme`** désignent les moitiés dans
-   l'ordre inverse de ce que la fenêtre vidéo montre (`bit 1` = forme = `+$0000`).
-   Sans effet sur les octets — ce sont des réservations — mais le modèle rend la
-   question posable, donc autant y répondre en phase 2.
+   ici). Le risque est cerné : la traduction est auto-cohérente dans les deux
+   cas — une adresse CPU déclarée devient un décalage puis redevient la même
+   adresse CPU — donc **les images MO6 ne changent pas** quelle que soit
+   l'hypothèse. N'en dépendent que les contrôles inter-fenêtres et la ligne du
+   rapport. Déclarée comme sur TO8 (même gate array), avec la mention explicite
+   dans le fichier machine qu'elle n'est pas vérifiée.
+2. **Faut-il rendre l'enjambement visible ou explicite ?** Trois postures :
+   l'admettre en silence, l'admettre et le nommer dans le rapport et le journal,
+   ou exiger que l'auteur l'avoue par un attribut. Recommandation : le nommer,
+   sans l'exiger.
+3. **Une assertion `cpu=` pour la migration.** 17 places changent de nombre, à
+   la main. Un attribut facultatif `cpu="$6100"` que le builder *vérifie*
+   contre `(page, offset, window)` attraperait une conversion ratée à la
+   déclaration. À garder après la migration, ou à retirer.
 4. **`<window>` dans le fichier machine ou dans le layout ?** Ici : dans la
    machine, parce qu'une fenêtre est un fait matériel. Si un jeu devait un jour
    déclarer une fenêtre à lui (bank switching applicatif), ce serait une
