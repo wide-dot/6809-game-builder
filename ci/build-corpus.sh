@@ -5,6 +5,9 @@
 # change, run it after, diff the two files — a byte that moved without
 # being announced is a bug, in either direction.
 #
+# Every build is COLD : gen/ and dist/ go before each one. A kept measurement
+# is exactly what makes two runs disagree for reasons the diff cannot show.
+#
 #   ci/build-corpus.sh /tmp/ref.hashes
 #   ...change...
 #   ci/build-corpus.sh /tmp/new.hashes && diff /tmp/ref.hashes /tmp/new.hashes
@@ -23,7 +26,13 @@ for cfg in $CONFIGS; do
   dir=$ROOT/$(dirname "$cfg"); file=$(basename "$cfg")
   cd "$dir" || exit 1
   [ -e engine ] || ln -s ../../engine engine
-  rm -rf dist
+  # gen ET dist : une mesure gardee d'un run precedent (taille d'un fichier,
+  # placement d'une arene) masque ce que le build dirait a froid. Un
+  # chevauchement reel entre la collision du stage 3 et trois fichiers communs
+  # de r-type s'est cache derriere un gen/ rance jusqu'au 01/09/2026 : le
+  # controle de composition ne le voyait pas, parce qu'il ne voyait pas la
+  # vraie taille. Une comparaison d'empreintes ne vaut que sur un build a froid.
+  rm -rf dist gen
   sed -i.hfebak -E 's|<hfe[^>]*/>||' "$file"
   if ! java -Dbasedir="$ROOT" -cp "$ROOT/repo/*" \
         com.widedot.m6809.gamebuilder.MainCommand -f "$file" >> "$OUT.log" 2>&1; then
