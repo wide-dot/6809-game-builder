@@ -182,6 +182,23 @@ public final class PlacementScan {
 					throw new Exception(where + ": file '" + name + "' needs both page and"
 							+ " address for a raw attributed place");
 				}
+				if (page != null) {
+					// read through the machine's windows : the address names one,
+					// and it says whether that page can be shown there. The size
+					// is not known here — the file has not been built yet — so
+					// only the window and the page are checked.
+					com.widedot.m6809.gamebuilder.spi.globals.Machines.Machine machine =
+							ctx.machines.current();
+					if (machine != null && !machine.windows.isEmpty()) {
+						try {
+							machine.windows().resolve(page, address.intValue(),
+									number(node, "slice"), null);
+						} catch (Exception e) {
+							throw new Exception(where + ": file '" + name + "': "
+									+ e.getMessage());
+						}
+					}
+				}
 				ctx.filePlaces.declare(name, new com.widedot.m6809.gamebuilder.spi.globals
 						.FilePlaces.Place(arena, region, page, address, where));
 			}

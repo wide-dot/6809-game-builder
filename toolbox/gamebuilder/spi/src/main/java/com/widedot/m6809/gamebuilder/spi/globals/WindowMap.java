@@ -177,6 +177,73 @@ public final class WindowMap {
 		return ranges;
 	}
 
+	/**
+	 * A place, once the window has had its say : which silicon it occupies,
+	 * and which byte the runtime must write to see it.
+	 */
+	public static final class Placement {
+		/** the window the address falls in */
+		public final Machines.Window window;
+		/** the page it really lives in */
+		public final int page;
+		/** where it starts inside that page — the referential of every check */
+		public final int position;
+		/** what the window's selector must hold, which is what tables carry */
+		public final int selector;
+		/** which slice of the page, when the window shows less than one */
+		public final Integer slice;
+
+		Placement(Machines.Window window, int page, int position, int selector, Integer slice) {
+			this.window = window;
+			this.page = page;
+			this.position = position;
+			this.selector = selector;
+			this.slice = slice;
+		}
+	}
+
+	/**
+	 * Resolve a declared place — the page it lives in, the address it runs at,
+	 * and which slice when the window shows less than a page.
+	 *
+	 * <p><b>The legacy spelling.</b> Before the windows were declared, a place
+	 * in the video window wrote the SELECTOR where a page goes :
+	 * {@code page="$01" address="$4000"} meant «&nbsp;half-page 1&nbsp;», not
+	 * page 1. That reading is still accepted and translated here, so no
+	 * configuration had to change the day the model arrived. It goes when the
+	 * declarations do.
+	 *
+	 * @param size the declared size, or null when it is not known yet
+	 */
+	public Placement resolve(Integer page, int cpu, Integer slice, Integer size)
+			throws Exception {
+		Machines.Window w = of(cpu);
+		Integer usedSlice = slice;
+		Integer usedPage = page;
+		if (!w.slices.isEmpty() && slice == null && page != null
+				&& page.intValue() != w.fixedPage.intValue()) {
+			usedSlice = legacySlice(w, page.intValue());
+			usedPage = null;
+		}
+		if (size != null) {
+			checkFits(w, cpu, size.intValue());
+		}
+		int resolvedPage = pageOf(w, usedPage);
+		return new Placement(w, resolvedPage, positionOf(w, cpu, usedSlice),
+				selectorOf(w, usedPage, usedSlice), usedSlice);
+	}
+
+	/** the slice a legacy selector value named */
+	private Integer legacySlice(Machines.Window w, int selector) throws Exception {
+		for (Machines.Slice s : w.slices) {
+			if (s.value == selector) {
+				return Integer.valueOf(s.index);
+			}
+		}
+		throw new Exception("window '" + w.name + "' is a window on page " + w.fixedPage
+				+ ": '" + selector + "' is neither that page nor one of its selector values");
+	}
+
 	private static String hex(int v) {
 		return String.format("%04X", v);
 	}

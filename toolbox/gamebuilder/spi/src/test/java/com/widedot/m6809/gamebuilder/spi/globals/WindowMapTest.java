@@ -176,4 +176,50 @@ class WindowMapTest {
 		Exception e = assertThrows(Exception.class, () -> bare.windows().of(0x1000));
 		assertTrue(e.getMessage().contains("no window"), e.getMessage());
 	}
+
+	@Test
+	@DisplayName("resolving a resident place : $6100 is page 1, position $2100")
+	void resolveResident() throws Exception {
+		WindowMap.Placement p = map().resolve(Integer.valueOf(1), 0x6100, null, null);
+		assertEquals("resident", p.window.name);
+		assertEquals(1, p.page);
+		assertEquals(0x2100, p.position);
+		assertEquals(1, p.selector);
+	}
+
+	@Test
+	@DisplayName("the legacy video spelling : page=1 at $4000 meant half-page 1, not page 1")
+	void legacyVideoSpellingIsTranslated() throws Exception {
+		WindowMap.Placement p = map().resolve(Integer.valueOf(1), 0x4000, null, null);
+		assertEquals("video", p.window.name);
+		assertEquals(0, p.page);              // the page it really is
+		assertEquals(0x0000, p.position);     // the half it really is
+		assertEquals(1, p.selector);          // and the byte the table carries, unchanged
+		assertEquals(Integer.valueOf(0), p.slice);
+	}
+
+	@Test
+	@DisplayName("the new spelling says the same thing, and says it in the page's order")
+	void newSpellingMatchesTheLegacyOne() throws Exception {
+		WindowMap.Placement legacy = map().resolve(Integer.valueOf(1), 0x4000, null, null);
+		WindowMap.Placement now = map().resolve(Integer.valueOf(0), 0x4000, Integer.valueOf(0), null);
+		assertEquals(legacy.position, now.position);
+		assertEquals(legacy.selector, now.selector);
+	}
+
+	@Test
+	@DisplayName("a page the video window can never show is refused")
+	void videoRefusesAForeignPage() {
+		Exception e = assertThrows(Exception.class,
+				() -> map().resolve(Integer.valueOf(0x17), 0x4000, null, null));
+		assertTrue(e.getMessage().contains("window on page 0"), e.getMessage());
+	}
+
+	@Test
+	@DisplayName("a declared size that leaves the window is refused at resolution")
+	void resolveChecksTheSize() {
+		Exception e = assertThrows(Exception.class,
+				() -> map().resolve(Integer.valueOf(6), 0x3000, null, Integer.valueOf(0x2000)));
+		assertTrue(e.getMessage().contains("runs past the 'cart' window"), e.getMessage());
+	}
 }

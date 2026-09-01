@@ -65,6 +65,30 @@ un octet de page passe par `WindowMap` : `gensymbols`, les tables de scène,
 **Validation** : corpus froid identique. C'est ici que se prouve l'équivalence
 du calcul ; si une image bouge d'un octet, la phase ne passe pas.
 
+### Ce qui a réellement été fait (01/09/2026), et les écarts
+
+Faite en resserrant sur ce qui **porte des octets chargés** : `<region>`,
+`<zone>` et les places brutes de `<file>` sont lues à travers la fenêtre —
+laquelle montre cette adresse, cette page peut-elle y être montrée, les octets
+restent-ils dedans. `slice` est déclarable. Quatre écarts, tous consignés :
+
+1. **Le contrôle ne porte que sur la passe réelle.** La passe de découverte
+   place ce qui n'a pas de taille mesurée sur une page entière, donc des
+   régions empilées sur une page atterrissent en `$4000`, `$8000`… et dans des
+   fenêtres qu'elles ne verront jamais. Deux configs l'ont montré tout de
+   suite (`stageinit` de r-type, `ymm.data` de sound MO6). La passe réelle a
+   les mesures et contrôle tout.
+2. **La lecture héritée de la vidéo est traduite, pas refusée** :
+   `page="$01" address="$4000"` voulait dire « demi-page 1 » et non « page 1 ».
+   `WindowMap.resolve` le traduit, ce qui évite de migrer quoi que ce soit ce
+   jour-là. La traduction part avec les déclarations, en phase 5.
+3. **`<reserved>` garde sa coordonnée héritée** — une position dans la page,
+   là où `<region>` écrit une adresse CPU. C'est la troisième coordonnée du
+   fichier, et elle se règle en phase 5 avec la ligne d'assembleur des tirs.
+4. **`<pagebyte>` n'a pas bougé** : le déplacer vers l'attribut `or` de la
+   fenêtre cartouche est de la déduplication sans effet, à faire en phase 5
+   avec le reste des déclarations.
+
 ## Phase 2 — les contrôles
 
 Quatre, dans l'ordre où ils coûtent : débordement de fenêtre (erreur dure),

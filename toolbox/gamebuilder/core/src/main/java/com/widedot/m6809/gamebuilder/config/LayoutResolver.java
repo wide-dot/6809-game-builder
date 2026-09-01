@@ -43,6 +43,7 @@ import com.widedot.m6809.gamebuilder.spi.globals.Regions;
  */
 public final class LayoutResolver {
 
+	/** the fallback when no machine is declared ; a Thomson page */
 	public static final int PAGE_SIZE = 0x4000;
 
 	private LayoutResolver() {
@@ -106,10 +107,12 @@ public final class LayoutResolver {
 					throw new Exception(ctx.sources.locate(z) + ": <" + z.getNodeName()
 							+ "> is not valid inside a <region> ; only <zone> is");
 				}
-				zones.add(new Regions.Zone(
-						Attribute.getInteger(z, ctx, "page"),
-						Attribute.getInteger(z, ctx, "address"),
-						Attribute.getInteger(z, ctx, "size")));
+				int zonePage = Attribute.getInteger(z, ctx, "page");
+				int zoneAddress = Attribute.getInteger(z, ctx, "address");
+				int zoneSize = Attribute.getInteger(z, ctx, "size");
+				through(ctx, z, name, zonePage, zoneAddress,
+						Attribute.getIntegerOpt(z, ctx, "slice"), Integer.valueOf(zoneSize));
+				zones.add(new Regions.Zone(zonePage, zoneAddress, zoneSize));
 			}
 			if (!zones.isEmpty()) {
 				// the first zone stands for the region wherever the builder
@@ -149,19 +152,22 @@ public final class LayoutResolver {
 					: Attribute.getInteger(child, ctx, "address");
 
 			Integer size;
+			boolean sizeIsReal = true;
 			if (!autoSize) {
 				// a declared size is a BUDGET : the build refuses content that
 				// outgrows it, which is the whole point of writing it down
 				size = Attribute.getIntegerOpt(child, ctx, "size");
 			} else if (pages > 1) {
 				// a multi-page budget offers whole pages ; each zone's capacity is the page
-				size = PAGE_SIZE;
+				size = pageSize(ctx);
+				sizeIsReal = false;
 			} else {
 				Integer m = ctx.regions.measured(name);
+				sizeIsReal = m != null;
 				// no measure yet : the discovery pass is running, and it is the
 				// one that will produce it. Take the page so nothing it builds
 				// is refused for a budget that does not exist yet.
-				size = m != null ? m : PAGE_SIZE;
+				size = m != null ? m : pageSize(ctx);
 			}
 
 			if (autoAddress && size == null) {
@@ -169,23 +175,57 @@ public final class LayoutResolver {
 						+ "' has address=\"auto\" but no size — the builder can only place it"
 						+ " after what precedes it if it knows how much room that took");
 			}
-			// No page-bound check here : a layout never declares where a page
-			// begins or ends, and the bounds differ with the window the page is
-			// seen through — the resident RAM opens at $6100, the cartridge
-			// window at $0000. The overlap checks the layout plugin runs are
-			// what catches a region placed on top of something.
+			// The bounds DO come from somewhere now : the machine says where
+			// each window starts and how wide it is, so a place that would
+			// spill out of its window is caught here. A size that is only the
+			// discovery pass's stand-in is not a size — it is not checked.
+			through(ctx, child, name, page, address,
+					Attribute.getIntegerOpt(child, ctx, "slice"),
+					sizeIsReal ? size : null);
 
 			out.put(name, new Regions.Region(name, page, address, size, pages));
 
 			if (pages > 1) {
 				for (int p = 0; p < pages; p++) {
-					bump(cursor, page + p, PAGE_SIZE);
+					bump(cursor, page + p, pageSize(ctx));
 				}
 			} else if (size != null) {
 				bump(cursor, page, address + size);
 			}
 		}
 		return out;
+	}
+
+	/** how wide a page is on the target machine, or the Thomson default */
+	private static int pageSize(BuildContext ctx) {
+		com.widedot.m6809.gamebuilder.spi.globals.Machines.Machine m = ctx.machines.current();
+		return m == null ? PAGE_SIZE : m.pageSize;
+	}
+
+	/**
+	 * Read a declared place through the machine's windows : the window the
+	 * address falls in, whether the page can be shown there, and whether the
+	 * bytes stay inside it. Silent when the target declares no machine — the
+	 * model arrives without breaking what does not describe itself yet.
+	 */
+	private static void through(BuildContext ctx, ImmutableNode node, String name, Integer page,
+			int address, Integer slice, Integer size) throws Exception {
+		com.widedot.m6809.gamebuilder.spi.globals.Machines.Machine m = ctx.machines.current();
+		if (m == null || m.windows.isEmpty()) {
+			return;
+		}
+		if (ctx.staticLink.isDiscovery()) {
+			// Nothing is final while measuring : a size the author left to the
+			// builder takes a whole page, so regions stacked on one page sit at
+			// $4000, $8000… and land in windows they will never see. The real
+			// pass has the measures, and checks them all.
+			return;
+		}
+		try {
+			m.windows().resolve(page, address, slice, size);
+		} catch (Exception e) {
+			throw new Exception(ctx.sources.locate(node) + ": '" + name + "': " + e.getMessage());
+		}
 	}
 
 	private static int at(Map<Integer, Integer> cursor, int page) {

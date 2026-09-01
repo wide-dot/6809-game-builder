@@ -101,6 +101,7 @@ public final class Handlers {
 			.opt("region", STRING, "attributed place : destination region of the layout ; loads of it become bare names")
 			.opt("page", INT, "attributed place : raw destination page, needs address")
 			.opt("address", INT, "attributed place : raw destination address, needs page")
+			.opt("slice", INT, "which slice of the page, when the window showing this address shows less than a whole page (the video window shows 8 KB of 16) ; numbered in the page's own order")
 			.opt("gendir", STRING, "collection form (every child names its parts) : directory receiving the generated member sources"));
 		spec(element("unit").doc("one indivisible object — an entry symbol and its content, code and images alike. In a <file> the builder generates its envelope")
 			.opt("name", STRING, "name for the generated source, defaults from symbol")
@@ -128,6 +129,7 @@ public final class Handlers {
 			.req("name", STRING, "region name, referenced by <load region=...>")
 			.opt("page", INT, "destination page, compact form of a region holding one <zone>")
 			.opt("address", INT, "destination address, compact form")
+			.opt("slice", INT, "which slice of the page, when the window showing this address shows less than a whole page (the video window shows 8 KB of 16) ; numbered in the page's own order")
 			.opt("size", INT, "byte budget of the compact form ; a region declaring <zone> children says its room there")
 			.opt("pages", INT, "consecutive pages of the compact form, 1 if omitted — the same as declaring that many <zone>"));
 		spec(element("arena").doc("a named list of zones the builder ranges files over, largest first. Its content is reached through a table — never through a baked address — which is what lets the builder move it")
@@ -135,7 +137,8 @@ public final class Handlers {
 		spec(element("zone").doc("a continuous range inside one page — the only thing that speaks of physical memory. Declare several to describe a discontinuous space ; a zone never spans pages")
 			.req("page", INT, "page holding this range")
 			.req("address", INT, "where the range starts")
-			.req("size", INT, "how many bytes it offers"));
+			.req("size", INT, "how many bytes it offers")
+			.opt("slice", INT, "which slice of the page, when the window showing this address shows less than a whole page (the video window shows 8 KB of 16) ; numbered in the page's own order"));
 		spec(element("composition").doc("a declared RAM state : the scenes that are resident TOGETHER. A scene says what it loads ; a composition says what else is there beside it. Two files may only share bytes when no composition holds both")
 			.req("name", STRING, "composition name, used in build errors and in the occupancy report"));
 		spec(element("reserved").doc("a range the game occupies without loading into it — object pool, globals, stack, direct page ; nothing may be placed on top")
