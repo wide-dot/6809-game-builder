@@ -427,7 +427,6 @@
                  bootloader y entre : son adresse est publiee par le layout, et
                  n'est plus recopiee a la main dans la declaration du loader. -->
             <region name="engine" page="$01" address="$6100"/>
-            <region name="cast" page="$01" address="$87FB" size="$0065"/>
             <reserved name="bench"        page="$01" address="$87F2" size="$0009"/>
             <!-- Les variables inter-main et les temoins du banc, en equates dans le
                  meme bloc (variables.asm, bench.const.asm). $94 et pas $90 :
@@ -649,13 +648,6 @@
                 <default name="images.encoder"   value="draw"/>
 
                 <!-- Le moteur résident                                        -->
-                <file name="common.cast" linkdata="LINK" region="cast">
-                    <lwasm gensource="gen/common/cast.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/common/engine/cast.unit.asm"/>
-                    </lwasm>
-                </file>
-
                 <file name="common.engine" linkdata="LINK" region="engine">
                     <lwasm gensource="gen/common/engine.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -1993,7 +1985,6 @@
                 </file>
 
                 <scene name="scenes.boot" section="SCENE" gensource="gen/scenes/boot.asm">
-                    <load name="common.cast"/>
                     <load name="common.engine"/>
                     <load name="common.mscroll"/>
                     <load name="common.anim"/>

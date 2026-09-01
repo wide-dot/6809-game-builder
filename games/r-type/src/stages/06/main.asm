@@ -140,7 +140,6 @@ emitterFlash.Object EXTERNAL
  SECTION code
 
         INCLUDE "src/common/engine/api.asm"
-        INCLUDE "src/common/cast.const.asm"
         INCLUDE "src/common/flow/endlevel/endlevel.const.asm"
 
         INCLUDE "engine/system/to8/memory-map.equ"
@@ -324,11 +323,7 @@ stage.handOver
 
         lda   #6
         sta   game.stage
-        ldx   #STAGE_SCENE                 ; ce stage rend ce qu'il avait pris
-        jsr   game.stage.unload
-        ldx   #scenes.stage7
-        ldy   #scenes.stage7.dir
-        ldu   #cast.stage7                  ; les lots d'ennemis de la cible
+        ldb   #7
         jmp   game.stage.switch
 
 ;*******************************************************************************

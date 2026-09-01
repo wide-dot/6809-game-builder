@@ -39,7 +39,6 @@ mainloop.state    EXPORT
 title.cheat.tick   EXTERNAL
 title.cheat.launch EXTERNAL
 soundfx.frame      EXTERNAL
-        INCLUDE "src/common/cast.const.asm"
 
         INCLUDE "engine/system/to8/memory-map.equ"
         INCLUDE "src/common/engine/ram.const.asm"

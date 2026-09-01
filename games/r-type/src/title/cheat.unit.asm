@@ -33,7 +33,6 @@ title.cheat.tick   EXPORT
 title.cheat.launch EXPORT
 
         INCLUDE "src/common/engine/api.asm"
-        INCLUDE "src/common/cast.const.asm"
         INCLUDE "src/common/fx/soundfx/soundFX.const.asm"
 
 STAGE_SCENE equ scenes.title
@@ -129,8 +128,6 @@ title.cheat.launch
         ; et ne touche pas la fenetre cartouche (le piege loader connu vise la
         ; fenetre DONNEES, pour les appels disque) ; ces 6 octets manquaient
         ; au title resident
-        ldx   #STAGE_SCENE
-        jsr   game.stage.unload
         ; les effets acceptes s'appliquent, TOUJOURS reecrits : un depart
         ; sans cheat remet tout a zero
         lda   tct.pinv
@@ -147,19 +144,8 @@ title.cheat.launch
         tfr   a,b
         decb                           ; l'index de stage 0..7
 tcl.go
-        stb   game.stage
-        aslb                           ; stride 4 : scene, lots
-        aslb
-        ldx   #tcl.table
-        abx
-        ldu   2,x                      ; les lots d'ennemis de la cible
-        ldy   ,x                       ; l'id de scene, garde pour X
-        lda   game.stage
-        inca                           ; repertoire N = stage N
-        tfr   y,x
-        tfr   a,b
-        clra
-        tfr   d,y
+        stb   game.stage               ; l'index de stage, 0-base
+        incb                           ; l'ecran cible : 1..8 = le stage N
         jmp   game.stage.switch        ; resident — on ne revient jamais ici
 
 ; l'etat (la page est de la RAM, et l'unite revient du disque a chaque
@@ -173,14 +159,5 @@ tct.plives fcb 0                       ; les vies en plus acceptees
 
 ; la table des cibles (une ligne par stage) : les ids de scene viennent des
 ; entries.asm des repertoires 1..8, inclus par l'unite
-tcl.table
-        fdb   scenes.stage1,cast.stage1
-        fdb   scenes.stage2,cast.stage2
-        fdb   scenes.stage3,cast.stage3
-        fdb   scenes.stage4,cast.stage4
-        fdb   scenes.stage5,cast.stage5
-        fdb   scenes.stage6,cast.stage6
-        fdb   scenes.stage7,cast.stage7
-        fdb   scenes.stage8,cast.stage8
 
  ENDSECTION

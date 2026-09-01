@@ -342,7 +342,8 @@ Collision_Run EXTERNAL
 
         ; --- l'échange lui-même : il doit être résident, puisqu'il survit à
         ; l'écrasement de la région du stage qui l'appelle ---
+        ; game.stage.unload a disparu le 01/09/2026 : la convergence vers un
+        ; etat declare lache elle-meme ce que la cible ne tient pas.
         _api game.stage.switch
-        _api game.stage.unload
 
  ENDC

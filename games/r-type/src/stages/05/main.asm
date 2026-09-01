@@ -154,7 +154,6 @@ mid.Object        EXTERNAL
  SECTION code
 
         INCLUDE "src/common/engine/api.asm"
-        INCLUDE "src/common/cast.const.asm"
         INCLUDE "src/common/flow/endlevel/endlevel.const.asm"
 
         INCLUDE "engine/system/to8/memory-map.equ"
@@ -342,11 +341,7 @@ stage.handOver
 
         lda   #5
         sta   game.stage
-        ldx   #STAGE_SCENE                 ; ce stage rend ce qu'il avait pris
-        jsr   game.stage.unload
-        ldx   #scenes.stage6
-        ldy   #scenes.stage6.dir
-        ldu   #cast.stage6                  ; les lots d'ennemis de la cible
+        ldb   #6
         jmp   game.stage.switch
 
 ;*******************************************************************************

@@ -168,7 +168,6 @@ emitterFlash.Object EXTERNAL
  SECTION code
 
         INCLUDE "src/common/engine/api.asm"
-        INCLUDE "src/common/cast.const.asm"
 
         INCLUDE "engine/system/to8/memory-map.equ"
         INCLUDE "src/common/engine/ram.const.asm"
@@ -365,11 +364,7 @@ stage.handOver
         ; lui seul sait ce qu'il occupait. Le stage 2 ne reprend ni la
         ; collision ni rien d'autre du 1 — il n'aurait aucun moyen de le
         ; deviner, et ce n'est pas son travail.
-        ldx   #STAGE_SCENE
-        jsr   game.stage.unload
-        ldx   #scenes.stage2
-        ldy   #scenes.stage2.dir
-        ldu   #cast.stage2                  ; les lots d'ennemis de la cible
+        ldb   #2
         jmp   game.stage.switch
 
 ;*******************************************************************************

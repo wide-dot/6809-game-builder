@@ -1084,11 +1084,7 @@ stage.gameOver
         ; Le corps est partagé : il ne sait pas dans quel stage il tourne, mais
         ; chaque stage a nommé sa scène. Décharger la sienne avant de charger
         ; celle du title — l'index rendu puis repris est la séquence honnête.
-        ldx   #STAGE_SCENE
-        jsr   game.stage.unload
-        ldx   #scenes.title
-        ldy   #scenes.title.dir
-        ldu   #cast.title                  ; les lots d'ennemis de la cible
+        clrb                               ; 0 : le title
         jmp   game.stage.switch
 
 ;*******************************************************************************

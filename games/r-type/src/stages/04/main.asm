@@ -161,7 +161,6 @@ pstaff.Object     EXTERNAL
  SECTION code
 
         INCLUDE "src/common/engine/api.asm"
-        INCLUDE "src/common/cast.const.asm"
         INCLUDE "src/common/flow/endlevel/endlevel.const.asm"
 
         INCLUDE "engine/system/to8/memory-map.equ"
@@ -413,11 +412,7 @@ stage.handOver
 
         lda   #4
         sta   game.stage
-        ldx   #STAGE_SCENE                 ; ce stage rend ce qu'il avait pris
-        jsr   game.stage.unload
-        ldx   #scenes.stage5
-        ldy   #scenes.stage5.dir
-        ldu   #cast.stage5                  ; les lots d'ennemis de la cible
+        ldb   #5
         jmp   game.stage.switch
 
 ;*******************************************************************************

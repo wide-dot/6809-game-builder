@@ -40,8 +40,6 @@ ENGINE_RESIDENT equ 1
         ; a neuf de sa table vit dans Collision_ClearLists.
         INCLUDE "src/enemies/_shared/bullets/bullets.equ"
         INCLUDE "engine/sound/ymm.const.asm"
-        ; les masques de lots : l'entree du boot demande le title avec le sien
-        INCLUDE "src/common/cast.const.asm"
 
 ; The scroll reads these two when InitScroll works out its default camera cap.
 ; A stage overrides the cap by writing scroll_max afterwards, which is how a
@@ -73,9 +71,7 @@ map_width       equ 24*tile_size
 ; sur le main du title.
 ;*******************************************************************************
 boot.entry
-        ldx   #scenes.title
-        ldy   #scenes.title.dir
-        ldu   #cast.title                  ; aucun lot d'ennemis sur le title
+        clrb                               ; 0 : le title
         jmp   game.stage.switch
 
 ;*******************************************************************************
@@ -267,83 +263,71 @@ Collision_ClearLists
 ; Voir docs/lang/fr/analyse-residente-2026-08.md, etape 5 du chemin vers 50.
 
 ;*******************************************************************************
-; L'échange de stage
+; L'ÉCHANGE D'ÉCRAN — une convergence vers un état de RAM
 ;
-; Résident pour la même raison. Le retour du scene.load se ferait sinon dans du
-; code qui n'existe plus.
+; Résident : le retour du chargement se ferait sinon dans du code qui n'existe
+; plus.
 ;
-; x = identifiant de fichier de la scène à charger.
+; b = l'écran cible : 0 le title, 1 à 8 le stage de ce numéro. Un NUMÉRO et
+;     non l'adresse de la table : les mains et l'unité de cheat sont des
+;     unités paginées, leur faire nommer une donnée résidente ferait franchir
+;     à neuf symboles une frontière de direntry, à relier au chargement.
+;     La correspondance vit ici, en une table de neuf mots.
+;
+; Le jeu ne nomme plus une scène mais un ÉTAT : le loader lâche les scènes que
+; l'état cible ne tient pas, charge celles qui lui manquent, et laisse
+; l'intersection telle quelle — zéro relecture disque pour ce que deux écrans
+; partagent. C'est ce qui a remplacé, le 01/09/2026, trois mécanismes distincts :
+; le déchargement explicite que le stage sortant devait faire (game.stage.unload),
+; le montage de répertoire que l'appelant devait choisir, et la convergence des
+; lots d'ennemis par masque de bits (cast.converge et son unité résidente).
+;
+; La déclaration vérifiée au build est désormais celle qui s'exécute : le
+; builder refuse un état dont deux fichiers se recouvrent, et le jeu ne sait
+; charger que des états déclarés.
+;
+; stage.main est un nom commun aux neuf écrans du créneau : le re-link de la
+; convergence vient de le repointer sur celui qui arrive.
 ;*******************************************************************************
-;*******************************************************************************
-; Le déchargement d'une scène
-;
-; Résident pour la même raison que l'échange : c'est le stage SORTANT qui
-; appelle, et sa région est sur le point d'être écrasée.
-;
-; Volontairement SÉPARÉ de `game.stage.switch`, et à n'appeler qu'explicitement.
-; Une routine qui recollerait le déchargement et le chargement retirerait au
-; stage la maîtrise de sa séquence : lui seul sait ce qu'il a pris, ce qu'il
-; laisse au suivant, et quand il peut s'en défaire. Le stage entrant, lui, ne
-; sait rien de ce que le sortant occupait.
-;
-; Le déchargement DÉSINDEXE : il rend les données de lien au pool et retire les
-; fichiers de l'index. Il n'efface pas la RAM — le code qui appelle continue
-; donc de tourner jusqu'à ce que le chargement suivant l'écrase.
-;
-; x = identifiant de fichier de la scène à décharger.
-;*******************************************************************************
-game.stage.unload
-        _ram.data.set #loader.PAGE         ; même fenêtre à monter que pour charger
-        jmp   loader.ADDRESS+loader.scene.unload.IDX
-
-;*******************************************************************************
-; L'échange de stage — la suite du commentaire ci-dessus
-;*******************************************************************************
+stage.main EXTERNAL
 ; Le lecteur YMM, dans sa page : le relais game.music.play l'y atteint.
 ymm.obj.play EXTERNAL
 
-stage.main EXTERNAL
-cast.converge EXTERNAL
-; X = id de la scène cible, Y = id de son RÉPERTOIRE (l'equate <scène>.dir
-; du fichier d'ids généré), U = masque des lots de la bibliothèque d'ennemis
-; que la cible charge (src/common/cast.const.asm — 0 : aucun cast commun).
-; Les répertoires sont partitionnés par unité de chargement : la scène cible
-; se résout dans le sien, qu'il faut monter en mémoire AVANT scene.load —
-; l'appelant a déjà déchargé l'ancienne scène, pendant que l'ancien
-; répertoire était encore là (l'ordre qui permet au loader de relire les
-; étendues à rendre). Y et pas A ou B : la macro de montage de page les
-; détruit tous les deux ; U pour le masque, même raison.
-;
-; La phase de cast converge la bibliothèque AVANT le montage du répertoire
-; cible : les lots vivent dans le répertoire 0, un lot = une scène de lot.
-; On décharge les lots que la cible ne veut pas, on charge ceux qui lui
-; manquent — ce que deux stages consécutifs partagent reste en RAM, sans
-; relecture disque. C'est le point qui a fait choisir le masque contre une
-; scène de cast par stage : décharger puis recharger une scène entière
-; aurait relu du disque tout ce qu'elle conservait.
 game.stage.switch
+        stb   game.stage.target
         jsr   IrqOff                       ; le chargement parle au contrôleur disque
         ; Le loader vit dans une page commutée de la fenêtre DATA : il faut la
-        ; monter pour l'atteindre. Le stage vient d'y effacer ses tampons
-        ; d'écran, donc c'est une autre page qui est en place.
+        ; monter pour l'atteindre. L'écran sortant vient d'y effacer ses tampons
+        ; d'écran, donc c'est une autre page qui est en place. La macro détruit
+        ; A et B : l'écran cible se relit après.
         _ram.data.set #loader.PAGE
-        ; La convergence vit dans sa propre unité résidente (région `cast`,
-        ; marge de la page résidente) : la fenêtre du moteur est pleine à
-        ; 45 octets près, seul l'appel loge ici.
-        pshs  x,y                          ; la cible attendra la fin de la phase
-        tfr   u,d                          ; B = masque des lots de la cible
-        jsr   cast.converge
-        puls  x,y
-        tfr   y,d                          ; l'id de répertoire, bas de Y
-        tfr   b,a
-        pshs  x                            ; dir.load ne préserve pas X
-        jsr   loader.ADDRESS+loader.dir.load.IDX
-        puls  x
-        jsr   loader.ADDRESS+loader.scene.load.IDX
-        ; nom commun exporté par les deux mains : la référence reste au lien
-        ; (plusieurs fournisseurs), le re-link du scene.load ci-dessus vient
-        ; de la repointer sur le stage fraîchement chargé
+        ldb   game.stage.target
+        aslb
+        ldx   #game.stage.states
+        abx
+        ldx   ,x
+        jsr   loader.ADDRESS+loader.composition.load.IDX
         jmp   stage.main
+
+; Les ÉTATS DE RAM eux-mêmes, générés depuis les <composition> du config.
+; ICI et pas en tête du fichier : ce sont des DONNÉES, et les premiers octets
+; du moteur sont son adresse d'entrée — le bootloader y saute. Les poser plus
+; haut fait entrer le boot dans une table (vécu le 01/09/2026 : la machine
+; exécutait la chaîne « Insert disk » du moniteur).
+        INCLUDE "gen/compositions.asm"
+
+; L'écran par numéro : ceci n'est que l'ordre dans lequel le jeu les nomme.
+game.stage.target fcb 0
+game.stage.states
+        fdb   compositions.title
+        fdb   compositions.stage1
+        fdb   compositions.stage2
+        fdb   compositions.stage3
+        fdb   compositions.stage4
+        fdb   compositions.stage5
+        fdb   compositions.stage6
+        fdb   compositions.stage7
+        fdb   compositions.stage8
 
 ;*******************************************************************************
 ; Terrain collision : mounting the per stage map
