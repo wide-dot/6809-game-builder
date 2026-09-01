@@ -1,7 +1,7 @@
 # La composition comme unité de chargement — plan
 
-Statut : **plan arrêté le 01/09/2026** (décision auteur). La phase 0 est en
-cours ; les suivantes sont à réaliser dans l'ordre donné. Le mécanisme de
+Statut : **plan arrêté le 01/09/2026** (décision auteur). **Phase 0 faite** le
+même jour ; les suivantes sont à réaliser dans l'ordre donné. Le mécanisme de
 déclaration (`<composition>`) et ses contrôles au build sont **déjà en place** —
 voir [`scenes.md`](../en/scenes.md), section « The composition ».
 
@@ -51,7 +51,13 @@ qu'une autre scène résidente utilise encore.
 Portée : les seules configurations qui déclarent des compositions. Lieu :
 `CompositionChecks`, à côté des trois contrôles existants.
 
-*Preuve* : corpus inchangé ; un test unitaire du cas fautif.
+*Fait le 01/09/2026.* Le corpus reste identique — 80 images, aucun octet
+déplacé : c'est un contrôle. Deux tests unitaires (le cas fautif, et une
+configuration sans composition qui garde son partage), suite à 9 tests.
+Le contrôle a d'ailleurs corrigé une croyance : une réécriture de test montre
+qu'un fichier chargé par deux scènes n'est plus « de la déduplication » mais un
+refus — la déduplication reste vraie du recouvrement d'octets, pas du partage
+de fichier.
 
 ### Phase 1 — la composition devient un objet chargeable
 

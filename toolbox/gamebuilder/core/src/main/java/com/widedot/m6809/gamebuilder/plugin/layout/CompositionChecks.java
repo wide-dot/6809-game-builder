@@ -29,7 +29,9 @@ import lombok.extern.slf4j.Slf4j;
  * <li>every scene belongs to at least one composition — the missing
  * declaration is the failure this whole mechanism exists to catch, so it is an
  * error, not a warning ;</li>
- * <li>inside a composition, no two files land on each other.</li>
+ * <li>inside a composition, no two files land on each other ;</li>
+ * <li>a file is loaded by one scene only — the invariant a scene-granular
+ * convergence rests on (see {@code sharedFiles}).</li>
  * </ul>
  *
  * What is NOT checked : that a composition tells the truth. Omitting a scene
@@ -91,6 +93,8 @@ public final class CompositionChecks {
 			}
 		}
 
+		errors.addAll(sharedFiles(scenes));
+
 		for (Compositions.Composition c : ctx.compositions.all()) {
 			errors.addAll(overlaps(c, scenes));
 		}
@@ -103,6 +107,44 @@ public final class CompositionChecks {
 					+ " cannot share bytes. Move one of them to a place the other composition"
 					+ " does not use, or stop loading it there.");
 		}
+	}
+
+	/**
+	 * A file may be loaded by ONE scene.
+	 *
+	 * This is the invariant the runtime convergence rests on : a composition
+	 * is a set of scenes, so what it drops and what it takes is decided scene
+	 * by scene. Let two scenes carry the same file and dropping one of them
+	 * takes a file the other still needs — the loader would have to reason
+	 * per file, which means an index of every resident file, which is exactly
+	 * the knowledge it does not have (it indexes only what carries link data).
+	 *
+	 * Measured when the rule was written : the corpus honours it everywhere
+	 * but in loader-ut, which loads one file from two scenes on purpose to arm
+	 * its LOAD_OVERLAP trap. Hence the scope — only a configuration that
+	 * declares compositions is held to it.
+	 */
+	private static List<String> sharedFiles(Map<String, List<RamMap.Load>> scenes) {
+		Map<String, List<String>> owners = new LinkedHashMap<String, List<String>>();
+		for (Map.Entry<String, List<RamMap.Load>> scene : scenes.entrySet()) {
+			for (RamMap.Load load : scene.getValue()) {
+				List<String> by = owners.computeIfAbsent(load.name,
+						n -> new ArrayList<String>());
+				if (!by.contains(scene.getKey())) {
+					by.add(scene.getKey());
+				}
+			}
+		}
+		List<String> found = new ArrayList<String>();
+		for (Map.Entry<String, List<String>> file : owners.entrySet()) {
+			if (file.getValue().size() > 1) {
+				found.add("'" + file.getKey() + "' is loaded by " + file.getValue().size()
+						+ " scenes (" + String.join(", ", file.getValue()) + ") — a file"
+						+ " belongs to one scene, or dropping a scene takes bytes another"
+						+ " one still needs");
+			}
+		}
+		return found;
 	}
 
 	/**

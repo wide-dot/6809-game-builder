@@ -296,9 +296,15 @@ more :
   declaration is exactly the failure the mechanism exists to catch, so it is a
   build error, not a warning ;
 - inside a composition, no two files land on each other : the same pairwise
-  test `SceneChecks` runs inside one scene, over the union. One file loaded by
-  two of its scenes is not a collision — reloading a file onto its own bytes is
-  what dedup is for.
+  test `SceneChecks` runs inside one scene, over the union ;
+- **a file is loaded by one scene only**. This is the invariant a
+  scene-granular convergence rests on : a composition is a set of scenes, so
+  what a state drops and takes is decided scene by scene. Let two scenes carry
+  the same file and dropping one takes bytes the other still needs — the loader
+  would have to reason per file, which means an index of every resident file,
+  which is exactly the knowledge it does not have (it indexes only what carries
+  link data). A file two states both need belongs in a scene both of them
+  name, which is what a resident scene is for.
 
 What is **not** checked is that a composition tells the truth. Omitting a scene
 the game really loads on top gives a reference that is too small, and no static

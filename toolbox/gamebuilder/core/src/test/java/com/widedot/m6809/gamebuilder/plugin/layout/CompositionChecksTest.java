@@ -92,12 +92,34 @@ class CompositionChecksTest {
 	}
 
 	@Test
-	@DisplayName("one file loaded by two scenes of a composition is dedup, not a collision")
+	@DisplayName("one file in two scenes is caught as sharing, never as colliding with itself")
 	void sameFileTwiceIsNotACollision() throws Exception {
 		BuildContext ctx = context();
 		load(ctx, "scenes.stage1", "common.engine", 1, 0x6100, 0x1E07);
 		load(ctx, "scenes.lot", "common.engine", 1, 0x6100, 0x1E07);
 		compose(ctx, "stage1", "scenes.stage1", "scenes.lot");
+		Exception e = assertThrows(Exception.class, () -> CompositionChecks.verify(ctx));
+		assertTrue(e.getMessage().contains("is loaded by 2 scenes"));
+		assertFalse(e.getMessage().contains("overlap on page"));
+	}
+
+	@Test
+	@DisplayName("a file loaded by two scenes is refused : the convergence drops per scene")
+	void aFileBelongsToOneScene() throws Exception {
+		BuildContext ctx = context();
+		load(ctx, "scenes.stage1", "lib.enemy", 26, 0x0000, 0x1000);
+		load(ctx, "scenes.lot", "lib.enemy", 26, 0x0000, 0x1000);
+		compose(ctx, "stage1", "scenes.stage1", "scenes.lot");
+		Exception e = assertThrows(Exception.class, () -> CompositionChecks.verify(ctx));
+		assertTrue(e.getMessage().contains("'lib.enemy' is loaded by 2 scenes"));
+	}
+
+	@Test
+	@DisplayName("a configuration declaring nothing keeps its shared files : loader-ut arms its trap that way")
+	void sharedFilesAreOnlyRefusedWhenStatesAreDeclared() throws Exception {
+		BuildContext ctx = context();
+		load(ctx, "scenes.main", "data.marker.bb", 6, 0x0000, 0x0100);
+		load(ctx, "scenes.trap", "data.marker.bb", 6, 0x0000, 0x0100);
 		CompositionChecks.verify(ctx);
 	}
 
