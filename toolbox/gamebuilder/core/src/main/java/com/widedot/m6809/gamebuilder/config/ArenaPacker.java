@@ -233,6 +233,16 @@ public final class ArenaPacker {
 				if (place.region != null) {
 					Regions.Region r = regions.get(place.region);
 					if (r != null && !r.zones.isEmpty()) {
+						// The region's FIRST zone : where a load into it lands.
+						// A region spanning several pages holds one file per
+						// page (that is what the page count is for), and which
+						// page a given file takes is decided by the cut, not
+						// known here — so on such a region this claims the head
+						// page only. It over-claims there (harmless : the packer
+						// merely starts later) and under-claims on the others,
+						// where CompositionChecks stays the backstop : it reads
+						// the real destinations back from the RAM map and
+						// refuses an overlap the packer did not avoid.
 						Regions.Zone z = r.zones.get(0);
 						taken.add(new Placed(file, z.page, z.address, size));
 					}
