@@ -106,7 +106,7 @@
                  (24/08). Elle occupe donc l'AUTRE moitie : la premiere de la
                  page 0 en referentiel de page (slice 0), que le registre
                  designe par son bit a 1. Les OST sont slice 1. -->
-            <region name="pscroll.vid" page="$01" address="$4000" size="$2000"/>
+            <region name="pscroll.vid" page="$00" slice="0" address="$4000" size="$2000"/>
             <!-- PAS $0E/$0F : ces pages portent les LOTS d'ennemis que le
                  stage 4 charge (lib.pstaff+lib.cancer en 14, lib.patapata en
                  15). Les buffers y ont vecu tant que le stage se testait sans
@@ -500,10 +500,10 @@
                  objets partage cette page. Les deux <define> plus bas disent
                  la meme chose au code ; le builder verifie qu'ils concordent. -->
             <reserved name="loader" page="$04" address="$C000" size="$2000"/>
-            <reserved name="framebuffer.2.couleur" page="$02" address="$0000" size="$1F40"/>
-            <reserved name="framebuffer.2.forme"   page="$02" address="$2000" size="$1F40"/>
-            <reserved name="framebuffer.3.couleur" page="$03" address="$0000" size="$1F40"/>
-            <reserved name="framebuffer.3.forme"   page="$03" address="$2000" size="$1F40"/>
+            <reserved name="framebuffer.2.form"  page="$02" address="$C000" size="$1F40"/>
+            <reserved name="framebuffer.2.color" page="$02" address="$A000" size="$1F40"/>
+            <reserved name="framebuffer.3.form"  page="$03" address="$C000" size="$1F40"/>
+            <reserved name="framebuffer.3.color" page="$03" address="$A000" size="$1F40"/>
             <!-- L'ARENE DU TITLE : le title ne coexiste jamais avec un stage,
                  il se relaie avec eux sur la page $18 (scene.unload a la
                  bascule, comme entre stages). -->

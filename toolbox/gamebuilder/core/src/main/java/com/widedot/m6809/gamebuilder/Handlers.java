@@ -124,7 +124,7 @@ public final class Handlers {
 		spec(element("layout").doc("memory layout of the target : the fixed regions scenes load into")
 			.opt("gensymbols", STRING, "generated file of <region>.page / <region>.address equates, for the game code to include")
 			.opt("gencompositions", STRING, "generated file of the <composition> tables — a scene count then file id and directory per scene — for the game to include and hand to the loader")
-			.opt("pages", INT, "physical RAM pages of the machine, for the occupancy report — 32 (512K) if omitted, 8 for a 128K MO6"));
+			);
 		spec(element("region").doc("fixed destination shared by every scene that targets it")
 			.req("name", STRING, "region name, referenced by <load region=...>")
 			.opt("page", INT, "destination page, compact form of a region holding one <zone>")

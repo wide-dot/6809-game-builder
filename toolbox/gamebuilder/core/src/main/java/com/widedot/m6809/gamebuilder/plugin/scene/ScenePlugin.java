@@ -128,9 +128,11 @@ public class ScenePlugin {
 							+ " a multi-asm file — or use an <arena> if it takes a list");
 					continue;
 				}
-				placed.add(new SceneGenerator.Placed(region.page, region.address, loadName));
+				placed.add(new SceneGenerator.Placed(
+						ctx.regions.selector(region.name, region.page), region.address, loadName));
 				check.loads.add(new SceneCheck.Load(loadName, SceneCheck.Kind.PLACED,
-						region.page, region.address, region.size, attributed.region, where));
+						ctx.regions.selector(region.name, region.page), region.address,
+						region.size, attributed.region, where));
 			} else if (attributed != null && attributed.page != null) {
 				placed.add(new SceneGenerator.Placed(attributed.page, attributed.address, loadName));
 				check.loads.add(new SceneCheck.Load(loadName, SceneCheck.Kind.PLACED,

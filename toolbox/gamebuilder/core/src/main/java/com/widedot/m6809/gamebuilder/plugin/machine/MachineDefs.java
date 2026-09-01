@@ -36,14 +36,27 @@ public class MachineDefs {
 			}
 			String name = NodeAttr.getString(child, result.sources, "name");
 			ImmutableNode ram = NodeAttr.child(child, result.sources, "ram");
-			ImmutableNode pagebyte = NodeAttr.child(child, result.sources, "pagebyte");
 			int pageSize = NodeAttr.getInteger(ram, result.sources, "pagesize", 0x4000);
+			List<Machines.Window> windows = windows(child, result.sources, pageSize);
+			// What a generated table writes in front of a page number is the
+			// mask of the window that pages : one declaration, where it
+			// belongs. It was a <pagebyte> element of its own, which could
+			// name a mask no window used.
+			Machines.Window masked = null;
+			for (Machines.Window w : windows) {
+				if (w.or != null) {
+					masked = w;
+					break;
+				}
+			}
+			if (masked == null) {
+				throw new Exception(result.sources.locate(child) + ": machine '" + name
+						+ "' declares no window carrying an 'or' mask — generated tables"
+						+ " would have nothing to write in front of a page number");
+			}
 			machines.put(name, new Machines.Machine(name,
 					NodeAttr.getInteger(ram, result.sources, "pages"),
-					pageSize,
-					NodeAttr.getString(pagebyte, result.sources, "expr"),
-					NodeAttr.getString(pagebyte, result.sources, "include"),
-					windows(child, result.sources, pageSize)));
+					pageSize, masked.or + "+", masked.include, windows));
 		}
 	}
 

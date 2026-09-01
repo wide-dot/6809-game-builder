@@ -232,6 +232,27 @@ bullet.Slots    equ objects.bullets.address           ; apres
 **Validation** : corpus froid identique — la même place physique produit les
 mêmes octets quelle que soit la façon dont elle est écrite.
 
+### Ce qui a réellement été fait (02/09/2026), et les écarts
+
+Fait : `pscroll.vid` passe à `page="$00" slice="0"`, les quatre framebuffers
+passent aux adresses CPU de la fenêtre données (`$C000` la forme, `$A000` la
+couleur) avec leurs noms remis à l'endroit et en anglais, `<layout pages>`
+disparaît au profit de `<ram pages>` de la machine, `<pagebyte>` disparaît au
+profit de l'attribut `or` de la fenêtre qui pagine, et le XSD est régénéré.
+
+Pour que `pscroll.vid` puisse le dire en `slice`, il a fallu la pièce différée
+en phase 1 : **ce qui est émis est le SÉLECTEUR, pas la page déclarée**. Les
+régions le publient (`pscroll.vid.page equ 1` alors que la déclaration dit
+page 0), la table de scène le porte, et les zones portent leur tranche.
+
+Un écart, et c'est une correction de ma part : **la « lecture héritée » n'est
+pas héritée**. Le nombre devant une adresse est une page quand il vient d'une
+déclaration, et un sélecteur quand il revient d'une table de scène — cette
+table porte ce que le runtime écrit dans le registre. Les deux lectures se
+résolvent au même endroit, ce qui permet à un contrôle de lire une table et
+une déclaration avec le même appel. Elle ne disparaît donc pas ; elle est
+renommée et documentée pour ce qu'elle est.
+
 ## Phase 6 — la documentation
 
 `docs/lang/en/memory.md` (la page de manuel du modèle), les extraits de

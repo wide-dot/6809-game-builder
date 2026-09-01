@@ -106,7 +106,7 @@ public class LayoutPlugin {
 			for (Regions.Region a : ctx.regions.all()) {
 				for (Regions.Zone z : a.zones) {
 					java.util.List<int[]> zone = windows.footprint(
-							Integer.valueOf(z.page), z.address, z.size, null);
+							Integer.valueOf(z.page), z.address, z.size, z.slice);
 					for (Regions.Reserved r : ctx.regions.reservedRanges()) {
 						java.util.List<int[]> range = windows.footprint(
 								Integer.valueOf(r.page), r.address, r.size, r.slice);
@@ -161,7 +161,8 @@ public class LayoutPlugin {
 				   .append(String.format("%04X", r.address)).append(System.lineSeparator());
 			}
 			for (Regions.Region region : ctx.regions.all()) {
-				out.append(region.name).append(".page equ ").append(region.page)
+				out.append(region.name).append(".page equ ")
+				   .append(ctx.regions.selector(region.name, region.page))
 				   .append(System.lineSeparator());
 				out.append(region.name).append(".address equ $")
 				   .append(String.format("%04X", region.address)).append(System.lineSeparator());

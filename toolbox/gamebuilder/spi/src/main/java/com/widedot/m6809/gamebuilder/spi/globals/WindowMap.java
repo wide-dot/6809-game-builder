@@ -206,12 +206,13 @@ public final class WindowMap {
 	 * Resolve a declared place — the page it lives in, the address it runs at,
 	 * and which slice when the window shows less than a page.
 	 *
-	 * <p><b>The legacy spelling.</b> Before the windows were declared, a place
-	 * in the video window wrote the SELECTOR where a page goes :
-	 * {@code page="$01" address="$4000"} meant «&nbsp;half-page 1&nbsp;», not
-	 * page 1. That reading is still accepted and translated here, so no
-	 * configuration had to change the day the model arrived. It goes when the
-	 * declarations do.
+	 * <p><b>A page, or a selector.</b> The number in front of an address is a
+	 * page when it comes from a declaration, and a SELECTOR when it comes back
+	 * from a scene table — that table carries what the runtime writes in the
+	 * register, which for a window on a fixed page is a half index, not a page.
+	 * Both readings resolve here : a number that cannot be the window's page is
+	 * looked up among its slices. It is what lets a check read a scene table
+	 * and a declaration with the same call.
 	 *
 	 * @param size the declared size, or null when it is not known yet
 	 */
@@ -233,7 +234,7 @@ public final class WindowMap {
 				selectorOf(w, usedPage, usedSlice), usedSlice);
 	}
 
-	/** the slice a legacy selector value named */
+	/** the slice a selector value names */
 	private Integer legacySlice(Machines.Window w, int selector) throws Exception {
 		for (Machines.Slice s : w.slices) {
 			if (s.value == selector) {

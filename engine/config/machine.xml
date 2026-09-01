@@ -13,15 +13,13 @@
     <!-- what follows off the 16 KB grid, so $6000 lands mid-page. That is -->
     <!-- the whole of what emulators call the non-linear segment order.    -->
     <!--                                                                   -->
-    <!-- pagebyte : what a generated table writes in front of a page       -->
-    <!-- number. It is a NAME plus the header defining it, never a value.  -->
-    <!-- Its home is now the cartridge window's 'or' ; the top-level       -->
-    <!-- element stays until the generators are moved over.                -->
+    <!-- The 'or' of the window that pages is what a generated table writes -->
+    <!-- in front of a page number, so the byte can go straight to the      -->
+    <!-- register. It is a NAME plus the header defining it, never a value :-->
+    <!-- the number stays in its single home, the machine's asm header.     -->
 
     <machine name="to8">
         <ram pages="32" pagesize="$4000"/>   <!-- 512 KB in 16 KB pages -->
-        <pagebyte expr="map.RAM_OVER_CART+" include="engine/system/to8/map.const.asm"/>
-
         <window name="cart" address="$0000" size="$4000" page="register:$E7E6"
                 or="map.RAM_OVER_CART" include="engine/system/to8/map.const.asm"/>
 
@@ -39,8 +37,6 @@
 
     <machine name="mo6">
         <ram pages="8" pagesize="$4000"/>    <!-- 128 KB in 16 KB pages -->
-        <pagebyte expr="map.RAM_OVER_CART+" include="engine/system/mo6/map.const.asm"/>
-
         <!-- NOT VERIFIED on a machine : there is no MO6 emulator here. The  -->
         <!-- geometry below is the one map.const.asm declares ; the position -->
         <!-- of a byte in its page follows from it by the same rule as the   -->

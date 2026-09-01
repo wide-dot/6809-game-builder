@@ -29,8 +29,15 @@ public class Regions {
 		public final int page;
 		public final int address;
 		public final int size;
+		/** which slice of the page, when the window shows less than one */
+		public final Integer slice;
 
 		public Zone(int page, int address, int size) {
+			this(page, address, size, null);
+		}
+
+		public Zone(int page, int address, int size, Integer slice) {
+			this.slice = slice;
 			this.page = page;
 			this.address = address;
 			this.size = size;
@@ -72,16 +79,25 @@ public class Regions {
 		public final boolean packed;
 
 		public Region(String name, int page, int address, Integer size, int pages) {
-			this(name, page, address, size, pages, null, false);
+			this(name, page, address, size, pages, null, false, null);
+		}
+
+		public Region(String name, int page, int address, Integer size, int pages, Integer slice) {
+			this(name, page, address, size, pages, null, false, slice);
 		}
 
 		public Region(String name, int page, int address, Integer size, int pages,
 				java.util.List<Zone> zones) {
-			this(name, page, address, size, pages, zones, false);
+			this(name, page, address, size, pages, zones, false, null);
 		}
 
 		public Region(String name, int page, int address, Integer size, int pages,
 				java.util.List<Zone> zones, boolean packed) {
+			this(name, page, address, size, pages, zones, packed, null);
+		}
+
+		public Region(String name, int page, int address, Integer size, int pages,
+				java.util.List<Zone> zones, boolean packed, Integer slice) {
 			this.packed = packed;
 			this.name = name;
 			this.page = page;
@@ -97,7 +113,7 @@ public class Regions {
 				// saying it that way keeps one shape downstream
 				java.util.List<Zone> built = new java.util.ArrayList<Zone>();
 				for (int p = 0; p < Math.max(1, pages); p++) {
-					built.add(new Zone(page + p, address, size));
+					built.add(new Zone(page + p, address, size, slice));
 				}
 				this.zones = java.util.Collections.unmodifiableList(built);
 			} else {
@@ -148,6 +164,27 @@ public class Regions {
 	 * the layout says otherwise ({@code <layout pages="8">} for a 128K MO6).
 	 */
 	private int ramPages = 32;
+
+	/**
+	 * What the runtime must write in a window's selector to see a region.
+	 *
+	 * It is the page number for a window that pages — which is why nothing
+	 * needed this until now — but not for one that does not : the video window
+	 * shows 8 KB of page 0, and its register takes a half index whose bit is
+	 * INVERTED. The declaration says which half of the page, in the page's own
+	 * order ; this says what the register wants.
+	 */
+	private final Map<String, Integer> selectors = new java.util.LinkedHashMap<String, Integer>();
+
+	public void declareSelector(String region, int selector) {
+		selectors.put(region, Integer.valueOf(selector));
+	}
+
+	/** the selector byte of a region, its page when the window pages */
+	public int selector(String region, int page) {
+		Integer known = selectors.get(region);
+		return known == null ? page : known.intValue();
+	}
 
 	public void setRamPages(int pages) {
 		this.ramPages = pages;

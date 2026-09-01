@@ -56,12 +56,8 @@ public final class LayoutResolver {
 	public static Map<String, Regions.Region> resolve(ImmutableNode layout, BuildContext ctx)
 			throws Exception {
 
-		// How much physical RAM the report draws : both callers resolve the
-		// same layout, so both read it here. 32 pages (512K) unless said.
-		Integer ramPages = Attribute.getIntegerOpt(layout, ctx, "pages");
-		if (ramPages != null) {
-			ctx.regions.setRamPages(ramPages);
-		}
+		// How much physical RAM the report draws comes from the MACHINE now :
+		// <ram pages="32"/>. A layout that repeated it could disagree with it.
 
 		Map<String, Regions.Region> out = new LinkedHashMap<String, Regions.Region>();
 		Map<Integer, Integer> cursor = new LinkedHashMap<Integer, Integer>();
@@ -112,7 +108,8 @@ public final class LayoutResolver {
 				int zoneSize = Attribute.getInteger(z, ctx, "size");
 				through(ctx, z, name, zonePage, zoneAddress,
 						Attribute.getIntegerOpt(z, ctx, "slice"), Integer.valueOf(zoneSize));
-				zones.add(new Regions.Zone(zonePage, zoneAddress, zoneSize));
+				zones.add(new Regions.Zone(zonePage, zoneAddress, zoneSize,
+						Attribute.getIntegerOpt(z, ctx, "slice")));
 			}
 			if (!zones.isEmpty()) {
 				// the first zone stands for the region wherever the builder
@@ -179,11 +176,10 @@ public final class LayoutResolver {
 			// each window starts and how wide it is, so a place that would
 			// spill out of its window is caught here. A size that is only the
 			// discovery pass's stand-in is not a size — it is not checked.
-			through(ctx, child, name, page, address,
-					Attribute.getIntegerOpt(child, ctx, "slice"),
-					sizeIsReal ? size : null);
+			Integer slice = Attribute.getIntegerOpt(child, ctx, "slice");
+			through(ctx, child, name, page, address, slice, sizeIsReal ? size : null);
 
-			out.put(name, new Regions.Region(name, page, address, size, pages));
+			out.put(name, new Regions.Region(name, page, address, size, pages, slice));
 
 			if (pages > 1) {
 				for (int p = 0; p < pages; p++) {
@@ -213,6 +209,12 @@ public final class LayoutResolver {
 		com.widedot.m6809.gamebuilder.spi.globals.Machines.Machine m = ctx.machines.current();
 		if (m == null || m.windows.isEmpty()) {
 			return;
+		}
+		if (slice != null) {
+			// the window shows less than a page, so the byte the runtime writes
+			// is not the page number : keep what the resolution says
+			ctx.regions.declareSelector(name,
+					m.windows().resolve(page, address, slice, null).selector);
 		}
 		if (ctx.staticLink.isDiscovery()) {
 			// Nothing is final while measuring : a size the author left to the
