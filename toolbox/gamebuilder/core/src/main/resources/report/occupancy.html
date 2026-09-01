@@ -176,13 +176,20 @@ const stats = document.getElementById("stats");
 /* -------------------------------------------------------------- RAM view */
 /* every checkable element, flat : scene loads and reserved ranges */
 const ramItems = [];
+/* An element carries the address it is REACHED at — the one the code uses —
+   and the physical pieces it OCCUPIES. The two are not the same number : a
+   page seen through the resident window shows its second half first, so a
+   screen loaded at $7C00 fills the end of its page and comes back to the
+   start. The map draws the pieces ; the labels show the address. */
 DATA.ram.scenes.forEach(sc => sc.loads.forEach(l => ramItems.push({
   kind: "load", group: sc.name, name: l.name, container: l.container,
-  page: l.page, address: l.address, size: l.size, checked: false
+  page: l.page, address: l.address, size: l.size, window: l.window,
+  pieces: l.pieces || [], unplaced: l.unplaced, checked: false
 })));
 DATA.ram.reserved.forEach(r => ramItems.push({
   kind: "reserved", group: "machine", name: r.name,
-  page: r.page, address: r.address, size: r.size, checked: false
+  page: r.page, address: r.address, size: r.size, window: r.window,
+  pieces: r.pieces || [], unplaced: r.unplaced, checked: false
 }));
 
 /* the tree re-renders on every check : keep what the user opened, and where
@@ -324,11 +331,13 @@ function ramView() {
   for (let a = 0; a < checked.length; a++) {
     for (let b = a + 1; b < checked.length; b++) {
       const i = checked[a], j = checked[b];
-      if (i.page !== j.page) continue;
       if (i.name === j.name && i.address === j.address && i.size === j.size) continue;
-      const lo = Math.max(i.address, j.address);
-      const hi = Math.min(i.address + i.size, j.address + j.size);
-      if (lo < hi) clashes.push({ page: i.page, lo, hi, a: i, b: j });
+      i.pieces.forEach(x => j.pieces.forEach(y => {
+        if (x.page !== y.page) return;
+        const lo = Math.max(x.offset, y.offset);
+        const hi = Math.min(x.offset + x.size, y.offset + y.size);
+        if (lo < hi) clashes.push({ page: x.page, lo, hi, a: i, b: j });
+      }));
     }
   }
   if (clashes.length) {
@@ -337,7 +346,7 @@ function ramView() {
     clashes.forEach(c => {
       const d = $("div", {}, collBox);
       d.innerHTML = "page <code>" + hex(c.page, 2) + "</code> " +
-        "<code>" + hex(c.lo) + "–" + hex(c.hi - 1) + "</code> (" + kb(c.hi - c.lo) + ") : " +
+        "<code>+" + hex(c.lo) + "–" + hex(c.hi - 1) + "</code> (" + kb(c.hi - c.lo) + ") : " +
         c.a.name + " <i>(" + c.a.group + ")</i> ↔ " + c.b.name + " <i>(" + c.b.group + ")</i>";
     });
   }
@@ -350,27 +359,19 @@ function ramView() {
   const svg = S("svg", { width: LABEL + W + FREE + 10, height: pages * (ROW + GAP) + 20 }, view);
   const px = v => v * W / DATA.ram.pageSize;
 
-  /* A load carries the CPU address it is reached through, and a page is only
-     16 KB : each row draws in ITS window. The origin is the smallest address
-     anything (checked or not : stable) declares on the page, floored to a
-     $2000 boundary — $0000 for a cartridge page, $6000 for the resident one,
-     $A000 for a bank. */
-  const originOf = p => {
-    let min = Infinity;
-    ramItems.forEach(i => { if (i.page === p && i.address < min) min = i.address; });
-    return min === Infinity ? 0 : Math.floor(min / 0x2000) * 0x2000;
-  };
-  const origins = Array.from({ length: pages }, (_, p) => originOf(p));
+  /* A row is a PAGE, drawn from its first byte : there is no per-page origin
+     any more. The rows used to start wherever the smallest declared address
+     fell, which is how a "page 1" came to start at $4000 and overflow its
+     16 KB — it was mixing addresses from windows showing different pages. */
 
-  /* free bytes per page : capacity minus the UNION of the checked ranges —
+  /* free bytes per page : capacity minus the UNION of the checked pieces —
      a sum would count a collision twice and report negative room */
   const freeOf = p => {
-    const o = origins[p];
-    const spans = checked.filter(i => i.page === p)
-      .map(i => [Math.max(i.address, o),
-                 Math.min(i.address + i.size, o + DATA.ram.pageSize)])
-      .filter(([lo, hi]) => lo < hi)
-      .sort((a, b) => a[0] - b[0]);
+    const spans = [];
+    checked.forEach(i => i.pieces.forEach(x => {
+      if (x.page === p) spans.push([x.offset, x.offset + x.size]);
+    }));
+    spans.sort((a, b) => a[0] - b[0]);
     let used = 0, end = -1;
     spans.forEach(([lo, hi]) => {
       if (lo > end) { used += hi - lo; end = hi; }
@@ -383,12 +384,6 @@ function ramView() {
     const y = p * (ROW + GAP) + 10;
     S("text", { x: LABEL - 10, y: y + ROW / 2 - 1, "text-anchor": "end" }, svg)
       .textContent = hex(p, 2);
-    if (origins[p] > 0) {
-      const o = S("text", { x: LABEL - 10, y: y + ROW / 2 + 10, "text-anchor": "end" }, svg);
-      o.textContent = hex(origins[p]);
-      o.style.fontSize = "9px";
-      o.style.opacity = ".6";
-    }
     S("rect", { class: "pagebar", x: LABEL, y, width: W, height: ROW, rx: 3 }, svg);
     const free = freeOf(p);
     const t = S("text", { x: LABEL + W + FREE, y: y + ROW / 2 + 4, "text-anchor": "end" }, svg);
@@ -396,48 +391,51 @@ function ramView() {
     if (free < DATA.ram.pageSize) t.style.fill = "var(--ink)";
   }
 
-  checked.forEach(i => {
-    if (i.page >= pages) return;
-    const y = i.page * (ROW + GAP) + 10;
-    const w = Math.max(px(i.size), 1.5);
+  checked.forEach(i => i.pieces.forEach((piece, n) => {
+    if (piece.page >= pages) return;
+    const y = piece.page * (ROW + GAP) + 10;
+    const w = Math.max(px(piece.size), 1.5);
     const r = S("rect", {
       class: "blk" + (i.kind === "reserved" ? " resv" : ""),
-      x: LABEL + px(i.address - origins[i.page]), y: y + PAD,
+      x: LABEL + px(piece.offset), y: y + PAD,
       width: w, height: ROW - PAD * 2, rx: 2
     }, svg);
     r.dataset.name = i.name;
     r.style.fill = i.kind === "reserved" ? "var(--dim)" : color(i.name);
     r.addEventListener("mousemove", e => showTip(e,
       "<b>" + i.name + "</b>" + (i.container ? " · " + i.container : "") +
-      "<br><span class='mono'>page " + hex(i.page, 2) + " · " + hex(i.address) +
-      "–" + hex(i.address + i.size - 1) + " · " + kb(i.size) + "</span>"));
+      "<br><span class='mono'>page " + hex(piece.page, 2) + " +" + hex(piece.offset) +
+      "–" + hex(piece.offset + piece.size - 1) + " · " + kb(piece.size) + "</span>" +
+      "<br><span class='mono'>vu en " + hex(i.address) +
+      (i.window ? ", fenetre " + i.window : "") + "</span>" +
+      (i.pieces.length > 1 ? "<br><span class='mono'>morceau " + (n + 1) + "/" +
+        i.pieces.length + " : la place depasse la fin de la page et reprend a son debut</span>" : "")));
     r.addEventListener("mouseleave", hideTip);
 
-    /* the name inside the bar, when it fits — shortened before dropped.
-       Same per-page origin as the bar itself : without it, every label of
-       a $6000- or $A000-based page was drawn off-canvas */
+    /* the name inside the bar, when it fits — shortened before dropped */
     const fit = Math.floor((w - 8) / 6.2);
     if (fit >= 4) {
       const label = i.name.length <= fit ? i.name : i.name.slice(0, fit - 1) + "…";
       const t = S("text", {
-        x: LABEL + px(i.address - origins[i.page]) + w / 2, y: y + ROW / 2 + 4,
+        x: LABEL + px(piece.offset) + w / 2, y: y + ROW / 2 + 4,
         "text-anchor": "middle", "pointer-events": "none"
       }, svg);
       t.textContent = label;
       t.style.fill = "#0c0e12";
       t.style.fontSize = "10.5px";
     }
-  });
+  }));
 
   clashes.forEach(c => {
     const y = c.page * (ROW + GAP) + 10;
     const r = S("rect", {
-      class: "clash", x: LABEL + px(c.lo - origins[c.page]), y: y + 1,
+      class: "clash", x: LABEL + px(c.lo), y: y + 1,
       width: Math.max(px(c.hi - c.lo), 2), height: ROW - 2, rx: 2
     }, svg);
     r.addEventListener("mousemove", e => showTip(e,
       "<b style='color:var(--danger)'>collision</b> " + c.a.name + " ↔ " + c.b.name +
-      "<br><span class='mono'>" + hex(c.lo) + "–" + hex(c.hi - 1) + " · " + kb(c.hi - c.lo) + "</span>"));
+      "<br><span class='mono'>page " + hex(c.page, 2) + " +" + hex(c.lo) + "–" + hex(c.hi - 1) +
+      " · " + kb(c.hi - c.lo) + "</span>"));
     r.addEventListener("mouseleave", hideTip);
   });
 
