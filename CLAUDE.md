@@ -734,6 +734,42 @@ en colonnes.
 Cas de migration (la v1 écrivait `$E7DC` en direct) :
 [`video-mode.md`](docs/lang/en/migration/video-mode.md).
 
+## Modèle mémoire : pages, fenêtres, places (02/09/2026)
+
+Une place se déclare par **deux nombres et rien d'autre** : `page` (dans quelle
+RAM elle vit, absolument) et `address` (à quelle adresse elle s'exécute, telle
+que le code l'utilise). La fenêtre par laquelle le loader y écrit **se déduit**
+de l'adresse, les fenêtres de la machine occupant des plages CPU disjointes ;
+la position dans la page — le référentiel où se font tous les contrôles — est
+**calculée**, `adresse modulo la taille de page`, et n'est écrite par personne.
+
+Les fenêtres sont déclarées par la machine (`engine/config/machine.xml`).
+Trois des quatre du TO8 sont de l'arithmétique pure ; la vidéo porte deux
+lignes parce qu'elle montre 8 Ko d'une page de 16 **et numérote ses moitiés à
+l'envers** (bit à 1 = première moitié) — d'où l'attribut `slice`, écrit dans
+l'ordre de la page, le builder posant le bit. Si `$6000` tombe au milieu d'une
+page, c'est seulement que la fenêtre vidéo de 8 Ko décale la suite hors de la
+grille de 16 Ko : `$6000 mod $4000 = $2000`. Ce que les émulateurs appellent
+« ordre non linéaire » est cela et rien d'autre.
+
+Conséquences à connaître :
+
+- **une place peut dépasser la fin de sa page et reprendre à son début** — les
+  neuf écrans de r-type le font, chargés en `$7C00` ; les contrôles comparent
+  les deux morceaux et le rapport les dessine ;
+- **dépasser sa FENÊTRE est une erreur dure** (un fichier cartouche de 8 Ko en
+  `$3000` écrirait dans l'écran) ;
+- **les espaces de chargement ne se déclarent pas** : ce sont les fenêtres de
+  la machine moins celle d'où le loader s'exécute. Charger dans la sienne est
+  refusé ;
+- **le loader est une place**, tas compris (`<reserved name="loader">`), et
+  les deux `<define>` que son binaire utilise sont vérifiés contre elle.
+
+Modèle et syntaxe : [`memory.md`](docs/lang/en/memory.md) (manuel),
+[`modele-memoire-2026-09.md`](docs/lang/fr/modele-memoire-2026-09.md)
+(concepts) et [`plan-modele-memoire-2026-09.md`](docs/lang/fr/plan-modele-memoire-2026-09.md)
+(le journal des six phases, avec les écarts).
+
 ## Dettes / pièges connus
 
 - `engine/pack/mub.asm` : chemins d'INCLUDE invalides (fichiers dans `sound/mucom88/`).

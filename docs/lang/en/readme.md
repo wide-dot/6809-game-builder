@@ -84,6 +84,8 @@ Platform distributions are then generated in `package/target` :
 
 [build a project][project-build]
 
+[pages, windows and places][memory]
+
 [the memory and scene model][scenes]
 
 [symbols and link cost][symbols]
@@ -114,6 +116,7 @@ Platform distributions are then generated in `package/target` :
 [unpack-tools]: unpack-tools.md
 [project-setup]: project-setup.md
 [project-build]: project-build.md
+[memory]: memory.md
 [scenes]: scenes.md
 [symbols]: symbols.md
 [groups]: groups.md

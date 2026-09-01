@@ -1,5 +1,8 @@
 # Declarative scenes and memory regions
 
+*A place is a page and the address it runs at ; what that means, and what the
+builder checks about it, is in [pages, windows and places](memory.md).*
+
 > **The vocabulary, one line each.** A `<region>` is a named destination. The
 > layout declares **constraints, not decisions** : write the page when the
 > region has to travel with its neighbours, the address when it has to be at a
