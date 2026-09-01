@@ -166,7 +166,18 @@ aujourd'hui que « le total est un plancher, pas le pic » ; avec les états, le
 plancher devient le vrai chiffre. Un dépassement TLSF ne montre rien à
 l'écran : le loader ne rend simplement jamais la main.
 
-Indépendante des autres, réalisable dès la phase 1.
+*Fait le 01/09/2026.* Le rapport mène par les états, et la plus grosse est le
+PIC. Deux propriétés en font un pic et non un autre plancher : le loader garde
+un bloc de lien par fichier indexé tant qu'il l'est, donc la demande d'un état
+est la somme sur tout ce qu'il tient ; et `composition.load` **décharge avant
+de charger**, donc une transition ne tient jamais deux états à la fois. Reste
+non compté, et nommé dans le rapport : une table de scène en vol et la table de
+slots du loader.
+
+Mesure r-type : pic à **1 074 octets servis, état `stage1`, 22 fichiers
+indexés** — contre 448 pour le boot seul. Le budget n'apparaît pas : r-type ne
+déclare pas `loader.DEFAULT_DYNAMIC_MEMORY_SIZE`, le loader en calcule un par
+défaut. Le déclarer dans le config allumerait le contrôle de dépassement.
 
 ### Phase 5 — le packer place contre les compositions
 

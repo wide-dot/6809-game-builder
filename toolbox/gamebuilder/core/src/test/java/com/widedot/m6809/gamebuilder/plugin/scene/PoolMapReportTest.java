@@ -6,6 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+
+import com.widedot.m6809.gamebuilder.spi.globals.Compositions;
 import com.widedot.m6809.gamebuilder.spi.globals.LinkReport;
 import com.widedot.m6809.gamebuilder.spi.globals.RamMap;
 
@@ -38,6 +41,38 @@ public class PoolMapReportTest {
 		assertEquals(2304, PoolMapReport.served(2266));
 		// 918 + 4 = 922 -> class 512, granularity 32 -> 928
 		assertEquals(928, PoolMapReport.served(918));
+	}
+
+	/**
+	 * A scene says what IT costs ; a state says what the machine holds. The
+	 * loader keeps one link block per indexed file for as long as it stays
+	 * indexed, and a convergence drops before it loads — so the largest state
+	 * is the peak, and that is the number the pool is placed against.
+	 */
+	@Test
+	void aStateIsThePeakAcrossItsScenes() throws Exception {
+		RamMap map = new RamMap();
+		map.record("scenes.boot", load("common.engine"));
+		map.record("scenes.stage1", load("stage1.main"));
+		map.record("scenes.stage2", load("stage2.main"));
+		LinkReport link = new LinkReport();
+		link.add(entry("common.engine", 2266));      // served 2304
+		link.add(entry("stage1.main", 918));         // served  928
+		link.add(entry("stage2.main", 100));         // served  104
+		Compositions states = new Compositions();
+		states.declare(new Compositions.Composition("stage1",
+				Arrays.asList("scenes.boot", "scenes.stage1"), "test"));
+		states.declare(new Compositions.Composition("stage2",
+				Arrays.asList("scenes.boot", "scenes.stage2"), "test"));
+
+		String out = PoolMapReport.render("fd", map, link, 4096, states);
+		assertTrue(out.contains("RAM states"));
+		// stage1 = 2304 + 928, stage2 = 2304 + 104 : le pic est stage1
+		assertTrue(out.contains("3232"), out);
+		assertTrue(out.contains("2408"), out);
+		assertTrue(out.contains("PEAK — state 'stage1'"), out);
+		// et le resident, compte UNE fois dans chaque etat, pas deux
+		assertFalse(out.contains("4608"));
 	}
 
 	@Test

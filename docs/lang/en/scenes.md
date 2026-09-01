@@ -441,10 +441,26 @@ scene scenes.boot — 28 indexed file(s) carrying link data
       9036     9296  total — 75% of the pool, 2992 bytes left
 ```
 
-**The total is a floor, not the peak**, and the report says so at the top. The
-same pool also holds the directory, the scene file and the loader's slot table,
-and a scene swap allocates the incoming scene before releasing the outgoing
-one. Those depend on constants that live in the assembler sources ; hard-coding
+**A scene's total is a floor** — what else is resident beside it is precisely
+what a scene cannot say. **A composition can**, and when the configuration
+declares its states the report leads with them :
+
+```
+RAM states — what the pool must hold at once
+    served    files  state
+       448        7  boot
+      1074       22  stage1
+       ...
+  --------
+      1074           PEAK — state 'stage1'
+```
+
+Two properties make that a peak and not another floor : the loader keeps one
+link block per indexed file for as long as it stays indexed, so a state's
+demand is the sum over every file it holds ; and `loader.composition.load`
+drops before it loads, so a transition never holds two states at once. What
+stays uncounted is small and named in the report : one scene table in flight,
+and the loader's slot table. Those depend on constants that live in the assembler sources ; hard-coding
 them here would produce a figure that silently goes wrong. What the report does
 count is the term that grows every time a unit is wired, which is the one you
 are arbitrating.

@@ -320,7 +320,8 @@ public class Target {
 			java.nio.file.Files.createDirectories(path.getParent());
 			java.nio.file.Files.writeString(path,
 					com.widedot.m6809.gamebuilder.plugin.scene.PoolMapReport.render(
-							targetName, ctx.ramMap, ctx.linkReport, declaredPoolSize(node)));
+							targetName, ctx.ramMap, ctx.linkReport, declaredPoolSize(node),
+							ctx.compositions));
 			log.info("link data pool map written to {}", path);
 		} catch (Exception e) {
 			log.warn("could not write the link data pool map: {}", e.getMessage());
