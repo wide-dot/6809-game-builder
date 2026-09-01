@@ -15,11 +15,12 @@ cast.lot.cancer    equ %00000100   ; C : stages 1, 4, 5, 7
 cast.lot.bugpstaff equ %00001000   ; D : stages 1, 4, 7
 cast.lot.scant     equ %00010000   ; E (scant + son tir) : stages 1, 7
 cast.lot.mid       equ %00100000   ; F (squelette) : stages 5, 7
+cast.lot.stage4    equ %01000000   ; G (cytron + geld + compiler + sa tourelle) : stage 4
 
 cast.stage1 equ cast.lot.bink|cast.lot.patapata|cast.lot.cancer|cast.lot.bugpstaff|cast.lot.scant
 cast.stage2 equ 0
 cast.stage3 equ cast.lot.bink|cast.lot.patapata
-cast.stage4 equ cast.lot.bink|cast.lot.patapata|cast.lot.cancer|cast.lot.bugpstaff
+cast.stage4 equ cast.lot.bink|cast.lot.patapata|cast.lot.cancer|cast.lot.bugpstaff|cast.lot.stage4
 cast.stage5 equ cast.lot.cancer|cast.lot.mid
 cast.stage6 equ cast.lot.bink
 cast.stage7 equ cast.lot.bink|cast.lot.patapata|cast.lot.cancer|cast.lot.bugpstaff|cast.lot.scant|cast.lot.mid

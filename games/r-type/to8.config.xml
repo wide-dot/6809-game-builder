@@ -417,6 +417,10 @@
             <arena name="stage6.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
             <arena name="stage7.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
             <arena name="stage8.res"><zone page="$01" address="$92DB" size="$0AF0"/></arena>
+            <!-- La fenetre du moteur resident. C'est une REGION depuis que le
+                 bootloader y entre : son adresse est publiee par le layout, et
+                 n'est plus recopiee a la main dans la declaration du loader. -->
+            <region name="engine" page="$01" address="$6100"/>
             <region name="cast" page="$01" address="$87FB" size="$0065"/>
             <reserved name="bench"        page="$01" address="$87F2" size="$0009"/>
             <!-- Les variables inter-main et les temoins du banc, en equates dans le
@@ -480,6 +484,83 @@
                      quand l'attract complet a depasse 32 Ko. -->
                 <zone page="$1B" address="$0000" size="$4000"/>
             </arena>
+
+
+            <!-- LES ETATS DE RAM. Une scene dit ce qu'elle charge ; elle n'a
+                 jamais dit ce qui est en memoire A COTE d'elle. Ce jeu compose
+                 sa RAM avec PLUSIEURS scenes a la fois : la scene du stage,
+                 plus les scenes de lot que common.cast fait converger. Sans
+                 cette declaration le packer lit « composition = scene » et
+                 donne la meme adresse a deux fichiers qu'aucune scene ne
+                 charge ensemble — ce qui a mis lib.cytron sous les tuiles du
+                 stage 1, le re-link du loader patchant ensuite ses relocations
+                 dans le code des tuiles.
+                 Sur-declarer est le sens sur : nommer une scene qui n'est la
+                 que parfois contraint le placement davantage, jamais moins.
+                 Chaque etat nomme scenes.boot : le RESIDENT en fait partie, et
+                 c'est pour cela que le title en est sorti pour devenir une scene
+                 a lui (relais de boot, region `boot`). Un etat decrit donc toute
+                 la RAM, pages $04-$0C comprises. -->
+            <composition name="boot">
+                <scene name="scenes.boot"/>
+            </composition>
+            <composition name="title">
+                <scene name="scenes.boot"/>
+                <scene name="scenes.title"/>
+            </composition>
+            <composition name="stage1">
+                <scene name="scenes.boot"/>
+                <scene name="scenes.stage1"/>
+                <scene name="scenes.lot.bink"/>
+                <scene name="scenes.lot.patapata"/>
+                <scene name="scenes.lot.cancer"/>
+                <scene name="scenes.lot.bugpstaff"/>
+                <scene name="scenes.lot.scant"/>
+            </composition>
+            <composition name="stage2">
+                <scene name="scenes.boot"/>
+                <scene name="scenes.stage2"/>
+            </composition>
+            <composition name="stage3">
+                <scene name="scenes.boot"/>
+                <scene name="scenes.stage3"/>
+                <scene name="scenes.lot.bink"/>
+                <scene name="scenes.lot.patapata"/>
+            </composition>
+            <composition name="stage4">
+                <scene name="scenes.boot"/>
+                <scene name="scenes.stage4"/>
+                <scene name="scenes.lot.stage4"/>
+                <scene name="scenes.lot.bink"/>
+                <scene name="scenes.lot.patapata"/>
+                <scene name="scenes.lot.cancer"/>
+                <scene name="scenes.lot.bugpstaff"/>
+            </composition>
+            <composition name="stage5">
+                <scene name="scenes.boot"/>
+                <scene name="scenes.stage5"/>
+                <scene name="scenes.lot.cancer"/>
+                <scene name="scenes.lot.mid"/>
+            </composition>
+            <composition name="stage6">
+                <scene name="scenes.boot"/>
+                <scene name="scenes.stage6"/>
+                <scene name="scenes.lot.bink"/>
+            </composition>
+            <composition name="stage7">
+                <scene name="scenes.boot"/>
+                <scene name="scenes.stage7"/>
+                <scene name="scenes.lot.bink"/>
+                <scene name="scenes.lot.patapata"/>
+                <scene name="scenes.lot.cancer"/>
+                <scene name="scenes.lot.bugpstaff"/>
+                <scene name="scenes.lot.scant"/>
+                <scene name="scenes.lot.mid"/>
+            </composition>
+            <composition name="stage8">
+                <scene name="scenes.boot"/>
+                <scene name="scenes.stage8"/>
+            </composition>
 
         </layout>
 
@@ -569,7 +650,7 @@
                     </lwasm>
                 </file>
 
-                <file name="common.engine" linkdata="LINK" page="$01" address="$6100">
+                <file name="common.engine" linkdata="LINK" region="engine">
                     <lwasm gensource="gen/common/engine.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/engine/engine.asm"/>
@@ -1948,16 +2029,6 @@
                     <load name="common.foefire"/>
                     <!-- Le boot ouvre sur le TITLE ; le contenu stage 1 vit dans
                          scenes.stage1, chargee par le press start et les retours. -->
-                    <load name="title.main"/>
-                    <load name="title.cheat"/>
-                    <load name="title.logo"/>
-                    <load name="title.pushbutton"/>
-                    <load name="title.scores"/>
-                    <load name="title.text"/>
-                    <load name="title.loading"/>
-                    <load name="title.music.ymm"/>
-                    <load name="title.sound.vgc"/>
-                    <load name="engine.sound.sn.const"/>
                 </scene>
 
 
@@ -2115,8 +2186,21 @@
                 <scene name="scenes.lot.patapata" section="SCENE" gensource="gen/scenes/lot-patapata.asm">
                     <load name="lib.patapata"/>
                 </scene>
+                <!-- Le lot C, c'est CANCER — l'ennemi partage par les stages 1, 4,
+                     5 et 7 (analyse-lots-ennemis-2026-08.md, tableau des lots).
+                     Cytron, Geld et le Compiler sont des ennemis SPECIFIQUES du
+                     stage 4 : ils ont voyage ici par erreur, et comme ils vivent
+                     dans l'arene stage4.gfx, les charger avec le lot les posait
+                     sur les tuiles des stages 1 et 7. Ils sont retournes dans la
+                     scene de leur stage — c'est ce que la composition refusait. -->
                 <scene name="scenes.lot.cancer" section="SCENE" gensource="gen/scenes/lot-cancer.asm">
                     <load name="lib.cancer"/>
+                </scene>
+                <!-- Le lot G : les ennemis du seul stage 4. Un lot regroupe ce qui a
+                     la MEME signature de stages ; ceux-ci n'en ont qu'un, et les
+                     charger avec le lot C les emmenait dans les stages 1, 5 et 7,
+                     ou leur arene (stage4.gfx) est celle des tuiles. -->
+                <scene name="scenes.lot.stage4" section="SCENE" gensource="gen/scenes/lot-stage4.asm">
                     <load name="lib.cytron"/>
                     <load name="lib.geld"/>
                     <load name="lib.compiler"/>
@@ -4557,10 +4641,11 @@
                     <asm filename="gen/directories/locations.asm"/>
                     <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
                     <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
-                    <!-- L'adresse d'execution du boot EST le creneau d'echange ou vit
-                         le TITLE : entries.asm la publie, le loader la lit. -->
+                    <!-- Le boot entre dans le RELAIS resident (region `boot`), qui
+                         demande la scene du title comme un changement d'ecran
+                         ordinaire. L'adresse vient du layout genere. -->
                     <asm filename="gen/layout.asm"/>
-                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ title.main.address</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ engine.address</asm>
                     <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.boot</asm>
                     <asm filename="engine/system/to8/bootloader/loader.asm"/>
                 </lwasm>

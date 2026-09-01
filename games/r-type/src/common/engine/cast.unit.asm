@@ -76,5 +76,6 @@ cast.lots fdb   scenes.lot.bink
           fdb   scenes.lot.bugpstaff
           fdb   scenes.lot.scant
           fdb   scenes.lot.mid
+          fdb   scenes.lot.stage4
 
  ENDSECTION

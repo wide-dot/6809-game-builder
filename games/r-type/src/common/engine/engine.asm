@@ -40,6 +40,8 @@ ENGINE_RESIDENT equ 1
         ; a neuf de sa table vit dans Collision_ClearLists.
         INCLUDE "src/enemies/_shared/bullets/bullets.equ"
         INCLUDE "engine/sound/ymm.const.asm"
+        ; les masques de lots : l'entree du boot demande le title avec le sien
+        INCLUDE "src/common/cast.const.asm"
 
 ; The scroll reads these two when InitScroll works out its default camera cap.
 ; A stage overrides the cap by writing scroll_max afterwards, which is how a
@@ -50,6 +52,31 @@ viewport_width  equ 12*tile_size
 map_width       equ 24*tile_size
 
  opt c,ct
+
+;*******************************************************************************
+; L'ENTREE DU BOOT — les premiers octets du moteur, donc son adresse meme
+;
+; Le bootloader charge une scene et saute a une adresse. Tant que cette adresse
+; etait celle du title, le title devait voyager DANS la scene de boot : le
+; resident et l'ecran de titre charges ensemble, alors que le premier reste
+; toute la partie et que le second est ecrase des le premier stage.
+;
+; Le builder ne pouvait donc pas decrire l'etat de la RAM d'un stage : nommer
+; scenes.boot dans une composition trainait le title avec elle, ne pas la
+; nommer laissait tout le resident — les pages $04-$0C — hors de l'etat.
+; Separer les deux durees de vie est ce que coute un etat de RAM qui dit vrai.
+;
+; Le boot entre donc ici, et ce relais demande le title comme n'importe quel
+; autre changement d'ecran : game.stage.switch coupe les IRQ, monte la page du
+; loader, converge le cast (masque nul, rien a faire), charge le repertoire
+; puis la scene, et saute dans stage.main — que le re-link vient de repointer
+; sur le main du title.
+;*******************************************************************************
+boot.entry
+        ldx   #scenes.title
+        ldy   #scenes.title.dir
+        ldu   #cast.title                  ; aucun lot d'ennemis sur le title
+        jmp   game.stage.switch
 
 ;*******************************************************************************
 ; State that outlives a stage
