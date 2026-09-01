@@ -3,13 +3,16 @@ package com.widedot.m6809.gamebuilder.config;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
+import com.widedot.m6809.gamebuilder.spi.globals.Compositions;
 import com.widedot.m6809.gamebuilder.spi.globals.Cuts;
 import com.widedot.m6809.gamebuilder.spi.globals.Regions;
 
@@ -27,8 +30,21 @@ import lombok.extern.slf4j.Slf4j;
  * scene into the arena gets its own place, and nothing in an arena ever
  * overlaps anything else in the same arena. Two sets of resources that take
  * turns on the same RAM — a family of levels and a title screen — are two
- * arenas declaring the same zones : the layout allows contenders to overlap,
- * and the per-scene check is what verifies they never coexist.
+ * arenas declaring the same zones : the layout allows contenders to overlap.
+ *
+ * <p><b>And the packer knows who may not overlap whom.</b> When the
+ * configuration declares its RAM states, a file is placed on bytes no
+ * CO-RESIDENT file already holds — co-resident meaning some {@code
+ * <composition>} holds them both. What used to be a refusal after the fact
+ * becomes a placement that avoids the collision : the packer starts a zone
+ * after whatever conflicting content already sits at its head, and only a
+ * genuine lack of room stops the build. Files at a fixed destination (a
+ * region, a literal page and address) are counted too — they are exactly the
+ * content an arena's zone can grow into without anyone noticing.
+ *
+ * <p>Declare no state and nothing changes : with no composition, no two files
+ * are known to be co-resident, every zone starts at its head, and the packing
+ * is the one that produced every image before this.
  *
  * <p><b>One sort, whole if it fits, cut if it cannot</b> (author's decision,
  * 11/08). Every file — divisible or not — joins a single largest-first sort.
@@ -99,14 +115,177 @@ public final class ArenaPacker {
 			return;
 		}
 
+		// who may not overlap whom, and what is already spoken for
+		Map<String, Set<String>> statesOf = statesOf(target, ctx);
+		List<Placed> taken = fixedPlacements(target, ctx, regions);
+
 		for (Map.Entry<String, List<String>> e : wanted.entrySet()) {
 			Regions.Region arena = regions.get(e.getKey());
 			if (arena == null) {
 				throw new Exception("unknown arena '" + e.getKey() + "' (layout declares: "
 						+ regions.keySet() + ")");
 			}
-			place(arena, e.getValue(), ctx, divisibles);
+			place(arena, e.getValue(), ctx, divisibles, statesOf, taken);
 		}
+	}
+
+	/** one file already sitting somewhere, and who put it there */
+	static final class Placed {
+		final String file;
+		final int page;
+		final int address;
+		final int size;
+
+		Placed(String file, int page, int address, int size) {
+			this.file = file;
+			this.page = page;
+			this.address = address;
+			this.size = size;
+		}
+	}
+
+	/**
+	 * file -> the states that hold it. Two files conflict when a state holds
+	 * both ; with no composition declared the map is empty and nothing
+	 * conflicts, which is the packing every image before this was built with.
+	 */
+	private static Map<String, Set<String>> statesOf(ImmutableNode target, BuildContext ctx)
+			throws Exception {
+		Map<String, Set<String>> states = new LinkedHashMap<String, Set<String>>();
+		ImmutableNode layout = layoutOf(target);
+		if (layout == null) {
+			return states;
+		}
+		Map<String, List<String>> scenes = new LinkedHashMap<String, List<String>>();
+		collectScenes(target, ctx, scenes);
+		for (Compositions.Composition c
+				: com.widedot.m6809.gamebuilder.config.CompositionScan.parse(layout, ctx)) {
+			for (String scene : c.scenes) {
+				for (String file : scenes.getOrDefault(scene, new ArrayList<String>())) {
+					states.computeIfAbsent(file, f -> new LinkedHashSet<String>()).add(c.name);
+				}
+			}
+		}
+		return states;
+	}
+
+	private static ImmutableNode layoutOf(ImmutableNode node) {
+		if ("layout".equals(node.getNodeName())) {
+			return node;
+		}
+		for (ImmutableNode child : node.getChildren()) {
+			ImmutableNode found = layoutOf(child);
+			if (found != null) {
+				return found;
+			}
+		}
+		return null;
+	}
+
+	private static void collectScenes(ImmutableNode node, BuildContext ctx,
+			Map<String, List<String>> scenes) throws Exception {
+		if ("scene".equals(node.getNodeName())) {
+			String name = Attribute.getStringOpt(node, ctx, "name");
+			if (name != null) {
+				List<String> files = scenes.computeIfAbsent(name, s -> new ArrayList<String>());
+				for (ImmutableNode load : node.getChildren()) {
+					if ("load".equals(load.getNodeName())) {
+						String file = Attribute.getStringOpt(load, ctx, "name");
+						if (file != null) {
+							files.add(file);
+						}
+					}
+				}
+			}
+			return;
+		}
+		for (ImmutableNode child : node.getChildren()) {
+			collectScenes(child, ctx, scenes);
+		}
+	}
+
+	/**
+	 * What already has a destination the packer does not choose : a file in a
+	 * region, or one naming its page and address outright. An arena's zone can
+	 * grow into exactly that content — measured on r-type, where a stage's
+	 * terrain collision outgrew the boundary the common was placed against.
+	 */
+	private static List<Placed> fixedPlacements(ImmutableNode target, BuildContext ctx,
+			Map<String, Regions.Region> regions) throws Exception {
+		List<Placed> taken = new ArrayList<Placed>();
+		Map<String, List<String>> scenes = new LinkedHashMap<String, List<String>>();
+		collectScenes(target, ctx, scenes);
+		Set<String> seen = new LinkedHashSet<String>();
+		for (List<String> files : scenes.values()) {
+			for (String file : files) {
+				if (!seen.add(file)) {
+					continue;
+				}
+				com.widedot.m6809.gamebuilder.spi.globals.FilePlaces.Place place =
+						ctx.filePlaces.get(file);
+				if (place == null || place.arena != null) {
+					continue;                     // the packer places those itself
+				}
+				Integer size = ctx.regions.fileSize(file);
+				if (size == null || size <= 0) {
+					continue;                     // not measured yet : discovery pass
+				}
+				if (place.region != null) {
+					Regions.Region r = regions.get(place.region);
+					if (r != null && !r.zones.isEmpty()) {
+						Regions.Zone z = r.zones.get(0);
+						taken.add(new Placed(file, z.page, z.address, size));
+					}
+					continue;
+				}
+				if (place.page != null && place.address != null) {
+					taken.add(new Placed(file, place.page, place.address, size));
+				}
+			}
+		}
+		return taken;
+	}
+
+	/**
+	 * Where a zone may start for this arena : after the highest CONFLICTING
+	 * content already placed inside it. Non-conflicting content is left behind
+	 * — alternatives are exactly what a shared zone is for.
+	 */
+	private static int start(Regions.Zone z, List<String> arenaFiles,
+			Map<String, Set<String>> statesOf, List<Placed> taken) {
+		int at = z.address;
+		if (statesOf.isEmpty()) {
+			return at;
+		}
+		for (Placed p : taken) {
+			if (p.page != z.page || p.address + p.size <= z.address || p.address >= z.end()) {
+				continue;
+			}
+			Set<String> theirs = statesOf.get(p.file);
+			if (theirs == null) {
+				continue;
+			}
+			boolean conflicts = false;
+			for (String f : arenaFiles) {
+				Set<String> ours = statesOf.get(f);
+				if (ours == null) {
+					continue;
+				}
+				for (String state : ours) {
+					if (theirs.contains(state)) {
+						conflicts = true;
+						break;
+					}
+				}
+				if (conflicts) {
+					break;
+				}
+			}
+			if (conflicts) {
+				at = Math.max(at, p.address + p.size);
+			}
+		}
+		return Math.min(at, z.end());
 	}
 
 	private static void collect(ImmutableNode node, BuildContext ctx,
@@ -137,12 +316,15 @@ public final class ArenaPacker {
 	}
 
 	private static void place(Regions.Region arena, List<String> files, BuildContext ctx,
-			Map<String, Divisible> divisibles) throws Exception {
+			Map<String, Divisible> divisibles, Map<String, Set<String>> statesOf,
+			List<Placed> taken) throws Exception {
 
-		// how much room each zone has left, in declaration order
+		// how much room each zone has left, in declaration order — a zone
+		// starts after whatever CO-RESIDENT content already sits at its head
 		int[] free = new int[arena.zones.size()];
 		for (int i = 0; i < free.length; i++) {
-			free[i] = arena.zones.get(i).size;
+			Regions.Zone z = arena.zones.get(i);
+			free[i] = z.end() - start(z, files, statesOf, taken);
 		}
 
 		// a collection's size is the sum of its measured elements ; anything
@@ -216,6 +398,7 @@ public final class ArenaPacker {
 				int at = z.end() - free[chosen];
 				free[chosen] -= need;
 				ctx.regions.placeFile(f, z.page, at);
+				taken.add(new Placed(f, z.page, at, need));
 				if (d != null) {
 					// a collection placed whole is still emitted from its
 					// parts : one chunk, all elements
@@ -241,7 +424,7 @@ public final class ArenaPacker {
 						+ " left — give the arena another <zone>, or make the file smaller");
 			}
 			// cut if it cannot : the fallback the author asked for
-			cut(arena, f, d, free, ctx);
+			cut(arena, f, d, free, ctx, taken);
 		}
 	}
 
@@ -254,6 +437,11 @@ public final class ArenaPacker {
 	 */
 	static void cut(Regions.Region arena, String file, Divisible d, int[] free,
 			BuildContext ctx) throws Exception {
+		cut(arena, file, d, free, ctx, new ArrayList<Placed>());
+	}
+
+	static void cut(Regions.Region arena, String file, Divisible d, int[] free,
+			BuildContext ctx, List<Placed> taken) throws Exception {
 
 		int biggest = 0;
 		for (int i = 0; i < free.length; i++) {
@@ -275,7 +463,7 @@ public final class ArenaPacker {
 			while (zi < free.length
 					&& (free[zi] < GAP_MIN || used + d.sizes[e] > free[zi])) {
 				if (!chunk.isEmpty()) {
-					closeChunk(arena, file, members, chunks, chunk, zi, used, free, ctx);
+					closeChunk(arena, file, members, chunks, chunk, zi, used, free, ctx, taken);
 					chunk = new ArrayList<Integer>();
 				}
 				zi++;
@@ -294,7 +482,7 @@ public final class ArenaPacker {
 			used += d.sizes[e];
 		}
 		if (!chunk.isEmpty()) {
-			closeChunk(arena, file, members, chunks, chunk, zi, used, free, ctx);
+			closeChunk(arena, file, members, chunks, chunk, zi, used, free, ctx, taken);
 		}
 
 		if (members.size() == 1) {
@@ -313,10 +501,11 @@ public final class ArenaPacker {
 
 	private static void closeChunk(Regions.Region arena, String file,
 			List<Cuts.Member> members, List<List<Integer>> chunks, List<Integer> chunk,
-			int zi, int used, int[] free, BuildContext ctx) {
+			int zi, int used, int[] free, BuildContext ctx, List<Placed> taken) {
 		Regions.Zone z = arena.zones.get(zi);
 		int at = z.end() - free[zi];
 		free[zi] -= used;
+		taken.add(new Placed(file, z.page, at, used));
 		String memberName = file + "." + members.size();
 		members.add(new Cuts.Member(memberName, z.page, at));
 		chunks.add(new ArrayList<Integer>(chunk));

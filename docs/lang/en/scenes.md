@@ -196,9 +196,13 @@ address in all three stages** :
 <scene name="scenes.stage7"> … <load name="enemies.patapata"/> … </scene>
 ```
 
-The packer sees **every scene** before placing : the file gets one
-address that is free in each composition it appears in — its
-*co-tenants* differ per stage, the place must collide with none of them.
+The packer sees **every scene** before placing, and — when the configuration
+declares its states — every composition too : the file gets one address free
+of every file it is CO-RESIDENT with, co-resident meaning some `<composition>`
+holds both. Its co-tenants differ per state, the place must collide with none
+of them. Files at a fixed destination (a region, a literal page and address)
+count as occupants : they are exactly the content an arena's zone can grow
+into without anyone noticing.
 Space is not wasted for it : two enemies that never share a stage are
 never in memory together, so the packer may give them the **same**
 address (alternatives). When no address satisfies every composition, the

@@ -190,10 +190,34 @@ Les dix collisions du lot cancer n'auraient jamais existé, et le lot G n'aurait
 pas eu à être inventé. Test d'acceptation : remettre les quatre libs dans le
 lot cancer et vérifier que le builder les place seul, correctement.
 
-Risque : c'est la phase la plus profonde. Le premier ajustement par arène
-devient une contrainte par fichier, proche d'une coloration de graphe, et les
-placements bougent — donc toutes les images de r-type. Le harnais
-`build-corpus.sh` est fait pour ça.
+*Fait le 01/09/2026.* Le changement s'est révélé plus petit que craint : les
+deux chemins de placement calculent leur adresse par `at = z.end() - free[i]`,
+donc il a suffi d'**initialiser `free[]` en tenant compte de ce qui occupe déjà
+la tête de la zone** — un fichier co-résident, et lui seul. Les alternatives se
+recouvrent comme avant : c'est à cela qu'une zone partagée sert. Les fichiers à
+destination fixe (région, page et adresse littérales) comptent comme occupants —
+ce sont précisément ceux dans lesquels une zone d'arène peut grossir sans que
+personne ne le voie.
+
+**Les deux tests d'acceptation, tous deux passés :**
+
+La frontière de la page $17, relevée à la main deux heures plus tôt, est
+**retirée du config** : le packer démarre la zone du commun à `$1C6D`, juste
+après la plus grosse collision co-résidente et l'init de stage qui la suit. Il
+a trouvé la borne exacte là où la main avait écrit `$1400` (faux, mesuré quand
+la plus grosse était celle du stage 1) puis `$1D00` (juste mais arrondi,
+147 octets perdus).
+
+Les quatre bibliothèques remises dans le lot cancer : le build **refuse**, avec
+« collection 'stage1.tiles.even' does not fit : 5 603 bytes of elements remain
+and every free run is used ». C'est la bonne réponse — il n'y a réellement pas
+la place, et le lot G était la vraie correction. Éviter quand c'est possible,
+refuser lisiblement quand ça ne l'est pas.
+
+Déclarer aucun état ne change rien : sans composition, aucun fichier n'est
+connu comme co-résident, chaque zone démarre à sa tête, et le rangement est
+celui qui a produit toutes les images d'avant. Corpus : 80 images, seules les
+4 de r-type bougent (le commun remonte de 147 octets). `rtype_bench` 7/7.
 
 ### Phase 6 — la marge des répertoires
 
