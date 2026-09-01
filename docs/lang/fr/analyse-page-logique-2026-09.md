@@ -193,3 +193,156 @@ dépôt est la connaissance de l'angle mort, et la règle de prudence qui va
 avec : **ne jamais déclarer deux fois le même silicium sous deux référentiels**
 — ce que r-type fait aujourd'hui pour son tampon vidéo, en le sachant et en
 l'écrivant.
+
+---
+
+# 9. Le modèle recommandé, en détail
+
+Ajouté le 01/09/2026 à la demande de l'auteur : à quoi ressemblerait
+précisément le modèle (c), avant toute décision.
+
+## 9.1 Le principe, en une phrase
+
+**Le builder raisonne en adresses PHYSIQUES ; l'adresse CPU est une vue.**
+
+Un octet de RAM a une identité et une seule : son rang dans la mémoire de la
+machine. La fenêtre par laquelle le processeur le voit, et la valeur qu'il faut
+écrire dans un registre pour l'y voir, sont des *conséquences* — calculées, pas
+déclarées.
+
+## 9.2 La formule, et la preuve qu'elle marche
+
+    physique = page × unité(fenêtre) + décalage
+
+L'unité est celle de la fenêtre, pas de la machine : 16 Ko pour une fenêtre
+paginée du Thomson, 8 Ko pour sa fenêtre vidéo, 8 Ko pour les huit fenêtres du
+CoCo 3.
+
+La preuve tient dans le cas que r-type documente à la main. Son tampon vidéo
+est déclaré deux fois :
+
+| déclaration | fenêtre | calcul | physique |
+|---|---|---|---|
+| `page="$01" address="$4000"` | vidéo, unité 8 Ko | 1 × $2000 + 0 | **$2000-$3FFF** |
+| `page="$00" address="$2000"` | cartouche, unité 16 Ko | 0 × $4000 + $2000 | **$2000-$3FFF** |
+
+Le commentaire du config — « décrivent le même silicium en référentiel de
+page » — devient une **égalité calculée**. C'est tout le modèle : ce que
+l'auteur sait et écrit en français, le builder le sait et le vérifie.
+
+## 9.3 Ce que déclare la machine
+
+`machine.xml` existe déjà et porte le nombre de pages et l'expression de
+l'octet de page. Il gagnerait la description des fenêtres — la seule
+connaissance qui soit vraiment celle de la machine :
+
+```xml
+<machine name="to8">
+    <ram blocks="64" blocksize="$2000"/>      <!-- 512 Ko en blocs de 8 Ko -->
+    <window name="cart"     address="$0000" size="$4000" unit="$4000"
+            register="$E7E6" or="%01100000"/>
+    <window name="video"    address="$4000" size="$2000" unit="$2000"
+            register="$E7C3" bit="0"/>
+    <window name="resident" address="$6000" size="$4000" physical="…"/>
+    <window name="data"     address="$A000" size="$4000" unit="$4000"
+            register="$E7E5"/>
+    <reserved name="monitor.dp" window="resident" offset="$0000" size="$0100"/>
+</machine>
+```
+
+Le MO6 est **le même fichier avec d'autres nombres** — c'est ce qui rend le
+modèle crédible : vidéo `$0000-$1FFF` en demi-pages (registre `MC6821.PRA`,
+bit 0), résidente `$2000-$5FFF` sans registre, données `$6000-$9FFF` et
+cartouche `$B000-$EFFF` en pages de 16 Ko. Même structure, autres adresses.
+
+Le CoCo 3 s'y coule sans cas particulier : huit fenêtres de 8 Ko, une par
+registre de `$FFA0` à `$FFA7`, unité 8 Ko, 64 blocs. Ses deux jeux de
+registres (`$FFA8-$FFAF`) sont une affaire d'exécution — deux cartes
+commutables — pas de déclaration.
+
+Deux gains discrets mais réels : l'`or="%01100000"` (RAM par-dessus la
+cartouche) trouve enfin son foyer, au lieu d'être une expression que
+`machine.xml` transporte sans la comprendre ; et les zones réservées de la
+machine — page directe du moniteur, pile, registres — se déclarent **une fois
+là**, au lieu d'être réécrites par chaque jeu (r-type ne l'avait d'ailleurs
+jamais fait pour la page directe du moniteur : c'est du 01/09/2026).
+
+## 9.4 Ce que déclare le jeu
+
+L'adresse CPU disparaît de la déclaration au profit du couple
+*fenêtre + décalage*, machine-indépendant :
+
+```xml
+<!-- aujourd'hui, lié au TO8 -->
+<region name="music"  page="$06" address="$0400" size="$3C00"/>
+<region name="engine" page="$01" address="$6100"/>
+
+<!-- modèle (c) -->
+<region name="music"  window="cart" page="$06" offset="$0400" size="$3C00"/>
+<region name="engine" window="resident" offset="$0100"/>
+```
+
+Une fenêtre non paginée n'a pas de `page` — la RAM résidente cesse d'en porter
+une par convention, ce qui était le troisième sens du mot. Et le même layout
+vaut pour le TO8 et le MO6 : `window="resident" offset="$0100"` donne `$6100`
+sur l'un, `$2100` sur l'autre.
+
+## 9.5 Ce que le builder stocke, et ce que les contrôles deviennent
+
+Un placement porte quatre choses au lieu de deux :
+
+    Placement { physique, taille, fenêtre, adresseCPU }
+
+`physique` est l'identité : **tous les contrôles comparent des intervalles
+physiques**, et l'angle mort se ferme par construction. `adresseCPU` reste ce
+que le code voit — c'est elle qui va dans les tables générées et dans les
+équates du jeu.
+
+Les huit endroits qui comparent aujourd'hui `(page, adresse)` — `SceneChecks`,
+`CompositionChecks`, l'occupation du packer, région ∩ réservé, `Regions`,
+`RamMap`, `Cuts`, le rapport — changent mécaniquement : même code, autre
+grandeur. Le rapport, lui, groupe par bloc physique : une ligne par bloc,
+quelle que soit la fenêtre, et la « page 1 » de r-type cesse d'exister en tant
+que ligne fourre-tout.
+
+## 9.6 Ce que le runtime ne change pas
+
+`ram.set` continue de dispatcher sur la plage d'adresse : rien à toucher côté
+engine. Ce qui change est la valeur que le builder lui fait écrire — désormais
+**calculée** depuis le bloc physique et l'unité de la fenêtre, au lieu d'être
+recopiée depuis la déclaration. Elle doit rester identique à l'octet près, et
+c'est exactement ce que `build-corpus.sh` sait prouver.
+
+## 9.7 La migration, en quatre temps prouvés
+
+**A — l'identité, sans changer la syntaxe.** Le builder calcule le physique
+depuis `(page, adresse)` et la table des fenêtres de la machine ; tous les
+contrôles y passent. Aucune image ne bouge. *Conséquence à anticiper : l'alias
+du tampon vidéo de r-type devient un vrai chevauchement, et le build le
+refusera.* C'est le but — mais c'est le premier geste à faire, avant tout le
+reste : exprimer ce tampon une seule fois.
+
+**B — le vocabulaire.** `window` + `offset` acceptés, l'ancienne forme aussi,
+les deux résolvant au même physique. Corpus identique à l'octet.
+
+**C — la migration des configs.** Les layouts TO8 et MO6 d'un même exemple
+fusionnent là où le contenu tient dans les deux machines. La mesure de départ :
+73 lignes sur 148 dans `examples/sound`.
+
+**D — une machine de plus.** Le fichier CoCo 3, le jour où c'est un objectif.
+
+## 9.8 Ce que le modèle ne résout pas
+
+- **Les tailles de RAM diffèrent** (MO6 128 Ko contre TO8 512 Ko) : un layout
+  portable ne l'est que si le contenu tient dans la plus petite. La fusion des
+  cartes est possible là où elle est vraie, pas partout.
+- **Le code du jeu garde ses adresses machine** (`map.const.asm`, les équates
+  `glb_*`) : la portabilité gagnée est celle de la *carte mémoire*, pas de
+  l'assembleur.
+- **Le départ de l'affichage** — quelle moitié est visible à l'écran, les
+  registres vidéo du GIME — reste affaire d'engine. Le modèle parle de ce que
+  le processeur *atteint*, pas de ce que l'écran *montre*.
+- **Un fait à vérifier avant d'écrire la table** : le rang physique de la
+  fenêtre résidente sur chaque Thomson. Le modèle en a besoin (c'est le
+  `physical="…"` laissé en points de suspension ci-dessus) et la réponse est
+  dans la documentation matérielle, pas dans ce dépôt.
