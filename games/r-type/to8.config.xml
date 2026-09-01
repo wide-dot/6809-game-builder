@@ -96,8 +96,9 @@
                  (Dynamic_Object_RAM = $4000, 60 slots + 4 OST statiques). Y
                  avoir pose ce code le faisait ecraser par l'object manager —
                  le stage tournait 10 trames puis marchait dans des zeros
-                 (24/08). Le <reserved pscroll.vid.half1> plus bas decrit le
-                 meme silicium en referentiel de page. -->
+                 (24/08). Elle occupe donc l'AUTRE moitie : la premiere de la
+                 page 0 en referentiel de page (slice 0), que le registre
+                 designe par son bit a 1. Les OST sont slice 1. -->
             <region name="pscroll.vid" page="$01" address="$4000" size="$2000"/>
             <!-- PAS $0E/$0F : ces pages portent les LOTS d'ennemis que le
                  stage 4 charge (lib.pstaff+lib.cancer en 14, lib.patapata en
@@ -470,8 +471,8 @@
                  DECRIT, rien ne verifie l'accord des deux. Le reste de la
                  demi-page (704 o) et l'autre moitie ($2000-$3FFF, accessible
                  par montage seulement) sont libres. -->
-            <reserved name="objects.pool"   page="$00" address="$0000" size="$1B6C"/>
-            <reserved name="objects.static" page="$00" address="$1B6C" size="$01D4"/>
+            <reserved name="objects.pool"   page="$00" slice="1" address="$4000" size="$1B6C"/>
+            <reserved name="objects.static" page="$00" slice="1" address="$5B6C" size="$01D4"/>
             <!-- La table du manager de tirs : RESIDENTE, comme outslay.boxes.
                  Les boites AABB y vivent ; une boite dans une page montee est
                  un desastre — Collision_Do la parcourt avec la page de
@@ -479,12 +480,7 @@
                  pointeurs pourris en ecrivant AABB.p n'importe ou (gel du
                  29/08/2026, pile retrouvee en $168D). 24 slots de 21 octets
                  dans la marge de la demi-page 0, derriere les OST statiques. -->
-            <reserved name="objects.bullets" page="$00" address="$1D40" size="$0200"/>
-            <!-- L'AUTRE MOITIE, prise par la part $4000 de pscroll. C'est le
-                 meme silicium que <region pscroll.vid>, decrit dans l'autre
-                 systeme de coordonnees : ce <reserved> est ce qui EMPECHE
-                 qu'on la reattribue. -->
-            <reserved name="pscroll.vid.half1" page="$00" address="$2000" size="$2000"/>
+            <reserved name="objects.bullets" page="$00" slice="1" address="$5D40" size="$0200"/>
             <!-- Pages 2-3 : les deux framebuffers de gfxlock (8000 octets par
                  moitie, 192 octets libres en fin de chaque moitie — reserves
                  plage par plage pour que la carte les montre). Le loader se

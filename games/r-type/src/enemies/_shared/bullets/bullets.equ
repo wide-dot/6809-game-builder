@@ -18,7 +18,7 @@ bullet.SLOTSZ   equ 21
 ; de collisionpass montee, elles ne peuvent pas vivre en page montee. Le
 ; BATTEMENT et le temps mort y vivent AUSSI : le rechargement de checkpoint
 ; (resident) doit pouvoir les perimer sans monter la page du manager.
-bullet.Slots    equ objects.bullets.address+$4000
+bullet.Slots    equ objects.bullets.address
 bullet.beat     equ bullet.Slots+bullet.SLOTS*bullet.SLOTSZ
 bullet.idle     equ bullet.beat+2
 ; LE SENTINEL « MORT ». Un battement a zero ne veut PAS dire mort : les

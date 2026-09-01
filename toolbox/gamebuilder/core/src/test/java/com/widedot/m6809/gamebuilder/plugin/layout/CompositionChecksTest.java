@@ -24,7 +24,31 @@ import com.widedot.m6809.gamebuilder.spi.globals.RamMap;
 class CompositionChecksTest {
 
 	private static BuildContext context() {
-		return new BuildContext(".", new Settings(new java.util.HashMap<String, String>()));
+		BuildContext ctx = new BuildContext(".", new Settings(new java.util.HashMap<String, String>()));
+		// Every check reads places through the machine's windows : two files
+		// reached through two different windows can be the same silicon, and a
+		// context without a machine would compare nothing at all.
+		ctx.machines.declare(to8());
+		return ctx;
+	}
+
+	/** the target machine, reduced to what the checks read : its windows */
+	private static com.widedot.m6809.gamebuilder.spi.globals.Machines.Machine to8() {
+		java.util.List<com.widedot.m6809.gamebuilder.spi.globals.Machines.Window> windows =
+				Arrays.asList(
+				new com.widedot.m6809.gamebuilder.spi.globals.Machines.Window(
+						"cart", 0x0000, 0x4000, null, "$E7E6", null, null, null),
+				new com.widedot.m6809.gamebuilder.spi.globals.Machines.Window(
+						"video", 0x4000, 0x2000, Integer.valueOf(0), null, null, null,
+						Arrays.asList(
+								new com.widedot.m6809.gamebuilder.spi.globals.Machines.Slice(0, 1),
+								new com.widedot.m6809.gamebuilder.spi.globals.Machines.Slice(1, 0))),
+				new com.widedot.m6809.gamebuilder.spi.globals.Machines.Window(
+						"resident", 0x6000, 0x4000, Integer.valueOf(1), null, null, null, null),
+				new com.widedot.m6809.gamebuilder.spi.globals.Machines.Window(
+						"data", 0xA000, 0x4000, null, "$E7E5", null, null, null));
+		return new com.widedot.m6809.gamebuilder.spi.globals.Machines.Machine(
+				"to8", 32, 0x4000, "map.RAM_OVER_CART+", "map.const.asm", windows);
 	}
 
 	private static void load(BuildContext ctx, String scene, String file, int page, int address,
@@ -56,7 +80,7 @@ class CompositionChecksTest {
 		Exception e = assertThrows(Exception.class, () -> CompositionChecks.verify(ctx));
 		assertTrue(e.getMessage().contains("stage.tiles"));
 		assertTrue(e.getMessage().contains("lib.enemy"));
-		assertTrue(e.getMessage().contains("overlap on page 26"));
+		assertTrue(e.getMessage().contains("overlap at page 26"), e.getMessage());
 	}
 
 	@Test
@@ -100,7 +124,7 @@ class CompositionChecksTest {
 		compose(ctx, "stage1", "scenes.stage1", "scenes.lot");
 		Exception e = assertThrows(Exception.class, () -> CompositionChecks.verify(ctx));
 		assertTrue(e.getMessage().contains("is loaded by 2 of its scenes"));
-		assertFalse(e.getMessage().contains("overlap on page"));
+		assertFalse(e.getMessage().contains("overlap at page"));
 	}
 
 	@Test
@@ -140,5 +164,37 @@ class CompositionChecksTest {
 		BuildContext ctx = context();
 		compose(ctx, "stage1", "scenes.stage1");
 		assertThrows(Exception.class, () -> compose(ctx, "stage1", "scenes.stage2"));
+	}
+
+	@Test
+	@DisplayName("two windows, one silicon : $0000 in cartridge and $C000 in data collide")
+	void collisionAcrossWindows() throws Exception {
+		BuildContext ctx = context();
+		// page 4 seen from the cartridge window starts at $0000 ; the same page
+		// seen from the data window shows its first byte at $C000. Comparing
+		// the declared addresses could never say these two are the same bytes.
+		load(ctx, "scenes.a", "tiles", 4, 0x0000, 0x0400);
+		load(ctx, "scenes.b", "table", 4, 0xC000, 0x0100);
+		compose(ctx, "state", "scenes.a", "scenes.b");
+		Exception e = assertThrows(Exception.class, () -> CompositionChecks.verify(ctx));
+		assertTrue(e.getMessage().contains("tiles"), e.getMessage());
+		assertTrue(e.getMessage().contains("table"), e.getMessage());
+		assertTrue(e.getMessage().contains("page 4 +$0000"), e.getMessage());
+	}
+
+	@Test
+	@DisplayName("a screen that runs past its page's end is compared in both its pieces")
+	void wrappedPlaceIsComparedWhole() throws Exception {
+		BuildContext ctx = context();
+		// loaded at $7C00 in the resident window, 2019 bytes : page 1 +$3C00
+		// to the end, then +$0000-$03E3 — the shape of r-type's nine screens
+		load(ctx, "scenes.screen", "title.main", 1, 0x7C00, 2019);
+		// and something sitting at the START of the same page, which the
+		// screen's tail runs into
+		load(ctx, "scenes.other", "globals", 1, 0x8100, 0x0100);
+		compose(ctx, "state", "scenes.screen", "scenes.other");
+		Exception e = assertThrows(Exception.class, () -> CompositionChecks.verify(ctx));
+		assertTrue(e.getMessage().contains("title.main"), e.getMessage());
+		assertTrue(e.getMessage().contains("globals"), e.getMessage());
 	}
 }

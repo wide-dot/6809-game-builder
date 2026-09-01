@@ -33,7 +33,8 @@ public class LayoutPlugin {
 						Attribute.getString(child, ctx, "name"),
 						Attribute.getInteger(child, ctx, "page"),
 						Attribute.getInteger(child, ctx, "address"),
-						Attribute.getInteger(child, ctx, "size")));
+						Attribute.getInteger(child, ctx, "size"),
+						Attribute.getIntegerOpt(child, ctx, "slice")));
 				continue;
 			}
 			// A composition names the scenes that are resident TOGETHER. It is
@@ -92,17 +93,29 @@ public class LayoutPlugin {
 		// single SCENE writes twice to the same bytes (SceneChecks). The rest
 		// is shown, not refused : see the occupancy report.
 		java.util.List<String> clashes = new java.util.ArrayList<String>();
-		if (ctx.regions.hasMeasures()) {
+		com.widedot.m6809.gamebuilder.spi.globals.Machines.Machine machine = ctx.machines.current();
+		com.widedot.m6809.gamebuilder.spi.globals.WindowMap windows =
+				machine == null || machine.windows.isEmpty() ? null : machine.windows();
+		if (ctx.regions.hasMeasures() && windows != null) {
+			// Compared in the ABSOLUTE referential : a zone and a reserved
+			// range may be reached through two different windows and still be
+			// the same silicon — page 1 seen from the resident window is the
+			// page 1 a cartridge mount would show.
 			for (Regions.Region a : ctx.regions.all()) {
 				for (Regions.Zone z : a.zones) {
+					java.util.List<int[]> zone = windows.footprint(
+							Integer.valueOf(z.page), z.address, z.size, null);
 					for (Regions.Reserved r : ctx.regions.reservedRanges()) {
-						if (z.page == r.page && z.address < r.address + r.size
-								&& r.address < z.end()) {
+						java.util.List<int[]> range = windows.footprint(
+								Integer.valueOf(r.page), r.address, r.size, r.slice);
+						if (com.widedot.m6809.gamebuilder.spi.globals.WindowMap
+								.overlap(zone, range)) {
 							clashes.add(String.format(
 									"region '%s' [$%04X-$%04X] runs into the reserved range '%s'"
-									+ " [$%04X-$%04X] on page %d",
+									+ " [$%04X-$%04X] — both are %s",
 									a.name, z.address, z.end() - 1,
-									r.name, r.address, r.address + r.size - 1, z.page));
+									r.name, r.address, r.address + r.size - 1,
+									windows.describe(range)));
 						}
 					}
 				}

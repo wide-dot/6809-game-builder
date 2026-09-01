@@ -146,7 +146,10 @@ public class DirectoryPlugin {
 					ctx.staticLink.isDiscovery()
 							? java.util.Collections.<com.widedot.m6809.gamebuilder.spi.globals
 									.Regions.Reserved>emptyList()
-							: ctx.regions.reservedRanges());
+							: ctx.regions.reservedRanges(),
+					ctx.machines.current() == null
+							|| ctx.machines.current().windows.isEmpty()
+									? null : ctx.machines.current().windows());
 			if (!sceneErrors.isEmpty()) {
 				throw new Exception("Invalid scene:\n  " + String.join("\n  ", sceneErrors));
 			}

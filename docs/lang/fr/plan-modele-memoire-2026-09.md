@@ -104,6 +104,40 @@ corrigée dans la déclaration, jamais contournée par une exception.
 **Validation** : corpus froid identique après correction, `loader-ut` 18/18,
 `rtype_bench` 7/7.
 
+### Ce qui a réellement été fait (01/09/2026), et les écarts
+
+Les comparaisons passent dans le référentiel absolu là où elles portent :
+recouvrement par composition, zone contre plage réservée, et chargement contre
+plage réservée. Le cas qui n'existait pas est vérifié sur le jeu réel — une
+région en `$0000` (cartouche) et une réservation en `$C000` (données) sont
+désormais reconnues comme **le même silicium**, « both are page 23
++$0000-$00FF ».
+
+**La migration des `<reserved>` de la page 0 est faite ici, pas en phase 5** :
+sans elle les contrôles auraient comparé des coordonnées fausses. Les objets
+passent en `slice="1"` avec leurs adresses CPU (`$4000`, `$5B6C`, `$5D40`),
+`pscroll.vid.half1` disparaît — la région `pscroll.vid` occupe déjà cette
+moitié, elle était son doublon dans l'autre système — et
+`bullet.Slots equ objects.bullets.address+$4000` perd son `+$4000`. Les 80
+images restent identiques : c'est la preuve que les deux écritures désignaient
+bien le même endroit.
+
+Trois écarts :
+
+1. **Le recouvrement intra-scène de `SceneChecks` n'est pas converti.** Une
+   scène appartient à une composition, donc chacune de ses paires est déjà
+   comparée en physique par `CompositionChecks` ; convertir ne changerait que
+   le libellé, au prix de quinze appels de test.
+2. **Un fichier dont le contenu mesuré sort de sa fenêtre est un
+   AVERTISSEMENT, pas une erreur.** Les samples de `mplus-pcm` couvrent
+   24 Ko depuis `$0000` et traversent trois fenêtres délibérément — le config
+   le dit en commentaire. Le builder ne peut pas dire quel silicium c'est : il
+   le nomme et le laisse hors des comparaisons plutôt que de faire semblant.
+   Une **région** déclarée qui déborde reste, elle, une erreur dure.
+3. **Les contrôles se taisent sur une cible sans machine** : les cibles
+   « assets » des exemples mplus ne décrivent aucune mémoire, et leur réclamer
+   une machine arrêterait un build parfaitement formé.
+
 ## Phase 3 — le loader devient une place
 
 ```xml

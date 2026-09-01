@@ -145,6 +145,7 @@ public final class Handlers {
 			.req("name", STRING, "range name, emitted as <name>.address / <name>.size equates")
 			.req("page", INT, "page holding the range")
 			.req("address", INT, "first byte")
+			.opt("slice", INT, "which slice of the page, when the window showing this address shows less than a whole page")
 			.req("size", INT, "length in bytes"));
 		spec(element("scene").doc("generated scene table, one loadable directory entry")
 			.req("name", STRING, "unique alias, becomes the file id equate")

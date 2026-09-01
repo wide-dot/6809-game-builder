@@ -244,6 +244,45 @@ public final class WindowMap {
 				+ ": '" + selector + "' is neither that page nor one of its selector values");
 	}
 
+	/**
+	 * The absolute bytes a DECLARED place occupies : resolve it through its
+	 * window, then take its footprint. This is what every overlap check
+	 * compares — two places collide when their physical bytes do, whatever
+	 * window each is reached through.
+	 */
+	public List<int[]> footprint(Integer page, int cpu, int size, Integer slice)
+			throws Exception {
+		Placement p = resolve(page, cpu, slice, Integer.valueOf(size));
+		return footprint(p.window, Integer.valueOf(p.page), cpu, size, p.slice);
+	}
+
+	/** whether two footprints touch the same byte */
+	public static boolean overlap(List<int[]> a, List<int[]> b) {
+		for (int[] x : a) {
+			for (int[] y : b) {
+				if (x[0] < y[1] && y[0] < x[1]) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * A footprint as the messages spell it : the page, and the position inside
+	 * it — two pieces when the place runs past the page's end and comes back
+	 * to its start.
+	 */
+	public String describe(List<int[]> ranges) {
+		StringBuilder out = new StringBuilder();
+		for (int[] r : ranges) {
+			out.append(out.length() == 0 ? "" : " + ")
+					.append(String.format("page %d +$%04X-$%04X", r[0] / machine.pageSize,
+							r[0] % machine.pageSize, (r[1] - 1) % machine.pageSize));
+		}
+		return out.toString();
+	}
+
 	private static String hex(int v) {
 		return String.format("%04X", v);
 	}

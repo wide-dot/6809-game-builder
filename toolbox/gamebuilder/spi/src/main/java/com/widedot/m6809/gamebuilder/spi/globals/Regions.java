@@ -126,8 +126,15 @@ public class Regions {
 		public final int page;
 		public final int address;
 		public final int size;
+		/** which slice of the page, when the window shows less than one */
+		public final Integer slice;
 
 		public Reserved(String name, int page, int address, int size) {
+			this(name, page, address, size, null);
+		}
+
+		public Reserved(String name, int page, int address, int size, Integer slice) {
+			this.slice = slice;
 			this.name = name;
 			this.page = page;
 			this.address = address;

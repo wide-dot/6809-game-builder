@@ -9,6 +9,7 @@ import java.util.Set;
 
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.spi.globals.Compositions;
+import com.widedot.m6809.gamebuilder.spi.globals.WindowMap;
 import com.widedot.m6809.gamebuilder.spi.globals.RamMap;
 
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +57,7 @@ public final class CompositionChecks {
 			// That silence is only harmless when no two scenes share bytes in
 			// the first place, so say WHAT is left unverified rather than say
 			// nothing — an unchecked build must not look like a clean one.
-			List<String> sharing = crossSceneSharing(ctx.ramMap.scenes());
+			List<String> sharing = crossSceneSharing(ctx.ramMap.scenes(), windows(ctx));
 			if (!sharing.isEmpty()) {
 				log.warn("no <composition> declared : {} pair(s) of files from different scenes"
 						+ " share bytes, and nothing says whether those scenes are in memory"
@@ -95,7 +96,7 @@ public final class CompositionChecks {
 
 		for (Compositions.Composition c : ctx.compositions.all()) {
 			errors.addAll(sharedFiles(c, scenes));
-			errors.addAll(overlaps(c, scenes));
+			errors.addAll(overlaps(c, scenes, windows(ctx)));
 		}
 
 		if (!errors.isEmpty()) {
@@ -163,7 +164,8 @@ public final class CompositionChecks {
 	 * only as long as a scene is the whole of memory. Every pair here is a
 	 * question the builder cannot answer without a composition.
 	 */
-	private static List<String> crossSceneSharing(Map<String, List<RamMap.Load>> scenes) {
+	private static List<String> crossSceneSharing(Map<String, List<RamMap.Load>> scenes,
+			WindowMap windows) throws Exception {
 		Map<String, RamMap.Load> byFile = new LinkedHashMap<String, RamMap.Load>();
 		Map<String, String> owner = new LinkedHashMap<String, String>();
 		for (Map.Entry<String, List<RamMap.Load>> scene : scenes.entrySet()) {
@@ -174,18 +176,20 @@ public final class CompositionChecks {
 			}
 		}
 		List<RamMap.Load> all = new ArrayList<RamMap.Load>(byFile.values());
+		Map<String, List<int[]>> prints = footprints(all, windows);
 		List<String> found = new ArrayList<String>();
 		for (int i = 0; i < all.size(); i++) {
 			for (int j = i + 1; j < all.size(); j++) {
 				RamMap.Load a = all.get(i);
 				RamMap.Load b = all.get(j);
-				if (a.page != b.page || a.address >= b.address + b.size
-						|| b.address >= a.address + a.size
-						|| owner.get(a.name).equals(owner.get(b.name))) {
+				if (owner.get(a.name).equals(owner.get(b.name))
+						|| prints.get(a.name) == null || prints.get(b.name) == null
+						|| !WindowMap.overlap(prints.get(a.name), prints.get(b.name))) {
 					continue;
 				}
-				found.add(String.format("'%s' (%s) and '%s' (%s) share page %d",
-						a.name, owner.get(a.name), b.name, owner.get(b.name), a.page));
+				found.add(String.format("'%s' (%s) and '%s' (%s) share %s",
+						a.name, owner.get(a.name), b.name, owner.get(b.name),
+						windows.describe(prints.get(a.name))));
 			}
 		}
 		return found;
@@ -200,7 +204,7 @@ public final class CompositionChecks {
 	 * first scene that names it.
 	 */
 	private static List<String> overlaps(Compositions.Composition c,
-			Map<String, List<RamMap.Load>> scenes) {
+			Map<String, List<RamMap.Load>> scenes, WindowMap windows) throws Exception {
 
 		Map<String, RamMap.Load> byFile = new LinkedHashMap<String, RamMap.Load>();
 		Map<String, String> owner = new LinkedHashMap<String, String>();
@@ -220,24 +224,65 @@ public final class CompositionChecks {
 		}
 
 		List<RamMap.Load> all = new ArrayList<RamMap.Load>(byFile.values());
+		Map<String, List<int[]>> prints = footprints(all, windows);
 		List<String> found = new ArrayList<String>();
 		for (int i = 0; i < all.size(); i++) {
 			for (int j = i + 1; j < all.size(); j++) {
 				RamMap.Load a = all.get(i);
 				RamMap.Load b = all.get(j);
-				if (a.page != b.page || a.address >= b.address + b.size
-						|| b.address >= a.address + a.size) {
+				if (prints.get(a.name) == null || prints.get(b.name) == null
+						|| !WindowMap.overlap(prints.get(a.name), prints.get(b.name))) {
 					continue;
 				}
 				found.add(String.format(
 						"composition '%s': '%s' [$%04X-$%04X] (%s) and '%s' [$%04X-$%04X] (%s)"
-						+ " overlap on page %d",
+						+ " overlap at %s",
 						c.name,
 						a.name, a.address, a.address + a.size - 1, owner.get(a.name),
 						b.name, b.address, b.address + b.size - 1, owner.get(b.name),
-						a.page));
+						windows.describe(prints.get(a.name))));
 			}
 		}
 		return found;
+	}
+
+	/**
+	 * The target machine's windows — every check reads places through them.
+	 * Null when the target declares no machine : a target that describes no
+	 * memory (the asset-only targets of the mplus examples) has nothing to
+	 * compare, and asking it for a machine it does not need would stop a build
+	 * that is perfectly well formed.
+	 */
+	private static WindowMap windows(BuildContext ctx) {
+		com.widedot.m6809.gamebuilder.spi.globals.Machines.Machine m = ctx.machines.current();
+		return m == null || m.windows.isEmpty() ? null : m.windows();
+	}
+
+	/**
+	 * Where each load really lands, in the absolute referential. Two loads
+	 * reached through two different windows may be the same silicon — which is
+	 * exactly what a comparison on the declared page and address cannot see.
+	 */
+	private static Map<String, List<int[]>> footprints(List<RamMap.Load> loads,
+			WindowMap windows) throws Exception {
+		Map<String, List<int[]>> out = new LinkedHashMap<String, List<int[]>>();
+		if (windows == null) {
+			return out;
+		}
+		for (RamMap.Load load : loads) {
+			try {
+				out.put(load.name, windows.footprint(Integer.valueOf(load.page), load.address,
+						load.size, null));
+			} catch (Exception e) {
+				// A file whose measured content leaves its window is not
+				// refused here : the mplus PCM example does it on purpose, its
+				// samples spanning 24 KB from $0000 across three windows. What
+				// the builder can honestly say is that it does not know which
+				// silicon those bytes are, so it says it and leaves them out
+				// of the comparisons rather than pretending.
+				log.warn("'{}' is left out of the memory checks: {}", load.name, e.getMessage());
+			}
+		}
+		return out;
 	}
 }

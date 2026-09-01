@@ -40,7 +40,19 @@ public final class SceneChecks {
 	public static List<String> verify(List<SceneCheck> scenes, Map<String, Integer> sizes,
 			Map<String, Map<String, int[]>> pageSpans, boolean addressesAreReal,
 			List<com.widedot.m6809.gamebuilder.spi.globals.Regions.Reserved> reserved) {
-		List<String> errors = verify(scenes, sizes, pageSpans, reserved);
+		return verify(scenes, sizes, pageSpans, addressesAreReal, reserved, null);
+	}
+
+	/**
+	 * @param windows the machine's windows, so a load and a reserved range are
+	 *                compared where they really are — null compares them as
+	 *                declared, which is what a caller without a machine can do
+	 */
+	public static List<String> verify(List<SceneCheck> scenes, Map<String, Integer> sizes,
+			Map<String, Map<String, int[]>> pageSpans, boolean addressesAreReal,
+			List<com.widedot.m6809.gamebuilder.spi.globals.Regions.Reserved> reserved,
+			com.widedot.m6809.gamebuilder.spi.globals.WindowMap windows) {
+		List<String> errors = verify(scenes, sizes, pageSpans, reserved, windows);
 		return addressesAreReal ? errors : budgetsOnly(errors);
 	}
 
@@ -71,6 +83,13 @@ public final class SceneChecks {
 	public static List<String> verify(List<SceneCheck> scenes, Map<String, Integer> sizes,
 			Map<String, Map<String, int[]>> pageSpans,
 			List<com.widedot.m6809.gamebuilder.spi.globals.Regions.Reserved> reserved) {
+		return verify(scenes, sizes, pageSpans, reserved, null);
+	}
+
+	public static List<String> verify(List<SceneCheck> scenes, Map<String, Integer> sizes,
+			Map<String, Map<String, int[]>> pageSpans,
+			List<com.widedot.m6809.gamebuilder.spi.globals.Regions.Reserved> reserved,
+			com.widedot.m6809.gamebuilder.spi.globals.WindowMap windows) {
 		List<String> errors = new ArrayList<String>();
 		// the same file loaded at the same place by several scenes clashes
 		// identically in each : one report per (file, range) is what a human
@@ -127,8 +146,7 @@ public final class SceneChecks {
 						// here, with the file's real size, whatever the
 						// destination form (raw, region or arena).
 						for (com.widedot.m6809.gamebuilder.spi.globals.Regions.Reserved r : reserved) {
-							if (load.page == r.page && load.address < r.address + r.size
-									&& r.address < load.address + size) {
+							if (clash(windows, load.page, load.address, size, r)) {
 								reservedClashes.add(load.where + ": '" + load.name + "' ["
 										+ hex(load.address) + "-" + hex(load.address + size - 1)
 										+ "] runs into the reserved range '" + r.name + "' ["
@@ -170,6 +188,28 @@ public final class SceneChecks {
 		}
 		errors.addAll(reservedClashes);
 		return errors;
+	}
+
+	/**
+	 * Whether a load lands on a reserved range. Read through the machine's
+	 * windows when they are known : the two may be reached through different
+	 * windows and still be the same bytes. A place the windows cannot resolve
+	 * — the mplus samples span three of them on purpose — falls back to the
+	 * declared comparison rather than being skipped.
+	 */
+	private static boolean clash(com.widedot.m6809.gamebuilder.spi.globals.WindowMap windows,
+			int page, int address, int size,
+			com.widedot.m6809.gamebuilder.spi.globals.Regions.Reserved r) {
+		if (windows != null) {
+			try {
+				return com.widedot.m6809.gamebuilder.spi.globals.WindowMap.overlap(
+						windows.footprint(Integer.valueOf(page), address, size, null),
+						windows.footprint(Integer.valueOf(r.page), r.address, r.size, r.slice));
+			} catch (Exception e) {
+				// fall through to the declared comparison
+			}
+		}
+		return page == r.page && address < r.address + r.size && r.address < address + size;
 	}
 
 	private static String hex(int v) {
