@@ -5,7 +5,7 @@
     python3 ci/toje-bench/loader_ut.py dist/to8.fd dist/to8-disk1.fd
 
 Result table at $9C00 (see the game mode's main.asm): +0 magic $CA,
-+1..+17 one byte per test, +27 disk handshake ($D1 = the bench waits for
++1..+18 one byte per test, +27 disk handshake ($D1 = the bench waits for
 disk 1, $D3 = for disk 0 — mount it and press any key), +31 final status
 ($0D = all pass, $E0+n = n failures). T18 wedges the machine ON PURPOSE
 after +31 is written; on no-verdict the engine log block is dumped.
@@ -27,7 +27,7 @@ for i in range(600):
     b = t.read("9C00", 32)
     status, hand = b[31], b[27]
     print(f"i={i:3d} wall={time.time() - t0:4.0f}s magic={b[0]:02X} "
-          f"slots={' '.join(f'{x:02X}' for x in b[1:18])} "
+          f"slots={' '.join(f'{x:02X}' for x in b[1:19])} "
           f"hand={hand:02X} status={status:02X}", flush=True)
     if hand == 0xD1 and mounted != 1:
         print(">> mounting disk 1")

@@ -99,7 +99,7 @@ class CompositionChecksTest {
 		load(ctx, "scenes.lot", "common.engine", 1, 0x6100, 0x1E07);
 		compose(ctx, "stage1", "scenes.stage1", "scenes.lot");
 		Exception e = assertThrows(Exception.class, () -> CompositionChecks.verify(ctx));
-		assertTrue(e.getMessage().contains("is loaded by 2 scenes"));
+		assertTrue(e.getMessage().contains("is loaded by 2 of its scenes"));
 		assertFalse(e.getMessage().contains("overlap on page"));
 	}
 
@@ -111,7 +111,7 @@ class CompositionChecksTest {
 		load(ctx, "scenes.lot", "lib.enemy", 26, 0x0000, 0x1000);
 		compose(ctx, "stage1", "scenes.stage1", "scenes.lot");
 		Exception e = assertThrows(Exception.class, () -> CompositionChecks.verify(ctx));
-		assertTrue(e.getMessage().contains("'lib.enemy' is loaded by 2 scenes"));
+		assertTrue(e.getMessage().contains("'lib.enemy' is loaded by 2 of its scenes"));
 	}
 
 	@Test
@@ -120,6 +120,17 @@ class CompositionChecksTest {
 		BuildContext ctx = context();
 		load(ctx, "scenes.main", "data.marker.bb", 6, 0x0000, 0x0100);
 		load(ctx, "scenes.trap", "data.marker.bb", 6, 0x0000, 0x0100);
+		CompositionChecks.verify(ctx);
+	}
+
+	@Test
+	@DisplayName("two scenes of DIFFERENT states may share a file : the convergence drops then loads")
+	void sharingAcrossStatesIsLegal() throws Exception {
+		BuildContext ctx = context();
+		load(ctx, "scenes.stage1", "lib.enemy", 26, 0x0000, 0x1000);
+		load(ctx, "scenes.stage2", "lib.enemy", 26, 0x0000, 0x1000);
+		compose(ctx, "stage1", "scenes.stage1");
+		compose(ctx, "stage2", "scenes.stage2");
 		CompositionChecks.verify(ctx);
 	}
 

@@ -1,6 +1,6 @@
 # La composition comme unité de chargement — plan
 
-Statut : **plan arrêté le 01/09/2026** (décision auteur). **Phases 0 et 1
+Statut : **plan arrêté le 01/09/2026** (décision auteur). **Phases 0, 1 et 2
 faites** le même jour ; les suivantes sont à réaliser dans l'ordre donné. Le mécanisme de
 déclaration (`<composition>`) et ses contrôles au build sont **déjà en place** —
 voir [`scenes.md`](../en/scenes.md), section « The composition ».
@@ -118,9 +118,26 @@ confort. **Repli** si ça déborde : déplacer INDEX du secteur 4 au 5 (+255
 octets), geste déjà fait une fois, couplé à `DIR_DEFAULT_SECTOR` dans
 `loader.asm` et à `storage.xml`.
 
-*Preuve* : `loader-ut` gagne ses tests T19+ — converger de l'état A vers B,
-vérifier que l'intersection n'est pas relue (compteur de lectures), que la
-différence est déchargée (`linkData.count`), et qu'un seul re-link a lieu.
+*Fait le 01/09/2026.* **140 octets** — dans les 386 de marge, il en reste 246,
+INDEX n'a pas eu à bouger. `loader.scene.load` se coupe en deux
+(`loader.scene.load.noLink` puis le lien) : la convergence paie un seul
+`file.link` quel que soit le nombre de scènes.
+
+L'état courant se garde en **un pointeur** sur la table résidente — ni copie,
+ni liste bornée : c'est l'écart de la phase 1 qui le permet, les tables ne
+bougeant jamais. Redemander l'état courant ne fait rien du tout.
+
+Preuve : `loader-ut` T19 — converger vers l'état dd, poser une sentinelle dans
+le remplissage de la scène commune, converger vers l'état ee, et vérifier que
+dd est déchargée, ee indexée, **la sentinelle intacte** (l'intersection n'a
+pas été relue) et les mots externes de hub retournés par le lien final.
+Redemander le même état ne touche à rien. Banc **18/18 sous toje**, statut
+`$0D`, piège T18 toujours armé (`$8301`).
+
+Deux défauts trouvés en chemin, tous deux réels : `scene.unload` et
+`scene.apply` n'ont jamais gardé Y (ni `dir.load` X) — le pointeur de parcours
+de la convergence partait dans le décor et vidait le pool ; et une ligne vide
+ferme la portée des labels `@` de lwasm.
 
 ### Phase 3 — r-type passe aux compositions
 

@@ -14,6 +14,13 @@ _loader.scene.unload MACRO
         jsr   loader.ADDRESS+loader.scene.unload.IDX
  ENDM
 
+; Fait converger la RAM vers un etat declare. \1 = l'adresse de sa table,
+; generee par <layout gencompositions>. Redemander l'etat courant ne fait rien.
+_loader.composition.load MACRO
+        ldx   \1
+        jsr   loader.ADDRESS+loader.composition.load.IDX
+ ENDM
+
 ; prompts the user for a disk change if the mounted disk is not the one asked
 _loader.dir.load MACRO
         lda   \1

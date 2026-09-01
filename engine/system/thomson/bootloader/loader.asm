@@ -99,6 +99,7 @@ fileid   rmb types.WORD   ; [0000 000] [0000 000]    - [file id]
         jmp   >loader.file.getPageID       ; OK
         jmp   >loader.file.linkData.count  ; OK
         jmp   >loader.scene.unload         ; OK
+        jmp   >loader.composition.load     ; OK
 
 ; callbacks that can be modified by user at runtime
 error   jmp   >dskerr     ; Called if a read error is detected
@@ -213,6 +214,21 @@ loader.scene.loadDefault
 ; Load a scene
 ;-----------------------------------------------------------------
 loader.scene.load
+        bsr   loader.scene.load.noLink
+        jmp   loader.file.link
+
+;-----------------------------------------------------------------
+; loader.scene.load.noLink
+;
+; input  REG : [X] scene file id
+;-----------------------------------------------------------------
+; Une scene chargee mais PAS reliee. Le lien global coute de l'ordre de
+; references x exports : une composition qui charge plusieurs scenes le paie
+; UNE fois a la fin, pas une fois par scene. C'est la seule raison d'etre de
+; cette coupure — loader.scene.load reste exactement ce qu'il etait, le
+; chargement suivi du lien.
+;-----------------------------------------------------------------
+loader.scene.load.noLink
 
         jsr   loader.file.malloc
         cmpu  #0
@@ -234,9 +250,6 @@ loader.scene.load
         ldx   #loader.file.linkData.load
         stx   loader.scene.routine
         jsr   loader.scene.apply
-
-        ; once all files are loaded, proceed to the link
-        jsr   loader.file.link
 
         ; La table N'EST PAS liberee : elle devient le cache du dechargement
         ; a venir. La precedente, elle, ne sert plus.
@@ -315,6 +328,111 @@ loader.scene.unload.walk
 loader.scene.unload.file
         ldb   >diskId
         jmp   loader.file.linkData.unload
+
+;-----------------------------------------------------------------
+; loader.composition.load
+;
+; input  REG : [X] adresse de la table de la composition
+;-----------------------------------------------------------------
+; Fait CONVERGER la RAM vers un etat declare : decharge les scenes que
+; l'etat cible ne tient pas, charge celles qui lui manquent, et laisse en
+; place — telle quelle, mutations comprises — l'intersection.
+;
+; La table est de la donnee RESIDENTE, generee par le builder
+; (<layout gencompositions>) : un compte de scenes, puis trois octets
+; chacune, son id de fichier et le repertoire qui la porte. Elle ne bouge
+; jamais, donc l'etat courant se garde en un simple POINTEUR sur la table
+; residente — ni copie, ni liste bornee.
+;
+; Le lien global est paye UNE fois, a la fin, quel que soit le nombre de
+; scenes : il coute de l'ordre de references x exports, et les references
+; en avant entre scenes d'un meme etat se resolvent a ce lien-la.
+;
+; Redemander l'etat courant ne fait rien — c'est ce qui rend un checkpoint
+; gratuit. Recharger reellement une scene reste deux gestes que le jeu
+; nomme (unload puis load), comme avant.
+;-----------------------------------------------------------------
+loader.composition.load
+        pshs  d,x,y,u
+        cmpx  >composition.current
+        beq   @done                       ; deja cet etat : rien a faire
+        stx   >composition.target
+;
+        ; --- les partantes : residentes, absentes de la cible
+        ldy   >composition.current
+        beq   @arrivals                   ; rien de resident (boot)
+        lda   ,y+
+        beq   @arrivals
+        sta   >composition.count
+@drop   ldx   ,y
+        ldu   >composition.target
+        bsr   loader.composition.holds
+        beq   @dropNext                   ; la cible la tient : on la garde
+        pshs  y                           ; ni dir.load ni scene.apply ne gardent
+        lda   2,y                         ; Y, et dir.load ecrase X en plus :
+        jsr   loader.dir.load             ; l'entree se relit sur la pile
+        ldy   ,s
+        ldx   ,y
+        jsr   loader.scene.unload
+        puls  y
+@dropNext
+        leay  3,y
+        dec   >composition.count
+        bne   @drop
+;
+        ; --- les arrivantes : de la cible, absentes du courant
+@arrivals
+        ldy   >composition.target
+        lda   ,y+
+        beq   @relink
+        sta   >composition.count
+@add    ldx   ,y
+        ldu   >composition.current
+        beq   @addLoad                    ; rien de resident : tout arrive
+        bsr   loader.composition.holds
+        beq   @addNext                    ; deja la : on ne la relit pas
+@addLoad
+        pshs  y
+        lda   2,y
+        jsr   loader.dir.load
+        ldy   ,s
+        ldx   ,y
+        jsr   loader.scene.load.noLink
+        puls  y
+@addNext
+        leay  3,y
+        dec   >composition.count
+        bne   @add
+;
+        ; --- un seul lien pour tout l'etat
+@relink jsr   loader.file.link
+        ldx   >composition.target
+        stx   >composition.current
+@done   puls  d,x,y,u,pc
+
+;-----------------------------------------------------------------
+; loader.composition.holds
+;
+; input  REG : [X] id de scene, [U] table de composition
+; output CC  : eq = la table tient cette scene
+;-----------------------------------------------------------------
+loader.composition.holds
+        pshs  a,u
+        lda   ,u+
+        beq   @no
+@loop   cmpx  ,u
+        beq   @yes
+        leau  3,u
+        deca
+        bne   @loop
+@no     andcc #%11111011                  ; Z a zero : absente
+        puls  a,u,pc
+@yes    orcc  #%00000100                  ; Z a un : presente
+        puls  a,u,pc
+;
+composition.current fdb   0 ; table de l'etat resident, 0 = rien
+composition.target  fdb   0 ; celle vers laquelle on converge
+composition.count   fcb   0 ; scenes restant a parcourir dans la passe
 
 ;-----------------------------------------------------------------
 ; loader.file.malloc

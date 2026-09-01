@@ -30,8 +30,8 @@ import lombok.extern.slf4j.Slf4j;
  * declaration is the failure this whole mechanism exists to catch, so it is an
  * error, not a warning ;</li>
  * <li>inside a composition, no two files land on each other ;</li>
- * <li>a file is loaded by one scene only — the invariant a scene-granular
- * convergence rests on (see {@code sharedFiles}).</li>
+ * <li>inside one composition, a file is loaded by one scene only — the
+ * invariant a scene-granular convergence rests on (see {@code sharedFiles}).</li>
  * </ul>
  *
  * What is NOT checked : that a composition tells the truth. Omitting a scene
@@ -93,9 +93,8 @@ public final class CompositionChecks {
 			}
 		}
 
-		errors.addAll(sharedFiles(scenes));
-
 		for (Compositions.Composition c : ctx.compositions.all()) {
+			errors.addAll(sharedFiles(c, scenes));
 			errors.addAll(overlaps(c, scenes));
 		}
 
@@ -119,14 +118,24 @@ public final class CompositionChecks {
 	 * per file, which means an index of every resident file, which is exactly
 	 * the knowledge it does not have (it indexes only what carries link data).
 	 *
-	 * Measured when the rule was written : the corpus honours it everywhere
-	 * but in loader-ut, which loads one file from two scenes on purpose to arm
-	 * its LOAD_OVERLAP trap. Hence the scope — only a configuration that
-	 * declares compositions is held to it.
+	 * Held PER COMPOSITION, which is the exact reach of the danger : the
+	 * resident set is always one state's scenes, so only two scenes of one
+	 * state can be resident together. Two scenes of two states may share a
+	 * file — the convergence drops one and loads the other, in that order.
+	 * That precision is what leaves a bench free to share a file between
+	 * scenes it never composes (loader-ut arms its LOAD_OVERLAP trap that
+	 * way).
 	 */
-	private static List<String> sharedFiles(Map<String, List<RamMap.Load>> scenes) {
+	private static List<String> sharedFiles(Compositions.Composition c,
+			Map<String, List<RamMap.Load>> scenes) {
 		Map<String, List<String>> owners = new LinkedHashMap<String, List<String>>();
-		for (Map.Entry<String, List<RamMap.Load>> scene : scenes.entrySet()) {
+		for (String name : c.scenes) {
+			List<RamMap.Load> loads = scenes.get(name);
+			if (loads == null) {
+				continue;
+			}
+			Map.Entry<String, List<RamMap.Load>> scene =
+					new java.util.AbstractMap.SimpleEntry<String, List<RamMap.Load>>(name, loads);
 			for (RamMap.Load load : scene.getValue()) {
 				List<String> by = owners.computeIfAbsent(load.name,
 						n -> new ArrayList<String>());
@@ -138,9 +147,10 @@ public final class CompositionChecks {
 		List<String> found = new ArrayList<String>();
 		for (Map.Entry<String, List<String>> file : owners.entrySet()) {
 			if (file.getValue().size() > 1) {
-				found.add("'" + file.getKey() + "' is loaded by " + file.getValue().size()
-						+ " scenes (" + String.join(", ", file.getValue()) + ") — a file"
-						+ " belongs to one scene, or dropping a scene takes bytes another"
+				found.add("composition '" + c.name + "': '" + file.getKey() + "' is loaded by "
+						+ file.getValue().size() + " of its scenes ("
+						+ String.join(", ", file.getValue()) + ") — inside one state a file"
+						+ " belongs to one scene, or dropping that scene takes bytes another"
 						+ " one still needs");
 			}
 		}

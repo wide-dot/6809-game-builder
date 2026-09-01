@@ -35,6 +35,10 @@
 ;         byte blob in one direntry, its export and its relocation must both
 ;         be shifted by the size of what precedes it ($E1..$E3)
 ;
+;   +18 : T19 composition convergence : converging to a declared state drops
+;         the scenes it does not hold, loads those it lacks, and leaves the
+;         intersection untouched — one global link at the end ($E4..$E9)
+;
 ;   +24 : (word, info) value of #marker.cc.begin BEFORE scene "second"
 ;         (expected $0000 : unresolved symbols silently resolve to 0)
 ;   +26 : T11 progress : remaining stress iterations (1 when completed)
@@ -717,6 +721,68 @@ init
 @res17  equ   *-1
         jsr   test.next
 
+        ; T19 : la CONVERGENCE vers un etat declare. Une composition nomme les
+        ; scenes residentes ensemble ; loader.composition.load lache celles que
+        ; l'etat cible ne tient pas, charge celles qui lui manquent, et laisse
+        ; l'intersection TELLE QUELLE. La table est de la donnee residente — le
+        ; builder la genere (<layout gencompositions>), ce banc la pose a la
+        ; main : le loader ne veut qu'une adresse.
+        ;   $E4 converger vers l'etat dd n'a pas indexe dd
+        ;   $E5 l'intersection a ete RELUE : la sentinelle posee dans hub a
+        ;       disparu, donc la scene commune a ete rechargee pour rien
+        ;   $E6 converger vers l'etat ee n'a pas lache dd
+        ;   $E7 converger vers l'etat ee n'a pas indexe ee
+        ;   $E8 le lien global n'a pas suivi : les mots externes de hub ne
+        ;       refletent pas dd absent / ee present
+        ;   $E9 redemander l'etat courant n'a pas ete un no-op
+        lda   #$01
+        sta   @res19
+        _loader.composition.load #comp.dd
+        _loader.file.isLoaded #data.marker.dd
+        bne   >                               ; ne : indexe, comme attendu
+        lda   #$E4
+        bra   @fail19
+        ; une sentinelle dans le remplissage de hub — que le lien ne touche
+        ; pas, contrairement a ses trois premiers mots
+!       lda   #$5A
+        sta   >addr.marker.hub+8
+        _loader.composition.load #comp.ee
+        lda   >addr.marker.hub+8
+        cmpa  #$5A
+        beq   >                               ; la scene commune n'a pas bouge
+        lda   #$E5
+        bra   @fail19
+!       _loader.file.isLoaded #data.marker.dd
+        beq   >                               ; eq : desindexe, comme attendu
+        lda   #$E6
+        bra   @fail19
+!       _loader.file.isLoaded #data.marker.ee
+        bne   >
+        lda   #$E7
+        bra   @fail19
+        ; le lien global, paye une fois en fin de convergence : le mot dd de
+        ; hub retombe a zero, le mot ee pointe la destination partagee
+!       ldd   >addr.marker.hub
+        bne   @ko19link
+        ldd   >addr.marker.hub+2
+        cmpd  #addr.variant
+        beq   >
+@ko19link
+        lda   #$E8
+        bra   @fail19
+        ; redemander l'etat courant ne doit rien faire du tout
+!       lda   #$A5
+        sta   >addr.marker.hub+9
+        _loader.composition.load #comp.ee
+        lda   >addr.marker.hub+9
+        cmpa  #$A5
+        beq   @end19
+        lda   #$E9
+@fail19 sta   @res19
+@end19  lda   #0
+@res19  equ   *-1
+        jsr   test.next
+
         ; done : write final status
         lda   #result.DONE_OK
         ldb   test.fails
@@ -808,6 +874,21 @@ test.next
         beq   >
         inc   test.fails
 !       puls  b,x,pc
+
+; Les deux etats de RAM du test de convergence. Forme de la table generee par
+; <layout gencompositions> : un compte de scenes, puis trois octets chacune,
+; son id de fichier et le repertoire qui la porte. hub est l'intersection,
+; dd et ee sont deux alternatives a la meme destination.
+comp.dd fcb   2
+        fdb   scenes.stress.hub
+        fcb   0
+        fdb   scenes.stress.dd
+        fcb   0
+comp.ee fcb   2
+        fdb   scenes.stress.hub
+        fcb   0
+        fdb   scenes.stress.ee
+        fcb   0
 
 test.idx       fcb 0
 test.fails     fcb 0
