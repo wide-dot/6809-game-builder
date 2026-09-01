@@ -1,7 +1,7 @@
 # La composition comme unité de chargement — plan
 
-Statut : **plan arrêté le 01/09/2026** (décision auteur). **Phase 0 faite** le
-même jour ; les suivantes sont à réaliser dans l'ordre donné. Le mécanisme de
+Statut : **plan arrêté le 01/09/2026** (décision auteur). **Phases 0 et 1
+faites** le même jour ; les suivantes sont à réaliser dans l'ordre donné. Le mécanisme de
 déclaration (`<composition>`) et ses contrôles au build sont **déjà en place** —
 voir [`scenes.md`](../en/scenes.md), section « The composition ».
 
@@ -70,20 +70,40 @@ builder connaît les deux. Le jeu cesse ainsi de trimballer `scenes.title.dir`,
 et le loader peut grouper ses lectures par répertoire. Scènes ordonnées selon
 l'ordre disque déjà calculé pour le rapport de déplacements de tête.
 
-*Preuve* : la table apparaît dans la vue Média du rapport ; les images des
-configurations sans composition restent identiques à l'octet près.
+**Écart au plan, assumé le 01/09/2026 : la table n'est PAS un fichier du
+média.** Elle est émise en source assembleur que le jeu inclut —
+`<layout gencompositions="gen/compositions.asm">` — et le jeu passera son
+adresse au loader.
+
+La raison est mesurée : le répertoire 0 de r-type est **plein**. Ajouter un
+seul fichier l'a fait déborder de sa piste pendant cette campagne (le verrou
+de débordement a refusé le build) ; dix tables de composition n'y tiendraient
+pas. S'ajoutent deux bénéfices : plus de lecture disque par transition, et le
+procédé est déjà l'idiome du dépôt pour ce qui dérive du layout
+(`gensymbols`). Le prix est ~106 octets résidents pour r-type — à peu près
+rendus par la phase 3, qui supprime `common.cast` et ses 101 octets.
+
+Conséquence sur la phase 2 : `composition.load` reçoit **une adresse de
+table**, pas un id de fichier. Plus simple pour le loader — ni malloc, ni
+lecture, ni libération — et la table est lisible depuis la fenêtre système
+non commutée pendant que le loader tourne dans la fenêtre DATA.
+
+*Fait le 01/09/2026.* Table vérifiée contre les équates des répertoires
+(`scenes.boot` = 150 en répertoire 0, `scenes.stage1` = 303 en répertoire 1) ;
+10 états, 32 entrées, 106 octets une fois assemblés. Corpus : **80 images
+identiques** — rien ne consomme encore la table. 4 tests unitaires.
 
 ### Phase 2 — `loader.composition.load`, index 36
 
-En entrée : X = id de la composition.
+En entrée : X = **adresse de la table** de la composition (voir l'écart de la
+phase 1).
 
-1. charger sa table (malloc + read, comme une table de scène) ;
-2. **diff** contre la liste des scènes résidentes ;
-3. scènes partantes : `scene.unload` ;
-4. scènes arrivantes : les trois passes `scene.apply` — `file.load`,
-   `decompress`, `linkData.load` — **sans relier** ;
-5. **un seul** `loader.file.link` à la fin ;
-6. mettre à jour la liste résidente, libérer la table.
+1. **diff** contre la liste des scènes résidentes ;
+2. scènes partantes : `scene.unload` ;
+3. scènes arrivantes : monter leur répertoire si besoin, puis les trois passes
+   `scene.apply` — `file.load`, `decompress`, `linkData.load` — **sans relier** ;
+4. **un seul** `loader.file.link` à la fin ;
+5. mettre à jour la liste résidente.
 
 Ce qui justifie une entrée dédiée plutôt qu'une boucle côté jeu : le re-link
 coûte de l'ordre de `références × exports`. Boucler paierait N re-links ; ici

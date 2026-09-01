@@ -4,6 +4,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
+import com.widedot.m6809.gamebuilder.config.CompositionScan;
 import com.widedot.m6809.gamebuilder.config.LayoutResolver;
 import com.widedot.m6809.gamebuilder.spi.globals.Compositions;
 import com.widedot.m6809.gamebuilder.spi.globals.Regions;
@@ -40,34 +41,23 @@ public class LayoutPlugin {
 			// describes memory and not content ; the scenes it names are
 			// declared further down in the media, so they are forward
 			// references — resolved by the check at the end of the target.
+			// The reading itself lives in CompositionScan : the placement scan
+			// does it too, before anything assembles, to write the tables.
 			if ("composition".equals(child.getNodeName())) {
-				java.util.List<String> scenes = new java.util.ArrayList<String>();
-				for (ImmutableNode member : child.getChildren()) {
-					if (!"scene".equals(member.getNodeName())) {
-						throw new Exception(ctx.sources.locate(member) + ": <composition> only"
-								+ " contains <scene> elements, found <" + member.getNodeName() + ">");
-					}
-					String scene = Attribute.getString(member, ctx, "name");
-					if (scenes.contains(scene)) {
-						throw new Exception(ctx.sources.locate(member) + ": composition '"
-								+ Attribute.getString(child, ctx, "name") + "' names the scene '"
-								+ scene + "' twice");
-					}
-					scenes.add(scene);
-				}
-				try {
-					ctx.compositions.declare(new Compositions.Composition(
-							Attribute.getString(child, ctx, "name"), scenes,
-							ctx.sources.locate(child)));
-				} catch (Exception e) {
-					throw new Exception(ctx.sources.locate(child) + ": " + e.getMessage());
-				}
 				continue;
 			}
 			if (!"region".equals(child.getNodeName()) && !"arena".equals(child.getNodeName())) {
 				throw new Exception(ctx.sources.locate(child) + ": <layout> only contains"
 						+ " <region>, <arena>, <composition> and <reserved> elements, found <"
 						+ child.getNodeName() + ">");
+			}
+		}
+
+		for (Compositions.Composition c : CompositionScan.parse(node, ctx)) {
+			try {
+				ctx.compositions.declare(c);
+			} catch (Exception e) {
+				throw new Exception(c.where + ": " + e.getMessage());
 			}
 		}
 

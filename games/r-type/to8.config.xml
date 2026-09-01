@@ -8,7 +8,7 @@
              une fois au boot (moteur + etat persistant) ; 'stage' et les regions de
              tuiles sont des interfaces — leurs unites sont des alternatives
              exclusives au runtime, memes noms et meme liste d'exports exiges. -->
-        <layout gensymbols="gen/layout.asm">
+        <layout gensymbols="gen/layout.asm" gencompositions="gen/compositions.asm">
 
             <!-- Les deux regions de la page residente sont adjacentes ; la borne
                  haute est le pool d'objets en $90B0 — common + stage disposent de

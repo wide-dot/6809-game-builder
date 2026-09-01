@@ -58,6 +58,23 @@ public final class PlacementScan {
 		// spot is its section declaration), written now so the loader — built
 		// long before the directories are emitted — can embed the table
 		DirectoryLocations.generate(targetNode, ctx);
+		// composition tables last of all : they name scenes by file id and by
+		// directory, so every directory must have reserved its ids first. Same
+		// moment and same reason as those directories' own equate files — the
+		// game includes this one before anything assembles.
+		generateCompositions(targetNode, ctx);
+	}
+
+	/** Walks down to the target's layout and writes its composition tables. */
+	private static void generateCompositions(ImmutableNode node, BuildContext ctx)
+			throws Exception {
+		if ("layout".equals(node.getNodeName())) {
+			CompositionScan.generate(node, ctx, CompositionScan.parse(node, ctx));
+			return;
+		}
+		for (ImmutableNode child : node.getChildren()) {
+			generateCompositions(child, ctx);
+		}
 	}
 
 	/**

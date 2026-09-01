@@ -341,6 +341,38 @@ The occupancy report reads the same declarations : pick a state and it lists
 the elements of that state, checked, and paints that memory — untick them one
 by one to look underneath.
 
+### The table a state becomes
+
+`<layout gencompositions="gen/compositions.asm">` writes one table per
+composition, for the game to include :
+
+```asm
+compositions.stage1
+        fcb   7          ; scenes
+        fdb   150        ; scenes.boot
+        fcb   0          ;   directory
+        fdb   303        ; scenes.stage1
+        fcb   1          ;   directory
+        …
+```
+
+A scene count, then three bytes per scene : its file id and the directory that
+holds it. Both are needed — the loader mounts a directory before reading the
+entries of a scene, and a state spans directories.
+
+It is **generated source, not a file on the media**. A scene table is a
+directory entry because the loader discovers it at run time ; a composition is
+known at build time, so putting it on the disk would cost an entry, a read and
+a directory slot for nothing — and directory slots are what a full game has
+none of. Ids are written as literals rather than as references to the
+directories' own equates : a state spans directories, and a symbolic table
+would have to include several `entries.asm` and inherit their order. The scene
+each number stands for is written beside it.
+
+The table is written by the placement scan, after every directory has reserved
+its ids and before anything assembles — the same moment, and for the same
+reason, as those directories' equate files.
+
 ## The occupancy map
 
 Destinations are placed by hand, against budgets worked out once. What nothing
@@ -434,6 +466,7 @@ still link it — and the answers are independent.
 | `<region>` | `name`, `page`, `address` (required) ; `size` : byte budget, checked ; `bulk` : the region takes an ordered list per scene, laid out one after the other — the list is the unit of replacement, members are not individually replaceable |
 | `<reserved>` | `name`, `page`, `address`, `size` (all required) : a range the game occupies without loading anything into it — object pool, globals, stack, direct page. Nothing may be loaded on top, and the check is on the *declarations*, so a region declared over the pool is an error even while its content stays small |
 | `<composition>` | `name` (required) ; holds `<scene name="..."/>` children : the scenes that are resident TOGETHER. Declared in the `<layout>` |
+| `<layout gencompositions>` | generated file of the composition tables — a scene count, then file id and directory per scene — for the game to include |
 | `<scene>` | `name` (required), `section`, `gensource` (defaults to `gen/scenes/<name>.asm`) |
 | `<load>` | `name` (required), nothing else : the file's attributed place says where it lands ; a file that declares none is export-only (it must then carry no data) |
 

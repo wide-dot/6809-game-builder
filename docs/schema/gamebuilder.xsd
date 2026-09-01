@@ -1617,6 +1617,9 @@
       <xs:attribute name="gensymbols" type="xs:string">
         <xs:annotation><xs:documentation>generated file of &lt;region&gt;.page / &lt;region&gt;.address equates, for the game code to include</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="gencompositions" type="xs:string">
+        <xs:annotation><xs:documentation>generated file of the &lt;composition&gt; tables — a scene count then file id and directory per scene — for the game to include and hand to the loader</xs:documentation></xs:annotation>
+      </xs:attribute>
       <xs:attribute name="pages" type="int6809">
         <xs:annotation><xs:documentation>physical RAM pages of the machine, for the occupancy report — 32 (512K) if omitted, 8 for a 128K MO6</xs:documentation></xs:annotation>
       </xs:attribute>

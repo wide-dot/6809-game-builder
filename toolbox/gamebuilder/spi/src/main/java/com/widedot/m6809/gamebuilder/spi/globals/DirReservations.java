@@ -45,6 +45,11 @@ public class DirReservations {
 		byId.put(directoryId, r);
 	}
 
+	/** every reservation, directory id → what it reserved */
+	public Map<Integer, Reservation> all() {
+		return java.util.Collections.unmodifiableMap(byId);
+	}
+
 	public Reservation get(int directoryId) {
 		return byId.get(directoryId);
 	}
