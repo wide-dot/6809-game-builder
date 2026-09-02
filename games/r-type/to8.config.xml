@@ -1650,8 +1650,8 @@
                                 <gfxcomp file="lib.cancer" gendir="gen/enemies/cancer"
                                          gensource="gen/enemies/cancer/includes.asm"
                                          genindex="gen/enemies/cancer/index.asm">
-                                    <images dir="src/enemies/cancer/images"/>
-                                    <images dir="src/enemies/cancer/images" mirror="x"/>
+                                    <images dir="src/enemies/cancer/images" shifts="0,1"/>
+                                    <images dir="src/enemies/cancer/images" mirror="x" shifts="0,1"/>
                                 </gfxcomp>
                     </lwasm>
                 </file>
