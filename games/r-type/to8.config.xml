@@ -1591,10 +1591,9 @@
                      d'allouer un OST, et il doit pour cela partager la page de
                      la table. Meme page pour le code, la table et les images :
                      c'est ce qui supprime les montages.
-                     PLUS DE `shifts` : le manager blitte par adr_*_ND0 sans
-                     rejouer le choix de variante du moteur, donc les balles
-                     avancent par pas de 2 px comme les gerbes. L'art est
-                     divise par deux au passage.
+                     Les `shifts` sont revenus le 02/09/2026 (decision auteur,
+                     stage 1 a l'ecran) : le manager rejoue le choix de
+                     variante du moteur et les balles avancent au pixel.
                      Analyse : doc/analyse-bullet-manager.md -->
                 <file name="common.foefire" linkdata="LINK" arena="objects">
                     <lwasm gensource="gen/weapons/foefire.asm">
@@ -1604,7 +1603,7 @@
                                  gensource="gen/weapons/foefire/includes.asm"
                                  genindex="gen/weapons/foefire/index.asm"
                                  file="common.foefire">
-                            <images dir="src/enemies/_shared/images/foefire"/>
+                            <images dir="src/enemies/_shared/images/foefire" shifts="0,1"/>
                         </gfxcomp>
                     </lwasm>
                 </file>

@@ -38,11 +38,12 @@
 ; table et un `std image_set` — et cela ne charge plus qu'UNE adresse de
 ; routine compilee pour tout le lot.
 ;
-; ECART ASSUME : les balles perdent leurs variantes pre-decalees (`shifts=0,1`)
-; et avancent donc par pas de 2 px a l'horizontale, comme les gerbes des
-; reacteurs. C'est ce qui permet de blitter par `adr_*_ND0` sans rejouer le
-; choix de variante du moteur. A valider a l'ecran ; le retour en arriere est
-; local (une seconde table de routines et un test de parite).
+; LES VARIANTES PRE-DECALEES SONT DE RETOUR (02/09/2026, decision auteur, apres
+; le stage 1 a l'ecran) : les balles avancent au pixel. Le dessin rejoue donc
+; le choix du moteur (BuildSprites), pas a pas : parite de x XOR le centre de
+; l'image (+6), entree ND0 ou ND1 du sous-ensemble, et x moins le centre avant
+; le calcul d'adresse. Il n'y a plus de table de routines : l'imageset porte
+; tout, bords compris.
 ;*******************************************************************************
 
         INCLUDE "src/enemies/_shared/bullets/bullets.equ"
@@ -75,7 +76,6 @@ bullet.dp       fdb 0                  ; parcours qui partagent leur compteur
                                        ; dont la POSE, que le dessin appelle
 bullet.drop     fdb 0
 bullet.tmp      fdb 0
-bullet.pose     fdb 0                  ; la routine compilee de la trame
 bullet.set      fdb 0                  ; SON imageset — le containment y lit
                                        ; les bords, comme tous les managers
 bullet.sy       fcb 0                  ; l'ordonnee ecran, gardee le temps de
@@ -108,8 +108,6 @@ bullet.Reset
         decb
         bne   <
         clr   bullet.idle
-        ldd   bullet.Poses
-        std   bullet.pose
         ldd   bullet.Sets
         std   bullet.set
         rts
@@ -266,11 +264,8 @@ bullet.Live
         lsra                           ; deux trames par pose, comme avant
         anda  #3
         asla
-        ldx   #bullet.Poses
-        ldy   a,x                      ; PAS ldd : D est A:B, le second index
-        sty   bullet.pose              ; par A lirait 60 octets plus loin, dans
-        ldx   #bullet.Sets             ; le code — c'est ce qui rendait les tirs
-        ldd   a,x                      ; invisibles (imageset faux, cull total)
+        ldx   #bullet.Sets             ; l'imageset va avec la pose
+        ldd   a,x
         std   bullet.set
 ;
         lda   #bullet.SLOTS
@@ -451,8 +446,20 @@ bullet.DrawAll
         ldb   bullet.sy                ; B = y ecran
         pshs  a,b
         _sprite.cull bullet.DrawAll.off
-        ldy   bullet.pose
+        ; LA VARIANTE, COMME LE MOTEUR : parite de x XOR le centre, puis
+        ; l'entree 1 (ND0) ou 3 (ND1) du sous-ensemble sans miroir
+        ldb   ,x                       ; l'offset du sous-ensemble sans miroir
+        leay  b,x                      ; Y = le sous-ensemble
+        lda   ,s                       ; x ecran
+        eora  imgset.center,x
+        anda  #1
+        asla
+        ora   #1                       ; 1 = ND0, 3 = ND1
+        ldb   a,y                      ; l'offset de l'entree [page][routine]
+        leay  b,y
+        ldy   1,y                      ; la routine (la page est la notre)
         puls  a,b
+        suba  imgset.center,x          ; le centre pair/impair, comme le moteur
         jsr   DRS_XYToAddress          ; A = x, B = y, repere DRS
         ldu   <glb_screen_location_2
         jsr   ,y
@@ -463,17 +470,13 @@ bullet.DrawAll.off
         addd  #bullet.SLOTSZ
         std   bullet.dp
         dec   bullet.dj
-        bne   @slot
+        lbne  @slot                    ; la boucle a grandi du choix de variante
         rts
 ;
-; Les quatre poses, dans l'ordre de la chaine d'origine. Ce sont les ROUTINES
-; COMPILEES : le manager blitte en direct, il ne pose pas d'imageset.
-bullet.Poses
-        fdb   adr_foefire_0_ND0,adr_foefire_1_ND0
-        fdb   adr_foefire_2_ND0,adr_foefire_3_ND0
-; ET LEURS IMAGESETS, dans le meme ordre. gfxcomp les publie deja
-; (gen/weapons/foefire/index.asm) : il n'y a rien a generer, seulement a
-; declarer. C'est d'eux que _sprite.cull tire les bords du sprite.
+; Les quatre poses, dans l'ordre de la chaine d'origine : leurs IMAGESETS.
+; gfxcomp les publie deja (gen/weapons/foefire/index.asm) : il n'y a rien a
+; generer, seulement a declarer. C'est d'eux que _sprite.cull tire les bords
+; du sprite et que le dessin tire la routine de la bonne parite.
 bullet.Sets
         fdb   set_foefire_0,set_foefire_1
         fdb   set_foefire_2,set_foefire_3

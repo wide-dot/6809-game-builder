@@ -158,6 +158,7 @@ imgset.xsize                  equ 4  ; largeur, depuis le bord gauche
 imgset.ysize                  equ 5  ; hauteur, depuis le bord haut
 imgset.x1                     equ 11 ; bord gauche, signe, depuis l'ancre
 imgset.y1                     equ 12 ; bord haut, signe, depuis l'ancre
+imgset.center                 equ 6  ; parite du centre (0/1/-1), XOR x puis soustrait
 
 page_draw_routine             equ 0
 draw_routine                  equ 1
