@@ -22,7 +22,7 @@ bullet.SLOTSZ   equ 21
 ; foefire_*_ND0.asm) : 48 STA, toutes a un offset multiple de 40, de -80 a
 ; +120 depuis U. Donc deux lignes au-dessus de l'ancre, trois au-dessous, et
 ; UNE SEULE colonne d'octet — le sprite fait 3x6 pixels. A remesurer si l'art
-; change : tools/bullet_envelope.py le fait et compare a ces valeurs.
+; change : tools/sprite_envelope.py le fait et compare a ces valeurs.
 bullet.DRAW_UP    equ 2            ; lignes ecrites AU-DESSUS de l'ancre
 bullet.DRAW_DOWN  equ 3            ; lignes ecrites AU-DESSOUS
 bullet.DRAW_RIGHT equ 1            ; octets a droite de l'ancre (le plan 1 est
