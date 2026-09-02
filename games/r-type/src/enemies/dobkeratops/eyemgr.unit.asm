@@ -28,6 +28,7 @@ main.eyemgr.removed            EXTERNAL
 main.eyemgr.aabb               EXTERNAL
 main.eyemgr.eyesAlive          EXTERNAL
 main.eyemgr.drawPieces         EXTERNAL
+main.eyemgr.collision          EXTERNAL
 ; le hook de la parite impaire, dans sa propre unite
 eyemgrD1.Draw                  EXTERNAL
 eyemgrD1.Draw$PAGE             EXTERNAL

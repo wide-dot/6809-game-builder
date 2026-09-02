@@ -21,6 +21,9 @@ main.eyemgr.removed    EXPORT
 main.eyemgr.eyesAlive  EXPORT
 main.eyemgr.aabb       EXPORT
 main.eyemgr.drawPieces EXPORT
+main.eyemgr.collision  EXPORT
+stage1.collisionMap           EXTERNAL
+terrainCollision.nerves       EXTERNAL
 
 eyepieces.DrawAll      EXTERNAL
 eyepieces.DrawAll$PAGE EXTERNAL
@@ -31,6 +34,7 @@ eyepieces.DrawAll$PAGE EXTERNAL
         INCLUDE "engine/constants.asm"
         INCLUDE "engine/macros.asm"
         INCLUDE "engine/system/to8/map.const.asm"
+        INCLUDE "gen/layout.asm"
 
 main.eyemgr.status   fcb 0,0,0,0  ; par systeme : 0 intact, 1 en effacement, 2 fini
 main.eyemgr.removed  fcb 0,0,0,0  ; morceaux retires (toujours un prefixe)
@@ -43,5 +47,51 @@ main.eyemgr.drawPieces
         lda   #map.RAM_OVER_CART+eyepieces.DrawAll$PAGE
         _SetCartPageA
         jmp   eyepieces.DrawAll
+; ---------------------------------------------------------------------------
+; main.eyemgr.collision — la collision d'un nerf optique, dans la carte
+; d'AVANT-PLAN du stage (02/09/2026, decision auteur). L'arcade efface les
+; tuiles du nerf a sa mort ; chez nous les nerfs sont deja solides dans
+; level1_fc.bin et rien ne les effacait. Resident parce que la carte vit sur
+; la page de collision, que le manager ne peut pas monter depuis la sienne.
+;   entree : B = nerf 0..3 ; A = 0 effacer (ET NON), autre restaurer (OU)
+; Les tables sont sur la page de la carte : une seule page a monter. La
+; restauration sert a l'Init du manager (rejeu de checkpoint, restart : la
+; carte n'est pas rechargee). Analyse : doc/analyse-collision-nerfs.md
+; ---------------------------------------------------------------------------
+main.eyemgr.collision
+        pshs  x,y,u                    ; U est l'OST de l'appelant, X/Y ses curseurs :
+                                       ; on les rend intacts (la premiere version
+                                       ; clobbait U — l'Init du manager ecrivait alors
+                                       ; `inc routine,u` dans le vide, l'objet restait
+                                       ; en Init et les yeux ne s'armaient jamais)
+        pshs  a                        ; 1,s (puis 2,s) : le mode
+        _GetCartPageA
+        pshs  a                        ; ,s : la page de l'appelant
+        lda   #map.RAM_OVER_CART+collision.page   ; la REGION collision : sa page est une equate du layout
+        _SetCartPageA
+        aslb
+        ldx   #terrainCollision.nerves
+        ldx   b,x                      ; X -> la table du nerf
+        ldb   ,x+                      ; nombre d'entrees
+        beq   @done
+        pshs  b                        ; ,s : le compteur ; 1,s : la page ; 2,s : le mode
+        ldy   #stage1.collisionMap
+@loop   ldd   ,x++                     ; offset dans la carte
+        leau  d,y
+        lda   ,x+                      ; masque des bits du nerf
+        tst   2,s
+        bne   @set
+        coma
+        anda  ,u                       ; effacer
+        bra   @w
+@set    ora   ,u                       ; restaurer
+@w      sta   ,u
+        dec   ,s
+        bne   @loop
+        leas  1,s
+@done   puls  a
+        _SetCartPageA                  ; la page de l'appelant
+        puls  a                        ; le mode, sans usage
+        puls  x,y,u,pc
 
  ENDSECTION

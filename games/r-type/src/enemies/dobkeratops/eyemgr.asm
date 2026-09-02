@@ -86,6 +86,17 @@ EMi2    sta   ,x+
         bne   EMi2
         lda   #4
         sta   main.eyemgr.eyesAlive
+        ; les quatre nerfs redeviennent solides : la carte d'avant-plan n'est
+        ; pas rechargee au rejeu de checkpoint ni au restart, et Kill a pu en
+        ; effacer. OU idempotent, un passage par nerf.
+        clrb
+EMi3    lda   #1
+        pshs  b
+        jsr   main.eyemgr.collision
+        puls  b
+        incb
+        cmpb  #4
+        blo   EMi3
         ; purge d'un reliquat de checkpoint : le bloc resident du stage n'est
         ; pas recharge, un effacement interrompu laisserait le verrou arme et
         ; MonsterKill attendrait sans fin
@@ -209,6 +220,12 @@ Kill
         ldx   #main.eyemgr.status
         lda   #1
         sta   b,x
+        ; LA COLLISION DU NERF TOMBE ICI, au debut de l'animation (02/09/2026,
+        ; decision auteur) : ses bits quittent la carte d'avant-plan, comme
+        ; l'arcade efface ses tuiles. Pas de synchronisation avec les morceaux.
+        clra
+        jsr   main.eyemgr.collision
+        ldb   EMsys
         ldx   #main.eyemgr.removed
         clr   b,x
         aslb
