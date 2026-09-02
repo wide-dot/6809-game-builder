@@ -77,13 +77,16 @@ budget déclaré : elles valent ce que leur contenu mesure.
 
 ## Ce que coûte une variante `offset 1`
 
-Mesuré sur les 1 158 poses compilées du jeu : **une variante pré-décalée pèse
-1,06 fois la variante droite**. Ajouter `shift="1"` à une image **double donc
-son code**, à 6 % près.
+Mesuré sur les 1 432 familles de poses compilées du jeu : **une variante
+pré-décalée pèse 1,02 fois la variante droite**. Ajouter `shift="1"` à une
+image **double donc son code**, à 2 % près.
 
-Aujourd'hui **1 070 images sur 1 158 n'ont que la parité droite**, pour
-1 007 Ko de code. Les doter toutes coûterait 1 068 Ko — sans objet. La
-question est donc toujours « lesquelles », jamais « toutes ».
+Aujourd'hui **1 318 familles sur 1 432 n'ont que la parité droite**, pour
+1 094 Ko de code. Les doter toutes coûterait autant — sans objet. La question
+est donc toujours « lesquelles », jamais « toutes ».
+
+*(Les 114 familles déjà pourvues des deux parités sont l'art du boss, du
+joueur et quelques armes.)*
 
 ## Où il y a de la place, et pour qui
 
