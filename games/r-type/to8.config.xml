@@ -1081,17 +1081,30 @@
                                  gensource="gen/pickups/pow/includes.asm"
                                  genindex="gen/pickups/pow/index.asm"
                                  file="common.pow">
+                            <!-- OFFSET 1 sur les frames d'ATTERRISSAGE et de DECOLLAGE
+                                 (pow_fly, 1, 2, 4, 5) : ces deux animations sont
+                                 immobiles — walkTakeOff met x_vel et y_vel a zero, et
+                                 la routine `land` n'appelle pas ObjectMoveSync — donc
+                                 le pow y suit la camera et change de parite a chaque
+                                 pixel de scroll. pow_3 n'y figure pas : il n'apparait
+                                 que dans la marche, qui avance a 0,375 px par trame. -->
                             <image name="pow_fly" filename="src/common/pickups/pow/images/pow/00.png" index="0">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                                 <encoder name="draw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="1"/>
                             </image>
                             <image name="pow_1" filename="src/common/pickups/pow/images/pow/01.png" index="1">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                                 <encoder name="draw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="1"/>
                             </image>
                             <image name="pow_2" filename="src/common/pickups/pow/images/pow/02.png" index="2">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                                 <encoder name="draw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="1"/>
                             </image>
                             <image name="pow_3" filename="src/common/pickups/pow/images/pow/03.png" index="3">
                                 <encoder name="draw" mirror="none" shift="0"/>
@@ -1099,11 +1112,15 @@
                             </image>
                             <image name="pow_4" filename="src/common/pickups/pow/images/pow/04.png" index="4">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                                 <encoder name="draw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="1"/>
                             </image>
                             <image name="pow_5" filename="src/common/pickups/pow/images/pow/05.png" index="5">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                                 <encoder name="draw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="1"/>
                             </image>
                         </gfxcomp>
                         <animation name="Ani_pow_land" duration="7" end="nextroutine">
