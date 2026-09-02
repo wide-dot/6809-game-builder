@@ -2906,12 +2906,9 @@
                              PNG compiles par la chaine standard (dessin seul, paires
                              decalees), a la place des blits bg-erase colles dont le
                              generateur etait perdu. TMDrawTab (tailmgr.asm) les vise
-                             par leur symbole. L'INDEX est genere depuis le
-                             02/09 : c'est de lui que _sprite.cull tire les
-                             bords des segments, comme chez tous les managers. -->
-                        <gfxcomp file="stage1.tailmgr" gendir="gen/enemies/tail"
-                                 gensource="gen/enemies/tail/includes.asm"
-                                 genindex="gen/enemies/tail/index.asm">
+                             par leur symbole ; pas d'index, comme le HUD. -->
+                        <gfxcomp gendir="gen/enemies/tail"
+                                 gensource="gen/enemies/tail/includes.asm">
                             <image name="tail_0" filename="src/enemies/dobkeratops/images/tail/00.png">
                                 <encoder name="draw" mirror="none" shift="0"/>
                                 <encoder name="draw" mirror="none" shift="1"/>

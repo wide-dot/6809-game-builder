@@ -45,6 +45,11 @@ MANAGERS = [
      'draw': 'src/enemies/warship-elements/reactor/flamemgr.asm',
      'note': "lit sa geometrie dans l'imageset a chaque trame : rien a cuire,"
              " donc rien qui puisse deriver"},
+    {'name': 'tailmgr (queue de dobkeratops)',
+     'draw': 'src/enemies/dobkeratops/tailmgr.asm',
+     'note': "cull en amont dans TailUpdateAll (x_pixel dans [50,203]) : en x"
+             " la borne garde le sprite dans sa ligne, en y l'animation est"
+             " scriptee. Un second test au dessin serait un cout pour rien"},
     {'name': 'eyepieces (dobkeratops)',
      'draw': 'src/enemies/dobkeratops/eyepieces.asm',
      'note': "ne teste pas le containment — trou connu"},
