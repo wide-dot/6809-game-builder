@@ -40,9 +40,7 @@ ENGINE = os.path.join(GAME, '..', '..', 'engine', 'constants.asm')
 MANAGERS = [
     {'name': 'bullets (tirs ennemis)',
      'draw': 'src/enemies/_shared/bullets/mgr.asm',
-     'poses': 'gen/weapons/foefire/foefire_*_ND0.asm',
-     'equates': 'src/enemies/_shared/bullets/bullets.equ',
-     'prefix': 'bullet'},
+     'note': "lit l'imageset de sa pose (bullet.Sets) : rien a cuire"},
     {'name': 'flamemgr (reacteur du warship)',
      'draw': 'src/enemies/warship-elements/reactor/flamemgr.asm',
      'note': "lit sa geometrie dans l'imageset a chaque trame : rien a cuire,"

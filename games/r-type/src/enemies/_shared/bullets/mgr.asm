@@ -76,6 +76,10 @@ bullet.dp       fdb 0                  ; parcours qui partagent leur compteur
 bullet.drop     fdb 0
 bullet.tmp      fdb 0
 bullet.pose     fdb 0                  ; la routine compilee de la trame
+bullet.set      fdb 0                  ; SON imageset — le containment y lit
+                                       ; les bords, comme tous les managers
+bullet.sy       fcb 0                  ; l'ordonnee ecran, gardee le temps de
+                                       ; calculer l'abscisse
 
 ;*******************************************************************************
 ; L'ARMEMENT — appele par createFoeFire, dans cette page
@@ -106,6 +110,8 @@ bullet.Reset
         clr   bullet.idle
         ldd   bullet.Poses
         std   bullet.pose
+        ldd   bullet.Sets
+        std   bullet.set
         rts
 
 bullet.Arm
@@ -263,6 +269,9 @@ bullet.Live
         ldx   #bullet.Poses
         ldd   a,x
         std   bullet.pose
+        ldx   #bullet.Sets             ; l'imageset va avec la pose
+        ldd   a,x
+        std   bullet.set
 ;
         lda   #bullet.SLOTS
         sta   bullet.di
@@ -418,36 +427,38 @@ bullet.DrawAll
         beq   @suiv
         tst   bullet.delay,x           ; pas encore visible
         bne   @suiv
-        ; LE CONTAINMENT, celui que CheckSpritesRefresh fait pour un objet
-        ; ordinaire et qu'il ne fait PAS pour nous : notre boite-proxy est
-        ; garee au centre expres (voir foefire.Object) pour que BuildSprites
-        ; nous appelle toujours, donc le test revient au manager, balle par
-        ; balle. Comme la reference il porte sur les BORDS du sprite et non
-        ; sur son ancre — c'est toute la difference avec les bornes de retrait
-        ; du tick, qui ne connaissent que l'ancre et laissaient un tir ecrire
-        ; deux lignes au-dessus du buffer, sur glb_camera_y_pos.
-        ; Une comparaison NON SIGNEE par axe, bornes cuites (bullets.equ), et
-        ; les deux tests AVANT le moindre empilement.
-        ldd   bullet.y,x               ; le sprite tient-il dans le plan ?
-        subd  #bullet.YMIN
-        cmpd  #bullet.YMAX-bullet.YMIN
+        ; LES GARDES 16 BITS, puis le containment commun. Les gardes ne
+        ; sont pas le test : elles rendent seulement licite le passage en
+        ; 8 bits du repere ecran, que _sprite.cull attend — bullet.x et
+        ; bullet.y sont des mots, et le dessin peut preceder le tick qui les
+        ; borne. Le test des bords, lui, lit la geometrie dans l'imageset de
+        ; la pose : des valeurs generees, qui ne peuvent pas mentir quand
+        ; l'art change.
+        ldd   bullet.y,x
+        cmpd  #screen_height
         bhi   @suiv
-        ldd   bullet.x,x               ; et dans la bande, sans boucler ?
-        subd  glb_camera_x_pos
-        cmpd  #bullet.XMAX
-        bhi   @suiv                    ; a gauche de la camera, l'ecart devient
-                                       ; enorme en non signe : DRS_XYToAddress
-                                       ; y aurait boucle d'une ligne
-        addb  #screen_left
-        pshs  b
-        ldb   bullet.y+1,x
         addb  #screen_top
-        lda   ,s+
-        jsr   DRS_XYToAddress           ; A = x, B = y, repere DRS
-        ldu   <glb_screen_location_2
+        stb   bullet.sy
+        ldd   bullet.x,x
+        subd  glb_camera_x_pos
+        cmpd  #screen_right-screen_left
+        bhi   @suiv
+        addb  #screen_left
+        ldx   bullet.set               ; X = l'imageset de la pose du moment
+        beq   @suiv                    ; pas encore choisie (le dessin peut
+                                       ; preceder le premier tick)
+        tfr   b,a                      ; A = x ecran
+        ldb   bullet.sy                ; B = y ecran
+        pshs  a,b
+        _sprite.cull bullet.DrawAll.off
         ldy   bullet.pose
-        beq   @suiv                    ; pose non encore choisie (le dessin
-        jsr   ,y                       ; peut preceder le premier tick)
+        puls  a,b
+        jsr   DRS_XYToAddress          ; A = x, B = y, repere DRS
+        ldu   <glb_screen_location_2
+        jsr   ,y
+        bra   @suiv
+bullet.DrawAll.off
+        leas  2,s                      ; la pile rendue sur le chemin du cull
 @suiv   ldd   bullet.dp
         addd  #bullet.SLOTSZ
         std   bullet.dp
@@ -460,3 +471,9 @@ bullet.DrawAll
 bullet.Poses
         fdb   adr_foefire_0_ND0,adr_foefire_1_ND0
         fdb   adr_foefire_2_ND0,adr_foefire_3_ND0
+; ET LEURS IMAGESETS, dans le meme ordre. gfxcomp les publie deja
+; (gen/weapons/foefire/index.asm) : il n'y a rien a generer, seulement a
+; declarer. C'est d'eux que _sprite.cull tire les bords du sprite.
+bullet.Sets
+        fdb   set_foefire_0,set_foefire_1
+        fdb   set_foefire_2,set_foefire_3

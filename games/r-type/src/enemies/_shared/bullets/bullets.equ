@@ -13,33 +13,12 @@ BULLETS_EQU equ 1
 bullet.SLOTS    equ 24
 bullet.SLOTSZ   equ 21
 
-; L'ENVELOPPE DU SPRITE, CUITE. Le manager blitte des poses compilees fixes
-; (adr_foefire_*_ND0) sans imageset : la geometrie que CheckSpritesRefresh
-; irait chercher dans image_subset_y1_offset et image_y_size est ici une
-; constante, ce qui evite deux lectures indexees par balle et par trame.
-;
-; Mesuree sur les QUATRE poses et leurs DEUX plans (gen/weapons/foefire/
-; foefire_*_ND0.asm) : 48 STA, toutes a un offset multiple de 40, de -80 a
-; +120 depuis U. Donc deux lignes au-dessus de l'ancre, trois au-dessous, et
-; UNE SEULE colonne d'octet — le sprite fait 3x6 pixels. A remesurer si l'art
-; change : tools/sprite_envelope.py le fait et compare a ces valeurs.
-bullet.DRAW_UP    equ 2            ; lignes ecrites AU-DESSUS de l'ancre
-bullet.DRAW_DOWN  equ 3            ; lignes ecrites AU-DESSOUS
-bullet.DRAW_RIGHT equ 1            ; octets a droite de l'ancre (le plan 1 est
-                                   ; a +$2001 quand DRS_XYToAddress passe par
-                                   ; RAM2First : un octet plus loin)
-
-; LES BORNES DE DESSIN, en coordonnee de balle — DRS_XYToAddress retranche
-; screen_top, donc la ligne de buffer EST bullet.y. Un plan fait 200 lignes ;
-; ecrire hors de ces bornes sort du buffer, et sous $A000 on tombe sur la
-; queue de la page directe, ou vit glb_camera_y_pos (le vaisseau disparaissait
-; ainsi : camera corrompue, CheckRange recopiant l'ordure dans player1+y_pos).
-bullet.YMIN     equ bullet.DRAW_UP
-bullet.YMAX     equ screen_height-1-bullet.DRAW_DOWN
-; en x, le sprite tient dans sa colonne : il suffit de retirer la largeur
-; d'un octet (4 px en coordonnee ecran) pour que le plan decale ne deborde
-; pas sur la ligne suivante — c'est le bouclage en x que le moteur interdit.
-bullet.XMAX     equ screen_right-screen_left-4*bullet.DRAW_RIGHT
+; PAS DE GEOMETRIE CUITE ICI. Elle l'a ete un temps — l'enveloppe des quatre
+; poses, mesuree une fois — jusqu'a ce que la mesure de TOUT l'art montre que
+; la taille unique est l'exception : 82 familles sur 90 ont des poses de
+; tailles differentes, et cuire un maximum unique aurait fait disparaitre les
+; gros sprites bien avant leur sortie d'ecran. Les bords se lisent donc dans
+; l'imageset, comme chez tous les autres managers (bullet.Sets, _sprite.cull).
 
 ; La table vit en RAM RESIDENTE (<reserved objects.bullets>, demi-page 0) —
 ; les boites AABB qu'elle porte sont parcourues par Collision_Do avec la page
