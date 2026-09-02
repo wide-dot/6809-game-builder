@@ -207,12 +207,15 @@ stage 4, la sonde `tools/shot_stage4.py` sur son ouverture.
 |---|---|---|
 | 1. `pscroll.edit` $0B → $13 | `d28d34d1d` | stage 4 ouvert par le cheat, caméra 3 → 547 sur 3 000 trames, capture ; banc 7/7 |
 | 2. $0B en tête de l'arène `enemies` | `841cce3cb` | banc 7/7 ; le Bug et le mid vont en $0B, $0F reste vide |
-| 3. Scant, Bink 01–05, Bug ×4 en offset 1 | commit suivant | banc 7/7, stage 1 complet capturé |
+| 3. Scant, Bink 01–05, Bug ×4 en offset 1 | `bde462188` | banc 7/7, stage 1 complet capturé |
+| 3 bis. Bug : les quatre variantes RETIRÉES | commit suivant | banc 7/7 |
 
-État final des lots : 68 999 / 79 232 o, **10 233 o de marge** ; le Bug à
-15 972 o sur un plafond de 16 384. Les quatre poses du Bug ont été choisies
-en comptant les pas de mouvement affichés par pose dans ses huit scripts de
-vol (bug_8, bug_7, bug_9, bug_6 : 47 % du temps d'affichage).
+**Le Bug n'a finalement aucune variante** (décision auteur) : il s'affiche
+en chenille, plusieurs exemplaires à la file sur des poses différentes, et un
+offset 1 partiel — quatre poses sur seize — les ferait avancer sur deux
+grilles à la fois. C'est tout ou rien, et tout dépasse le plafond d'un
+fichier. Il reste à 14 423 o. État final des lots : 67 450 / 79 232 o,
+**11 782 o de marge**.
 
 L'option 2 (commun sur $0B, lots sur $0C–$10, travail du stage 4 regroupé
 en $11–$15) reste écrite aux §5–7 pour le jour où le commun devra grossir.

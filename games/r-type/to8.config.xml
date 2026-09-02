@@ -1917,19 +1917,15 @@
                                     </image>
                                     <image name="bug_6" filename="src/enemies/bug/images/02.png" index="2">
                                         <encoder name="draw" mirror="none" shift="0"/>
-                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="bug_7" filename="src/enemies/bug/images/03.png" index="3">
                                         <encoder name="draw" mirror="none" shift="0"/>
-                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="bug_8" filename="src/enemies/bug/images/04.png" index="4">
                                         <encoder name="draw" mirror="none" shift="0"/>
-                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="bug_9" filename="src/enemies/bug/images/05.png" index="5">
                                         <encoder name="draw" mirror="none" shift="0"/>
-                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="bug_10" filename="src/enemies/bug/images/06.png" index="6">
                                         <encoder name="draw" mirror="none" shift="0"/>
