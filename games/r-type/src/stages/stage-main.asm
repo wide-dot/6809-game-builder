@@ -449,12 +449,20 @@ mainloop.state EXPORT
 mainloop.state fcb 0
 
 ; LE SEUIL OU LA SEQUENCE DE FIN PREND L'ECRAN. A partir de cette phase, le
-; fondu pixel possede le champ entier : phase 3 il le dissout, phase 4 il le
-; garde noir sous le releve de score. Les deux objets qui ECRIVENT la phase
-; (src/common/flow/endlevel/obj_endlevel.asm pour les stages 2-8, et
-; src/stages/01/endstage/obj_endstage.asm) emploient la meme numerotation ;
-; la boucle est le seul lecteur, la constante vit donc ici.
-endstage.PHASE_FADE equ 3
+; fondu pixel possede le champ entier : phase 4 il le dissout, phase 5 il le
+; garde noir sous le releve de score. Avant lui, la phase 3 est le PRE-FONDU
+; (02/09/2026, decision auteur) : deux rendus ou plus aucun sprite ni manager
+; n'est dessine — le vaisseau seul — tandis que le champ est toujours efface
+; et repeint. Les deux pages du double tampon deviennent ainsi identiques
+; (fond + vaisseau) avant que la dissolution, qui les alterne, ne commence ;
+; sans cela les sprites figes a deux positions differentes clignotaient.
+; Les deux objets qui ECRIVENT la phase (src/common/flow/endlevel/
+; obj_endlevel.asm pour les stages 2-8, et src/stages/01/endstage/
+; obj_endstage.asm) emploient la meme numerotation ; la boucle est le seul
+; lecteur, les constantes vivent donc ici.
+endstage.PHASE_SHIPONLY equ 3   ; des ici : le vaisseau seul, plus de BuildSprites
+endstage.PHASE_FADE     equ 4   ; des ici : plus d'effacement ni de decor, le fondu
+endstage.PHASE_READOUT  equ 5   ; le releve de score
 
 stage.state.running
         ; La manette, en tete de tour comme la v1 (ReadJoypadsKbd) :
@@ -666,7 +674,7 @@ stage.frame.faded
         ; stage.drawShip le peint seul, comme BuildSprites l'aurait fait.
         ; Etude : doc/etude-pixel-fade.md.
         lda   stage.overlayPhase
-        cmpa  #endstage.PHASE_FADE
+        cmpa  #endstage.PHASE_SHIPONLY
         blo   stage.frame.sprites
         jsr   stage.drawShip
         bra   stage.frame.drawn
@@ -705,13 +713,13 @@ stage.frame.noTiles
 
         ; Les surimpressions, selon la phase de fin de niveau que CE stage
         ; publie (0 hors sequence). La v1 fait le meme aiguillage dans son main
-        ; (main.asm:248) : phases 0-2 le masque et le HUD normal ; phase 3, le
+        ; (main.asm:248) : phases 0-3 le masque et le HUD normal ; phase 4, le
         ; fondu pixel possede l'ecran entier, bandeau compris, et on ne peint
-        ; rien ; phase 4, le releve de score centre, seul.
+        ; rien ; phase 5, le releve de score centre, seul.
         lda   stage.overlayPhase
         cmpa  #endstage.PHASE_FADE
         blo   stage.overlay.normal
-        cmpa  #4
+        cmpa  #endstage.PHASE_READOUT
         beq   stage.overlay.readout
         bra   stage.overlay.off
 

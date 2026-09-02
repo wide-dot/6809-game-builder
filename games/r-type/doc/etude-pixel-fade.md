@@ -169,3 +169,14 @@ l'œil.
   dissous autour du vaisseau intact, écran noir avec le vaisseau seul, relevé
   de score par-dessus. `rtype_bench` 7/7 (la chaîne traverse trois séquences
   de fin).
+- **Le pré-fondu** (décision auteur, 02/09) : la dissolution alterne les deux
+  pages, et celles-ci portaient les sprites à deux positions différentes — les
+  ennemis figés clignotaient sous le fondu. Nouvelle phase 3, **deux rendus**
+  sans `BuildSprites` ni managers, champ toujours effacé et repeint, vaisseau
+  seul ; puis phase 4 le fondu, phase 5 le relevé (renumérotation dans la
+  boucle et les deux séquenceurs). Vérifié sous toje : après les deux rendus,
+  pages 2 et 3 **identiques à l'octet** (0 différence, 3 588 octets de fond
+  et vaisseau) ; transitions aux rendus 40 → 42 → 252 ; au relevé, une page
+  ne porte que le vaisseau, l'autre le vaisseau et les deux lignes du relevé.
+  Les branches locales des deux séquenceurs sont passées en forme longue,
+  le Tick ayant grandi.

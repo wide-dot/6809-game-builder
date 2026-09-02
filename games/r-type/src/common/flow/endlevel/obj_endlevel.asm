@@ -34,6 +34,7 @@ InitSequence
         ldd   #0
         std   main.endstage.counter
         clr   main.endstage.phase
+        clr   prefade.timer
         clr   globals.bossDefeated
         clr   main.endstage.scoreArmed
         clr   main.endstage.scoreDone
@@ -45,7 +46,8 @@ InitSequence
         rts
 
 bossHold.timer  fdb 0  ; frames left in the stand-in boss battle hold
-scoreHold.timer fcb 0  ; phase 3->4: ~0.5 s black-screen hold before the readout
+scoreHold.timer fcb 0  ; phase 4->5: ~0.5 s black-screen hold before the readout
+prefade.timer   fcb 0  ; phase 3 : rendus restants du pre-fondu
 
 * ---------------------------------------------------------------------------
 * end of stage sequencing
@@ -59,7 +61,7 @@ Tick
         ; its exits). Nothing sets the flag in the stages that still rely on
         ; the stand-in below, so this test is inert for them.
         lda   globals.bossDefeated
-        bne   @beaten
+        lbne  @beaten
         ; A STAGE WITH A REAL BOSS NEVER WINS BY TIMEOUT (29/08/2026). The
         ; stand-in below hands the victory over as soon as the camera reaches
         ; the end of the map and a hardcoded counter runs out — which is
@@ -71,15 +73,15 @@ Tick
         ; stage that never arms it, and a bare `ble` on it would declare the
         ; victory on the very first frame.
         lda   globals.realBoss
-        bne   @none
+        lbne  @none
         ; no sequence yet : the stand-in boss battle — camera at the end of
         ; the map, then the hold ; its expiry counts as the victory
         ldd   glb_camera_x_pos
         cmpd  scroll_max
-        blo   @none                         ; still scrolling the level
+        lblo  @none                         ; still scrolling the level
         ldd   bossHold.timer
         subd  gfxlock.frameDrop.count_w
-        ble   @beaten
+        lble  @beaten
         std   bossHold.timer
 @none   ldb   #endstage.STATUS_NONE
         rts
@@ -92,7 +94,7 @@ Tick
         std   main.endstage.counter
         lda   #endstage.SHIP_INVINCIBLE
         sta   player1+ext_variables+AABB.p
-        bra   @none
+        lbra  @none
 @run
         ; ship cannot die during the end sequence — negative potential, the
         ; invincible box (see obj_endstage.asm for the full reasoning)
@@ -104,10 +106,10 @@ Tick
         ldd   #1                            ; floor, sequence stays latched
 !       std   main.endstage.counter
         tst   main.endstage.phase
-        bne   @pilot
+        lbne  @pilot
         ; phase 0: free play until T-$10, then jingle + ship autopilot
         cmpd  #endstage.JINGLE
-        bhi   @none2
+        lbhi  @none2
         inc   main.endstage.phase
         lda   #-2
         sta   player1+subtype               ; autopilot: no control, ship displayed
@@ -126,16 +128,16 @@ Tick
         jsr   AutoPilot
         lda   main.endstage.phase
         cmpa  #2
-        beq   @glide
-        bhi   @phase34
+        lbeq  @glide
+        lbhi  @phase34
         ; phase 1: hold until the countdown expires. The camera is already at
         ; the end of the map (no boss room to scroll past) : no cap to lift,
         ; the glide condition of phase 2 is immediately satisfiable.
         ldd   main.endstage.counter
         cmpd  #1
-        bhi   @none2
+        lbhi  @none2
         inc   main.endstage.phase
-        bra   @none2
+        lbra  @none2
 @glide
         ; arm the fade only when BOTH buffers rest at the cap — the exact
         ; condition of Scroll's early-out (see obj_endstage.asm, the residue
@@ -158,16 +160,30 @@ Tick
         bne   >
         ldd   player1+y_vel
         bne   >
-        inc   main.endstage.phase
-        jsr   InitFadeOut
-!       bra   @none2
+        inc   main.endstage.phase           ; -> 3 : le PRE-FONDU, deux rendus sans
+        lda   #2                            ; sprites ni managers, champ repeint,
+        sta   prefade.timer                 ; vaisseau seul (cf. stage-main.asm)
+!       lbra  @none2
 @phase34
-        ; phase 3: the dissolve runs in Blit ; phase 4: the HUD readout runs
+        ; phase 4: the dissolve runs in Blit ; phase 5: the HUD readout runs
         lda   main.endstage.phase
-        cmpa  #4
-        blo   @none2
+        cmpa  #3
+        lbne  @notPrefade
+        ; phase 3, PRE-FONDU (02/09/2026, decision auteur) : la boucle ne dessine
+        ; que le vaisseau, le champ est toujours repeint ; au bout de deux
+        ; RENDUS (un Tick par rendu) les deux pages sont identiques, fond et
+        ; vaisseau, et la dissolution peut alterner les pages sans faire
+        ; clignoter des sprites figes a deux positions.
+        dec   prefade.timer
+        lbne  @none2
+        inc   main.endstage.phase           ; -> 4 : le fondu
+        jsr   InitFadeOut
+        lbra  @none2
+@notPrefade
+        cmpa  #5
+        lblo  @none2                         ; phase 4 : still dissolving -> wait
         lda   main.endstage.scoreDone
-        beq   @none2
+        lbeq  @none2
         ; readout + hold done : black the palette before the cut, silence the
         ; sound chips, and let the stage hand over
         ldd   #Pal_black
@@ -193,16 +209,16 @@ AutoPilot
         ldd   player1+x_pos
         subd  glb_camera_x_pos
         subd  main.endstage.rallyX
-        bmi   @shipLeft
+        lbmi  @shipLeft
         cmpd  #endstage.DEADBAND_X
-        blo   @yAxis
+        lblo  @yAxis
         ldd   #scale.XN1PX
         bsr   VelScale
         std   player1+x_vel
-        bra   @yAxis
+        lbra  @yAxis
 @shipLeft
         cmpd  #-endstage.DEADBAND_X
-        bgt   @yAxis
+        lbgt  @yAxis
         ldd   #scale.XP1PX
         bsr   VelScale
         std   player1+x_vel
@@ -210,16 +226,16 @@ AutoPilot
         ldd   player1+y_pos
         subd  glb_camera_y_pos
         subd  main.endstage.rallyY
-        bmi   @shipAbove
+        lbmi  @shipAbove
         cmpd  #endstage.DEADBAND_Y
-        blo   @done
+        lblo  @done
         ldd   #scale.YN1PX
         bsr   VelScale
         std   player1+y_vel
         rts
 @shipAbove
         cmpd  #-endstage.DEADBAND_Y
-        bgt   @done
+        lbgt  @done
         ldd   #scale.YP1PX
         bsr   VelScale
         std   player1+y_vel
@@ -234,7 +250,7 @@ VelScale
         ldd   #0
 @l      addd  vel.base
         dec   vel.cnt
-        bne   @l
+        lbne  @l
         rts
 vel.base fdb 0
 vel.cnt  fcb 0
@@ -275,7 +291,7 @@ ResetYM
         inca
         stb   YM2413.D
         cmpa  #$29                          ; (wait of 2 cycles)
-        bne   @a                            ; (wait of 3 cycles)
+        lbne  @a                            ; (wait of 3 cycles)
         rts
 
 * ---------------------------------------------------------------------------
@@ -285,25 +301,25 @@ ResetYM
 
 Blit
         lda   main.endstage.phase
-        cmpa  #3
+        cmpa  #4                            ; phase 4 : le fondu (le nom garde son histoire)
         beq   BlitPhase3
         rts
 
 BlitPhase3
         lda   FadeCnt
-        beq   @scoreHold                    ; fade done on both pages
+        lbeq  @scoreHold                    ; fade done on both pages
         jmp   FadeOut
 @scoreHold
         ldb   scoreHold.timer
-        beq   @toReadout
+        lbeq  @toReadout
         subb  gfxlock.frameDrop.count
-        bls   @toReadout
+        lbls  @toReadout
         stb   scoreHold.timer
         rts
 @toReadout
         lda   #1
         sta   main.endstage.scoreArmed      ; HUD: (re)seed the readout
-        lda   #4
+        lda   #5
         sta   main.endstage.phase
         rts
 

@@ -489,7 +489,7 @@ main.dobkeratops.move.frame   fdb $ffff ; frame.count of the last clamped-step c
 main.dobkeratops.move.step    fdb 0  ; this frame's shared leftward step (8.8, =px/256)
 main.dobkeratops.move.left    fdb 0  ; distance left to the butee (8.8, =px/256); 0 = arrived
 main.endstage.counter         fdb 0  ; end of stage countdown (0: not armed)
-main.endstage.phase           fcb 0  ; 0: gameplay, 1: jingle+autopilot, 2: glide, 3: fading, 4: score readout
+main.endstage.phase           fcb 0  ; 0: gameplay, 1: jingle+autopilot, 2: glide, 3: pre-fade (2 renders), 4: fading, 5: score readout
 main.endstage.scoreArmed      fcb 0  ; 1: tell the HUD readout to (re)seed from the stage score
 main.endstage.scoreDone       fcb 0  ; 1: HUD readout finished -> obj_endstage leaves the level
 ; Le point de ralliement de l'autopilote. Le stage 1 a son PROPRE objet de

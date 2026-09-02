@@ -57,6 +57,7 @@ InitSequence
         ldd   #0
         std   main.endstage.counter
         clr   main.endstage.phase
+        clr   prefade.timer
         clr   main.dobkeratops.halfDamage
         clr   main.dobkeratops.nervesErasing
         clr   main.dobkeratops.explode
@@ -68,7 +69,8 @@ InitSequence
         sta   scoreHold.timer
         rts
 
-scoreHold.timer fcb 0  ; phase 3->4: ~0.5 s black-screen hold before the score readout
+scoreHold.timer fcb 0  ; phase 4->5: ~0.5 s black-screen hold before the score readout
+prefade.timer   fcb 0  ; phase 3 : rendus restants du pre-fondu
 
 * ---------------------------------------------------------------------------
 * end of stage sequencing (arcade: run_dobkeratops parent tick)
@@ -81,17 +83,17 @@ Tick
         ; overshoot, and the X0-only eraser sprites keep their even parity).
         lda   main.endstage.phase
         cmpa  #2
-        bhs   @scrollFree
+        lbhs  @scrollFree
         ldd   #endstage.bossStopX
         std   scroll_max
 @scrollFree
         ldd   main.endstage.counter
-        bne   @run                          ; sequence already armed
+        lbne  @run                          ; sequence already armed
         lda   main.dobkeratops.explode       ; boss killed AND the nerve erase is done?
-        bne   @arm
+        lbne  @arm
         ldx   gfxlock.frame.gameCount           ; boss escapes (arcade: +0x3E timeout expires)
         cmpx  #timestamp.BOSS_ESCAPE
-        blo   @none
+        lblo  @none
         ; engagement timeout with the boss still alive (only reachable when the player
         ; survived the butee, e.g. blink invincibility). Route it through the NORMAL
         ; teardown instead of just arming the countdown: monster.WaitEndStage sees
@@ -122,10 +124,10 @@ Tick
         ldd   #1                            ; floor the countdown, sequence stays latched
 !       std   main.endstage.counter
         tst   main.endstage.phase
-        bne   @pilot
+        lbne  @pilot
         ; phase 0: free gameplay until T-$10
         cmpd  #endstage.JINGLE
-        bhi   @none
+        lbhi  @none
         ; T-$10: jingle + ship autopilot (arcade: end_level_sequence_flag = -1)
         inc   main.endstage.phase
         lda   #-2
@@ -150,12 +152,12 @@ Tick
         jsr   AutoPilot
         lda   main.endstage.phase
         cmpa  #2
-        beq   @glide                        ; phase 2: glide until the camera reaches the exit
-        bhi   @phase34                      ; phase 3 (fade) / 4 (score readout): wait, then leave
+        lbeq  @glide                        ; phase 2: glide until the camera reaches the exit
+        lbhi  @phase34                      ; phase 3 (fade) / 4 (score readout): wait, then leave
         ; phase 1: hold autopilot until the countdown expires, then resume the scroll
         ldd   main.endstage.counter
         cmpd  #1
-        bhi   @none                         ; countdown still running
+        lbhi  @none                         ; countdown still running
         ; T-0: resume the level scroll - lift the cap to the real map end so the
         ; camera glides past the boss room toward the exit corridor (arcade scroll-out)
         inc   main.endstage.phase
@@ -163,7 +165,7 @@ Tick
         std   scroll_max
         ldd   #$0030
         std   scroll_vel
-        bra   @none
+        lbra  @none
 @glide
         ; Armer le fondu SEULEMENT quand le scroll est reellement a l'arret, c'est a
         ; dire quand les DEUX buffers ont ete rendus a la butee. Le critere naif
@@ -197,15 +199,29 @@ Tick
         bne   >
         ldd   player1+y_vel
         bne   >
-        inc   main.endstage.phase
-        jsr   InitFadeOut
-!       bra   @none
+        inc   main.endstage.phase           ; -> 3 : le PRE-FONDU, deux rendus sans
+        lda   #2                            ; sprites ni managers, champ repeint,
+        sta   prefade.timer                 ; vaisseau seul (cf. stage-main.asm)
+!       lbra  @none
 @phase34
-        ; phase 3: the dissolve runs in Blit; phase 4: the HUD score readout runs (driven by
+        ; phase 4: the dissolve runs in Blit; phase 5: the HUD score readout runs (driven by
         ; main, drawn by the HUD). Wait for the Blit/HUD state machine, then leave the level.
         lda   main.endstage.phase
-        cmpa  #4
-        lblo  @none                         ; phase 3: still dissolving -> wait  ; forme longue : la cible est au-dela de 127 octets
+        cmpa  #3
+        lbne  @notPrefade
+        ; phase 3, PRE-FONDU (02/09/2026, decision auteur) : la boucle ne dessine
+        ; que le vaisseau, le champ est toujours repeint ; au bout de deux
+        ; RENDUS (un Tick par rendu) les deux pages sont identiques, fond et
+        ; vaisseau, et la dissolution peut alterner les pages sans faire
+        ; clignoter des sprites figes a deux positions.
+        dec   prefade.timer
+        lbne  @none
+        inc   main.endstage.phase           ; -> 4 : le fondu
+        jsr   InitFadeOut
+        lbra  @none
+@notPrefade
+        cmpa  #5
+        lblo  @none                         ; phase 4 : still dissolving -> wait
         ; phase 4 : plus rien a forcer (02/09/2026). glb_force_sprite_refresh
         ; etait pose ici pour que vaisseau et pod restent peints sur les deux
         ; pages ; en overlay BuildSprites redessine tout a chaque trame et ne
@@ -257,16 +273,16 @@ AutoPilot
         ldd   player1+x_pos
         subd  glb_camera_x_pos
         subd  #endstage.RALLY_X
-        bmi   @shipLeft
+        lbmi  @shipLeft
         cmpd  #endstage.DEADBAND_X
-        blo   @yAxis
+        lblo  @yAxis
         ldd   #scale.XN1PX                  ; ship right of rally point: fly left (0.375 px/frame)
         bsr   VelScale
         std   player1+x_vel
-        bra   @yAxis
+        lbra  @yAxis
 @shipLeft
         cmpd  #-endstage.DEADBAND_X
-        bgt   @yAxis
+        lbgt  @yAxis
         ldd   #scale.XP1PX                  ; ship left of rally point: fly right (0.375 px/frame)
         bsr   VelScale
         std   player1+x_vel
@@ -274,16 +290,16 @@ AutoPilot
         ldd   player1+y_pos
         subd  glb_camera_y_pos
         subd  #endstage.RALLY_Y
-        bmi   @shipAbove
+        lbmi  @shipAbove
         cmpd  #endstage.DEADBAND_Y
-        blo   @done
+        lblo  @done
         ldd   #scale.YN1PX                  ; ship below rally point: fly up toward it (0.75 px/frame)
         bsr   VelScale
         std   player1+y_vel
         rts
 @shipAbove
         cmpd  #-endstage.DEADBAND_Y
-        bgt   @done
+        lbgt  @done
         ldd   #scale.YP1PX                  ; ship above rally point: fly down toward it (0.75 px/frame)
         bsr   VelScale
         std   player1+y_vel
@@ -301,7 +317,7 @@ VelScale
         ldd   #0
 @l      addd  vel.base
         dec   vel.cnt
-        bne   @l
+        lbne  @l
         rts
 vel.base fdb 0
 vel.cnt  fcb 0
@@ -342,7 +358,7 @@ ResetYM
         inca
         stb   YM2413.D
         cmpa  #$29                          ; (wait of 2 cycles)
-        bne   @a                            ; (wait of 3 cycles)
+        lbne  @a                            ; (wait of 3 cycles)
         rts
 
 * ---------------------------------------------------------------------------
@@ -356,14 +372,14 @@ ResetYM
 * ---------------------------------------------------------------------------
 
 Blit
-        ; phase 3: pixel-dissolve to black (here, in-lock, before DrawSprites - so the sprite
-        ; background backups capture the dissolved pixels). phase 4: playfield clear for the
+        ; phase 4: pixel-dissolve to black (here, in-lock, before DrawSprites - so the sprite
+        ; background backups capture the dissolved pixels). phase 5: playfield clear for the
         ; double-buffer score readout. phases 0-2: boss-room rectangle wipe (@notFade).
         lda   main.endstage.phase
-        cmpa  #3
-        lbeq  BlitPhase3
         cmpa  #4
-        lbeq  BlitPhase4
+        lbeq  BlitPhase3                    ; phase 4 : le fondu (le nom garde son histoire)
+        cmpa  #5
+        lbeq  BlitPhase4                    ; phase 5 : le releve
 @notFade
         ; phases 0-2 : PLUS RIEN (31/08/2026, decision auteur). Le rectangle
         ; noir de salle etait l'heritage bg-erase — en overlay le clearBlast
@@ -382,16 +398,16 @@ Blit
 * ---------------------------------------------------------------------------
 BlitPhase3
         lda   FadeCnt
-        beq   @scoreHold                    ; fade done (both pages, double-buffered) -> hold, then score
+        lbeq  @scoreHold                    ; fade done (both pages, double-buffered) -> hold, then score
         jmp   FadeOut
 @scoreHold
         ; fade done on both pages: hold ~0.5 s on the black screen before the score readout
         ; (let the dissolve land before the digits spin up) ; frame-drop
         ; compensated like the other endstage timers.
         ldb   scoreHold.timer
-        beq   @toReadout                     ; hold elapsed (or disabled) -> arm the readout
+        lbeq  @toReadout                     ; hold elapsed (or disabled) -> arm the readout
         subb  gfxlock.frameDrop.count
-        bls   @toReadout                     ; reached 0 this frame -> arm now
+        lbls  @toReadout                     ; reached 0 this frame -> arm now
         stb   scoreHold.timer
         rts
 @toReadout
@@ -399,7 +415,7 @@ BlitPhase3
         ; stays off ; arm the HUD readout
         lda   #1
         sta   main.endstage.scoreArmed      ; HUD: (re)seed the readout from the stage score
-        lda   #4
+        lda   #5
         sta   main.endstage.phase
         rts
 

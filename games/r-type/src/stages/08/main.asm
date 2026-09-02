@@ -226,7 +226,7 @@ main.endstage.scoreDone  EXPORT
 main.endstage.rallyX     EXPORT
 main.endstage.rallyY     EXPORT
 main.endstage.counter    fdb 0  ; compte a rebours de fin (0 : pas arme)
-main.endstage.phase      fcb 0  ; 0 jeu, 1 jingle+autopilote, 2 glissee, 3 fondu, 4 releve
+main.endstage.phase      fcb 0  ; 0 jeu, 1 jingle+autopilote, 2 glissee, 3 pre-fondu (2 rendus), 4 fondu, 5 releve
 main.endstage.scoreArmed fcb 0  ; 1 : le HUD (re)seme le releve du score du stage
 main.endstage.scoreDone  fcb 0  ; 1 : releve fini -> la sequence quitte le niveau
 ; Le point de ralliement de l'autopilote, publie par LE STAGE : l'objet
