@@ -1639,9 +1639,9 @@
                                              recoit la variante pre-decalee ; l'ordre des lignes
                                              conserve la numerotation (un compteur par base). -->
                                         <images dir="src/enemies/bink/images" match="00.png" shifts="0,1"/>
-                                        <images dir="src/enemies/bink/images" match="0[1-5].png"/>
+                                        <images dir="src/enemies/bink/images" match="0[1-5].png" shifts="0,1"/>
                                         <images dir="src/enemies/bink/images" match="00.png" mirror="x" shifts="0,1"/>
-                                        <images dir="src/enemies/bink/images" match="0[1-5].png" mirror="x"/>
+                                        <images dir="src/enemies/bink/images" match="0[1-5].png" mirror="x" shifts="0,1"/>
                                     </gfxcomp>
                     </lwasm>
                 </file>
@@ -1917,15 +1917,19 @@
                                     </image>
                                     <image name="bug_6" filename="src/enemies/bug/images/02.png" index="2">
                                         <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="bug_7" filename="src/enemies/bug/images/03.png" index="3">
                                         <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="bug_8" filename="src/enemies/bug/images/04.png" index="4">
                                         <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="bug_9" filename="src/enemies/bug/images/05.png" index="5">
                                         <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="bug_10" filename="src/enemies/bug/images/06.png" index="6">
                                         <encoder name="draw" mirror="none" shift="0"/>
@@ -2028,8 +2032,8 @@
                         <gfxcomp file="lib.scant" gendir="gen/enemies/scant"
                                 gensource="gen/enemies/scant/includes.asm"
                                 genindex="gen/enemies/scant/index.asm">
-                            <images dir="src/enemies/scant/images"/>
-                            <images dir="src/enemies/scant/images" mirror="x"/>
+                            <images dir="src/enemies/scant/images" shifts="0,1"/>
+                            <images dir="src/enemies/scant/images" mirror="x" shifts="0,1"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
