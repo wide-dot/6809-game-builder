@@ -189,32 +189,23 @@ flamemgr.DrawAll
         asla
         ldx   flamemgr.setp
         ldx   a,x                      ; X = l'imageset de la tranche
-        ; LE TEST DE BANDE, par tranche : la geometrie vient de l'imageset
-        ; (+11 x1, +4 x_size, +12 y1, +5 y_size), jamais de constantes — le
-        ; meme calcul que outslay.RecPublish.
+        ; LE CONTAINMENT, par tranche : la geometrie vient de l'imageset,
+        ; jamais de constantes — les valeurs generees sont les seules qui ne
+        ; peuvent pas mentir quand l'art change. Meme macro que les autres
+        ; managers ; elle lit x et y sur la pile.
         lda   flamemgr.dx
-        adda  11,x
-        suba  #screen_left
-        cmpa  #screen_right-screen_left
-        bhi   @hors
-        adda  4,x
-        cmpa  #screen_right-screen_left+1
-        bhi   @hors
-        lda   flamemgr.dy
-        adda  12,x
-        suba  #screen_top
-        cmpa  #screen_bottom-screen_top
-        bhi   @hors
-        adda  5,x
-        cmpa  #screen_bottom-screen_top+1
-        bhi   @hors
-        ldy   14,x                     ; la routine compilee
-        lda   flamemgr.dx
-        suba  6,x                      ; le centre pair/impair, comme le moteur
         ldb   flamemgr.dy
+        pshs  a,b
+        _sprite.cull flamemgr.hors
+        ldy   14,x                     ; la routine compilee
+        lda   ,s
+        suba  6,x                      ; le centre pair/impair, comme le moteur
+        ldb   1,s
         jsr   DRS_XYToAddress
         ldu   <glb_screen_location_2
         jsr   ,y                       ; la routine consomme U
+flamemgr.hors
+        leas  2,s                      ; la pile rendue, sur les deux chemins
 @hors   dec   flamemgr.t
         bpl   @tr
 @suiv   ldd   flamemgr.sp
