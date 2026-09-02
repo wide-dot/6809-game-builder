@@ -537,8 +537,12 @@ stage.state.running
         ; garde, qui traite la cause au lieu de la contourner.
         ;
         ; Ce qui continue de tourner : stage.frameBlit (c'est LUI le fondu) et
-        ; BuildSprites (les phases 3 et 4 posent glb_force_sprite_refresh pour
-        ; garder vaisseau et module peints sur les DEUX pages).
+        ; BuildSprites, qui en overlay redessine chaque objet visible a chaque
+        ; trame sans effacer — un sprite immobile et fige reste donc peint sur
+        ; le noir, un sprite qui bouge ou s'anime y grave chaque etat. (Les
+        ; sequenceurs posaient glb_force_sprite_refresh pour cela ; le drapeau
+        ; n'est plus lu par personne en overlay, ecritures retirees le
+        ; 02/09/2026. Etude : doc/etude-pixel-fade.md.)
         lda   stage.overlayPhase
         cmpa  #endstage.PHASE_FADE
         lbhs  stage.frame.faded

@@ -198,12 +198,12 @@ Tick
         lda   main.endstage.phase
         cmpa  #4
         blo   @none                         ; phase 3: still dissolving -> wait
-        ; phase 4 (double-buffer readout): force a full sprite refresh every frame so the
-        ; static ship/pod stay painted on BOTH pages (the dissolve blacked both; a static
-        ; sprite would otherwise live on only one). Tick runs in RunObjects, BEFORE
-        ; CheckSpritesRefresh consumes the flag, so they are marked dirty in time.
-        lda   #1
-        sta   <glb_force_sprite_refresh
+        ; phase 4 : plus rien a forcer (02/09/2026). glb_force_sprite_refresh
+        ; etait pose ici pour que vaisseau et pod restent peints sur les deux
+        ; pages ; en overlay BuildSprites redessine tout a chaque trame et ne
+        ; lit plus ce drapeau — l'ecriture etait morte. Ce que la sequence
+        ; laisse a l'ecran sous le fondu est decide par la boucle
+        ; (stage-main.asm, garde stage.frame.faded), pas ici.
 @scoreWait
         lda   main.endstage.scoreDone        ; phase 4: wait for readout + 3 s hold to finish
         lbeq  @none                          ; (main loop keeps running -> the pod animates)
@@ -375,26 +375,20 @@ Blit
 BlitPhase3
         lda   FadeCnt
         beq   @scoreHold                    ; fade done (both pages, double-buffered) -> hold, then score
-        lda   #1
-        sta   <glb_force_sprite_refresh     ; redraw ship/pod over the point-erase each frame
         jmp   FadeOut
 @scoreHold
         ; fade done on both pages: hold ~0.5 s on the black screen before the score readout
-        ; (let the dissolve land before the digits spin up). Ship/pod stay redrawn so they hover
-        ; on the black during the pause; frame-drop compensated like the other endstage timers.
+        ; (let the dissolve land before the digits spin up) ; frame-drop
+        ; compensated like the other endstage timers.
         ldb   scoreHold.timer
         beq   @toReadout                     ; hold elapsed (or disabled) -> arm the readout
         subb  gfxlock.frameDrop.count
         bls   @toReadout                     ; reached 0 this frame -> arm now
         stb   scoreHold.timer
-        lda   #1
-        sta   <glb_force_sprite_refresh      ; keep ship/pod over the black during the hold
         rts
 @toReadout
         ; both pages already black (double-buffered fade): NO glb_camera_move so the level
-        ; stays off, force a refresh so ship/pod recapture the black bg, arm the HUD readout
-        lda   #1
-        sta   <glb_force_sprite_refresh
+        ; stays off ; arm the HUD readout
         lda   #1
         sta   main.endstage.scoreArmed      ; HUD: (re)seed the readout from the stage score
         lda   #4

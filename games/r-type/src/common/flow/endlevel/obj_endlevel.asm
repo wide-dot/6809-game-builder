@@ -158,8 +158,6 @@ Tick
         lda   main.endstage.phase
         cmpa  #4
         blo   @none2
-        lda   #1                            ; keep ship/pod painted on BOTH pages
-        sta   <glb_force_sprite_refresh
         lda   main.endstage.scoreDone
         beq   @none2
         ; readout + hold done : black the palette before the cut, silence the
@@ -286,8 +284,6 @@ Blit
 BlitPhase3
         lda   FadeCnt
         beq   @scoreHold                    ; fade done on both pages
-        lda   #1
-        sta   <glb_force_sprite_refresh     ; redraw ship/pod over the erase
         jmp   FadeOut
 @scoreHold
         ldb   scoreHold.timer
@@ -295,12 +291,8 @@ BlitPhase3
         subb  gfxlock.frameDrop.count
         bls   @toReadout
         stb   scoreHold.timer
-        lda   #1
-        sta   <glb_force_sprite_refresh
         rts
 @toReadout
-        lda   #1
-        sta   <glb_force_sprite_refresh
         lda   #1
         sta   main.endstage.scoreArmed      ; HUD: (re)seed the readout
         lda   #4
