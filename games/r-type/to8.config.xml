@@ -90,7 +90,12 @@
                  qui ecrit un buffer, plus les tables lues pendant ce temps :
                  RAM FIXE (demi-page video 0), donc appelable et lisible quelle
                  que soit la page en fenetre cartouche. -->
-            <region name="pscroll.edit" page="$0B" address="$0000" size="$4000"/>
+            <!-- $13 depuis le 02/09/2026 (etait $0B) : une page vide dans l'etat
+                 du stage 4 et qui ne porte rien de permanent — comme les trois
+                 tampons en $10-$12, ses occupants (foes des stages 1, 2, 3, 5)
+                 sont des alternatives au stage 4. $0B, vide dans les huit
+                 autres etats, est rendue a la carte (voir l'arene enemies). -->
+            <region name="pscroll.edit" page="$13" address="$0000" size="$4000"/>
             <!-- LE PARAMETRE `page` VEUT DIRE CE QUE LE REGISTRE DE LA FENETRE
                  VEUT DIRE. ram.set (to8/ram/ram.asm) dispatche sur la PLAGE
                  D'ADRESSE, puis interprete `page` selon le registre de cette
