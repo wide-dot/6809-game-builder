@@ -292,6 +292,27 @@ def main():
     # (verifie sur la face : x1=-23 <-> contenu col 16).
     ANCHOR_COL = 39
 
+    # LES BORNES SONT CELLES DE LA TRANCHE, PAS DU CONTENU.
+    #
+    # Les bandes sont sauvees au canevas complet (80x180) avec du vide autour :
+    # meme taille pour toutes, donc placement unique. En tirer les bornes du
+    # CONTENU cassait cette unicite — chaque bande recevait une largeur et un
+    # bord differents (11, 12 ou 16 px), et surtout un bord gauche PLUS A
+    # DROITE que ce que le blit ecrit vraiment.
+    #
+    # Le blit travaille sur une grille d'OCTETS de 4 px ancree sur ANCHOR_COL.
+    # 39 mod 4 = 3 : la grille d'octets est donc decalee d'un pixel par rapport
+    # a la grille de 16 px du decoupage, et le blit occupe exactement la
+    # tranche decalee de -1 px. Mesure du 02/09 sur les seize bandes, en
+    # suivant U a travers chaque pose compilee (LEAU/PSHU compris).
+    #
+    # C'est ce pixel qui rendait le defaut asymetrique : le decalage etant vers
+    # la gauche, le bord droit reel tombait DANS la borne declaree — apparition
+    # correcte a droite — tandis que le bord gauche tombait dehors, et le blit
+    # bouclait d'une ligne (xloop) a l'entree par la gauche.
+    BAND_W = 16
+    BYTE_SKEW = -1
+
     def content_cols(data):
         xs = [k % W for k, v in enumerate(data) if v]
         return min(xs), max(xs)
@@ -306,8 +327,8 @@ def main():
             for n in range(4):
                 f.write(f'EB_sys{n}\n        fcb   {len(eye_bands[n])}\n')
                 for i, (b, band) in enumerate(eye_bands[n]):
-                    x0, x1 = content_cols(band)
-                    f.write(f'        fdb   eyemgr.X{x0-ANCHOR_COL:+d},eyemgr.X{x1-ANCHOR_COL+1:+d}\n')
+                    left = b * BAND_W + BYTE_SKEW - ANCHOR_COL
+                    f.write(f'        fdb   eyemgr.X{left:+d},eyemgr.X{left+BAND_W:+d}\n')
                     f.write(f'        fdb   adr_dkeyes_b{n}{i}_ND{nd}\n')
             f.write('EB_index\n')
             f.write('        fdb   ' + ','.join(f'EB_sys{n}' for n in range(4)) + '\n')

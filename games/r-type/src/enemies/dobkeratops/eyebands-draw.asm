@@ -14,9 +14,11 @@
 EBDraw
         ; les bornes de la passe (celles que BuildSprites precalcule ; quatre
         ; lectures DP valent moins cher qu'un export moteur)
+        ; Les bornes de la passe. EBxlo est la camera EXACTE : depuis le
+        ; 02/09 la table declare la TRANCHE du decoupage et non le contenu,
+        ; donc ses bornes sont celles que le blit ecrit vraiment — aucune
+        ; marge n'est necessaire (voir gen_overlay_nerves.py).
         ldd   <glb_camera_x_pos
-        subd  <glb_camera_x_offset
-        subd  <glb_camera_x_offset
         std   EBxlo
         ldd   <glb_camera_x_pos
         addd  #160
@@ -31,12 +33,23 @@ EBd1    ldb   EBsys
         ldx   b,x
         lda   ,x+
         sta   EBcnt
-EBd2    ldd   ,x                       ; bord gauche playfield
-        cmpd  EBxhi
-        bge   EBd3
-        ldd   2,x                      ; bord droit + 1
+EBd2    ; UNE BANDE N'APPARAIT QUE LORSQUE SA TRANCHE EST ENTIEREMENT
+        ; ENTREE. Le test porte sur le DECOUPAGE THEORIQUE de 16 px, pas sur
+        ; le contenu : la table declare la tranche depuis le 02/09, donc ses
+        ; deux bornes sont celles que le blit ecrit vraiment.
+        ;
+        ; Les DEUX bords, et c'est la le point : tester le seul bord gauche
+        ; faisait apparaitre la bande des qu'elle mordait l'ecran, et le blit
+        ; compile n'ayant pas de decoupe, la part hors champ bouclait d'une
+        ; ligne (xloop). Les bandes de face du boss n'ont pas ce defaut parce
+        ; qu'elles ne traversent jamais la bordure : la wave les fait naitre
+        ; une a une quand chacune est deja en place.
+        ldd   ,x                       ; bord gauche de la tranche
         cmpd  EBxlo
-        blt   EBd3
+        blt   EBd3                     ; pas encore entierement entree a gauche
+        ldd   2,x                      ; bord droit + 1
+        cmpd  EBxhi
+        bgt   EBd3                     ; pas encore entierement entree a droite
         ldy   4,x
         ldu   <glb_screen_location_2
         pshs  x
