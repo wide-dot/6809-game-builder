@@ -1604,8 +1604,15 @@
                                 <gfxcomp file="lib.bink" gendir="gen/enemies/bink"
                                              gensource="gen/enemies/bink/includes.asm"
                                              genindex="gen/enemies/bink/index.asm">
-                                        <images dir="src/enemies/bink/images"/>
-                                        <images dir="src/enemies/bink/images" mirror="x"/>
+                                        <!-- 00.png porte les deux poses d'ARRET (bink_0 et son
+                                             miroir bink_6) : c'est la que le pas de deux pixels
+                                             se voit, l'ennemi etant immobile au sol. Elle seule
+                                             recoit la variante pre-decalee ; l'ordre des lignes
+                                             conserve la numerotation (un compteur par base). -->
+                                        <images dir="src/enemies/bink/images" match="00.png" shifts="0,1"/>
+                                        <images dir="src/enemies/bink/images" match="0[1-5].png"/>
+                                        <images dir="src/enemies/bink/images" match="00.png" mirror="x" shifts="0,1"/>
+                                        <images dir="src/enemies/bink/images" match="0[1-5].png" mirror="x"/>
                                     </gfxcomp>
                     </lwasm>
                 </file>
@@ -1950,9 +1957,11 @@
                                     </image>
                                     <image name="pstaff_8" filename="src/enemies/p-staff/images/04.png" index="8">
                                         <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="pstaff_9" filename="src/enemies/p-staff/images/05.png" index="9">
                                         <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="pstaff_10" filename="src/enemies/p-staff/images/00.png" index="10">
                                         <encoder name="draw" mirror="x" shift="0"/>
@@ -1968,9 +1977,11 @@
                                     </image>
                                     <image name="pstaff_18" filename="src/enemies/p-staff/images/04.png" index="18">
                                         <encoder name="draw" mirror="x" shift="0"/>
+                                        <encoder name="draw" mirror="x" shift="1"/>
                                     </image>
                                     <image name="pstaff_19" filename="src/enemies/p-staff/images/05.png" index="19">
                                         <encoder name="draw" mirror="x" shift="0"/>
+                                        <encoder name="draw" mirror="x" shift="1"/>
                                     </image>
                                 </gfxcomp>
                     </lwasm>
@@ -2425,15 +2436,19 @@
                                  gensource="gen/enemies/tabrok/includesGround.asm">
                             <image name="tabrok_4" filename="src/enemies/tabrok/images/02.png" index="4">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="tabrok_5" filename="src/enemies/tabrok/images/03.png" index="5">
                                 <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
                             </image>
                             <image name="tabrok_12" filename="src/enemies/tabrok/images/02.png" index="12">
                                 <encoder name="draw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="1"/>
                             </image>
                             <image name="tabrok_13" filename="src/enemies/tabrok/images/03.png" index="13">
                                 <encoder name="draw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="1"/>
                             </image>
                         </gfxcomp>
                     </lwasm>
