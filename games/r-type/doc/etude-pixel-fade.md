@@ -146,3 +146,26 @@ hold), capture les deux pages vidéo au dernier pas du fondu et compte les
 pixels non nuls hors du vaisseau et de sa suite — zéro attendu ; puis la
 vidéo de la fin de stage 1 et de la fin de stage 3 (couche mobile) pour
 l'œil.
+
+## 7. Réalisé (02/09/2026)
+
+- **Écritures mortes** de `glb_force_sprite_refresh` retirées des deux
+  séquenceurs (`80fad19fe`).
+- **La charge du faisceau s'éteint au passage en autopilote** dans les deux
+  séquenceurs : `beam_value` et `is_charging` à zéro, la jauge du HUD se vide,
+  `beamcharge` se supprime seul (`d8b950a06`, `05d76aefd`).
+- **Le vaisseau seul sous le fondu** (décision auteur) : dès la phase 3 la
+  boucle n'appelle plus `BuildSprites` — rien n'est redessiné, tout part avec
+  la dissolution, pod et bits compris — et `stage.drawShip` peint le vaisseau
+  seul, comme `BuildSprites` l'aurait fait (sous-ensemble, parité, centre,
+  `DRS_XYToAddress`). Piège rencontré : `x_pixel`/`y_pixel` de l'OST du
+  joueur ne sont entretenus par personne en overlay (seul le
+  `CheckSpritesRefresh` du mode bg-erase les écrivait) — lus tels quels ils
+  valaient 0. La position écran se recalcule depuis `x_pos`/`y_pos` et la
+  caméra, comme le moteur et le tailmgr.
+- **Vérifié sous toje**, fin du stage 1 par le cheat en invincible : au
+  passage en phase 4, les deux framebuffers ne portent que les deux lignes du
+  relevé et les dix lignes du vaisseau ; images extraites du clip : champ
+  dissous autour du vaisseau intact, écran noir avec le vaisseau seul, relevé
+  de score par-dessus. `rtype_bench` 7/7 (la chaîne traverse trois séquences
+  de fin).

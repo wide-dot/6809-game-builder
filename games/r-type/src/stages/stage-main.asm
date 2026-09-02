@@ -657,7 +657,22 @@ stage.frame.faded
         ; peint en tete de trame, a la place de l'effacement. Les sprites
         ; passent donc toujours devant, mais sans repasse.)
 
+        ; LE VAISSEAU SEUL SOUS LE FONDU (02/09/2026, decision auteur). En
+        ; overlay BuildSprites redessine chaque objet visible a chaque trame
+        ; sans effacer : sous la dissolution, tout ce qui bouge ou s'anime y
+        ; grave chaque etat (pod, bits, charge, tirs, explosions...). Plutot
+        ; que de figer chacun, on ne redessine plus RIEN — tout part avec le
+        ; fondu — sauf le vaisseau, qui flotte sur le noir jusqu'au releve :
+        ; stage.drawShip le peint seul, comme BuildSprites l'aurait fait.
+        ; Etude : doc/etude-pixel-fade.md.
+        lda   stage.overlayPhase
+        cmpa  #endstage.PHASE_FADE
+        blo   stage.frame.sprites
+        jsr   stage.drawShip
+        bra   stage.frame.drawn
+stage.frame.sprites
         jsr   BuildSprites
+stage.frame.drawn
 
         ; LE DECOR PAR-DESSUS LES SPRITES — ordre officiel du jeu depuis le
         ; 21/08/2026 (decision auteur), sur TOUS les stages, celui a couche
@@ -747,6 +762,63 @@ stage.overlay.off
         jsr   gfxlock.loop
         lbra  stage.loop
 
+; ---------------------------------------------------------------------------
+; stage.drawShip — le vaisseau seul, exactement comme BuildSprites l'aurait
+; dessine : sous-ensemble sans miroir (le vaisseau n'en a pas), variante
+; ND0/ND1 par parite de x XOR le centre de l'image, adresse ecran par
+; DRS_XYToAddress avec x moins le centre — l'idiome des managers. Deux pages
+; a monter : celle des descripteurs du joueur (Img_Page_Index) puis celle de
+; l'image (l'entree du sous-ensemble). La page cartouche d'entree est rendue.
+; La position ecran vient de x_pos/y_pos et de la camera (voir plus bas).
+; ---------------------------------------------------------------------------
+stage.drawShip
+        _GetCartPageA
+        pshs  a
+        ldb   player1+id
+        ldx   #Img_Page_Index
+        lda   b,x
+        _SetCartPageA                  ; la page des descripteurs du joueur
+        ldx   player1+image_set
+        beq   stage.drawShip.off       ; pas d'image : rien a peindre
+        ; LA POSITION ECRAN SE RECALCULE ICI : x_pixel/y_pixel de l'OST ne
+        ; sont entretenus par personne en overlay (seul le CheckSpritesRefresh
+        ; du mode bg-erase les ecrivait) — lus tels quels ils valaient 0 et le
+        ; vaisseau partait en haut de l'ecran (sonde du 02/09). Meme
+        ; transposition que le moteur et le tailmgr : terrain moins camera,
+        ; plus le cadre (screen_left, screen_top).
+        ldd   player1+x_pos
+        subd  glb_camera_x_pos
+        addb  #screen_left
+        stb   stage.drawShip.x
+        ldd   player1+y_pos
+        subd  glb_camera_y_pos
+        addb  #screen_top
+        stb   stage.drawShip.y
+        ldb   ,x                       ; le sous-ensemble sans miroir
+        leay  b,x
+        lda   stage.drawShip.x
+        eora  imgset.center,x
+        anda  #1
+        asla
+        ora   #1                       ; 1 = ND0, 3 = ND1
+        ldb   a,y
+        beq   stage.drawShip.off       ; pas de variante (le vaisseau a les deux)
+        leay  b,y                      ; Y -> [page][routine]
+        lda   stage.drawShip.x
+        suba  imgset.center,x          ; le centre, comme le moteur
+        ldb   stage.drawShip.y
+        jsr   DRS_XYToAddress          ; -> glb_screen_location_2/1
+        lda   ,y
+        ldy   1,y
+        _SetCartPageA                  ; la page de l'image
+        ldu   <glb_screen_location_2
+        jsr   ,y
+stage.drawShip.off
+        puls  a
+        _SetCartPageA
+        rts
+stage.drawShip.x fcb 0
+stage.drawShip.y fcb 0
 stage.userIRQ
         jsr   gfxlock.bufferSwap.check
         ; Une direction par TRAME 50 Hz, pas par tour de boucle : c'est la
