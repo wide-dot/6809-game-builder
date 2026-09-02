@@ -261,24 +261,25 @@
                 <zone page="$08" address="$0000" size="$4000"/>
                 <zone page="$09" address="$0000" size="$4000"/>
                 <zone page="$0A" address="$0000" size="$4000"/>
-                <!-- PAS DE $0B : la page appartient a <region pscroll.edit>, que
-                     scenes.stage4 charge. L'offrir ici etait un chevauchement en
-                     sursis — le commun est PERMANENT (charge au boot, jamais
-                     recharge), donc le jour ou le packer y deborderait, le stage 4
-                     l'ecraserait sans que rien ne le dise, et le retour de stage
-                     tournerait sur des octets de pscroll. Rien n'y atterrissait
-                     encore (releve du 24/08 : $0A garde 7 725 o libres, $0C et $17
-                     sont vierges), retirer la zone ne deplace donc aucun fichier —
-                     mais desormais un commun trop gros ECHOUE au build au lieu de
-                     mordre ici. Meme regle pour les quatre pages de buffers
-                     ($0E/$0F/$10/$1D) : elles ne portent que du par-stage
-                     (stages 1,2,3,7), jamais du permanent. -->
-                <!-- Tete de $0C jusqu'a $0A80, frontiere relevee a la main avec
-                     l'arene du stage 1 : si le commun grossit, le controle de scene
-                     refuse le build. Elle ne PEUT pas monter : le visage du
-                     Dobkeratops (13 443 o) tient dans la zone ennemis de cette page
-                     a 3 octets pres — la bouger l'evince et fait casser l'arene
-                     ennemis en cascade (mesure le 18/08). -->
+                <!-- PAS DE $0B : depuis le 02/09/2026 la page est aux LOTS
+                     d'ennemis (arene enemies), pas au commun. Elle a porte
+                     l'edition du stage 4 jusqu'a l'etape 1 de la reorganisation
+                     (docs/lang/fr/reorganisation-memoire-2026-09.md) ; le commun,
+                     lui, n'en a pas besoin (7 Ko de marge, dont 6 en queue de
+                     $17) et sa croissance eventuelle est l'option 2 du meme
+                     document. Regle inchangee : le commun est PERMANENT, une page
+                     qui lui est ouverte doit etre vide dans TOUS les etats — un
+                     commun trop gros ECHOUE au build au lieu de mordre ailleurs.
+                     Meme regle pour les pages de buffers du stage 4 ($10-$12,
+                     $1D) : elles ne portent que du par-stage, jamais du
+                     permanent. -->
+                <!-- Tete de $0C jusqu'a $0A80, frontiere avec l'arene des lots :
+                     si le commun grossit, le controle de scene refuse le build.
+                     (La raison historique — le visage du Dobkeratops a 3 octets
+                     pres dans la zone ennemis de cette page, 18/08 — n'a plus
+                     cours : depuis la partition des arenes du 24/08 le visage est
+                     en $11 dans stage1.foes. La frontiere POURRAIT bouger ; elle
+                     reste ou elle est, le commun n'en a pas besoin.) -->
                 <zone page="$0C" address="$0000" size="$0A80"/>
                 <!-- La queue de la page collision ($17) : les collisions des huit
                      stages sont des ALTERNATIVES a $0000. La borne n'est plus
@@ -313,6 +314,13 @@
                  Nom `stageN.foes` et non `stageN.cast` : une arene et un
                  fichier de meme nom emettraient la MEME equate de page. -->
             <arena name="enemies">
+                <!-- $0B (02/09/2026) : la cinquieme page des lots, celle qui
+                     manquait pour les variantes offset 1 du Scant, du Bink et du
+                     Bug. Vide dans tous les etats depuis que l'edition du stage 4
+                     est en $13. Declaree en TETE : le packer range du plus gros au
+                     plus petit dans l'ordre des zones, une page entiere en premier
+                     evite d'eclater un lot. -->
+                <zone page="$0B" address="$0000" size="$4000"/>
                 <zone page="$0C" address="$0A80" size="$3580"/>
                 <zone page="$0D" address="$0000" size="$4000"/>
                 <zone page="$0E" address="$0000" size="$4000"/>
