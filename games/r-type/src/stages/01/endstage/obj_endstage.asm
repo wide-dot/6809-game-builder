@@ -205,7 +205,7 @@ Tick
         ; main, drawn by the HUD). Wait for the Blit/HUD state machine, then leave the level.
         lda   main.endstage.phase
         cmpa  #4
-        blo   @none                         ; phase 3: still dissolving -> wait
+        lblo  @none                         ; phase 3: still dissolving -> wait  ; forme longue : la cible est au-dela de 127 octets
         ; phase 4 : plus rien a forcer (02/09/2026). glb_force_sprite_refresh
         ; etait pose ici pour que vaisseau et pod restent peints sur les deux
         ; pages ; en overlay BuildSprites redessine tout a chaque trame et ne
