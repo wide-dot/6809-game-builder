@@ -150,6 +150,15 @@ image_center_offset           equ 6
 image_subset_x1_offset        equ 4
 image_subset_y1_offset        equ 5
 
+* Le descripteur d'imageset tel que gfxcomp l'emet (set_<nom>_<n>). Les
+* managers qui blittent en direct le lisent pour borner leur dessin ; ils le
+* faisaient jusqu'ici avec les litteraux 4, 5, 11 et 12 recopies dans huit
+* fichiers, chacun avec son commentaire d'explication.
+imgset.xsize                  equ 4  ; largeur, depuis le bord gauche
+imgset.ysize                  equ 5  ; hauteur, depuis le bord haut
+imgset.x1                     equ 11 ; bord gauche, signe, depuis l'ancre
+imgset.y1                     equ 12 ; bord haut, signe, depuis l'ancre
+
 page_draw_routine             equ 0
 draw_routine                  equ 1
 page_erase_routine            equ 3

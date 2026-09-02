@@ -209,4 +209,49 @@ _waitFrames MACRO
  ENDM
  
 
+
+* ---------------------------------------------------------------------------
+* _sprite.cull — le containment d'un sprite blitte en direct
+* ---------------------------------------------------------------------------
+* CheckSpritesRefresh (et son jumeau overlay BuildSprites) refuse de dessiner
+* un sprite qui n'est pas ENTIEREMENT a l'ecran : il teste les DEUX bords sur
+* les DEUX axes. Un manager qui blitte lui-meme n'en beneficie pas — sa
+* boite-proxy est garee au centre de l'ecran expres, pour que BuildSprites
+* l'appelle toujours — donc il doit refaire ce test, sprite par sprite.
+*
+* L'oublier ne fait pas qu'afficher de travers : une pose qui deborde par le
+* HAUT ecrit sous $A000, sur la queue de la page directe ou vivent les
+* globales de camera. C'est ainsi que le vaisseau disparaissait au stage 1.
+*
+* La geometrie vient de l'imageset pointe par X — les valeurs generees, donc
+* justes par construction et incapables de deriver avec l'art.
+*
+* La convention est fixe et non parametrable : lwasm ne sait pas passer un
+* operande contenant une virgule a une macro, donc x et y se lisent sur la
+* PILE, la ou trois des quatre managers les mettaient deja.
+*
+* entree : X = l'imageset, et `pshs a,b` fait par l'appelant avec A = x ecran
+*          et B = y ecran (donc x en ,s et y en 1,s — la pile reste a lui)
+* sortie : \1 si le sprite n'est pas entierement dedans ; A ecrase, la pile
+*          intacte dans les deux cas
+* ---------------------------------------------------------------------------
+_sprite.cull MACRO
+        lda   ,s
+        adda  imgset.x1,x
+        suba  #screen_left
+        cmpa  #screen_right-screen_left
+        bhi   \1
+        adda  imgset.xsize,x
+        cmpa  #screen_right-screen_left+1
+        bhi   \1
+        lda   1,s
+        adda  imgset.y1,x
+        suba  #screen_top
+        cmpa  #screen_bottom-screen_top
+        bhi   \1
+        adda  imgset.ysize,x
+        cmpa  #screen_bottom-screen_top+1
+        bhi   \1
+ ENDM
+
  ENDC

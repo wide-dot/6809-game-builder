@@ -655,22 +655,7 @@ outslay.WSlotPtr
 ; -----------------------------------------------------------------------------
 outslay.RecPublish
         pshs  a,b
-        lda   ,s
-        adda  11,x
-        suba  #screen_left
-        cmpa  #screen_right-screen_left
-        bhi   @off
-        adda  4,x
-        cmpa  #screen_right-screen_left+1
-        bhi   @off
-        lda   1,s
-        adda  12,x
-        suba  #screen_top
-        cmpa  #screen_bottom-screen_top
-        bhi   @off
-        adda  5,x
-        cmpa  #screen_bottom-screen_top+1
-        bhi   @off
+        _sprite.cull outslay.RecPublish.off              ; le containment, comme le moteur
         lda   ,s
         suba  6,x                      ; le centre pair/impair, comme le moteur
         sta   1,y
@@ -681,7 +666,8 @@ outslay.RecPublish
         lda   #1
         sta   ,y
         puls  a,b,pc
-@off    clr   ,y
+outslay.RecPublish.off
+        clr   ,y
         puls  a,b,pc
 
 ; -----------------------------------------------------------------------------
