@@ -44,6 +44,9 @@ Pal_black                      EXTERNAL
         INCLUDE "engine/system/to8/memory-map.equ"
         INCLUDE "src/common/engine/ram.const.asm"
         INCLUDE "engine/constants.asm"
+        ; Les champs de l'OST du joueur (beam_value, is_charging) : la sequence
+        ; eteint la charge du faisceau au passage en autopilote.
+        INCLUDE "src/common/player/player1.equ"
         INCLUDE "engine/macros.asm"
         INCLUDE "engine/collision/macros.asm"
         INCLUDE "engine/collision/struct_AABB.equ"

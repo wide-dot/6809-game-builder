@@ -111,6 +111,14 @@ Tick
         inc   main.endstage.phase
         lda   #-2
         sta   player1+subtype               ; autopilot: no control, ship displayed
+        ; LA CHARGE DU FAISCEAU S'ETEINT ICI (02/09/2026, decision auteur) : le
+        ; relachement vit dans le bloc de controle du joueur, saute des cette
+        ; phase — un bouton tenu au passage laissait l'objet beamcharge
+        ; s'animer sur le vaisseau et la jauge du HUD pleine jusqu'a la
+        ; coupure. beam_value a zero : la jauge se vide (le HUD la lit) et
+        ; l'objet beamcharge se supprime seul a son prochain tour.
+        clr   player1+beam_value
+        clr   player1+is_charging
         jsr   AutoPilot
         ldb   #endstage.STATUS_JINGLE       ; main starts the stage clear jingle
         rts

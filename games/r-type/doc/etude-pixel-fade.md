@@ -74,7 +74,7 @@ overlay.
 | Élément | Comportement pendant la séquence | Statut | Sous le fondu |
 |---|---|---|---|
 | **Vaisseau** | autopilote, s'arrête au point de ralliement ; l'inclinaison suit `y_vel` (nulle à l'arrêt) | gardé (vitesses nulles exigées) | immobile, reste peint : **voulu** |
-| **Flammes de réacteur** | s'animent à chaque trame (scintillement) | **pas gardé** | fantômes derrière le vaisseau |
+| ~~Flammes de réacteur~~ | **erreur de l'étude** : `engineflames` est l'échappement de l'INTRO de stage, supprimé à la pause de l'intro — il n'existe pas en jeu | sans objet | — |
 | **Force pod attaché** | animation de rotation permanente (durée 4 ou 8 par image) | **pas gardé** (les boutons sont coupés, pas l'animation) | fantômes sur place |
 | **Force pod détaché** | continue son mouvement propre ; le rappel est impossible (bouton B coupé) | **pas gardé** | traînée |
 | **Bits** | orbitent autour du vaisseau en permanence | **pas gardé** | traînées circulaires |
@@ -121,17 +121,17 @@ vaut 2,3 s. Non.
 
 ## 5. Ce qui reste à décider ensemble
 
-1. **Le faisceau tenu** : au passage en phase 1, annuler la charge —
-   supprimer l'objet `beamcharge`, vider la jauge — plutôt que la laisser
-   filer. Ou la faire **partir** (le relâchement forcé) ? L'arcade coupe le
-   contrôle ; je propose l'annulation, sans tir.
-2. **Le pod détaché** au passage en phase 1 : le rappeler au vaisseau
-   (autopilote) ou le figer là où il est au fondu ? L'arcade recolle le pod
-   avant l'écran Stage Cleared, il me semble — à confirmer sur vidéo.
+1. **Le faisceau tenu** : tranché (02/09) — au passage en phase 1 la charge
+   s'annule sans tir : `beam_value` et `is_charging` à zéro, la jauge du HUD
+   se vide, l'objet `beamcharge` se supprime seul.
+2. **Le pod** : déjà tranché le 25/08 (commentaire d'`obj_endstage`) — il
+   ne rentre pas, il reste où il est pendant toute la séquence, comme sur la
+   borne ; un rappel avait été essayé et rendait mal.
 3. **Les bits** : ils orbitent pendant l'autopilote et se figent au fondu là
    où ils sont (naturel), ou on les recolle ?
-4. **Ce qui reste visible sur le noir** : vaisseau + pod + bits + flammes
-   (figées), le reste masqué — ou vaisseau seul, comme l'écran arcade ?
+4. **Ce qui reste visible sur le noir** : tranché (02/09) — le vaisseau
+   seul, dessiné par une routine spécifique hors `BuildSprites` ; tout le
+   reste n'est plus redessiné et part avec le fondu (pod et bits compris).
 5. **La chaîne de scies en vol** à la mort du Dobkeratops : la laisser finir
    (elle sera masquée au fondu si elle vit encore) ou la couper à
    `bossDefeated` comme le monstre coupe ses tirs ? La glissée du stage 1
