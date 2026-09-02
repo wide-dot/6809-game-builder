@@ -1639,7 +1639,7 @@
                                 <gfxcomp file="lib.patapata" gendir="gen/enemies/pata-pata"
                                          gensource="gen/enemies/pata-pata/includes.asm"
                                          genindex="gen/enemies/pata-pata/index.asm">
-                                    <images dir="src/enemies/pata-pata/images" names="patapata"/>
+                                    <images dir="src/enemies/pata-pata/images" names="patapata" shifts="0,1"/>
                                 </gfxcomp>
                     </lwasm>
                 </file>
