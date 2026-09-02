@@ -1962,12 +1962,15 @@
                                          genindex="gen/enemies/pstaff/index.asm">
                                     <image name="pstaff_0" filename="src/enemies/p-staff/images/00.png" index="0">
                                         <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="pstaff_1" filename="src/enemies/p-staff/images/01.png" index="1">
                                         <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="pstaff_2" filename="src/enemies/p-staff/images/02.png" index="2">
                                         <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="pstaff_6" filename="src/enemies/p-staff/images/03.png" index="6">
                                         <encoder name="draw" mirror="none" shift="0"/>
@@ -1982,12 +1985,15 @@
                                     </image>
                                     <image name="pstaff_10" filename="src/enemies/p-staff/images/00.png" index="10">
                                         <encoder name="draw" mirror="x" shift="0"/>
+                                        <encoder name="draw" mirror="x" shift="1"/>
                                     </image>
                                     <image name="pstaff_11" filename="src/enemies/p-staff/images/01.png" index="11">
                                         <encoder name="draw" mirror="x" shift="0"/>
+                                        <encoder name="draw" mirror="x" shift="1"/>
                                     </image>
                                     <image name="pstaff_12" filename="src/enemies/p-staff/images/02.png" index="12">
                                         <encoder name="draw" mirror="x" shift="0"/>
+                                        <encoder name="draw" mirror="x" shift="1"/>
                                     </image>
                                     <image name="pstaff_16" filename="src/enemies/p-staff/images/03.png" index="16">
                                         <encoder name="draw" mirror="x" shift="0"/>
