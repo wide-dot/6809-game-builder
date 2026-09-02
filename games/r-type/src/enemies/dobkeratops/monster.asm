@@ -214,19 +214,19 @@ WaitEndStage
         jmp   DisplaySprite
 
 CreateSawChain
+        ; Plus d'OST : la chaine est au manager de scies (sawmgr, 02/09/2026),
+        ; on lui laisse l'origine dans sa boite aux lettres residente. Memes
+        ; offsets que v1 (x-6, y+9 de la bouche).
         pshs  d
-        jsr   LoadObject_x
-        beq   >
-        _ldd  ObjID_dobkeratops_saw,0
-        sta   id,x
-        stb   routine,x
         ldd   x_pos,u
         subd  #6
-        std   x_pos,x
+        std   main.sawmgr.x
         ldd   y_pos,u
         addd  #9
-        std   y_pos,x
-!       puls  d,pc
+        std   main.sawmgr.y
+        lda   #1
+        sta   main.sawmgr.spawn
+        puls  d,pc
 
 monster.fire.images
         fdb   Img_dobkeratops_monster_4

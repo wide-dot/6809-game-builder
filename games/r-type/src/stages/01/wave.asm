@@ -148,6 +148,7 @@
 	fcb   $18,$6A,ObjID_tabrok,$00,$06
 	fcb   $1B,$40,ObjID_bossmusic,$00,$00
 	fcb   $1B,$40,ObjID_tailmgr,$00,$00 ; master fan-out remplace les 19 objets tail (hors-pool)
+	fcb   $1B,$40,ObjID_dobkeratops_saw,$00,$00 ; le manager de scies (sawmgr) : un maitre, la chaine sur sa page
 
 	; le manager des nerfs (chantier overlay) : il remplace les 4 objets
 	; nerf-hitbox, les 4 elements d'oeil et les effaceurs — il dessine les

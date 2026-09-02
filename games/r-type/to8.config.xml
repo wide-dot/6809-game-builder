@@ -2615,6 +2615,15 @@
                         <asm filename="src/stages/01/eyemgr-res.unit.asm"/>
                     </lwasm>
                 </file>
+                <!-- La boite aux lettres du manager de scies : le monstre demande,
+                     le manager consomme ; ni l'un ni l'autre ne monte la page de
+                     l'autre. -->
+                <file name="stage1.sawmgr.res" linkdata="LINK" arena="stage1.res">
+                    <lwasm gensource="gen/stages/01/sawmgr-res.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/stages/01/sawmgr-res.unit.asm"/>
+                    </lwasm>
+                </file>
                 <file name="stage1.dobkeratops.eyemgr" linkdata="LINK" arena="stage1.foes">
                     <lwasm gensource="gen/enemies/dobkeratops-eyemgr.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -3015,14 +3024,18 @@
                     </lwasm>
                 </file>
                 <!-- Ses scies -->
-                <file name="stage1.dobkeratopssaw" linkdata="LINK" arena="stage1.foes">
-                    <lwasm gensource="gen/enemies/dobkeratopssaw.asm">
+                <!-- La scie en MANAGER (02/09/2026) : un maitre, la chaine sur sa page,
+                     la trajectoire de la tete dans un anneau. Les images gardent leurs
+                     deux parites ; pas d'index, le manager vise ses descripteurs.
+                     Conception : doc/analyse-saw-manager.md. -->
+                <file name="stage1.sawmgr" linkdata="LINK" arena="stage1.foes">
+                    <lwasm gensource="gen/enemies/sawmgr.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/enemies/dobkeratops/saw.unit.asm"/>
-                        <gfxcomp gendir="gen/enemies/dobkeratopssaw"
-                                 gensource="gen/enemies/dobkeratopssaw/includes.asm"
-                                 genindex="gen/enemies/dobkeratopssaw/index.asm"
-                                 file="stage1.dobkeratopssaw">
+                        <asm filename="src/enemies/dobkeratops/sawmgr.unit.asm"/>
+                        <gfxcomp gendir="gen/enemies/sawmgr"
+                                 gensource="gen/enemies/sawmgr/includes.asm"
+                                 genindex="gen/enemies/sawmgr/index.asm"
+                                 file="stage1.sawmgr">
                             <images dir="src/enemies/dobkeratops/images/saw" names="dobkeratops_saw" shifts="0,1" index="none"/>
                         </gfxcomp>
                     </lwasm>
@@ -3169,6 +3182,7 @@
                     <load name="stage1.dobkeratops.imgBandsA"/>
                     <load name="stage1.dobkeratops.imgBandsB"/>
                     <load name="stage1.eyemgr.res"/>
+                    <load name="stage1.sawmgr.res"/>
                     <load name="stage1.dobkeratops.eyemgr"/>
                     <load name="stage1.dobkeratops.eyemgrodd"/>
                     <load name="stage1.dobkeratops.eyepieces"/>
@@ -3176,7 +3190,7 @@
                     <load name="stage1.dobkeratopsjaw"/>
                     <load name="stage1.tailmgr"/>
                     <load name="stage1.dobkeratopsmonster"/>
-                    <load name="stage1.dobkeratopssaw"/>
+                    <load name="stage1.sawmgr"/>
                     <load name="stage1.dobkeratopsexplosion"/>
                     <load name="stage1.tiles.even"/>
                     <load name="stage1.tiles.odd"/>

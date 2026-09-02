@@ -24,6 +24,10 @@ main.dobkeratops.move.left    EXTERNAL
 main.dobkeratops.halfDamage   EXTERNAL
 main.dobkeratops.nervesErasing EXTERNAL
 main.dobkeratops.explode      EXTERNAL
+; La boite aux lettres du manager de scies (stage1.sawmgr.res, resident).
+main.sawmgr.spawn             EXTERNAL
+main.sawmgr.x                 EXTERNAL
+main.sawmgr.y                 EXTERNAL
 
 ; V2-DEVIATION : la palette du jeu s'appelle Pal_stage en v2 (png2pal du
 ; stage) ; la v1 la nomme Pal_game. Elle est residente, le monstre la lit

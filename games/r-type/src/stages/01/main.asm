@@ -143,7 +143,7 @@ dobkeratops.Object          EXTERNAL
 dobkeratopsJaw.Object       EXTERNAL
 tailmgr.Object              EXTERNAL
 dobkeratopsMonster.Object   EXTERNAL
-dobkeratopsSaw.Object       EXTERNAL
+sawmgr.Object               EXTERNAL
 dobkeratopsExplosion.Object EXTERNAL
 eyemgr.Object               EXTERNAL
 

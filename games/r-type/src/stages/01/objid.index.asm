@@ -33,7 +33,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage1.tabrokcanon.page ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_shellEraser (OVERLAY : effaceur retire)
         fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
-        fcb   map.RAM_OVER_CART+stage1.dobkeratopssaw.page ; ObjID_dobkeratops_saw
+        fcb   map.RAM_OVER_CART+stage1.sawmgr.page ; ObjID_dobkeratops_saw (le manager de scies)
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
         fcb   0 ; 31 : reserve commune libre
@@ -93,7 +93,7 @@ Obj_Index_Address
         fdb   tabrokcanon.Object ; ObjID_tabrokcanon
         fdb   stage.placeholder.raw ; ObjID_shellEraser (OVERLAY : effaceur retire)
         fdb   commonmissileflame.Object ; ObjID_commonmissileflame
-        fdb   dobkeratopsSaw.Object ; ObjID_dobkeratops_saw
+        fdb   sawmgr.Object ; ObjID_dobkeratops_saw (le manager de scies)
         fdb   dobkeratopsExplosion.Object ; ObjID_dobkeratops_explosion
         fdb   groundlaser.Object ; ObjID_forcepod_groundlaser
         fdb   0 ; 31 : reserve commune libre
@@ -147,7 +147,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage1.tabrokcanon.page ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_shellEraser (OVERLAY : effaceur retire)
         fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
-        fcb   map.RAM_OVER_CART+stage1.dobkeratopssaw.page ; ObjID_dobkeratops_saw
+        fcb   map.RAM_OVER_CART+stage1.sawmgr.page ; ObjID_dobkeratops_saw (le manager de scies)
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
         fcb   0 ; 31 : reserve commune libre
@@ -258,7 +258,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage1.tabrokcanon.page ; ObjID_tabrokcanon
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_shellEraser (OVERLAY : effaceur retire)
         fcb   map.RAM_OVER_CART+common.missileflame.page ; ObjID_commonmissileflame
-        fcb   map.RAM_OVER_CART+stage1.dobkeratopssaw.page ; ObjID_dobkeratops_saw
+        fcb   map.RAM_OVER_CART+stage1.sawmgr.page ; ObjID_dobkeratops_saw (le manager de scies)
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
         fcb   0 ; 31 : reserve commune libre
