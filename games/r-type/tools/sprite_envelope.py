@@ -70,14 +70,60 @@ def geometry():
     return width // 4, height
 
 
+REG = {'A': 1, 'B': 1, 'CC': 1, 'DP': 1, 'D': 2, 'X': 2, 'Y': 2, 'U': 2, 'S': 2, 'PC': 2}
+
+
+def written(path):
+    """Les octets qu'une pose ECRIT, en suivant U d'un bout a l'autre.
+
+    UNE POSE NE SE LIT PAS EN OFFSETS STATIQUES. Elle deplace son pointeur
+    (LEAU 2964,U) et blitte par PSHU, qui DECREMENTE U puis ecrit sous lui.
+    Une mesure qui ne suit pas U sous-estime tout ce qui n'est pas minuscule :
+    elle donnait 4 lignes pour dobkeratops_alien, qui en ecrit 75.
+    """
+    u, lo, hi, columns = 0, None, None, set()
+
+    def mark(a, b):
+        nonlocal lo, hi
+        lo = a if lo is None else min(lo, a)
+        hi = b if hi is None else max(hi, b)
+        columns.update(x % LINE for x in range(a, b))
+
+    for line in open(path):
+        s = re.sub(r';.*', '', line).strip()
+        if not s:
+            continue
+        m = re.match(r'LEAU\s+(-?\d+),U$', s)
+        if m:
+            u += int(m.group(1))
+            continue
+        m = re.match(r'PSHU\s+([A-Z,]+)$', s)
+        if m:
+            n = sum(REG[r] for r in m.group(1).split(','))
+            u -= n
+            mark(u, u + n)
+            continue
+        m = re.match(r'PULU\s+([A-Z,]+)$', s)
+        if m:
+            u += sum(REG[r] for r in m.group(1).split(','))
+            continue
+        m = re.match(r'ST([ABDXYU])\s+(-?\d+)?,U$', s)
+        if m:
+            off = int(m.group(2) or 0)
+            mark(u + off, u + off + REG[m.group(1)])
+            continue
+        if re.match(r'LDU\s+<?glb_screen_location', s):
+            u = 0                      # l'autre plan : nouvel ancrage
+    return (lo or 0), (hi or 1) - 1, columns
+
+
 def envelope(pattern):
-    """Ce que les poses ecrivent vraiment autour de U : (min, max, colonnes)."""
+    """L'enveloppe de toute une famille de poses."""
     lo, hi, columns, files = 0, 0, set(), sorted(glob.glob(pattern))
     for f in files:
-        for m in re.finditer(r'^\s*ST([ABD])\s+(-?\d+)?,U\s*$', open(f).read(), re.M):
-            off, width = int(m.group(2) or 0), 2 if m.group(1) == 'D' else 1
-            lo, hi = min(lo, off), max(hi, off + width - 1)
-            columns.update((off + b) % LINE for b in range(width))
+        a, b, c = written(f)
+        lo, hi = min(lo, a), max(hi, b)
+        columns |= c
     return files, lo, hi, columns
 
 
