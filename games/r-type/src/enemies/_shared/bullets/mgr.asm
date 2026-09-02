@@ -418,11 +418,26 @@ bullet.DrawAll
         beq   @suiv
         tst   bullet.delay,x           ; pas encore visible
         bne   @suiv
-        ; l'ecran, dans le repere du moteur
-        ldd   bullet.x,x
+        ; LE CONTAINMENT, celui que CheckSpritesRefresh fait pour un objet
+        ; ordinaire et qu'il ne fait PAS pour nous : notre boite-proxy est
+        ; garee au centre expres (voir foefire.Object) pour que BuildSprites
+        ; nous appelle toujours, donc le test revient au manager, balle par
+        ; balle. Comme la reference il porte sur les BORDS du sprite et non
+        ; sur son ancre — c'est toute la difference avec les bornes de retrait
+        ; du tick, qui ne connaissent que l'ancre et laissaient un tir ecrire
+        ; deux lignes au-dessus du buffer, sur glb_camera_y_pos.
+        ; Une comparaison NON SIGNEE par axe, bornes cuites (bullets.equ), et
+        ; les deux tests AVANT le moindre empilement.
+        ldd   bullet.y,x               ; le sprite tient-il dans le plan ?
+        subd  #bullet.YMIN
+        cmpd  #bullet.YMAX-bullet.YMIN
+        bhi   @suiv
+        ldd   bullet.x,x               ; et dans la bande, sans boucler ?
         subd  glb_camera_x_pos
-        cmpd  #screen_right-screen_left
-        bhi   @suiv                    ; hors bande : rien a peindre
+        cmpd  #bullet.XMAX
+        bhi   @suiv                    ; a gauche de la camera, l'ecart devient
+                                       ; enorme en non signe : DRS_XYToAddress
+                                       ; y aurait boucle d'une ligne
         addb  #screen_left
         pshs  b
         ldb   bullet.y+1,x
