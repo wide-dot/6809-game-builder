@@ -479,10 +479,22 @@ TailDrawAll
         beq   >
         addb  #2
 !       stb   TMidx
+        ; --- LE CONTAINMENT, comme le moteur le fait pour un objet ordinaire
+        ; et comme il ne le fait pas pour nous : ce manager blitte lui-meme.
+        ; Les bords viennent de l'imageset du segment (genere depuis le
+        ; 02/09), jamais de constantes — les quatre segments n'ont pas la meme
+        ; taille, et l'art peut changer.
+        lda   ,x                     ; x ecran
+        ldb   1,x                    ; y ecran
+        pshs  a,b
+        ldb   2,x
+        lslb                         ; un imageset par segment, deux octets
+        ldx   #TMSetTab
+        ldx   b,x
+        _sprite.cull tailmgr.off
         ; --- adresse ecran ---
-        lda   ,x
+        puls  a,b                    ; A = x ecran, B = y ecran
         suba  #TM_CENT
-        ldb   1,x
         jsr   DRS_XYToAddress        ; -> glb_screen_location_2/1
         ; --- appel du dessin (U=ecran) — la routine consomme U ---
         ldu   <glb_screen_location_2
@@ -490,6 +502,9 @@ TailDrawAll
         ldb   TMidx
         ldx   b,x
         jsr   ,x
+        bra   @next
+tailmgr.off
+        leas  2,s                    ; la pile rendue sur le chemin du cull
 @next
         inc   TMi
         lda   TMi
@@ -504,6 +519,13 @@ TMDrawTab
         fdb   adr_tail_1_ND0,adr_tail_1_ND1
         fdb   adr_tail_2_ND0,adr_tail_2_ND1
         fdb   adr_tail_end_ND0,adr_tail_end_ND1
+
+; --- et leurs imagesets [img*2], d'ou _sprite.cull tire les bords. Les deux
+; variantes de parite d'un segment partagent le meme imageset : c'est la meme
+; image, decalee d'un pixel. -------------------------------------------------
+TMSetTab
+        fdb   set_tail_0,set_tail_1
+        fdb   set_tail_2,set_tail_end
 
 ; --- data / buffers sur la page ------------------------------------------
 TMi        fcb 0

@@ -216,11 +216,14 @@ public final class LayoutResolver {
 			ctx.regions.declareSelector(name,
 					m.windows().resolve(page, address, slice, null).selector);
 		}
-		if (ctx.staticLink.isDiscovery()) {
-			// Nothing is final while measuring : a size the author left to the
-			// builder takes a whole page, so regions stacked on one page sit at
-			// $4000, $8000… and land in windows they will never see. The real
-			// pass has the measures, and checks them all.
+		if (!ctx.regions.hasMeasures()) {
+			// Nothing is final until the layout is measured : a size the author
+			// left to the builder takes a WHOLE PAGE, so regions stacked on one
+			// page sit at $4000, $8000… and land in windows they will never
+			// see. The condition is the absence of measures and not the
+			// discovery FLAG : the layout is also resolved by the placement
+			// scan, which runs before that flag is raised — a build was refused
+			// there for an address no pass would ever produce.
 			return;
 		}
 		try {
