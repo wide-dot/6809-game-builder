@@ -48,6 +48,10 @@ Img_pstaff_12                equ set_pstaff_12
 Img_pstaff_16                equ set_pstaff_16
 Img_pstaff_18                equ set_pstaff_18
 Img_pstaff_19                equ set_pstaff_19
+Img_pstaff_20                equ set_pstaff_20   ; flash de coup : attente et marche, tourne a gauche
+Img_pstaff_21                equ set_pstaff_21   ; flash de coup : attente et marche, tourne a droite
+Img_pstaff_22                equ set_pstaff_22   ; flash de coup : sequence de tir, tourne a gauche
+Img_pstaff_23                equ set_pstaff_23   ; flash de coup : sequence de tir, tourne a droite
 
 ; V2-DEVIATION : l'entrée v1 s'appelle `Onject` (sic), un nom qui ne franchit
 ; pas la frontière de lien.

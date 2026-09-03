@@ -36,6 +36,14 @@ pstaff_0x10     equ ext_variables+13 ; 2 bytes
 pstaff_0x14     equ ext_variables+15 ; 2 bytes
 pstaff_0x16     equ ext_variables+17 ; 2 bytes
 
+; LE FLASH DE COUP (03/09/2026) — deux octets. L'extension a bien un octet
+; libre (+19), mais il en faut deux : ils sont pris sur des champs standards
+; de l'OST que ce p-staff n'emploie pas, comme chez le tabrok. Il choisit ses
+; images a la main et ne passe jamais par le systeme d'animation du moteur.
+pstaff_blink            equ anim_frame          ; 12 - compte a rebours du flash
+pstaff_prevP            equ anim_frame_duration ; 13 - le potentiel du tour precedent
+PSTAFF_BLINK            equ 12                  ; arcade : +0x3D := 0x0C @ 0x40:752e
+
 
 * V2-DEVIATION : entree renommee, le nom v1 ne franchit pas la frontiere de lien.
 * Onject
@@ -168,7 +176,7 @@ LAB_0000_798c
 	suba  gfxlock.frameDrop.count
 	ble   FUN_0000_79f5
 	sta   pstaff_0x20,u
-	jmp   DisplaySprite
+	jmp   pstaff.hitBlink
 
 ; End of wait ... what to do now ?
 
@@ -196,7 +204,7 @@ FUN_0000_7a07_RunPstaffPrepareWalkLeft
 	cmpa  pstaff_0x24,u
 	lbcc  FUN_0000_7a2d
 	sta   pstaff_0x22,u
-	jmp   DisplaySprite
+	jmp   pstaff.hitBlink
 
 FUN_0000_7a0f_RunPstaffPrepareWalkRight
 	ldd   #$0090			; original value $200
@@ -210,7 +218,7 @@ FUN_0000_7a0f_RunPstaffPrepareWalkRight
 	cmpa  pstaff_0x24,u
 	lbcc  FUN_0000_7a2d
 	sta   pstaff_0x22,u
-	jmp   DisplaySprite
+	jmp   pstaff.hitBlink
 
 FUN_0000_7a17
 	lda   #$8
@@ -222,7 +230,7 @@ FUN_0000_7a17
 	cmpa  pstaff_0x24,u
 	lbcc  FUN_0000_7a2d
 	sta   pstaff_0x22,u
-	jmp   DisplaySprite
+	jmp   pstaff.hitBlink
 
 
 
@@ -257,7 +265,7 @@ LAB_0000_79e2
 	suba  gfxlock.frameDrop.count
 	lble  FUN_0000_79f5
 	sta   pstaff_0x20,u
-	jmp   DisplaySprite
+	jmp   pstaff.hitBlink
 
  
 
@@ -280,7 +288,7 @@ FUN_0000_7a2d
 	ldd   #pstaff_0x3402
 	std   pstaff_0x16,u
 LAB_0000_7a53
-	jmp   DisplaySprite
+	jmp   pstaff.hitBlink
 
 ;   					  *******************************************************
 ;                         *                      FUNCTION                       *
@@ -310,7 +318,7 @@ FUN_0000_7a54_RunPstaffPrepareForShooting
 	suba  gfxlock.frameDrop.count
 	ble   LAB_0000_7aa6
 	sta   pstaff_0x20,u
-	jmp   DisplaySprite
+	jmp   pstaff.hitBlink
 LAB_0000_7aa6
 	lda   #$f				; using temporarily for frame count between rockets
 	sta   pstaff_0x20,u
@@ -318,7 +326,7 @@ LAB_0000_7aa6
 	sta   pstaff_0x22,u		; using temporarily for rocket count
 	lda   #6    ; FUN_0000_7aac_RunPstaffShootingMode_RunPstaffShootingMode
 	sta   routine,u
-	jmp   DisplaySprite
+	jmp   pstaff.hitBlink
 
 ;   					  *******************************************************
 ;                         *                      FUNCTION                       *
@@ -351,7 +359,7 @@ LAB_0000_7acf
 
 	lda   pstaff_0x22,u
 	beq   LAB_0000_7b05
-	jmp   DisplaySprite
+	jmp   pstaff.hitBlink
 
 
 LAB_0000_7b05
@@ -364,7 +372,7 @@ LAB_0000_7b05
 	std   pstaff_0x14,u
 	lda   #7	; FUN_0000_7b19_RunPstaffReturnFromShooting
 	sta   routine,u
-	jmp   DisplaySprite
+	jmp   pstaff.hitBlink
 
 ;   					  *******************************************************
 ;                         *                      FUNCTION                       *
@@ -395,7 +403,7 @@ FUN_0000_7b19_RunPstaffReturnFromShooting
 	suba  gfxlock.frameDrop.count
 	ble   LAB_0000_7b5d
 	sta   pstaff_0x20,u
-	jmp   DisplaySprite
+	jmp   pstaff.hitBlink
 LAB_0000_7b5d
 	jmp   FUN_0000_79f5
 
@@ -486,6 +494,70 @@ pstaff_1x3346
 	fcb   $a0
 	fcb   $70
 	fcb   $40
+
+; ---------------------------------------------------------------------------
+; pstaff.hitBlink — le flash de coup, puis l'affichage
+;
+; La borne (draw_p_staff_sprite_with_hit_blink, 0x40:779e) echange la palette
+; de l'objet pour la palette de flash 0x55 une trame sur quatre pendant douze
+; trames : trois flashs par coup encaisse. Elle arme son compteur (+0x3D) sur
+; le drapeau que rend sa routine de collision.
+;
+; Notre palette est globale au stage : on echange l'IMAGE (gen_pstaff_hit.py).
+; Et notre passe de collision ne dit rien a l'objet — elle decremente son
+; potentiel : UNE BAISSE EST UN COUP. La passe precede RunObjects dans la
+; trame, la lecture est a jour.
+;
+; Le p-staff n'a pas de queue commune : ses onze sorties faisaient toutes
+; `jmp DisplaySprite`, elles passent maintenant par ici. Les rares chemins qui
+; sortent par `rts` sans afficher ne decrementent pas le compteur ce tour —
+; ce sont des etats de transition, l'ecart ne se voit pas.
+;
+; Six PV seulement (arcade : damage_max = 6) : le flash est bref par nature.
+; ---------------------------------------------------------------------------
+pstaff.hitBlink
+        lda   AABB_0+AABB.p,u
+        cmpa  pstaff_prevP,u
+        bhs   @noHit                   ; pas de baisse : rien de neuf
+        ldb   #PSTAFF_BLINK
+        stb   pstaff_blink,u
+@noHit  sta   pstaff_prevP,u
+        lda   pstaff_blink,u
+        beq   @show                    ; pas de flash en cours
+        deca
+        sta   pstaff_blink,u
+        anda  #3
+        bne   @show                    ; une trame sur quatre, comme la borne
+        ldy   #pstaff.blinkTable
+@scan   ldd   ,y++
+        beq   @show                    ; image inconnue : on n'y touche pas
+        cmpd  image_set,u
+        bne   @skip
+        ldx   ,y
+        stx   image_set,u
+        bra   @show
+@skip   leay  2,y
+        bra   @scan
+@show   jmp   DisplaySprite
+
+; l'image affichee et sa jumelle blanche. L'arret et la marche prennent la
+; pose d'attente blanchie, toute la sequence de tir le recul blanchi ; les
+; deux orientations sont portees par la table, pas deduites d'une vitesse
+; (elle est nulle pendant le tir).
+pstaff.blinkTable
+        fdb   Img_pstaff_0,Img_pstaff_20   ; marche
+        fdb   Img_pstaff_1,Img_pstaff_20
+        fdb   Img_pstaff_2,Img_pstaff_20   ; attente, et fin de tir
+        fdb   Img_pstaff_6,Img_pstaff_22   ; recul d'apres-tir
+        fdb   Img_pstaff_8,Img_pstaff_22   ; tir
+        fdb   Img_pstaff_9,Img_pstaff_22
+        fdb   Img_pstaff_10,Img_pstaff_21   ; les memes, tourne a droite
+        fdb   Img_pstaff_11,Img_pstaff_21
+        fdb   Img_pstaff_12,Img_pstaff_21
+        fdb   Img_pstaff_16,Img_pstaff_23
+        fdb   Img_pstaff_18,Img_pstaff_23
+        fdb   Img_pstaff_19,Img_pstaff_23
+        fdb   0
 
 pstaff_0x334e
 	fdb   Img_pstaff_15

@@ -2038,11 +2038,9 @@
                                          genindex="gen/enemies/pstaff/index.asm">
                                     <image name="pstaff_0" filename="src/enemies/p-staff/images/00.png" index="0">
                                         <encoder name="draw" mirror="none" shift="0"/>
-                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="pstaff_1" filename="src/enemies/p-staff/images/01.png" index="1">
                                         <encoder name="draw" mirror="none" shift="0"/>
-                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="pstaff_2" filename="src/enemies/p-staff/images/02.png" index="2">
                                         <encoder name="draw" mirror="none" shift="0"/>
@@ -2050,6 +2048,7 @@
                                     </image>
                                     <image name="pstaff_6" filename="src/enemies/p-staff/images/03.png" index="6">
                                         <encoder name="draw" mirror="none" shift="0"/>
+                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="pstaff_8" filename="src/enemies/p-staff/images/04.png" index="8">
                                         <encoder name="draw" mirror="none" shift="0"/>
@@ -2057,15 +2056,12 @@
                                     </image>
                                     <image name="pstaff_9" filename="src/enemies/p-staff/images/05.png" index="9">
                                         <encoder name="draw" mirror="none" shift="0"/>
-                                        <encoder name="draw" mirror="none" shift="1"/>
                                     </image>
                                     <image name="pstaff_10" filename="src/enemies/p-staff/images/00.png" index="10">
                                         <encoder name="draw" mirror="x" shift="0"/>
-                                        <encoder name="draw" mirror="x" shift="1"/>
                                     </image>
                                     <image name="pstaff_11" filename="src/enemies/p-staff/images/01.png" index="11">
                                         <encoder name="draw" mirror="x" shift="0"/>
-                                        <encoder name="draw" mirror="x" shift="1"/>
                                     </image>
                                     <image name="pstaff_12" filename="src/enemies/p-staff/images/02.png" index="12">
                                         <encoder name="draw" mirror="x" shift="0"/>
@@ -2073,6 +2069,7 @@
                                     </image>
                                     <image name="pstaff_16" filename="src/enemies/p-staff/images/03.png" index="16">
                                         <encoder name="draw" mirror="x" shift="0"/>
+                                        <encoder name="draw" mirror="x" shift="1"/>
                                     </image>
                                     <image name="pstaff_18" filename="src/enemies/p-staff/images/04.png" index="18">
                                         <encoder name="draw" mirror="x" shift="0"/>
@@ -2080,7 +2077,29 @@
                                     </image>
                                     <image name="pstaff_19" filename="src/enemies/p-staff/images/05.png" index="19">
                                         <encoder name="draw" mirror="x" shift="0"/>
-                                        <encoder name="draw" mirror="x" shift="1"/>
+                                    </image>
+                                    <!-- LE FLASH DE COUP (03/09/2026). Deux
+                                         images blanches TACHEES DE GRIS
+                                         (tools/gen_pstaff_hit.py) : la pose
+                                         d'attente sert a l'arret et a la
+                                         marche, le recul d'apres-tir a toute
+                                         la sequence de tir. Sans decalage 1,
+                                         decision auteur — le flash ne dure
+                                         qu'une trame sur quatre.
+                                         Le menage des decalages ci-dessus
+                                         (00, 01, 05 n'en avaient pas besoin,
+                                         03 si) paie ces quatre sprites. -->
+                                    <image name="pstaff_20" filename="src/enemies/p-staff/images/hit/wait.png" index="20">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="pstaff_21" filename="src/enemies/p-staff/images/hit/wait.png" index="21">
+                                        <encoder name="draw" mirror="x" shift="0"/>
+                                    </image>
+                                    <image name="pstaff_22" filename="src/enemies/p-staff/images/hit/fire.png" index="22">
+                                        <encoder name="draw" mirror="none" shift="0"/>
+                                    </image>
+                                    <image name="pstaff_23" filename="src/enemies/p-staff/images/hit/fire.png" index="23">
+                                        <encoder name="draw" mirror="x" shift="0"/>
                                     </image>
                                 </gfxcomp>
                     </lwasm>
