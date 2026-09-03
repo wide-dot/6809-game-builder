@@ -2119,12 +2119,17 @@
                                  payer son flash de coup et plus encore. -->
                             <images dir="src/enemies/scant/images" shifts="0"/>
                             <images dir="src/enemies/scant/images" mirror="x" shifts="0"/>
-                            <!-- LE FLASH DE COUP : la pose 00 blanchie et
-                                 tachee de gris (tools/gen_scant_hit.py), ses
-                                 deux orientations, decalage 0. Elle sert de
-                                 jumelle a TOUTES les poses — trente PV et
-                                 quatre flashs arcade par coup, c'est ici que
-                                 l'effet se voit le plus. Index 6 et 7. -->
+                            <!-- LE FLASH DE COUP : les poses 00 et 01
+                                 blanchies et tachees de gris
+                                 (tools/gen_scant_hit.py), leurs deux
+                                 orientations, decalage 0. DEUX images et non
+                                 une : la silhouette de la 01 s'ecarte trop de
+                                 celle de la 00 (255 pixels sur ~320) et le
+                                 flash se lisait comme un saut de pose au
+                                 virage. La 02 garde la jumelle de la 00, dont
+                                 elle est mesurablement plus proche. Trente PV
+                                 et quatre flashs arcade par coup : c'est ici
+                                 que l'effet se voit le plus. -->
                             <images dir="src/enemies/scant/images/hit" shifts="0"/>
                             <images dir="src/enemies/scant/images/hit" mirror="x" shifts="0"/>
                         </gfxcomp>

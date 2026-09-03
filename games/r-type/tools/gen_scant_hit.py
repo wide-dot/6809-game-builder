@@ -10,13 +10,16 @@ plus lente, le compte a rebours de la borne s'etire et le blanc colle).
 Notre palette est GLOBALE au stage : on echange l'IMAGE. Blanc TACHE DE GRIS
 comme le p-staff, les teintes sombres au gris moyen.
 
-UNE SEULE POSE (decision auteur, 03/09/2026) : la pose 00, celle du
-deplacement, qui est aussi trois temps sur quatre de la sequence de tir. La
-pose 01 ne sort qu'au virage et la 02 qu'a la derniere image du tir.
+DEUX POSES (decision auteur, 03/09/2026). La 00 d'abord, celle du
+deplacement, qui porte aussi trois temps sur quatre de la sequence de tir.
+Puis la 01 : sa silhouette s'ecarte trop de la 00 (255 pixels de difference
+sur ~320 opaques) et le flash se lisait comme un saut de pose au moment du
+virage. La 02, elle, reste sur la jumelle de la 00 — mesure faite, elle en
+est plus proche (153 pixels de difference) que de la 01 (170).
 
-Sortie dans images/hit/, nommee 00.png : le Scant declare son dossier
-d'images en bloc (`<images dir=...>`) et non image par image, et le
-selecteur ne retient que les fichiers numerotes — d'ou le nom.
+Sortie dans images/hit/, nommees 00.png et 01.png : le Scant declare son
+dossier d'images en bloc (`<images dir=...>`) et non image par image, et le
+selecteur ne retient que les fichiers numerotes — d'ou les noms.
 
 Usage : python3 tools/gen_scant_hit.py   (depuis games/r-type)
 """
@@ -31,24 +34,27 @@ def main():
     base = os.path.join(racine, 'src/enemies/scant/images')
     dst = os.path.join(base, 'hit')
     os.makedirs(dst, exist_ok=True)
-    im = Image.open(os.path.join(base, '00.png'))
-    if im.mode != 'P':
-        sys.exit('00.png n\'est pas une image indexee')
-    pal = im.getpalette()
-    lum = [0.299*pal[i*3] + 0.587*pal[i*3+1] + 0.114*pal[i*3+2] for i in range(16)]
-    px = bytearray(im.tobytes())
-    blancs = gris = 0
-    for k, v in enumerate(px):
-        if v == TRANSPARENT:
-            continue
-        if lum[v] < SEUIL:
-            px[k] = GRIS; gris += 1
-        else:
-            px[k] = BLANC; blancs += 1
-    out = Image.frombytes('P', im.size, bytes(px))
-    out.putpalette(pal)
-    out.save(os.path.join(dst, '00.png'))
-    print('00.png -> hit/00.png : %d px blancs, %d px gris' % (blancs, gris))
+    for nom in ('00', '01'):
+        im = Image.open(os.path.join(base, nom + '.png'))
+        if im.mode != 'P':
+            sys.exit('%s.png n\'est pas une image indexee' % nom)
+        pal = im.getpalette()
+        lum = [0.299*pal[i*3] + 0.587*pal[i*3+1] + 0.114*pal[i*3+2]
+               for i in range(16)]
+        px = bytearray(im.tobytes())
+        blancs = gris = 0
+        for k, v in enumerate(px):
+            if v == TRANSPARENT:
+                continue
+            if lum[v] < SEUIL:
+                px[k] = GRIS; gris += 1
+            else:
+                px[k] = BLANC; blancs += 1
+        out = Image.frombytes('P', im.size, bytes(px))
+        out.putpalette(pal)
+        out.save(os.path.join(dst, nom + '.png'))
+        print('%s.png -> hit/%s.png : %d px blancs, %d px gris'
+              % (nom, nom, blancs, gris))
 
 
 if __name__ == '__main__':

@@ -467,9 +467,12 @@ scant_0x3856
 ; La passe de collision ne dit rien a l'objet — elle decremente son potentiel :
 ; UNE BAISSE EST UN COUP. Elle precede RunObjects dans la trame.
 ;
-; UNE seule pose blanchie pour les trois : la 00, celle du deplacement, qui
-; porte aussi trois temps sur quatre du tir. L'orientation se lit sur l'image
-; affichee — les index 0 a 2 regardent a gauche, 3 a 5 a droite.
+; DEUX poses blanchies. La 00, celle du deplacement, qui porte aussi trois
+; temps sur quatre du tir ; et la 01, parce que sa silhouette s'ecarte trop de
+; la 00 (255 pixels sur ~320 opaques) — le flash se lisait comme un saut de
+; pose au virage. La 02 garde la jumelle de la 00, dont elle est mesurablement
+; plus proche (153 pixels de difference contre 170 avec la 01).
+; La table porte l'image affichee et sa jumelle, orientation comprise.
 ;
 ; Trente PV (arcade : +0x2F = 30) : c'est l'ennemi du stage ou le flash se
 ; verra le plus.
@@ -484,17 +487,27 @@ scant.hitBlink
         lda   scant.blink
         beq   @show                    ; pas de flash en cours
         clr   scant.blink              ; une seule trame
-        ldx   image_set,u
-        ldd   #Img_scant_hit_left
-        cmpx  #Img_scant_3
-        beq   @right
-        cmpx  #Img_scant_4
-        beq   @right
-        cmpx  #Img_scant_5
-        bne   @put
-@right  ldd   #Img_scant_hit_right
-@put    std   image_set,u
+        ldy   #scant.blinkTable
+@scan   ldd   ,y++
+        beq   @show                    ; image inconnue : on n'y touche pas
+        cmpd  image_set,u
+        bne   @skip
+        ldd   ,y
+        std   image_set,u
+        bra   @show
+@skip   leay  2,y
+        bra   @scan
 @show   jmp   DisplaySprite
+
+; l'image affichee et sa jumelle blanche
+scant.blinkTable
+        fdb   Img_scant_0,Img_scant_hit0_left    ; deplacement, tourne a gauche
+        fdb   Img_scant_1,Img_scant_hit1_left    ; virage
+        fdb   Img_scant_2,Img_scant_hit0_left    ; derniere image du tir
+        fdb   Img_scant_3,Img_scant_hit0_right   ; les memes, tourne a droite
+        fdb   Img_scant_4,Img_scant_hit1_right
+        fdb   Img_scant_5,Img_scant_hit0_right
+        fdb   0
 
 scant_0x385e
         fdb $feb0  ; original value 0xfc00

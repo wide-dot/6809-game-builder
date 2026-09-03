@@ -47,10 +47,14 @@ Img_scant_2                  equ set_scant_2
 Img_scant_3                  equ set_scant_3
 Img_scant_4                  equ set_scant_4
 Img_scant_5                  equ set_scant_5
-; Le flash de coup : la pose 00 blanchie, ses deux orientations. Elles vivent
-; dans images/hit/, d'ou le prefixe `hit` que gfxcomp tire du dossier.
-Img_scant_hit_left           equ set_hit_0
-Img_scant_hit_right          equ set_hit_1
+; Le flash de coup : les poses 00 et 01 blanchies, leurs deux orientations.
+; Elles vivent dans images/hit/, d'ou le prefixe `hit` que gfxcomp tire du
+; dossier ; l'ordre suit celui des deux <images dir> du config (les deux
+; fichiers non miroites, puis les deux miroites).
+Img_scant_hit0_left          equ set_hit_0   ; pose 00 blanchie, tourne a gauche
+Img_scant_hit1_left          equ set_hit_1   ; pose 01 blanchie, tourne a gauche
+Img_scant_hit0_right         equ set_hit_2   ; pose 00 blanchie, tourne a droite
+Img_scant_hit1_right         equ set_hit_3   ; pose 01 blanchie, tourne a droite
 
 ; V2-DEVIATION : l'entrée v1 s'appelle `Onject` (sic), un nom qui ne franchit
 ; pas la frontière de lien.
