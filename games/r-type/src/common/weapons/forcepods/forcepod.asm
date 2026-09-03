@@ -1133,11 +1133,31 @@ InstancateForcePodDetachedFire
         std   y_pos,x
 @rts    rts
 
+; ---------------------------------------------------------------------------
+; UpdateCollisionBox — ACCROCHE, LA BOITE EST BIEN PLUS GROSSE (03/09/2026)
+; ---------------------------------------------------------------------------
+; ARCADE : deux jeux d'etendues, et le palier n'en pilote qu'un.
+;   - flottant : force_pod_collision_data_offsets (0x1000_15BE) indexe par le
+;     palier — 4, 7 ou 12 px arcade (blocs 0x15C6 / 0x15CE / 0x15D6), ce que
+;     CollisionRadius porte deja converti ;
+;   - accroche : UN SEUL bloc, force_pod_attached_hitbox (0x1000_1438) =
+;     16 px arcade sur les quatre bords, QUEL QUE SOIT LE PALIER
+;     (run_force_pod_attached 0x402581, point 3).
+; Chez nous, 16 px arcade valent 6 en x (x0,375) et 12 en y (x0,75) : le pod
+; docke balaie donc bien plus large que le meme pod en vol, jusqu'a trois
+; fois la surface de sa boite de palier 1.
+; ---------------------------------------------------------------------------
 UpdateCollisionBox
+        lda   player1+forcepod_attached
+        beq   @floating
+        _ldd  AttachedRadiusX,AttachedRadiusY
+        bra   @setRadius
+@floating
         ldx   #CollisionRadius          ; load default collision x,y radius
         ldb   power_level,u
         aslb
         ldd   b,x
+@setRadius
         std   AABB_0+AABB.rx,u
         ldd   x_pos,u
         subd  glb_camera_x_pos
@@ -1146,6 +1166,13 @@ UpdateCollisionBox
         stb   AABB_0+AABB.cy,u  
         rts
 
+; La boite du pod ACCROCHE : arcade 16 px sur les quatre bords (0x1000_1438),
+; soit 6 en x et 12 en y chez nous. Le palier ne la change pas.
+AttachedRadiusX equ 6
+AttachedRadiusY equ 12
+
+; La boite du pod FLOTTANT, par palier : arcade 4 / 7 / 12 px (0x1000_15C6,
+; 0x15CE, 0x15D6) convertis (x0,375 en x, x0,75 en y).
 CollisionRadius equ *-2 ; forcepod level begins at 1
         fcb   2,3
         fcb   3,5
