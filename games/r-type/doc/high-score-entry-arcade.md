@@ -449,6 +449,41 @@ et reste valable quand la persistance sera reprise.
   pages différentes (ex. title + résident) doit vivre en RAM non paginée.
   Mémoire : `ram-partagee-demi-page-0.md`.
 
+### 10.5 Trouvaille annexe : la taille d'un OST sous `OverlayMode` (à vérifier sur `master`)
+
+Sans rapport avec le high score, mais découverte pendant ce chantier et
+perdue par le retour en arrière du code — consignée ici pour ne pas la
+reperdre :
+
+**Le layout de `to8.config.xml` comptait 117 octets par OST** dans ses
+`<reserved name="objects.pool">` / `<reserved name="objects.static">`
+(page 0, demi-page vue en `$4000`) — c'est la taille d'AVANT le passage à
+l'overlay. **Sous `OverlayMode`, un OST fait 63 octets** (`object_rsvd_size`
+vaut 5, pas 59 — voir `engine/constants.asm`), donc :
+
+```
+pool (60 slots)      : $4000-$4EC3   (3780 o, et non $1B6C = 7020 o)
+4 OST statiques       : $4EC4-$4FBF   (252 o, et non $01D4 = 468 o)
+```
+
+**Mesuré, pas déduit** : sous toje, sur l'attract complet, le stage 1
+(8000 trames), un game over et le stage 4, la plus haute adresse jamais
+écrite dans cette demi-page est `$4FBF` — le dernier octet du 4ᵉ OST
+statique avec la taille corrigée. Au-delà, `$4FC0`-`$5FFF` (4160 octets)
+est libre, pas les « 704 octets » que disait la note d'origine du layout
+(calculée sur 117 au lieu de 63).
+
+Cette correction a été appliquée dans `to8.config.xml` (`overlay-render`,
+commits aujourd'hui retirés) puis perdue avec le retour en arrière — et de
+toute façon recouverte par la réorganisation mémoire d'une autre session sur
+`master` (nouveau modèle `slice`/fenêtre, budget de l'arène `objects`
+retaillé indépendamment). **À vérifier sur `master`** : la taille par OST
+qui y est utilisée aujourd'hui compte-t-elle bien 63 octets sous
+`OverlayMode`, ou hérite-t-elle encore de la valeur 117 d'avant l'overlay ?
+Si c'est la seconde, il y a là de la marge récupérable pour le budget serré
+de l'arène `objects` (voir `docs/lang/fr/reorganisation-memoire-2026-09.md`,
+qui documente ce budget comme tendu).
+
 ## 11. Statut (29/08/2026)
 
 Implémentation retirée. Ce document reste la référence pour repartir :
