@@ -1199,7 +1199,7 @@
                                  file="common.bitdevice">
                             <images dir="src/common/weapons/bitdevice/images" shifts="0,1"/>
                         </gfxcomp>
-                        <animation name="Ani_bitdevice1" duration="4" end="reset">
+                        <animation name="Ani_bitdevice1" duration="8" end="reset">
                             <frame image="bitdevice_0"/>
                             <frame image="bitdevice_1"/>
                             <frame image="bitdevice_2"/>
@@ -1207,7 +1207,7 @@
                             <frame image="bitdevice_4"/>
                             <frame image="bitdevice_5"/>
                         </animation>
-                        <animation name="Ani_bitdevice2" duration="4" end="reset">
+                        <animation name="Ani_bitdevice2" duration="8" end="reset">
                             <frame image="bitdevice_5"/>
                             <frame image="bitdevice_4"/>
                             <frame image="bitdevice_3"/>

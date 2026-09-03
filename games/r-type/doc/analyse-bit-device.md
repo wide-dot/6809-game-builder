@@ -3,7 +3,7 @@
 Demande : analyser le code arcade des bit devices (les deux petites boules
 au-dessus et au-dessous du vaisseau), le comparer à notre version, et répondre
 en particulier à deux questions : tirent-elles avec le counter-air laser, et
-tuent-elles les gommes du stage 4 ? Analyse seule, rien n'est implémenté.
+tuent-elles les gommes du stage 4 ? Analyse d'abord (§1-5), réalisation ensuite (§6).
 
 Sources arcade (Ghidra, maincpu) : `create_bit_device_top` (0x402CE5),
 `run_bit_devices` (0x402D50, variante basse inlinée à 0x402EA6),
@@ -45,9 +45,11 @@ collision ne le consomme.
 2. **Cible d'orbite** = position du vaisseau + un décalage lu dans une table
    indexée par **la direction tenue** (4 bits) et **le palier du balancier**
    (`swing >> 6`, 0..3) ; en Y s'ajoute +0x20 (haut) ou −0x20 (bas). Le
-   décalage pointe **dans la direction tenue** et grandit avec le palier :
+   décalage grandit avec le palier :
    16 px en X et 14 en Y au palier 0, 32 et 30 au palier 1, et ainsi de suite.
-   Direction relâchée : décalage nul, le bit revient au-dessus du vaisseau.
+   Le décalage est **à l'opposé** de la direction tenue (droite tenue →
+   −16 en X) : le bit traîne derrière le vaisseau. Direction relâchée :
+   décalage nul, le bit revient au-dessus du vaisseau.
 3. La cible est poussée dans un anneau de 16 entrées ; le bit lit l'entrée de
    queue, **une trame derrière la tête** (les deux curseurs avancent
    ensemble) : le retard de l'anneau est d'une trame, il n'explique pas
@@ -169,7 +171,7 @@ Réponse : **oui, avec le counter-air laser chaque bit vivant tire un reflet
 | Activation haut/bas | à 1 puis 2 bits, slots fixes | idem | aucun |
 | Perte à la mort | compteur à 0, slot dormant | idem | aucun |
 | Position de repos | vaisseau ± 0x20 (24 px chez nous) | ± 25 px | négligeable |
-| Décalage selon la direction tenue | 16→64 px arcade (6→24 chez nous) en X, 14→62 (10→46) en Y, par paliers | aucun | **majeur, visuel** |
+| Décalage à l'opposé de la direction tenue | 16→64 px arcade (6→24 chez nous) en X, 14→62 (10→46) en Y, par paliers | aucun | **majeur, visuel** |
 | Balancier au changement de direction | accumulateur +5/−1, paliers, reset au spin | aucun | **majeur, visuel** |
 | Poursuite | vitesse bornée 4→15 px/trame avec bande morte | copie rigide à 2 trames | **majeur, visuel** |
 | Animation | 12 images, 1 toutes les 4 trames (48) | 6 images, 1 toutes les 4 (24) | mineur (deux fois plus vite) |
@@ -220,19 +222,43 @@ Réponse : **oui, avec le counter-air laser chaque bit vivant tire un reflet
 5. **Ennemis v4** : rien à faire tant qu'aucun ennemi du portage ne demande
    l'immunité au pod ; à noter pour compiler et bellmite (stages 4-5).
 
-## 6. Réalisé (03/09/2026) : gommes et boîte
+## 6. Réalisé (03/09/2026) : gommes, boîte, puis le mouvement arcade
 
-Décision auteur : les points 1 et 2 du §5, rien d'autre.
+Décision auteur, en deux temps : les points 1 et 2 du §5 d'abord, puis le
+point 3 dans la foulée — avec l'état de poursuite **hors d'`ext_variables`**
+(deux instances au plus : un bloc par slot en variables d'unité, indexé par
+`subtype`, effacé par `ActiveInit`).
 
 - `BitGumSweep` dans `bitdevice/obj.asm`, appelé par `ActiveTick` : l'entrée
   +6 du crochet (rectangle balayé), bloc $33, coin haut-gauche = centre −
-  (4, 9). Le départ du balayage est le `x_pos` de la trame d'avant, lu dans Y
-  en entrée de tick avant d'être écrasé — `ext_variables` est plein (20
-  octets, `offsety` finit à +18), pas de variable de plus. `ActiveInit`
-  amorce `x_pos` avec celui du vaisseau pour que le premier balayage ne
-  parte pas de zéro (rejeu de checkpoint compris).
+  (4, 9). Le départ du balayage est le `x_pos` de la trame d'avant, rangé
+  dans `bit.prevx` avant que le tick ne le fasse bouger ; `ActiveInit` amorce
+  `x_pos` avec celui du vaisseau (rejeu de checkpoint compris).
 - Boîte du bit actif : (3, 6) → (4, 9), les 12/12 arcade dans nos unités.
   La boîte du bonus flottant reste (3, 6).
+- **Mouvement arcade** (`ActiveTick`, §1.2 rejoué trame par trame,
+  `frameDrop` fois par rendu avec la direction et la position courantes du
+  vaisseau) : balancier +5/−1 avec sa fenêtre de 8 trames, cible = vaisseau
+  + repos (y ∓ 24) + décalage **à l'opposé** de la direction tenue (6/12/18/24
+  px en X, 10/22/34/46 en Y selon le palier), cible de la trame d'avant,
+  poursuite à vitesse bornée (tables `bit.velx`/`bit.vely`, l'arcade × 0,375
+  et × 0,75 en 8.8) avec bande morte ±int(v). La file `old_*` de la v1 et
+  `offsety` disparaissent ; `subtype` porte le côté. Les deux animations
+  passent à `duration` 8 : un tour en 48 trames comme l'arcade.
+- Sens des bits arcade établi sur l'autopilote de fin de niveau (0x4020B2) :
+  0x01 droite, 0x02 gauche, 0x04 bas, 0x08 haut ; la table d'orbite donne
+  −16 pour droite, +16 pour gauche, +14 (vers le haut, l'axe arcade monte)
+  pour bas : **le bit traîne derrière**, la première lecture du §3 (« pointe
+  dans la direction tenue ») était fausse.
 
-`rtype_bench` 7/7 (chaîne stages 1→3). L'effacement des gommes par les bits
-n'est pas vérifié sur machine au stage 4 : à l'auteur.
+Un piège de plus, attrapé à la sonde : `ldd player1+y_pos` puis `addd b,y`
+— le `ldd` écrase B, l'index du repos ; les deux bits naissaient à
+`y = $065E`. Le repos se lit d'abord (`ldd b,y`), le vaisseau s'ajoute
+ensuite.
+
+Vérifié sous toje au stage 1, slots armés par écriture de leur routine,
+manette 0 libérée de la souris : au repos les bits sont à y−24 et y+24,
+alignés en x à la bande morte près ; « haut » tenu, le vaisseau monte à
+~0,9 px/trame et les bits traînent ~10 px sous leur repos, x aligné ;
+relâché, retour exact au repos. `rtype_bench` 7/7. L'effacement des gommes
+par les bits au stage 4 n'est pas vérifié sur machine : à l'auteur.

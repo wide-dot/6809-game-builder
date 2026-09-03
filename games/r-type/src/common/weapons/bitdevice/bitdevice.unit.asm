@@ -32,6 +32,7 @@ bitdevice.Object EXPORT
         INCLUDE "engine/collision/struct_AABB.equ"
         INCLUDE "src/common/lib/object.const.asm"
         INCLUDE "src/common/player/player1.equ"
+        INCLUDE "engine/system/to8/controller/joypad.const.asm" ; masques dpad (BitTrack)
         ; le compte de bits vit dans `globals` depuis le 25/08/2026 : il doit
         ; survivre a l'echange de stage, que la page directe ne fait pas.
         INCLUDE "src/common/state/variables.asm"
