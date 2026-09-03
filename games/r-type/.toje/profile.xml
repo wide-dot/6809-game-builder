@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Profil de débogage toje — ce que le jeu sait et que le moteur ignore.
+
+  Le groupe ENGINE WD 2 de toje résout les adresses seul : les cartes lwasm de
+  gen/**/build, le placement de dist/occupancy-<cible>.html et les identifiants
+  de fichiers de gen/directories/<disque>/entries.asm. Il connaît aussi les
+  formes du moteur (OST, nœud AABB, listes de priorité, plans de collision).
+
+  Ce fichier ne porte donc QUE ce qui reste : les OST hors du pool dynamique.
+  On y nomme des SYMBOLES, jamais des adresses — un repack d'arène déplace les
+  unités, pas ce fichier.
+
+  Schéma complet (pools maison, listes de collision d'un manager, variables
+  surveillées) : docs/superpowers/specs/2026-09-03-engine-wd-2-analysis.md §8
+  du dépôt toje. Seuls <project>, <contexts> et <static> sont lus aujourd'hui.
+-->
+<toje-profile version="1" engine="wd2">
+
+    <!-- Les défauts conviennent (to8.config.xml, dist/occupancy-*.html,
+         gen/directories/disk0/entries.asm) : rien à déclarer ici. -->
+
+    <objects>
+        <!-- L'OST du joueur vit dans la page directe (player1 equ dp), les
+             quatre autres suivent le pool dans la demi-page vidéo. Sans cette
+             liste ils n'apparaissent nulle part, et un parcours de liste qui
+             passe par l'un d'eux se croit interrompu. -->
+        <static symbol="player1"      label="player"/>
+        <static symbol="palettefade"  label="palettefade"/>
+        <static symbol="forcepodOST"  label="forcepod"/>
+        <static symbol="bitdevTopOST" label="bitdev haut"/>
+        <static symbol="bitdevBotOST" label="bitdev bas"/>
+    </objects>
+
+</toje-profile>
