@@ -54,6 +54,10 @@ Deux défauts, tous deux hérités de la v1 :
 
 ## 3. Ce que la borne joue
 
+Inventaire complet, identifiant par identifiant, avec les routines
+appelantes : [`arcade-sound-reference.md`](arcade-sound-reference.md). Ce qui
+suit n'en est que le résumé.
+
 La routine d'émission est `enqueue_audio_cmd` (0x400303), une file de 32
 slots. Son argument couvre **deux espaces** : sous 0x22 ce sont des
 commandes d'orchestration musicale, à partir de 0x22 des effets sonores.
