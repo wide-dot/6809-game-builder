@@ -94,40 +94,46 @@ utilisable. La colonne de droite dit où le brancher.
 
 ### Armement du joueur
 
-| Borne | Événement | Chez nous |
-|---|---|---|
-| 0x31 | relâchement du beam chargé | appel **commenté**, à décommenter |
-| 0x32 | début de charge du beam | manque |
-| 0x33 | arrêt de la charge | manque |
-| 0x34 | lancement du missile | on joue FireBlastSound à la place |
-| 0x36 | éjection du force pod | manque |
-| 0x37 | accrochage du force pod | **données présentes, jamais jouées** |
-| 0x3B | tir et rebond du laser reflex | manque, arme portée |
-| 0x3C | tir du laser de sol | manque, arme portée |
-| 0x3D | tir du counter-air laser | manque, arme portée |
-| 0x3F | tir simple du pod, celui des reflets | manque, porté aujourd'hui |
+Source Master System **confirmée à l'oreille le 03/09/2026** (§5) pour tout
+ce qui a un identifiant en gras.
+
+| Borne | Événement | Chez nous | Source SMS |
+|---|---|---|---|
+| 0x31 | relâchement du beam chargé | appel **commenté**, à décommenter | 33-fire-blast |
+| 0x32 | début de charge du beam | manque | 34 ou 35 (non confirmé) |
+| 0x33 | arrêt de la charge | manque | 34 ou 35 (non confirmé) |
+| 0x34 | lancement du missile | on joue FireBlastSound à la place | **35** |
+| 0x36 | éjection du force pod | manque | **37** |
+| 0x37 | accrochage du force pod | **données présentes, jamais jouées** | 38-pod-attach |
+| 0x38 | vie supplémentaire au score | manque | **39** |
+| 0x3B | tir et rebond du laser reflex | manque, arme portée | **41** |
+| 0x3C | tir du laser de sol | manque, arme portée | **42** |
+| 0x3D | tir du counter-air laser | manque, arme portée | **43** |
+| 0x3F | tir simple du pod, celui des reflets | manque, porté aujourd'hui | **44** |
 
 ### Combat
 
-| Borne | Événement | Chez nous |
-|---|---|---|
-| 0x51, 0x52, 0x53 | explosions moyenne, tourelle, grosse | un seul son d'explosion pour tout |
-| 0x54 | explosion du Wick | manque, ennemi porté |
-| 0x56 | coup encaissé par un ennemi | **manque, 39 sites côté borne** |
-| 0x57 | coup encaissé par un boss | manque, 23 sites |
-| 0x59 | tir laser ennemi | manque |
-| 0x5D | salve d'ennemi lourd, émergence du Zoid | manque |
-| 0x5F | traînée du Gouger, billes de l'orbe Gomander | manque |
-| 0x61 | décollage du Tabrok | manque |
-| 0x62 | destruction d'un nerf optique | manque, implémenté aujourd'hui |
-| 0x64 | entrée en scène du Mikun, tir de Dobkeratops | manque |
+| Borne | Événement | Chez nous | Source SMS |
+|---|---|---|---|
+| 0x50 | petite explosion | on en a une, générique | **45** |
+| 0x51 | explosion moyenne | manque | **46** |
+| 0x52 | **explosion de tourelle — 24 sites, la 2ᵉ plus fréquente** | manque | **47** |
+| 0x53 | grosse explosion | manque | **48** |
+| 0x54 | explosion du Wick | manque, ennemi porté | **49** |
+| 0x56 | **coup encaissé par un ennemi — 39 sites, la plus fréquente du jeu** | manque | **50** |
+| 0x57 | coup encaissé par un boss | manque, 23 sites | **51** |
+| 0x59 | tir laser ennemi | manque | non confirmé |
+| 0x5D | salve d'ennemi lourd, émergence du Zoid | manque | non confirmé |
+| 0x5F | traînée du Gouger, billes de l'orbe Gomander | manque | non confirmé |
+| 0x61 | décollage du Tabrok | manque | non confirmé |
+| 0x62 | destruction d'un nerf optique | manque, implémenté aujourd'hui | non confirmé |
+| 0x64 | entrée en scène du Mikun, tir de Dobkeratops | manque | non confirmé |
 
 ### Interface
 
 | Borne | Événement | Chez nous |
 |---|---|---|
 | 0x22 | jingle de game over | manque |
-| 0x38 | vie supplémentaire au score | manque |
 | 0x55 | bascule du score | manque |
 | 0x72-0x79 | décompte de continue | sans objet, pas de continue |
 
@@ -139,7 +145,7 @@ Restent hors portée les sons des boss non portés, le Bronco et le Bydo.
 ### Ce qui est établi
 
 Six paires, par les noms de fichiers que l'auteur avait posés en portant les
-six sons :
+six premiers sons — une s'est révélée décalée d'un cran, corrigée plus bas, dans « Confirmé à l'oreille » :
 
 | Master System | Borne | Événement |
 |---|---|---|
@@ -148,7 +154,7 @@ six sons :
 | 36-player-hit | 0x35 | explosion du joueur |
 | 38-pod-attach | 0x37 | accrochage du pod |
 | 40-bonus | 0x3A | ramassage d'un bonus |
-| 46-explosion-0 | 0x50 | petite explosion |
+| 46-explosion-0 | ~~0x50~~ **0x51** | explosion moyenne, pas la petite (voir « Confirmé à l'oreille » plus bas) |
 
 ### Ce que dit la documentation publique (recherché le 03/09/2026)
 
@@ -251,7 +257,67 @@ La conséquence pratique : la correspondance est un **alignement de deux
 listes ordonnées**, pas une formule. Elle se lit de proche en proche à
 partir des six ancres, et elle demande l'oreille pour confirmer chaque pas.
 
-### Le test d'intervalle, décompte exclu (03/09/2026)
+### Confirmé à l'oreille (03/09/2026, relevé de l'auteur)
+
+Relevé complet, au test sonore, des identifiants Master System 35 à 51.
+Résultat : la quasi-totalité de la zone que le test d'intervalle laissait
+en candidats se règle d'un coup, sans exception ni ambiguïté.
+
+| Master System | Borne | Événement |
+|---|---|---|
+| 35 | 0x34 | lancement du missile |
+| 36 | 0x35 | explosion du joueur *(déjà l'ancre `36-player-hit`)* |
+| 37 | **0x36** | éjection du force pod *(confirme la paire forcée plus bas, dans « Le test d'intervalle »)* |
+| 38 | 0x37 | accrochage du pod *(déjà l'ancre `38-pod-attach`)* |
+| 39 | **0x38** | vie supplémentaire au score *(confirme la paire forcée plus bas, dans « Le test d'intervalle »)* |
+| 40 | 0x3A | ramassage d'un bonus *(déjà l'ancre `40-bonus`)* |
+| 41 | **0x3B** | tir et rebond du laser reflex |
+| 42 | **0x3C** | tir du laser de sol |
+| 43 | **0x3D** | tir du counter-air laser |
+| 44 | **0x3F** | tir simple du pod (celui des reflets) |
+| 45 | **0x50** | petite explosion |
+| 46 | **0x51** | explosion moyenne |
+| 47 | **0x52** | explosion de tourelle — la 2ᵉ plus fréquente du jeu |
+| 48 | **0x53** | grosse explosion |
+| 49 | **0x54** | explosion du Wick |
+| 50 | **0x56** | coup encaissé par un ennemi — **la plus fréquente du jeu** |
+| 51 | **0x57** | coup encaissé par un boss |
+
+**L'ancre `46-explosion-0` était décalée d'un cran** : ce fichier est
+l'explosion *moyenne* (0x51), pas la petite (0x50, qui est en fait le 45).
+L'erreur venait d'un nom posé une fois, à l'oreille, sur un son générique —
+les cinq autres ancres (tir, beam, joueur, pod, bonus) sont des sons
+distinctifs qui ne prêtent pas à confusion ; une explosion en prête.
+
+**Les quatre écarts que ce relevé traverse sont maintenant tous expliqués**,
+et chacun confirme une pièce du dossier déjà réunie ailleurs dans ce
+document :
+
+- **35 → 39** ne saute rien côté Master System, mais la borne va de 0x34 à
+  0x38 en passant par 0x35, 0x36, 0x37 sans creux — sauf que la borne a
+  aussi un 0x39 que **personne n'appelle jamais** (§3, table des
+  identifiants jamais référencés). La Master System n'en a donc logiquement
+  pas d'équivalent : ce n'est pas un trou du relevé, c'est un identifiant
+  mort des deux côtés ;
+- entre 44 (0x3F) et 45 (0x50), la borne compte 0x40 et 0x41 en plus — les
+  deux sons de curseur de saisie de nom (§4, table borne). Une cartouche de
+  salon n'a pas d'écran de high-score à remplir : logique qu'elle n'ait
+  aucun son pour ça. Confirme l'hypothèse posée plus bas, dans « Le test d'intervalle » (« le son absent est
+  une saisie de nom ») ;
+- entre 44 et 45 encore, la borne a aussi 0x3E, également listé « jamais
+  référencé » en §3 — un second identifiant mort, dans le même intervalle ;
+- entre 51 (0x57) et la suite, la borne a 0x55 (bascule du score) sans
+  équivalent Master System relevé ici — cohérent avec un affichage de score
+  probablement traité différemment sur console, à vérifier si la zone au-delà
+  de 0x57 est un jour couverte.
+
+Deux ids restent choisis par défaut plutôt que confirmés : 34 et 35 pour
+« début de charge » (0x32) et « arrêt de charge » (0x33) du beam — mais 35
+est désormais identifié comme le lancement du missile (0x34), ce qui
+retire une option et laisse 34 seul candidat pour l'un des deux réglages de
+charge. Le relevé ne dit pas lequel.
+
+### Le test d'intervalle, décompte exclu (03/09/2026) — la méthode qui a mené ici
 
 Le décompte sort de la comparaison : chez nous il est porté par une musique
 dédiée, pas par des effets. Restent **42 effets distincts** côté Master
@@ -269,80 +335,53 @@ doivent coïncider.
 | 38 → 40 / $37 → $3A | 39 | $38 | **exact, paire forcée** |
 | 40 → 46 / $3A → $50 | 41 à 45 | $3B, $3C, $3D, $3F, $40, $41 | borne +1 |
 
-Quatre intervalles sur cinq concordent, et le premier est le plus parlant :
-**aucun son de part et d'autre entre le tir de base et le beam**. Avant la
-déduplication ce même intervalle affichait quatorze sons côté Master System
-contre zéro — c'est la table de la ROM qui a rendu la comparaison possible.
+Quatre intervalles sur cinq concordaient déjà, et le premier était le plus
+parlant : **aucun son de part et d'autre entre le tir de base et le beam**.
+Avant la déduplication ce même intervalle affichait quatorze sons côté
+Master System contre zéro — c'est la table de la ROM qui a rendu la
+comparaison possible.
 
-**Deux paires deviennent certaines**, chacune seule dans son intervalle :
+**Deux paires étaient déjà certaines**, chacune seule dans son intervalle,
+et le relevé à l'oreille (la section « Confirmé à l'oreille ») les confirme mot pour mot :
 
 | Master System | Borne | Événement |
 |---|---|---|
-| **37** | **$36** | éjection du force pod |
-| **39** | **$38** | vie supplémentaire au score |
+| 37 | 0x36 | éjection du force pod |
+| 39 | 0x38 | vie supplémentaire au score |
 
-Les deux intervalles restants ont **un son de borne en trop**, donc un
-choix contraint par l'ordre :
+Le dernier intervalle listé ci-dessus porte encore la table AVANT
+correction de l'ancre (40→46 au lieu de 40→45) : c'est la lecture qui avait
+mené à l'hypothèse **41 = laser reflex, 42 = laser de sol, 43 = counter-air,
+44 = tir simple du pod**, une fois posé que le son en trop était une saisie
+de nom. Le relevé à l'oreille confirme les quatre sans exception.
 
-- entre le beam et l'explosion du joueur, les Master System 34 et 35 se
-  placent dans $32 début de charge, $33 arrêt de charge, $34 lancement du
-  missile, l'un des trois n'ayant pas d'équivalent. Le 35 est la **seule
-  tenue longue du corpus**, neuf commandes sur cinquante-quatre trames, ce
-  qui plaide pour une charge ;
-- entre le bonus et la petite explosion, les Master System 41 à 45 se
-  placent dans $3B laser reflex, $3C laser de sol, $3D counter-air, $3F tir
-  simple du pod, $40 et $41 curseur de saisie de nom. Si le son absent est
-  l'un des deux derniers — le plus probable, la saisie de nom de la Master
-  System étant plus sobre — alors la lecture tombe d'elle-même :
-  **41 = laser reflex, 42 = laser de sol, 43 = counter-air, 44 = tir simple
-  du pod**. Trois des quatre armes du pod d'un coup, ce qui en fait
-  l'hypothèse la plus rentable à vérifier.
+### Là où le test s'arrête désormais
 
-### Là où le test s'arrête
+Le relevé à l'oreille pousse la correspondance confirmée jusqu'au coup
+encaissé par un boss (Master System 51 = borne 0x57) — bien au-delà de la
+« petite explosion » où le test d'intervalle seul s'arrêtait. Au-delà de
+0x57, la méthode par comptage ne s'applique plus : la liste de la borne
+n'est que celle des identifiants **que le code déclenche**, avec 26 trous
+jamais cités ($42 à $4F, $58, $5C, $60, $69 à $71) dont une partie porte
+sans doute de vrais sons ; la liste Master System est celle des sons
+**présents**. Prolonger encore demanderait soit le catalogue complet du
+processeur son de la borne, soit — plus simple maintenant que `$C149`
+(« Les 24 index non capturés ») permet de déclencher n'importe quel
+identifiant sans repasser par le test sonore — un nouveau relevé à
+l'oreille sur la Master System au-delà de l'identifiant 51.
 
-Passé la petite explosion, la Master System compte 27 sons contre 21
-identifiants déclenchés côté borne : le compte s'inverse et la méthode
-casse. La raison est dans la nature des deux listes. Celle de la borne est
-la liste des identifiants **que le code déclenche**, relevée dans Ghidra ;
-elle laisse 26 trous jamais cités ($42 à $4F, $58, $5C, $60, $69 à $71),
-dont une partie porte sans doute de vrais sons dans la ROM du processeur
-son. La liste Master System, elle, est la liste des sons **présents**.
+### Ce qui reste ouvert
 
-Pour prolonger l'alignement au-delà de $50, il faut donc le catalogue
-complet de la borne, côté processeur son, et non les seuls identifiants
-déclenchés. C'est le prochain relevé à faire si la correspondance complète
-est voulue.
-
-### Candidats immédiats
-
-Les deux sons dont notre portage a le plus besoin tombent juste à côté
-d'une ancre, ce qui les rend raisonnablement sûrs :
-
-Récapitulatif de ce qui est utilisable tout de suite, du plus sûr au moins
-sûr :
-
-| Borne | Master System | Niveau de preuve |
+| Borne | Master System | Statut |
 |---|---|---|
-| $36 éjection du pod | **37** | forcé par l'intervalle |
-| $38 vie supplémentaire | **39** | forcé par l'intervalle |
-| $3B laser reflex | 41 | ordre, si le son absent est une saisie de nom |
-| $3C laser de sol | 42 | idem |
-| $3D counter-air | 43 | idem |
-| $3F tir simple du pod | 44 | idem |
-| $32 début de charge | 34 ou 35 | ordre ; 35 est la seule tenue longue |
+| 0x32 début de charge | 34 (probable) | un seul candidat restant, non confirmé |
+| 0x33 arrêt de charge | inconnu | aucun candidat Master System identifié |
+| 0x59 et au-delà | — | hors de la zone couverte par le relevé |
 
-Au-delà de la petite explosion, aucun candidat : le test d'intervalle ne
-s'applique plus, faute du catalogue complet de la borne. C'est le cas des
-trois explosions $51 à $53 et surtout du coup encaissé $56, le son le plus
-fréquent du jeu.
+### Comment confirmer le reste
 
-### Comment confirmer
-
-À l'oreille, et c'est désormais rapide : écrire l'identifiant voulu dans
-`$C149` sous un émulateur joue le son de la Master System sans passer par le
-test sonore. Côté portage, les 54 blocs de `reference/sms/sfx/soundfx/` sont
-au format du pilote et s'assemblent tels quels. Le protocole le plus court est d'en charger une
-poignée dans la table des sons d'un build de test et de les déclencher au
-clavier, en partant des candidats ci-dessus. Chaque paire confirmée
-s'inscrit ici, et le nom de fichier Master System se complète comme l'ont
-été les six premiers.
+`$C149` en RAM (« Les 24 index non capturés ») déclenche n'importe quel
+identifiant Master System sous émulateur sans repasser par le test sonore —
+c'est ainsi que ce relevé a été fait. Les 54 blocs de
+`reference/sms/sfx/soundfx/` sont au format du pilote et s'assemblent tels
+quels côté portage.
