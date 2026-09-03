@@ -164,6 +164,9 @@ ActiveInit
         ldd   player1+x_pos
         std   old_xpos1,u
         std   old_xpos2,u
+        std   x_pos,u                  ; amorcer le labour des gommes : le tick
+                                       ; lit l'ancien x_pos comme depart, sans
+                                       ; ca le premier balayage partirait de 0
         ldd   player1+y_pos
         std   old_ypos1,u
         std   old_ypos2,u
@@ -182,6 +185,8 @@ ActiveInit
 ;   [u] = static slot OST
 ; ---------------------------------------------------------------------------
 ActiveTick
+        ldy   x_pos,u                  ; la position de la trame d'avant, pour
+                                       ; BitGumSweep (Y traverse le tick intact)
         ldd   glb_camera_x_pos
         subd  glb_camera_x_pos_old
         addd  old_xpos1,u
@@ -209,13 +214,48 @@ ActiveTick
         ldd   player1+y_pos
         std   old_ypos1,u
 
-        ; position the hitbox radius (small, from the original pickup: 3,6)
-        _ldd  3,6
+        ; position the hitbox radius. ARCADE : demi-largeurs 12/12 px arcade
+        ; (0x17EE), soit 4,5/9 des notres — la boite v1 (3,6) etait celle du
+        ; bonus, moitie moins large (doc/analyse-bit-device.md, 03/09/2026).
+        _ldd  4,9
         std   AABB_0+AABB.rx,u
 
         ; enemy contact is applied by the shared, frame-drop-gated WeaponContactTick
         ; (collision phase, main.asm). Arcade: the force pod and BOTH bit devices
         ; share ONE global 1/16-frame gate ([0x2eb6]&0x0F), 1 dmg per enemy/window.
+        bsr   BitGumSweep
         jsr   AnimateSpriteSync
         jmp   DisplaySprite
+
+; ---------------------------------------------------------------------------
+; BitGumSweep — le bit laboure les gommes du stage 4, comme le pod
+; ---------------------------------------------------------------------------
+; ARCADE : run_bit_devices appelle clear_green_ball_helper_stage4 a chaque
+; trame (un amas 2x2 de cellules sous le bit, credit de bonus compris), pour
+; chacun des deux bits (doc/analyse-bit-device.md §1.5). Idiome de
+; ForcePodGumSweep : l'entree +6 du crochet efface le rectangle BALAYE entre
+; la position de la trame d'avant et la courante — la compensation de trames
+; est gratuite. Bloc 3x3 cellules ($33) pour les 24 px arcade du bit, la ou
+; le pod prend $44 pour ses 32 ; coin haut-gauche = centre - (4, 9). Hors
+; stage 4 le crochet est stage.gum.none : un jsr pour rien.
+; Le depart n'a pas de variable a lui (ext_variables est plein) : c'est le
+; x_pos que le tick a lu dans Y AVANT de l'ecraser, ActiveInit l'amorce.
+;   [u] = static slot OST, [y] = x_pos de la trame d'avant
+; ---------------------------------------------------------------------------
+BitGumSweep
+        ldd   stage.gum.hook
+        addd  #6                       ; +6 : effacer un rectangle balaye
+        std   @call
+        ldd   x_pos,u
+        subd  #4                       ; le coin haut-gauche : une cellule et
+        tfr   d,x                      ; demie a gauche du centre
+        leay  -4,y
+        ldb   y_pos+1,u
+        subb  #9                       ; ... et une rangee et demie au-dessus
+        bhs   >
+        clrb                           ; le bit colle au haut du champ
+!       lda   #$33                     ; bloc 3 x 3 cellules
+        jsr   >0
+@call   equ   *-2
+        rts
 
