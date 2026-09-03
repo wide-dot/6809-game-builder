@@ -87,9 +87,11 @@ WeaponContactTick
         ; LA LISTE DES POINTS FAIBLES (target) prend le MEME contact pod/bits :
         ; l'arcade teste l'orbe du gomander et le coeur du cuirasse par le meme
         ; dispatcher (v3 skip_player, $F7E4), avec la meme porte 1/16 — seule
-        ; la passe joueur manque, et elle ne passe pas par ici. X charge puis
-        ; on TOMBE dans la marche : son rts rend la main a l'appelant.
+        ; la passe joueur manque, et elle ne passe pas par ici.
         ldx   AABB_list_target
+        bsr   wctk_walkList
+        clr   weaponPodImmune            ; consomme : la piece vivante le reposera
+        rts
 wctk_walkList
         beq   @rts                       ; empty -> nothing to do
 @eloop
@@ -101,7 +103,10 @@ wctk_walkList
         tstb
         beq   @enext                     ; HP enemy on a non-fire frame: skip
 @contact
-        ; force pod armed (routine 1..3) ?
+        ; force pod armed (routine 1..3) ? Et pas d'immunite (arcade v4 : une
+        ; piece du compiler vit -> le pod ne touche pas, les bits si).
+        tst   weaponPodImmune
+        bne   @tryTop
         lda   forcepodOST+routine
         beq   @tryTop                    ; 0 = Init, AABB not positioned yet
         cmpa  #rtnid.Dormant             ; >= Dormant : idle, not armed

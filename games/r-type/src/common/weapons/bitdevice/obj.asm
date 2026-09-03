@@ -212,6 +212,17 @@ ActiveInit
 ; Px arcade -> notres : X x0.375, Y x0.75 ; une trame arcade = une trame
 ; compensee : la boucle rejoue le modele frameDrop fois avec la direction et
 ; la position courantes du vaisseau (le tick tourne apres player1).
+;
+; TODO A VERIFIER — L'IMMUNITE AU POD DU BOSS DU STAGE 4 (03/09/2026). En
+; arcade le dispatcher v4 (0x40F7F1) des trois pieces du compiler (et du
+; bellmite au stage 5) appelle collision_to_top_and_bottom_bit_devices SANS
+; passer par collision_to_force_pod : le pod ne fait rien au contact, les
+; bits font leur point toutes les 16 trames. Chez nous : drapeau de presence
+; weaponPodImmune (collisionpass.unit.asm), pose par PartLive du compiler,
+; consomme par WeaponContactTick. Approximation a verifier en jeu et contre
+; l'arcade : (1) tant qu'une piece vit, TOUT ennemi de la liste est a l'abri
+; du pod, pas seulement les pieces ; (2) les tourelles, ondes et lasers du
+; compiler ne sont pas des v4 en arcade — leur dispatcher n'a pas ete lu.
 ;   [u] = static slot OST
 ; ---------------------------------------------------------------------------
 ActiveTick

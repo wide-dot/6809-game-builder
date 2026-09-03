@@ -14,6 +14,7 @@
 
 COLLISION_PASS_UNIT equ 1       ; api.asm ne doit pas m'en donner l'EXTERNAL
 Collision_Run EXPORT
+weaponPodImmune EXPORT
 
         INCLUDE "src/common/engine/api.asm"
 
@@ -57,6 +58,16 @@ Collision_Run
 ; lecteur. Une unite est CHARGEE, donc ce `fcb 0` arrive vraiment a zero,
 ; contrairement a un bloc reserve.
 weaponGateAccum fcb 0            ; +frameDrop.count par trame, tire tous les 16
+
+; L'IMMUNITE AU POD (03/09/2026). Arcade : le dispatcher v4 des trois pieces
+; du compiler (et du bellmite, stage 5) teste les bits SANS le pod — la piece
+; est immunisee au contact du pod, pas a celui des bits. Une boite AABB ne dit
+; pas qui la porte : ce drapeau est une PRESENCE, posee chaque trame par la
+; piece vivante (compiler/obj.asm PartLive) et consommee par WeaponContactTick
+; — aucun cycle de vie (mort, checkpoint, rechargement) a tenir.
+; Approximation : tant qu'une piece vit, TOUT ennemi de la liste est a l'abri
+; du pod, pas seulement les pieces. TODO a verifier (voir bitdevice/obj.asm).
+weaponPodImmune fcb 0
 
         INCLUDE "src/common/lib/weaponcollide.asm"
 

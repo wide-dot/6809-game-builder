@@ -28,6 +28,7 @@ compiler.Object EXPORT
 ; resout au chargement. Img_Page_Index envoie deja ObjID_compilerturret vers
 ; leur page.
 set_compiler_turret_0  EXTERNAL
+weaponPodImmune        EXTERNAL ; l'immunite au pod, posee par PartLive
 set_compiler_turret_1  EXTERNAL
 set_compiler_turret_2  EXTERNAL
 set_compiler_turret_3  EXTERNAL

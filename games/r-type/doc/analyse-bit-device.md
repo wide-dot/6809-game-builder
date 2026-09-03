@@ -177,7 +177,7 @@ Réponse : **oui, avec le counter-air laser chaque bit vivant tire un reflet
 | Animation | 12 images, 1 toutes les 4 trames (48) | 6 images, 1 toutes les 4 (24) | mineur (deux fois plus vite) |
 | Boîte | 24×24 px arcade (9×18 chez nous) | 6×12 px | moyen : le bit touche moins loin |
 | Dégât de contact | 1/16 trames (v2-v4), immédiat (v1) | idem, par p de l'ennemi | aucun |
-| Ennemis v4 (compiler, bellmite) | bits seuls, sans le pod | pod ET bits | mineur (le pod touche en plus) |
+| Ennemis v4 (compiler, bellmite) | bits seuls, sans le pod | pod ET bits | mineur (le pod touche en plus) — fait le 03/09, voir §6 |
 | Tirs ennemis | ignorent les bits | idem | aucun |
 | Gommes stage 4 | effacées à chaque trame, crédit bonus | rien | **fonctionnel** |
 | Counter-air | un reflet par bit vivant et par salve, dégâts 2, efface les gommes | aucun reflet (ni pod ni bits) | **fonctionnel** (le counter-air lui-même n'est pas fini) |
@@ -269,3 +269,14 @@ caméra, et le bit le poursuivait par pas de 1,5 px avec sa bande morte — un
 ou deux pixels de temps en temps. L'arcade poursuit en coordonnées écran. Le
 tick ajoute le défilement du rendu au bit et à sa cible d'avant avant la
 poursuite : au repos, plus rien ne bouge.
+
+**Immunité au pod du boss du stage 4 (03/09/2026, décision auteur).** Une
+boîte AABB ne dit pas qui la porte, et la liste ennemie a d'autres lecteurs
+directs (verrouillage des missiles, ground laser, managers) qui interdisent
+une liste à part. Le drapeau `weaponPodImmune` (unité de la passe de
+collision, exporté) est une **présence** : `PartLive` du compiler le pose à
+chaque trame, `WeaponContactTick` saute le pod quand il est levé puis le
+consomme — aucun cycle de vie à tenir. Approximation, marquée TODO dans
+`bitdevice/obj.asm` : tant qu'une pièce vit, tout ennemi de la liste est à
+l'abri du pod, et les tourelles/ondes/lasers du compiler n'ont pas été
+vérifiés côté arcade. `rtype_bench` 7/7.

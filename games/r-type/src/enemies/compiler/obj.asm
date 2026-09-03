@@ -338,6 +338,12 @@ PartInit
 ; partie s'immobilise — la borne enchainerait sur les scripts de combat.
 ; ---------------------------------------------------------------------------
 PartLive
+        ; ARCADE v4 (0x40F7F1) : les trois pieces testent les bit devices SANS
+        ; le force pod — immunisees au contact du pod, pas a celui des bits.
+        ; Presence posee chaque trame, consommee par WeaponContactTick
+        ; (src/common/lib/collisionpass.unit.asm).
+        lda   #1
+        sta   weaponPodImmune
         ldd   cpl.timer,u
         ; SEGMENT EPUISE : on prend le suivant. C'est motion_step (AFE6) — la
         ; piece enchaine les segments de son script, puis les scripts de sa
