@@ -118,6 +118,10 @@ practice; this is a reading order, not a schedule.
     — v1 hid things by painting background patches over them; in overlay the
     canvas is redrawn every frame, so the hidden thing becomes removable
     pieces owned by a manager, and the v1 eraser masks are the cutting guide.
+25. [AABB screen projection: clamp the centre, never let it
+    wrap](aabb-screen-projection.md) — the kernel compares centres modulo
+    256 ; a v1 site writes the low byte raw, a v2 site goes through
+    `_AABB.setCx`/`_AABB.setCy`. Converted progressively, site by site.
 
 
 ## Not cases, but next door

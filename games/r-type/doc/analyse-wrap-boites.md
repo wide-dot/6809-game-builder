@@ -219,14 +219,17 @@ variables d'extension** de tous les objets ; 160 sites ; les trois copies du
 noyau ; et une dizaine de cycles de plus par paire dans une boucle en O(n·m).
 Le plus propre, et le plus cher.
 
-### Recommandation
+### Décision (auteur, 03/09/2026) : B, et B seulement
 
-**A tout de suite, B ensuite.** A parce qu'il rend le jeu jouable avec le
-pod arrière au niveau 3 pour dix lignes. B parce que c'est la règle que
-l'auteur a déjà posée pour le tir de base, généralisée : elle donne un sens
-défini à toute boîte hors champ, sans toucher au noyau, et elle règle la
-grande boîte à droite comme le tir sorti à gauche. C n'est justifié que si
-un jour les boîtes doivent être exactes hors champ, ce que rien ne demande.
+Un chantier d'uniformisation par macro, traité progressivement. Les macros
+`_AABB.setCx` / `_AABB.setCy` vivent dans `engine/collision/macros.asm`
+(V2-DEVIATION tracée au manifest) ; la règle est écrite en cas de migration
+dans `docs/lang/en/migration/aabb-screen-projection.md`. Premiers sites
+convertis, pour prendre la main avant de scaler : le tir simple
+(`weapon/obj.asm`, trois sites) et le beam (`beam/beam.asm`, trois sites) —
+les segments balayés y sont désormais calculés en 16 bits de bout en bout,
+le calage n'intervenant qu'au dernier geste. Le reste des sites
+(`grep 'stb.*AABB\.c[xy]' src/`) est le reste-à-faire.
 
 ## 8. Ce qui reste à relever avant d'implémenter B
 

@@ -273,8 +273,13 @@
                      Meme regle pour les pages de buffers du stage 4 ($10-$12,
                      $1D) : elles ne portent que du par-stage, jamais du
                      permanent. -->
-                <!-- Tete de $0C jusqu'a $0A80, frontiere avec l'arene des lots :
+                <!-- Tete de $0C jusqu'a $0B00, frontiere avec l'arene des lots :
                      si le commun grossit, le controle de scene refuse le build.
+                     $0A80 -> $0B00 le 03/09/2026 (soir) : les boites du tir
+                     simple et du beam se projettent par _AABB.setCx (centre en
+                     16 bits, cale dans [0,255] — le chantier B de
+                     doc/analyse-wrap-boites.md), +~60 octets dans le commun, et
+                     common.fade (279 o) ne trouvait plus que 269 o d'un tenant.
                      (La raison historique — le visage du Dobkeratops a 3 octets
                      pres dans la zone ennemis de cette page, 18/08 — n'a plus
                      cours : depuis la partition des arenes du 24/08 le visage est
@@ -288,7 +293,7 @@
                      packer place en PREMIER AJUSTEMENT, les miettes ne
                      s'additionnent pas — il manquait 152 octets et 512 de zone
                      n'ont deplace l'echec que d'un fichier. -->
-                <zone page="$0C" address="$0000" size="$0A80"/>
+                <zone page="$0C" address="$0000" size="$0B00"/>
                 <!-- La queue de la page collision ($17) : les collisions des huit
                      stages sont des ALTERNATIVES a $0000. La borne n'est plus
                      ecrite ici : depuis que le packer place CONTRE les etats de
@@ -304,7 +309,7 @@
                 <zone page="$17" address="$1400" size="$2C00"/>
             </arena>
             <!-- L'ARENE DES ENNEMIS DU STAGE 1 : le cast du niveau et son boss.
-                 Elle commence ou la commune s'arrete ($0A80). -->
+                 Elle commence ou la commune s'arrete ($0B00). -->
             <!-- L'ARENE DES ENNEMIS, PARTITIONNEE (24/08/2026). Elle etait
                  UNE arene pour tout le monde : les lots communs ET les
                  fichiers exclusifs d'un stage. Le packer faisait donc tenir
@@ -329,7 +334,7 @@
                      plus petit dans l'ordre des zones, une page entiere en premier
                      evite d'eclater un lot. -->
                 <zone page="$0B" address="$0000" size="$4000"/>
-                <zone page="$0C" address="$0A80" size="$3580"/>
+                <zone page="$0C" address="$0B00" size="$3500"/>
                 <zone page="$0D" address="$0000" size="$4000"/>
                 <zone page="$0E" address="$0000" size="$4000"/>
                 <zone page="$0F" address="$0000" size="$4000"/>

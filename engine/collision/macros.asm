@@ -92,4 +92,39 @@ _Collision_Do MACRO
         jsr   Collision_Do
  ENDM
 
+; --------------------------------------
+; V2-DEVIATION 2026-09-03 : la projection ecran d'un centre de boite.
+;
+; Collision_Do compare les centres SUR UN OCTET, modulo 256 : deux centres
+; distants de 250 px ont un ecart de 6 et se touchent. Un objet arme hors
+; champ (a x - camera = -20, ou 236) est donc vu de l'autre cote de l'ecran.
+; La regle : un centre hors de [0,255] est CALE au bord dont il est le plus
+; proche — un objet parti a gauche reste a gauche, loin de tout ce qui est a
+; l'ecran ; les adjacences vraies (un ennemi a -3 contre un tir a 2) restent
+; des contacts. Le noyau ne change pas, il ne peut rien y faire.
+; Cf. docs/lang/en/migration/aabb-screen-projection.md.
+;
+; Entree : D = le decalage ecran SIGNE du centre (x - camera, ou y).
+; Sortie : \1+AABB.cx,u (ou .cy) = D cale dans [0,255]. X, Y, U intacts.
+; Le cas courant (0..255) coute tsta + beq + stb : dix cycles, dix octets
+; par site — le signe de A passe dans la retenue, pas dans une branche.
+
+_AABB.setCx MACRO
+        tsta                           ; l'octet haut : 0 = entre 0 et 255
+        beq   @ok
+        asla                           ; C = le signe de A
+        ldb   #255                     ; au-dela de 255 : cale a droite...
+        adcb  #0                       ; ...ou negatif : 255 + 1 = 0, a gauche
+@ok     stb   \1+AABB.cx,u
+ ENDM
+
+_AABB.setCy MACRO
+        tsta
+        beq   @ok
+        asla
+        ldb   #255                     ; au-dela de 255 : cale en bas...
+        adcb  #0                       ; ...ou negatif : cale en haut
+@ok     stb   \1+AABB.cy,u
+ ENDM
+
  ENDC
