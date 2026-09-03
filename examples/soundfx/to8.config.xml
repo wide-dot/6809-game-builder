@@ -1,0 +1,62 @@
+<configuration>
+    <target name="fd">
+        <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+        <default name="machine.definitions" value="engine/config/machine.xml"/>
+        <machine name="to8"/>
+
+        <!-- SFX TESTER : un seul game mode resident, qui porte le pilote de  -->
+        <!-- bruitage de R-Type et les 54 sons du corpus Master System.       -->
+        <floppydisk model="fd640">
+
+            <section name="SCENE" track="0" face="1" sector="16"/>
+            <section name="DATA"  track="1" face="0" sector="1"/>
+
+            <directory id="0" section="INDEX" genbinary="gen/directories/disk0/directory.bin" gensymbols="gen/directories/disk0/entries.asm">
+                <default name="file.section"      value="DATA"/>
+                <default name="file.maxsize"      value="0x4000"/>
+                <default name="lwasm.format"      value="obj"/>
+
+                <define symbol="loader.PAGE" value="4"/>
+                <define symbol="loader.ADDRESS" value="$A000"/>
+
+                <file name="gm.tester" linkdata="LINK" page="$01" address="$6300">
+                    <lwasm gensource="gen/gm/tester.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/main.asm"/>
+                    </lwasm>
+                </file>
+
+                <scene name="scenes.tester" section="SCENE" gensource="gen/scenes/tester.asm">
+                    <load name="gm.tester"/>
+                </scene>
+            </directory>
+
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$1000"/>
+            <define symbol="boot.CHECK_MEMORY_EXT"/>
+
+            <data section="LOADER">
+                <lwasm format="raw" gensource="gen/bootloader/loader.asm">
+                    <asm filename="gen/directories/disk0/entries.asm"/>
+                    <asm filename="gen/directories/locations.asm"/>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ $6300</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.tester</asm>
+                    <asm filename="engine/system/to8/bootloader/loader.asm"/>
+                </lwasm>
+            </data>
+
+            <data section="BOOT" maxsize="0x100">
+                <cksumfd640>
+                    <lwasm format="raw">
+                        <asm filename="engine/system/to8/bootloader/boot.asm"/>
+                    </lwasm>
+                </cksumfd640>
+            </data>
+
+            <fd  filename="to8.fd"/>
+            <sd  filename="to8.sd"/>
+            <sap filename="to8.sap"/>
+        </floppydisk>
+    </target>
+</configuration>
