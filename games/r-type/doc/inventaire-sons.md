@@ -162,18 +162,62 @@ liste de déclencheurs mémoire par jeu pour l'extraction, mais R-Type y est
 marqué « unknown » — d'où, très probablement, l'extraction par le test
 sonore plutôt que par déclencheur, et les six noms posés à l'oreille.
 
-**Une conséquence gênante pour le raisonnement qui suit** : le test sonore
-compte **78 emplacements d'effets** (18 à 95), et notre corpus n'en a que
-**54**. Les emplacements 19 à 32 et 77 à 86 n'ont pas été capturés. Ou bien
-ils sont muets ou redondants — et alors le corpus est bien la liste réelle
-des effets du jeu — ou bien ils portent des sons, et le décompte ci-dessous
-tombe. Un passage au test sonore sur ces 24 index tranche la question en
-quelques minutes ; c'est le premier geste à faire avant de s'appuyer sur
-l'alignement.
+### Les 24 index non capturés : réponse tranchée par la ROM (03/09/2026)
+
+Le test sonore compte **78 emplacements d'effets** (18 à 95) et notre corpus
+n'en a que 54 : les index 19 à 32 et 77 à 86 n'avaient jamais été capturés.
+La question « portent-ils un son ? » est tranchée, et la réponse est **non,
+ce sont des doublons** — le corpus est complet.
+
+La preuve est dans la ROM, pas à l'oreille. Le chemin, reproductible :
+
+1. les écritures aux ports du YM2413 (`OUT ($F0)`, `OUT ($F1)`) situent le
+   pilote de son entre `$6F00` et `$7900` ;
+2. dans cette zone, une lecture de table de pointeurs à `$7883` :
+   `LD C,A / ADD A,A / LD E,A / LD D,0 / LD HL,$829B / ADD HL,DE /
+   LD E,(HL) / INC HL / LD D,(HL)`. L'identifiant est donc doublé **sans
+   décalage** et indexe une table à l'adresse d'exécution `$829B` ;
+3. la banque 3 de la ROM est mappée en `$8000` (le pilote lit son instrument
+   personnalisé à `LD HL,$8000`), donc la table vit à l'offset ROM
+   **`$C29B`** ;
+4. elle compte **96 entrées de 16 bits** — exactement la plage 00 à 95 du
+   test sonore, ce qui la confirme.
+
+Ce que dit la table :
+
+| Identifiants | Pointeur | Sons distincts |
+|---|---|---|
+| 00 à 17 | 18 pointeurs distincts | les 18 entrées musique |
+| **18 à 32** | **`$A8AA` pour les quinze** | **un seul son** |
+| 33 à 73 | 41 pointeurs distincts | 41 sons |
+| **74 à 86** | **`$B255` pour les treize** | **un seul son** |
+| 87 à 95 | 9 pointeurs distincts | 9 sons |
+
+96 identifiants, **70 sons distincts**, dont **52 effets distincts**. Notre
+corpus de 54 fichiers couvre ces 52 effets : les fichiers 74 et 75 sont des
+captures redondantes de 76, ce que vérifie la comparaison de leurs corps
+réduits, identiques à la ligne près. **Aucun son ne manque.**
+
+Un gain de côté, et il vaut plus que la réponse : la variable de demande de
+son du pilote est **`$C149`** en RAM. Trouvée en écrivant un octet témoin
+dans les douze variables que le pilote lit et en regardant laquelle il
+consomme, sous MAME piloté en Lua. C'est le déclencheur mémoire que SMS
+Power donne comme « unknown » pour R-Type. Y écrire un identifiant joue le
+son correspondant : l'audition d'un son ne demande plus de traverser le test
+sonore.
+
+Une limite de la réduction, révélée au passage : les sons du décompte (74 à
+95) jouent sur les voies 0 à 3, et leurs corps réduits à la voie 0 sont
+identiques alors que la table les donne distincts. Ce qui les sépare vit sur
+les autres voies. Pour cette famille, garder une seule voie ne suffit pas.
 
 ### La structure, et ce qu'elle apprend
 
-Sous cette réserve, les deux catalogues comptent **exactement 54 effets**.
+Les deux catalogues sont de taille voisine sans être égaux : **52 effets
+distincts** côté Master System, **54 identifiants d'effets** côté borne.
+L'égalité que j'avais crue frappante n'existe pas — elle venait de compter
+les 54 fichiers du corpus au lieu des 52 sons qu'ils portent.
+
 Aucune relation numérique ne relie les identifiants — ni offset constant, ni
 lecture hexadécimale : les écarts des six ancres valent 30, 16, 17, 17, 18
 et 34.
@@ -186,7 +230,9 @@ Master System, rang    0    1    4    6    8   14
 borne,          rang    8    9   13   15   17   24
 ```
 
-Deux choses s'en déduisent, et elles se tiennent :
+C'est une observation **locale**, valable autour des ancres : les deux
+catalogues n'ayant pas le même nombre d'effets, elle ne peut pas se
+prolonger en bijection. Deux choses s'en déduisent tout de même :
 
 - **les huit premiers effets de la borne n'ont pas d'équivalent Master
   System** — ce sont précisément le jingle de game over, l'attract, la pose
@@ -219,11 +265,10 @@ zone, les rangs voisins de l'explosion de base.
 
 ### Comment confirmer
 
-D'abord les 24 index non capturés (19 à 32, 77 à 86) : s'ils sont muets,
-l'alignement des rangs tient ; sinon il est à refaire sur le corpus complet.
-
-Ensuite l'oreille. Les 54 blocs de `reference/sms/sfx/soundfx/` sont au
-format du pilote et s'assemblent tels quels. Le protocole le plus court est d'en charger une
+À l'oreille, et c'est désormais rapide : écrire l'identifiant voulu dans
+`$C149` sous un émulateur joue le son de la Master System sans passer par le
+test sonore. Côté portage, les 54 blocs de `reference/sms/sfx/soundfx/` sont
+au format du pilote et s'assemblent tels quels. Le protocole le plus court est d'en charger une
 poignée dans la table des sons d'un build de test et de les déclencher au
 clavier, en partant des candidats ci-dessus. Chaque paire confirmée
 s'inscrit ici, et le nom de fichier Master System se complète comme l'ont
