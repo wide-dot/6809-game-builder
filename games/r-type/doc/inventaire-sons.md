@@ -146,11 +146,37 @@ six sons :
 | 40-bonus | 0x3A | ramassage d'un bonus |
 | 46-explosion-0 | 0x50 | petite explosion |
 
+### Ce que dit la documentation publique (recherché le 03/09/2026)
+
+**Nos numéros ne sont pas arbitraires : ce sont les index du test sonore de
+la Master System**, et cette numérotation est documentée. Le test sonore
+s'ouvre sur l'écran de décompte après un game over ; il expose **les
+musiques de 00 à 17 et les effets de 18 à 95**, ces derniers accessibles en
+maintenant le bouton 2. Le découpage se recoupe avec la rip publique de
+SMS Power, qui contient exactement **17 musiques** et aucun effet.
+
+Ce que la recherche N'A PAS trouvé, malgré plusieurs angles (SMS Power,
+The Cutting Room Floor, vgmrips, Zophar, forums, sources japonaises) :
+**aucune liste ne nomme les effets un par un**. SMS Power donne bien une
+liste de déclencheurs mémoire par jeu pour l'extraction, mais R-Type y est
+marqué « unknown » — d'où, très probablement, l'extraction par le test
+sonore plutôt que par déclencheur, et les six noms posés à l'oreille.
+
+**Une conséquence gênante pour le raisonnement qui suit** : le test sonore
+compte **78 emplacements d'effets** (18 à 95), et notre corpus n'en a que
+**54**. Les emplacements 19 à 32 et 77 à 86 n'ont pas été capturés. Ou bien
+ils sont muets ou redondants — et alors le corpus est bien la liste réelle
+des effets du jeu — ou bien ils portent des sons, et le décompte ci-dessous
+tombe. Un passage au test sonore sur ces 24 index tranche la question en
+quelques minutes ; c'est le premier geste à faire avant de s'appuyer sur
+l'alignement.
+
 ### La structure, et ce qu'elle apprend
 
-Les deux catalogues comptent **exactement 54 effets**. Aucune relation
-numérique ne relie les identifiants — ni offset constant, ni lecture
-hexadécimale : les écarts des six ancres valent 30, 16, 17, 17, 18 et 34.
+Sous cette réserve, les deux catalogues comptent **exactement 54 effets**.
+Aucune relation numérique ne relie les identifiants — ni offset constant, ni
+lecture hexadécimale : les écarts des six ancres valent 30, 16, 17, 17, 18
+et 34.
 
 En revanche, **les deux listes triées avancent du même pas**. En rang, les
 six ancres donnent un décalage de 8, 8, 9, 9, 9 puis 10 :
@@ -193,8 +219,11 @@ zone, les rangs voisins de l'explosion de base.
 
 ### Comment confirmer
 
-Les 54 blocs de `reference/sms/sfx/soundfx/` sont au format du pilote et
-s'assemblent tels quels. Le protocole le plus court est d'en charger une
+D'abord les 24 index non capturés (19 à 32, 77 à 86) : s'ils sont muets,
+l'alignement des rangs tient ; sinon il est à refaire sur le corpus complet.
+
+Ensuite l'oreille. Les 54 blocs de `reference/sms/sfx/soundfx/` sont au
+format du pilote et s'assemblent tels quels. Le protocole le plus court est d'en charger une
 poignée dans la table des sons d'un build de test et de les déclencher au
 clavier, en partant des candidats ci-dessus. Chaque paire confirmée
 s'inscrit ici, et le nom de fichier Master System se complète comme l'ont
