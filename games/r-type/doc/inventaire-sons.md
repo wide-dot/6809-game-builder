@@ -247,21 +247,90 @@ La conséquence pratique : la correspondance est un **alignement de deux
 listes ordonnées**, pas une formule. Elle se lit de proche en proche à
 partir des six ancres, et elle demande l'oreille pour confirmer chaque pas.
 
+### Le test d'intervalle, décompte exclu (03/09/2026)
+
+Le décompte sort de la comparaison : chez nous il est porté par une musique
+dédiée, pas par des effets. Restent **42 effets distincts** côté Master
+System et **46 identifiants déclenchés** côté borne.
+
+On compte alors, entre deux ancres consécutives, combien de sons chaque
+catalogue place. Si les deux listes suivent le même ordre, les comptes
+doivent coïncider.
+
+| Entre les ancres | Master System | Borne | Verdict |
+|---|---|---|---|
+| 18 → 33 / $30 → $31 | aucun | aucun | **exact** |
+| 33 → 36 / $31 → $35 | 34, 35 | $32, $33, $34 | borne +1 |
+| 36 → 38 / $35 → $37 | 37 | $36 | **exact, paire forcée** |
+| 38 → 40 / $37 → $3A | 39 | $38 | **exact, paire forcée** |
+| 40 → 46 / $3A → $50 | 41 à 45 | $3B, $3C, $3D, $3F, $40, $41 | borne +1 |
+
+Quatre intervalles sur cinq concordent, et le premier est le plus parlant :
+**aucun son de part et d'autre entre le tir de base et le beam**. Avant la
+déduplication ce même intervalle affichait quatorze sons côté Master System
+contre zéro — c'est la table de la ROM qui a rendu la comparaison possible.
+
+**Deux paires deviennent certaines**, chacune seule dans son intervalle :
+
+| Master System | Borne | Événement |
+|---|---|---|
+| **37** | **$36** | éjection du force pod |
+| **39** | **$38** | vie supplémentaire au score |
+
+Les deux intervalles restants ont **un son de borne en trop**, donc un
+choix contraint par l'ordre :
+
+- entre le beam et l'explosion du joueur, les Master System 34 et 35 se
+  placent dans $32 début de charge, $33 arrêt de charge, $34 lancement du
+  missile, l'un des trois n'ayant pas d'équivalent. Le 35 est la **seule
+  tenue longue du corpus**, neuf commandes sur cinquante-quatre trames, ce
+  qui plaide pour une charge ;
+- entre le bonus et la petite explosion, les Master System 41 à 45 se
+  placent dans $3B laser reflex, $3C laser de sol, $3D counter-air, $3F tir
+  simple du pod, $40 et $41 curseur de saisie de nom. Si le son absent est
+  l'un des deux derniers — le plus probable, la saisie de nom de la Master
+  System étant plus sobre — alors la lecture tombe d'elle-même :
+  **41 = laser reflex, 42 = laser de sol, 43 = counter-air, 44 = tir simple
+  du pod**. Trois des quatre armes du pod d'un coup, ce qui en fait
+  l'hypothèse la plus rentable à vérifier.
+
+### Là où le test s'arrête
+
+Passé la petite explosion, la Master System compte 27 sons contre 21
+identifiants déclenchés côté borne : le compte s'inverse et la méthode
+casse. La raison est dans la nature des deux listes. Celle de la borne est
+la liste des identifiants **que le code déclenche**, relevée dans Ghidra ;
+elle laisse 26 trous jamais cités ($42 à $4F, $58, $5C, $60, $69 à $71),
+dont une partie porte sans doute de vrais sons dans la ROM du processeur
+son. La liste Master System, elle, est la liste des sons **présents**.
+
+Pour prolonger l'alignement au-delà de $50, il faut donc le catalogue
+complet de la borne, côté processeur son, et non les seuls identifiants
+déclenchés. C'est le prochain relevé à faire si la correspondance complète
+est voulue.
+
 ### Candidats immédiats
 
 Les deux sons dont notre portage a le plus besoin tombent juste à côté
 d'une ancre, ce qui les rend raisonnablement sûrs :
 
-| Borne | Candidat Master System | Ce qui l'appuie |
-|---|---|---|
-| 0x36 éjection du pod | **37** | rang immédiatement avant l'ancre de l'accrochage, seul candidat |
-| 0x32 début de charge | **35** | 9 commandes étalées sur 54 trames, la seule tenue longue du corpus, exactement ce qu'est une charge |
-| 0x34 lancement du missile | **34** | 72 commandes sur 33 trames, un son dense et bref |
+Récapitulatif de ce qui est utilisable tout de suite, du plus sûr au moins
+sûr :
 
-Au-delà, les candidats se multiplient et l'écoute devient indispensable :
-c'est le cas des trois explosions 0x51 à 0x53 et surtout du coup encaissé
-0x56, le son le plus fréquent du jeu, pour lequel je ne peux proposer qu'une
-zone, les rangs voisins de l'explosion de base.
+| Borne | Master System | Niveau de preuve |
+|---|---|---|
+| $36 éjection du pod | **37** | forcé par l'intervalle |
+| $38 vie supplémentaire | **39** | forcé par l'intervalle |
+| $3B laser reflex | 41 | ordre, si le son absent est une saisie de nom |
+| $3C laser de sol | 42 | idem |
+| $3D counter-air | 43 | idem |
+| $3F tir simple du pod | 44 | idem |
+| $32 début de charge | 34 ou 35 | ordre ; 35 est la seule tenue longue |
+
+Au-delà de la petite explosion, aucun candidat : le test d'intervalle ne
+s'applique plus, faute du catalogue complet de la borne. C'est le cas des
+trois explosions $51 à $53 et surtout du coup encaissé $56, le son le plus
+fréquent du jeu.
 
 ### Comment confirmer
 
