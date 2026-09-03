@@ -38,7 +38,7 @@ tabrok_flameToggle      equ ext_variables+19 ; 1 byte - flamme petite/grosse : t
 ; re-etiquette des champs libres plutot que d'agrandir l'objet.
 tabrok_blink            equ anim_frame          ; 12 - compte a rebours du flash
 tabrok_prevP            equ anim_frame_duration ; 13 - le potentiel du tour precedent
-TABROK_BLINK            equ 12                  ; arcade : +0x3D := 0x0C @ 0x40:6273
+TABROK_BLINK            equ 1                   ; arcade : 0x0C @ 0x40:6273 — voir tabrok.hitBlink
 
 Object
         lda   globals.bossDefeated           ; boss en phase de destruction ?
@@ -334,6 +334,12 @@ LAB_0000_65b5
 ; le drapeau que rend sa routine de collision, pas sur la baisse des points de
 ; vie.
 ;
+; UNE SEULE TRAME DE BLANC, PAS TROIS (mesure en jeu, 03/09/2026). La borne
+; fait clignoter douze trames a 55 Hz, une sur quatre : trois eclairs brefs.
+; Chez nous la trame effective est plus lente — le meme compte a rebours
+; s'etire et le blanc reste colle a l'ennemi. L'equivalent visuel d'un coup
+; encaisse, c'est UNE trame.
+;
 ; Notre palette est globale au stage : on echange l'IMAGE, pas la palette (voir
 ; tools/gen_tabrok_hit.py). Et notre passe de collision ne dit rien a l'objet —
 ; elle decremente son potentiel. UNE BAISSE EST DONC UN COUP, comme chez le
@@ -353,10 +359,7 @@ tabrok.hitBlink
 @noHit  sta   tabrok_prevP,u
         lda   tabrok_blink,u
         beq   @rts                     ; pas de flash en cours
-        deca
-        sta   tabrok_blink,u
-        anda  #3
-        bne   @rts                     ; une trame sur quatre, comme la borne
+        clr   tabrok_blink,u           ; une seule trame (voir l'en-tete)
         ldx   image_set,u
         ldb   tabrok_0x2e,u            ; 0 = tourne a gauche, 1 = a droite
         andb  #1

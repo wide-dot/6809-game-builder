@@ -42,7 +42,7 @@ pstaff_0x16     equ ext_variables+17 ; 2 bytes
 ; images a la main et ne passe jamais par le systeme d'animation du moteur.
 pstaff_blink            equ anim_frame          ; 12 - compte a rebours du flash
 pstaff_prevP            equ anim_frame_duration ; 13 - le potentiel du tour precedent
-PSTAFF_BLINK            equ 12                  ; arcade : +0x3D := 0x0C @ 0x40:752e
+PSTAFF_BLINK            equ 1                   ; arcade : 0x0C @ 0x40:752e — voir pstaff.hitBlink
 
 
 * V2-DEVIATION : entree renommee, le nom v1 ne franchit pas la frontiere de lien.
@@ -503,6 +503,12 @@ pstaff_1x3346
 ; trames : trois flashs par coup encaisse. Elle arme son compteur (+0x3D) sur
 ; le drapeau que rend sa routine de collision.
 ;
+; UNE SEULE TRAME DE BLANC, PAS TROIS (mesure en jeu, 03/09/2026). La borne
+; fait clignoter douze trames a 55 Hz, une sur quatre : trois eclairs brefs.
+; Chez nous la trame effective est plus lente — le meme compte a rebours
+; s'etire et le blanc reste colle a l'ennemi. L'equivalent visuel d'un coup
+; encaisse, c'est UNE trame.
+;
 ; Notre palette est globale au stage : on echange l'IMAGE (gen_pstaff_hit.py).
 ; Et notre passe de collision ne dit rien a l'objet — elle decremente son
 ; potentiel : UNE BAISSE EST UN COUP. La passe precede RunObjects dans la
@@ -513,7 +519,8 @@ pstaff_1x3346
 ; sortent par `rts` sans afficher ne decrementent pas le compteur ce tour —
 ; ce sont des etats de transition, l'ecart ne se voit pas.
 ;
-; Six PV seulement (arcade : damage_max = 6) : le flash est bref par nature.
+; Six PV seulement (arcade : damage_max = 6) : trois tirs de base suffisent, le
+; flash ne se voit qu'en mitraillant au force pod.
 ; ---------------------------------------------------------------------------
 pstaff.hitBlink
         lda   AABB_0+AABB.p,u
@@ -524,10 +531,7 @@ pstaff.hitBlink
 @noHit  sta   pstaff_prevP,u
         lda   pstaff_blink,u
         beq   @show                    ; pas de flash en cours
-        deca
-        sta   pstaff_blink,u
-        anda  #3
-        bne   @show                    ; une trame sur quatre, comme la borne
+        clr   pstaff_blink,u           ; une seule trame (voir l'en-tete)
         ldy   #pstaff.blinkTable
 @scan   ldd   ,y++
         beq   @show                    ; image inconnue : on n'y touche pas
