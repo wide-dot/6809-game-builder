@@ -30,6 +30,16 @@ tabrok_0x3a             equ ext_variables+17 ; 1 byte - missile shooting timing
 tabrok_0xc              equ ext_variables+18 ; 1 byte - shouting frequency based on difficulty and table at 1x2b40
 tabrok_flameToggle      equ ext_variables+19 ; 1 byte - flamme petite/grosse : togglé (com) à chaque tick -> alternance déterministe (bufferSwap.count non fiable : swap IRQ asynchrone hors-lock)
 
+; LE FLASH DE COUP (03/09/2026) — deux octets, et les vingt d'extension sont
+; PLEINS. Ils sont pris sur des champs standards de l'OST que ce tabrok
+; n'emploie pas : il choisit son image a la main et ne passe jamais par le
+; systeme d'animation du moteur. Rien d'autre ne les touche (ni foefire, ni
+; commonmissile, ni le renderer). Meme geste que r-type/objid : le jeu
+; re-etiquette des champs libres plutot que d'agrandir l'objet.
+tabrok_blink            equ anim_frame          ; 12 - compte a rebours du flash
+tabrok_prevP            equ anim_frame_duration ; 13 - le potentiel du tour precedent
+TABROK_BLINK            equ 12                  ; arcade : +0x3D := 0x0C @ 0x40:6273
+
 Object
         lda   globals.bossDefeated           ; boss en phase de destruction ?
         lbne  DestroyTabrokNoScore            ; -> autodestruction (explosion) : pas de Tabrok residuel apres la victoire
@@ -242,7 +252,7 @@ LAB_0000_654e
         ;jsr   FUN_0000_6a1a_TabrokChoosePalette
         jsr   FUN_0000_6a3e_ShouldTabrokFire
         lda   AABB_0+AABB.p,u
-        beq   FUN_0000_69e4_DestroyTabrok        ; was killed  
+        lbeq  FUN_0000_69e4_DestroyTabrok       ; was killed (branche longue : tabrok.hitBlink s'est glisse avant la cible)
 
         ;                     LAB_0000_6570                                   XREF[1]:     0000:656b(j)  
         ;0000:6570 ff 76 04        PUSH       word ptr [BP + 0x4]
@@ -315,7 +325,63 @@ LAB_0000_65b5
         jmp   CommonLife
 
 
+; ---------------------------------------------------------------------------
+; tabrok.hitBlink — le flash de coup, 1:1 arcade dans son ESPRIT
+;
+; La borne (draw_tarok_sprite_with_hit_blink, 0x40:661a) echange la palette de
+; l'objet pour la palette de flash 0x55 une trame sur quatre pendant douze
+; trames : trois flashs par coup encaisse. Elle arme son compteur (+0x3D) sur
+; le drapeau que rend sa routine de collision, pas sur la baisse des points de
+; vie.
+;
+; Notre palette est globale au stage : on echange l'IMAGE, pas la palette (voir
+; tools/gen_tabrok_hit.py). Et notre passe de collision ne dit rien a l'objet —
+; elle decremente son potentiel. UNE BAISSE EST DONC UN COUP, comme chez le
+; gouger et le serpent ; la passe precede RunObjects dans la trame, la lecture
+; est a jour.
+;
+; DEUX images blanches pour huit poses (decision auteur) : la pose de vol pour
+; les quatre images de vol, la pose du sol pour tout le reste. Le flash ne dure
+; qu'une trame sur quatre, la substitution ne se voit pas comme un saut.
+; ---------------------------------------------------------------------------
+tabrok.hitBlink
+        lda   AABB_0+AABB.p,u
+        cmpa  tabrok_prevP,u
+        bhs   @noHit                   ; pas de baisse : rien de neuf
+        ldb   #TABROK_BLINK
+        stb   tabrok_blink,u
+@noHit  sta   tabrok_prevP,u
+        lda   tabrok_blink,u
+        beq   @rts                     ; pas de flash en cours
+        deca
+        sta   tabrok_blink,u
+        anda  #3
+        bne   @rts                     ; une trame sur quatre, comme la borne
+        ldx   image_set,u
+        ldb   tabrok_0x2e,u            ; 0 = tourne a gauche, 1 = a droite
+        andb  #1
+        cmpx  #Img_tabrok_6
+        beq   @vol
+        cmpx  #Img_tabrok_7
+        beq   @vol
+        cmpx  #Img_tabrok_14
+        beq   @vol
+        cmpx  #Img_tabrok_15
+        beq   @vol
+        ldx   #Img_tabrok_10           ; au sol : la pose 02 blanchie
+        tstb
+        beq   @put
+        ldx   #Img_tabrok_11
+        bra   @put
+@vol    ldx   #Img_tabrok_8            ; en vol : la pose 00 blanchie
+        tstb
+        beq   @put
+        ldx   #Img_tabrok_9
+@put    stx   image_set,u
+@rts    rts
+
 CommonLife
+        bsr   tabrok.hitBlink          ; le flash de coup, avant l'affichage
         ldd   x_pos,u
         subd  glb_camera_x_pos
         stb   AABB_0+AABB.cx,u

@@ -51,6 +51,10 @@ Img_tabrok_4                 equ set_tabrok_4
 Img_tabrok_5                 equ set_tabrok_5
 Img_tabrok_6                 equ set_tabrok_6
 Img_tabrok_7                 equ set_tabrok_7
+Img_tabrok_8                 equ set_tabrok_8    ; flash de coup, vol, tourne a gauche
+Img_tabrok_9                 equ set_tabrok_9    ; flash de coup, vol, tourne a droite
+Img_tabrok_10                equ set_tabrok_10   ; flash de coup, au sol, tourne a gauche
+Img_tabrok_11                equ set_tabrok_11   ; flash de coup, au sol, tourne a droite
 Img_tabrok_12                equ set_tabrok_12
 Img_tabrok_13                equ set_tabrok_13
 Img_tabrok_14                equ set_tabrok_14

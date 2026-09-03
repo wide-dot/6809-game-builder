@@ -2524,6 +2524,18 @@
                             <image name="tabrok_15" filename="src/enemies/tabrok/images/01.png" index="15">
                                 <encoder name="draw" mirror="x" shift="0"/>
                             </image>
+                            <!-- LE FLASH DE COUP EN VOL (03/09/2026). La pose 00
+                                 blanchie par tools/gen_tabrok_hit.py, une seule
+                                 des deux poses de vol : le flash ne dure qu'une
+                                 trame, l'alternance de flamme n'a pas a etre
+                                 doublee. Decalage 0 seulement, decision auteur —
+                                 le vol n'est pas pre-decale. -->
+                            <image name="tabrok_8" filename="src/enemies/tabrok/images/hit/flight.png" index="8">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="tabrok_9" filename="src/enemies/tabrok/images/hit/flight.png" index="9">
+                                <encoder name="draw" mirror="x" shift="0"/>
+                            </image>
                         </gfxcomp>
                     </lwasm>
                 </file>
@@ -2547,6 +2559,19 @@
                                 <encoder name="draw" mirror="x" shift="1"/>
                             </image>
                             <image name="tabrok_13" filename="src/enemies/tabrok/images/03.png" index="13">
+                                <encoder name="draw" mirror="x" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="1"/>
+                            </image>
+                            <!-- LE FLASH DE COUP AU SOL (03/09/2026). La pose 02
+                                 blanchie sert de jumelle a TOUTES les poses hors
+                                 vol — sol, tir, marche courte et marche longue.
+                                 Les deux decalages, comme les poses qu'elle
+                                 remplace. -->
+                            <image name="tabrok_10" filename="src/enemies/tabrok/images/hit/ground.png" index="10">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
+                            <image name="tabrok_11" filename="src/enemies/tabrok/images/hit/ground.png" index="11">
                                 <encoder name="draw" mirror="x" shift="0"/>
                                 <encoder name="draw" mirror="x" shift="1"/>
                             </image>
