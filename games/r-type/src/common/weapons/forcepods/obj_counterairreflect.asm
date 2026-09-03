@@ -161,7 +161,7 @@ Fade
         bhi   >
         clra
 !       sta   crFade,u
-        beq   Delete
+        beq   FadeDone                 ; la boite est deja retiree (FadeStart)
         deca                           ; 7 -> 0 : la borne lit sa table a l'envers
         asla
         ldx   #reflectFade
@@ -169,8 +169,22 @@ Fade
         stx   image_set,u
         jmp   DisplaySprite
 
+; ---------------------------------------------------------------------------
+; Delete / FadeDone — LA BOITE NE SE RETIRE QU'UNE FOIS
+; ---------------------------------------------------------------------------
+; Collision_RemoveAABB delie le noeud par SES PROPRES prev/next et ne les
+; efface pas (c'est le role de _Collision_CleanLinksAABB) : un second retrait
+; rejoue le deliage avec des liens PERIMES et ecrit dans des noeuds qui ne
+; sont plus les voisins — la liste friend se corrompt, et le jeu part en vrille
+; au bout de quelques fondus. C'est ce que faisait le chemin
+; Live -> FadeStart (retrait) -> Fade -> Delete (retrait a nouveau).
+; Depuis : FadeStart retire, et le fondu fini passe par FadeDone qui ne
+; retire plus rien. Delete reste l'entree des morts SANS fondu (hors ecran),
+; ou la boite est encore dans la liste.
+; ---------------------------------------------------------------------------
 Delete
         _Collision_RemoveAABB AABB_0,AABB_list_friend
+FadeDone
         lda   #3
         sta   routine,u
         jmp   DeleteObject

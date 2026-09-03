@@ -336,3 +336,33 @@ le résultat de la borne à toute cadence. Vérifié sous toje au palier 3 :
 paires 208/205 sur chaque bit, aucun reflet aux coins ; le premier essai
 laissait traîner le retard sur le principal suivant (205/205), corrigé.
 `rtype_bench` 7/7.
+
+### 7.2 Le crash en tirant : une boîte retirée deux fois (03/09/2026)
+
+Trouvé par revue, sans émulateur. `Collision_RemoveAABB`
+(`engine/collision/collision-list.asm`) délie un nœud par **ses propres**
+`prev`/`next` et **ne les efface pas** — c'est le rôle de
+`_Collision_CleanLinksAABB`, et l'en-tête des macros l'écrit déjà : « When a
+box change from a list to another, you MUST use CleanLinksAABB after
+removing and before adding ». Un **second** retrait rejoue donc le déliage
+avec des liens périmés et écrit dans des nœuds qui ne sont plus les voisins :
+la liste `friend` se corrompt, et le jeu part en vrille après quelques
+fondus.
+
+Le reflet le faisait sur son chemin le plus courant :
+`Live` → `FadeStart` (retrait) → `Fade` → `Delete` (**retrait à nouveau**).
+Depuis, `FadeStart` retire, le fondu fini passe par `FadeDone` qui ne retire
+plus rien, et `Delete` reste l'entrée des morts **sans** fondu (hors écran),
+où la boîte est encore dans la liste.
+
+Audit des registres au passage, rien d'autre : `LoadObject_x` préserve U
+(`pshs u` / `puls u,pc`) et ne touche jamais Y, donc l'OST du pod et le
+pointeur d'ancrage survivent à l'allocation ; les `pshs`/`puls` de
+`ReflectSpawn` sont équilibrés sur les deux chemins ; `ReflectAlive` ne
+touche que A, B et CC. `Collision_AddAABB` n'écrit pas `next` sur le nouveau
+nœud, mais `UnloadObject_u` efface tout l'OST à la suppression, donc l'`Init`
+d'un reflet part de liens à zéro.
+
+Vérifié sous toje : 17 500 trames bouton tenu, palier 3 puis palier 2, deux
+bits, du début du stage 1 jusqu'au stage 2 — aucun blocage, reflets toujours
+en vol. `rtype_bench` 7/7.
