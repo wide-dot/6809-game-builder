@@ -61,7 +61,7 @@ PlayerMissile_Init
         lda   subtype,u
         cmpa  #3
         beq   PM_noLaunchSfx
-        _soundFX.play soundFX.FireBlastSound,1
+        _soundFX.play soundFX.MissileSound,1 ; borne $34 (create_top_missile) — jouait le son du beam
 PM_noLaunchSfx
         ; flamme : PAS allumée ici. Allumage retardé à phase>=0x22 (arcade 0x346c), cf. AfterMove.
         lda   #4                    ; direction initiale = droite (arcade +0x12 = 4)
@@ -363,7 +363,7 @@ PM_flameDone
 PlayerMissile_Explode
         jsr   LoadObject_x
         beq   PlayerMissile_Delete
-        _ldd  ObjID_explosion,explosion.subtype.fwk
+        _ldd  ObjID_explosion,explosion.subtype.fwk+explosion.sfx.none
         std   id,x
         ldd   x_pos,u
         std   x_pos,x

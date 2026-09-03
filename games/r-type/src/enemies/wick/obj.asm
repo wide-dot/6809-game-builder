@@ -595,7 +595,7 @@ wick.Boom
         jsr   AwardScore
         jsr   LoadObject_x
         lbeq  wick.Vanish
-        _ldd  ObjID_explosion,explosion.subtype.smallx2
+        _ldd  ObjID_explosion,explosion.subtype.smallx2+explosion.sfx.wick
         std   id,x
         ldd   x_pos,u
         std   x_pos,x

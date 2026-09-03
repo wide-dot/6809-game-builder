@@ -1,9 +1,9 @@
-; soundFX.sms44.data
-; Source : 44 (Master System FM), voie 6.
+; soundFX.sms44PodSimpleFire.data
+; Source : 44-pod-simple-fire (Master System FM), voie 6.
 ; Genere par tools/sms_sfx_to_soundfx.py, ne pas editer a la main.
-soundFX.sms44.data
+soundFX.sms44PodSimpleFire.data
         ; header
-        fcb     8                   ; Number of commands
+        fcb     7                   ; Number of commands
         fcb     5                   ; Channel number (5)
 
         fcb     $30,$C0,0 ; vol:1
@@ -15,5 +15,3 @@ soundFX.sms44.data
 
         fcb     $20,$19,0
         fcb     $10,$B0,3
-
-        fcb     $30,$00,0 ; vol:15

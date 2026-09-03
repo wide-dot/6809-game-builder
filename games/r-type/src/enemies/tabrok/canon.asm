@@ -122,7 +122,7 @@ Destroy
         _Collision_RemoveAABB AABB_0,AABB_list_foefire
         jsr   LoadObject_x ; make then die early ... to be removed
         beq   >
-        _ldd  ObjID_explosion,explosion.subtype.fwk
+        _ldd  ObjID_explosion,explosion.subtype.fwk+explosion.sfx.small
         std   id,x
         ldd   x_pos,u
         std   x_pos,x

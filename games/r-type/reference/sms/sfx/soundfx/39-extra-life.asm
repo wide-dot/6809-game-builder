@@ -1,7 +1,7 @@
-; soundFX.sms39.data
-; Source : 39 (Master System FM), voie 7 — aussi sur 8.
+; soundFX.sms39ExtraLife.data
+; Source : 39-extra-life (Master System FM), voie 7 — aussi sur 8.
 ; Genere par tools/sms_sfx_to_soundfx.py, ne pas editer a la main.
-soundFX.sms39.data
+soundFX.sms39ExtraLife.data
         ; header
         fcb     59                  ; Number of commands
         fcb     5                   ; Channel number (5)

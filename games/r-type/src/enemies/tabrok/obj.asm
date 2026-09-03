@@ -358,7 +358,7 @@ FUN_0000_69e4_DestroyTabrok
 DestroyTabrokNoScore                          ; autodestruction boss-mort : explosion sans credit de score
         jsr   LoadObject_x ; make then die early ... to be removed
         beq   FUN_0000_6a07_DeleteTabrok
-        _ldd  ObjID_explosion,explosion.subtype.big
+        _ldd  ObjID_explosion,explosion.subtype.big+explosion.sfx.big
         std   id,x
         ldd   x_pos,u
         std   x_pos,x

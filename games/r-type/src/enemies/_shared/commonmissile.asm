@@ -380,7 +380,7 @@ Destroy
 DestroyNoFlame
         jsr   LoadObject_x
         beq   Delete
-        _ldd  ObjID_explosion,explosion.subtype.fwk
+        _ldd  ObjID_explosion,explosion.subtype.fwk+explosion.sfx.small
         std   id,x
         ldd   x_pos,u
         std   x_pos,x

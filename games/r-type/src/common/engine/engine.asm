@@ -412,7 +412,47 @@ terrainCollision.init.do
         INCLUDE "engine/graphics/animation/AnimateSprite.asm"
         INCLUDE "engine/graphics/animation/AnimateSpriteSync.asm"
         INCLUDE "engine/graphics/animation/moveByScript.asm"
+; LE COUP ENCAISSE (03/09/2026). Collision_Do est residente ; quand une arme
+; (liste 1) laisse du potentiel a sa cible (liste 2), c'est un coup non fatal
+; — le son le plus frequent de la borne ($56, 39 sites), et $57 pour les
+; points faibles de boss (la liste target, le gomander). Les ennemis a
+; detection de coup propre (dobkeratops, gouger, slither) demandent $57
+; eux-memes, une priorite au-dessus : la passe precede RunObjects dans la
+; trame, leur demande gagne la boite aux lettres avant l'IRQ.
+; Collision_Do_2 porte la TETE de la seconde liste (le macro _Collision_Do y
+; copie la valeur du pointeur) : la comparer a AABB_list_target dit la paire.
+        INCLUDE "src/common/fx/soundfx/soundFX.const.asm"
+        INCLUDE "engine/sound/soundFX.macro.asm"
+; Le crochet tient en un jsr : le noyau est tisse de branchements courts et
+; une expansion en ligne les fait deborder. La routine suit l'include.
+_Collision_OnLoose MACRO
+        jsr   Collision_OnLoose
+ ENDM
+COLLISION_ON_LOOSE equ 1
         INCLUDE "engine/collision/collision.asm"
+
+; A l'entree, X et U sont les deux boites et doivent ressortir intacts ; D est
+; libre. L'id et la priorite passent par la pile, ce que _soundFX.play ne
+; sait pas faire (constantes seulement) — c'est sa regle, recopiee.
+Collision_OnLoose
+        ldd   #soundFX.HitSound*256          ; A = son ($56), B = priorite 0
+        pshs  d
+        ldd   Collision_Do_2
+        cmpd  AABB_list_target
+        bne   @rule
+        ldd   #soundFX.BossHitSound*256+1    ; point faible de boss ($57), priorite 1
+        std   ,s
+@rule   lda   soundFX.newSound+1
+        anda  #$7f
+        cmpa  1,s
+        bhi   @exit                          ; une demande plus prioritaire attend
+        blo   @take
+        lda   soundFX.curSound+1
+        bmi   @exit                          ; meme priorite, son en cours verrouille
+@take   puls  d
+        std   soundFX.newSound
+        rts
+@exit   puls  d,pc
 ; OVERLAY : le pack de sprites est celui de l'overlay (BuildSprites — dessin
 ; seul, pas de sauvegarde de fond, pas d'effacement). L'ancien pack
 ; background-erase reste dans l'engine, choisi par l'absence du define

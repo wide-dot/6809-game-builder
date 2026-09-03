@@ -408,7 +408,7 @@ gomander.Flash
 gomander.Boom
         jsr   LoadObject_x
         beq   @ret
-        _ldd  ObjID_explosion,explosion.subtype.big
+        _ldd  ObjID_explosion,explosion.subtype.big+explosion.sfx.cascade
         std   id,x
         ldd   x_pos,u
         std   x_pos,x
@@ -531,7 +531,6 @@ gomander.ArmDeath
         jsr   gomander.GateClose       ; la mort peut tomber porte ouverte
         ldb   #gomander_scoreIdx       ; a4d5 : 0x8718
         jsr   AwardScore
-        _soundFX.play soundFX.ExplosionSound,2
         jsr   gomander.Boom            ; a4db : la cascade arcade, reduite a
                                        ; une explosion par jalon (cf. Boom)
         ldd   #gomander.DEATH          ; a518 : 384 trames

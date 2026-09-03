@@ -449,7 +449,7 @@ zoid.Boom
         jsr   AwardScore
         jsr   LoadObject_x
         beq   zoid.Vanish
-        _ldd  ObjID_explosion,explosion.subtype.smallx2
+        _ldd  ObjID_explosion,explosion.subtype.smallx2+explosion.sfx.turret
         std   id,x
         ldb   x_pos,u
         clra

@@ -1,7 +1,7 @@
-; soundFX.sms43.data
-; Source : 43 (Master System FM), voie 7 — aussi sur 6.
+; soundFX.sms43CounterairLaser.data
+; Source : 43-counterair-laser (Master System FM), voie 7 — aussi sur 6.
 ; Genere par tools/sms_sfx_to_soundfx.py, ne pas editer a la main.
-soundFX.sms43.data
+soundFX.sms43CounterairLaser.data
         ; header
         fcb     59                  ; Number of commands
         fcb     5                   ; Channel number (5)

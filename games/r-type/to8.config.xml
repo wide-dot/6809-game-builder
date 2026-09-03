@@ -279,8 +279,17 @@
                      pres dans la zone ennemis de cette page, 18/08 — n'a plus
                      cours : depuis la partition des arenes du 24/08 le visage est
                      en $11 dans stage1.foes. La frontiere POURRAIT bouger ; elle
-                     reste ou elle est, le commun n'en a pas besoin.) -->
-                <zone page="$0C" address="$0000" size="$0A80"/>
+                     reste ou elle est, le commun n'en a pas besoin.)
+                     ELLE A BOUGE le 03/09/2026, de $0A80 a $0E80 : les treize
+                     bruitages de la Master System font grossir common.soundfx de
+                     1 003 a 2 492 octets. Le manque n'etait que de 152 octets
+                     pour le dernier fichier, mais le packer place en premier
+                     ajustement et les miettes ne s'additionnent pas — 512 octets
+                     n'ont deplace l'echec que d'un fichier, 1 024 suffisent. Le
+                     lot pstaff, seul occupant de la zone ennemis de cette page,
+                     tient encore entier derriere ($0E80 + 12 191 < $4000). Le
+                     controle de composition garde la porte. -->
+                <zone page="$0C" address="$0000" size="$0E80"/>
                 <!-- La queue de la page collision ($17) : les collisions des huit
                      stages sont des ALTERNATIVES a $0000. La borne n'est plus
                      ecrite ici : depuis que le packer place CONTRE les etats de
@@ -321,7 +330,7 @@
                      plus petit dans l'ordre des zones, une page entiere en premier
                      evite d'eclater un lot. -->
                 <zone page="$0B" address="$0000" size="$4000"/>
-                <zone page="$0C" address="$0A80" size="$3580"/>
+                <zone page="$0C" address="$0E80" size="$3180"/> <!-- frontiere avec le commun, deplacee le 03/09/2026 (voir l'arene objects) -->
                 <zone page="$0D" address="$0000" size="$4000"/>
                 <zone page="$0E" address="$0000" size="$4000"/>
                 <zone page="$0F" address="$0000" size="$4000"/>

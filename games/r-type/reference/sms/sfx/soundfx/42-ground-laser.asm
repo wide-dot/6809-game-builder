@@ -1,9 +1,9 @@
-; soundFX.sms42.data
-; Source : 42 (Master System FM), voie 6 — aussi sur 7.
+; soundFX.sms42GroundLaser.data
+; Source : 42-ground-laser (Master System FM), voie 6 — aussi sur 7.
 ; Genere par tools/sms_sfx_to_soundfx.py, ne pas editer a la main.
-soundFX.sms42.data
+soundFX.sms42GroundLaser.data
         ; header
-        fcb     42                  ; Number of commands
+        fcb     41                  ; Number of commands
         fcb     5                   ; Channel number (5)
 
         fcb     $30,$40,0 ; vol:2
@@ -67,4 +67,3 @@ soundFX.sms42.data
         fcb     $20,$1B,2
 
         fcb     $10,$57,0
-        fcb     $30,$00,1 ; vol:15

@@ -544,7 +544,7 @@ bugmgr.Explode
         jsr   AwardScore
         jsr   LoadObject_x
         beq   bugmgr.DieSilent
-        _ldd  ObjID_explosion,explosion.subtype.smallx2
+        _ldd  ObjID_explosion,explosion.subtype.smallx2+explosion.sfx.small
         std   id,x
         ldd   bugmgr.wXH               ; le record vit en playfield : direct
         std   x_pos,x

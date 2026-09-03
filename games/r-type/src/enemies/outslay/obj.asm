@@ -748,10 +748,9 @@ outslay.wFy equ *-2
 outslay.RecExplode
         ldb   #outslay_scoreIdx        ; 9410 : 0x86ec
         jsr   AwardScore
-        _soundFX.play soundFX.ExplosionSound,1
         jsr   LoadObject_x
         beq   @mark
-        _ldd  ObjID_explosion,explosion.subtype.smallx2
+        _ldd  ObjID_explosion,explosion.subtype.smallx2+explosion.sfx.turret ; borne $52 (outslay_body_explode_init)
         std   id,x
         ldb   outslay.wPx              ; FRONTIERE : l'explosion vit en playfield
         clra

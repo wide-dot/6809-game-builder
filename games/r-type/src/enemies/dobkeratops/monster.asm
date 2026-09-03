@@ -93,7 +93,7 @@ Intro
         bne   >
         jmp   InstanceEnd
 !
-        _ldd  ObjID_explosion,explosion.subtype.smallx3
+        _ldd  ObjID_explosion,explosion.subtype.smallx3+explosion.sfx.cascade
         std   id,x
 ; V2-DEVIATION : `_rnda 0,n` est le macro v1 (rnd.macro.asm), absent du v2 —
 ; dont le `_random.a` appelle un `random.get` qui n'existe nulle part. Le
@@ -256,6 +256,7 @@ UpdateHitBox
         ; hit this frame? the boss damage potential dropped since last frame
         cmpa  hitFlash.prevP
         bhs   @noHit
+        _soundFX.play soundFX.BossHitSound,1 ; borne $57 (run_dobkeratops_monster_main)
         ; L'index qui porte la teinte du boss a change a la migration de
         ; palette : son olive #617A00 est passee de la case 12 a la case 14.
         ; Mesure sur ses images : 248 px en 14, ZERO en 12 — le flash sur 12
@@ -329,7 +330,7 @@ Delete
         jsr   AwardScore
         jsr   LoadObject_x
         beq   @delete
-        _ldd   ObjID_explosion,explosion.subtype.smallx3
+        _ldd   ObjID_explosion,explosion.subtype.smallx3+explosion.sfx.cascade
         std   id,x
         ldd   x_pos,u
         std   x_pos,x

@@ -341,7 +341,7 @@ TailUpdateAll
         pshs  y
         jsr   LoadObject_x           ; X = nouvel OST (ou beq si pool plein)
         beq   @noexp
-        _ldd  ObjID_explosion,explosion.subtype.smallx2
+        _ldd  ObjID_explosion,explosion.subtype.smallx2+explosion.sfx.cascade
         std   id,x                   ; id + subtype
         ldy   ,s                     ; state ptr (sans depiler)
         ldd   TS_XHI,y

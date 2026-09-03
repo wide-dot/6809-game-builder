@@ -41,6 +41,7 @@ gfxlock.frame.count     EXTERNAL
 gfxlock.frameDrop.count EXTERNAL
 ; La boîte aux lettres du pilote de bruitages, dans le moteur résident.
 soundFX.newSound        EXTERNAL
+soundFX.curSound        EXTERNAL   ; lu par _soundFX.play (verrou du son en cours)
 ; Les deux drapeaux du décompte, résidents dans le stage.
 main.endstage.scoreArmed EXTERNAL
 main.endstage.scoreDone  EXTERNAL
@@ -77,6 +78,9 @@ ymm.playing              EXTERNAL
         INCLUDE "engine/constants.asm"
         INCLUDE "engine/macros.asm"
         INCLUDE "engine/system/to8/map.const.asm"
+        ; La vie supplementaire sonne (borne $38, Master System 39).
+        INCLUDE "src/common/fx/soundfx/soundFX.const.asm"
+        INCLUDE "engine/sound/soundFX.macro.asm"
         ; Les masques de boutons du declencheur de l'ecran continue.
         INCLUDE "engine/system/to8/controller/joypad.const.asm"
         ; ymm.LOOP / ymm.NO_LOOP, pour game.music.play.

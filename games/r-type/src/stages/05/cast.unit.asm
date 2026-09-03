@@ -108,6 +108,8 @@ set_slither_tail_15 EXTERNAL
         INCLUDE "src/common/engine/ram.const.asm"
         INCLUDE "engine/constants.asm"
         INCLUDE "engine/macros.asm"
+        INCLUDE "src/common/fx/soundfx/soundFX.const.asm"
+        INCLUDE "engine/sound/soundFX.macro.asm"
         INCLUDE "engine/collision/macros.asm"
         INCLUDE "engine/collision/struct_AABB.equ"
         INCLUDE "engine/system/to8/map.const.asm"

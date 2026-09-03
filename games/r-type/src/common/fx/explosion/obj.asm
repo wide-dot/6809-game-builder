@@ -35,8 +35,38 @@ Routines
         fdb   Live
 
 Init
-        _soundFX.play soundFX.ExplosionSound,1
+        ; LE SON PAR PALIER (03/09/2026) : bits 4-6 du subtype, voir
+        ; explosion.const.asm. Priorite 1, comme l'unique son d'avant.
         ldb   subtype,u
+        andb  #$70
+        lsrb
+        lsrb
+        lsrb
+        lsrb
+        ldx   #exp.sfx
+        lda   b,x
+        bmi   @cascade
+        bsr   exp.playSound
+        bra   @anim
+@cascade
+        ; la cascade de la borne : AND AL,3 / JZ / ADD CL,AL depuis $50
+        ; (dobkeratops_explosion, gomander, bydo) — un quart de silence ;
+        ; celle du compiler tire un bit depuis $52, sans silence.
+        pshs  a
+        jsr   RandomNumber
+        andb  #3
+        lda   ,s+
+        cmpa  #$FE                     ; cascade2 : $52/$53
+        bne   >
+        andb  #1
+        addb  #2
+!       ldx   #exp.cascade
+        lda   b,x
+        beq   @anim                    ; le quart de silence
+        bsr   exp.playSound
+@anim
+        ldb   subtype,u
+        andb  #$0F
         ldx   #exp.animations
         ldx   b,x
         stx   anim,u
@@ -85,6 +115,41 @@ Live
 ; unknown : (2) 2h, 858Eh, 3h, 8594h, 3h, 859Ah, 4h, 85A0h, 6h, 85A6h, 8h, 85ACh, 0h
 ; big     : (1) 2h, 8654h, 4h, 8660h, 4h, 8654h, 4h, 8660h, 4h, 866Ch, 4h, 8678h, 4h, 8684h, 4h, 8690h, 4h, 869Ch, 4h, 86A8h, 4h, 8684h, 4h, 8690h, 4h, 869Ch, 4h, 86A8h, 0h
 ; delay for first frame is overwritten in code, so the real values are indicated in parenthesis
+
+; A = identifiant du son, priorite 1 — le corps de _soundFX.play avec un id
+; en registre (le macro n'accepte qu'une constante).
+exp.playSound
+        sta   @id
+        lda   soundFX.newSound+1
+        anda  #$7f
+        cmpa  #1
+        bhi   @exit                    ; une demande plus prioritaire attend
+        blo   @set
+        lda   soundFX.curSound+1
+        bmi   @exit                    ; meme priorite et son en cours verrouille
+@set    ldd   #$0001
+@id     equ   *-2
+        std   soundFX.newSound
+@exit   rts
+
+; le son de chaque palier (indexe par les bits 4-6 du subtype) ;
+; $FF = cascade de boss, $FE = cascade du compiler, 0 = muet
+exp.sfx
+        fcb   soundFX.ExplosionSound        ; medium  $51
+        fcb   soundFX.SmallExplosionSound   ; small   $50
+        fcb   soundFX.TurretExplosionSound  ; turret  $52
+        fcb   soundFX.BigExplosionSound     ; big     $53
+        fcb   soundFX.WickExplosionSound    ; wick    $54
+        fcb   $FF                           ; cascade
+        fcb   $FE                           ; cascade2
+        fcb   0                             ; none
+
+; le tirage de la cascade : 0 = silence, 1..3 = $51..$53
+exp.cascade
+        fcb   0
+        fcb   soundFX.ExplosionSound
+        fcb   soundFX.TurretExplosionSound
+        fcb   soundFX.BigExplosionSound
 
 exp.animations
         fdb   exp.animation.smallx3

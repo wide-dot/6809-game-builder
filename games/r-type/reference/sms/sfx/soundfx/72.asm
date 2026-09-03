@@ -3,9 +3,17 @@
 ; Genere par tools/sms_sfx_to_soundfx.py, ne pas editer a la main.
 soundFX.sms72.data
         ; header
-        fcb     63                  ; Number of commands
+        fcb     70                  ; Number of commands
         fcb     5                   ; Channel number (5)
 
+        fcb     $00,$C0,0 ; instrument perso
+        fcb     $01,$02,0
+        fcb     $02,$09,0
+        fcb     $03,$00,0
+        fcb     $04,$F3,0
+        fcb     $05,$F5,0
+        fcb     $06,$10,0
+        fcb     $07,$80,0
         fcb     $30,$70,0 ; vol:3
         fcb     $20,$19,1
 
@@ -98,5 +106,3 @@ soundFX.sms72.data
 
         fcb     $20,$19,0
         fcb     $10,$01,1
-
-        fcb     $30,$00,0 ; vol:15

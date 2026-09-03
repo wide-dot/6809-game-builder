@@ -132,6 +132,8 @@ wctk_walkList
         bcc   @enext
 @hit
         dec   AABB.p,x                    ; 1 damage, once (p>=1 here -> clamps at 0)
+        beq   @enext                      ; a zero : il meurt, l'explosion sonne
+        _soundFX.play soundFX.HitSound,0  ; il reste du potentiel : coup encaisse ($56)
 @enext
         ldx   AABB.next,x
         bne   @eloop

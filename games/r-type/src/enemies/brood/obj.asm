@@ -410,7 +410,7 @@ brood.Frame
         jsr   AwardScore
         jsr   LoadObject_x
         beq   @part
-        _ldd  ObjID_explosion,explosion.subtype.big.brown
+        _ldd  ObjID_explosion,explosion.subtype.big.brown+explosion.sfx.turret
         std   id,x
         ldd   x_pos,u
         std   x_pos,x

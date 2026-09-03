@@ -40,6 +40,7 @@ Routines
         fdb   AlreadyDeleted
 
 Init
+        _soundFX.play soundFX.PodSimpleFireSound,0 ; borne $3F (run_counter_air_reflection)
         lda   #2
         sta   priority,u
         lda   render_flags,u

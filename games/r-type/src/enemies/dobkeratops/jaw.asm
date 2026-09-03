@@ -110,7 +110,7 @@ Animate
 Explode
         jsr   LoadObject_x
         beq   >
-        _ldd   ObjID_explosion,explosion.subtype.smallx2
+        _ldd   ObjID_explosion,explosion.subtype.smallx2+explosion.sfx.cascade
         std   id,x ; and subtype
         ldd   x_pos,u
         std   x_pos,x

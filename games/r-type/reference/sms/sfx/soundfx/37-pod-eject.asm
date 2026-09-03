@@ -1,9 +1,9 @@
-; soundFX.sms37.data
-; Source : 37 (Master System FM), voie 6.
+; soundFX.sms37PodEject.data
+; Source : 37-pod-eject (Master System FM), voie 6.
 ; Genere par tools/sms_sfx_to_soundfx.py, ne pas editer a la main.
-soundFX.sms37.data
+soundFX.sms37PodEject.data
         ; header
-        fcb     21                  ; Number of commands
+        fcb     20                  ; Number of commands
         fcb     5                   ; Channel number (5)
 
         fcb     $30,$20,0 ; vol:2
@@ -35,5 +35,3 @@ soundFX.sms37.data
 
         fcb     $20,$19,0
         fcb     $10,$43,2
-
-        fcb     $30,$00,0 ; vol:15

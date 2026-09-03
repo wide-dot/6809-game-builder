@@ -11,6 +11,19 @@ soundFX.soundTable
             fdb     soundFX.PodAttachSound.data
             fdb     soundFX.FireBlastSound.data
             fdb     soundFX.PlayerHitSound.data
+            fdb     soundFX.sms35MissileLaunch.data
+            fdb     soundFX.sms37PodEject.data
+            fdb     soundFX.sms39ExtraLife.data
+            fdb     soundFX.sms41ReboundLaser.data
+            fdb     soundFX.sms42GroundLaser.data
+            fdb     soundFX.sms43CounterairLaser.data
+            fdb     soundFX.sms44PodSimpleFire.data
+            fdb     soundFX.sms45ExplosionSmall.data
+            fdb     soundFX.sms47ExplosionTurret.data
+            fdb     soundFX.sms48ExplosionBig.data
+            fdb     soundFX.sms49ExplosionWick.data
+            fdb     soundFX.sms50EnemyHit.data
+            fdb     soundFX.sms51BossHit.data
 
 ; Sound data format:
 ; ------------------
@@ -438,4 +451,26 @@ soundFX.PlayerHitSound.data
         fcb     $20,$13,0
         fcb     $10,$43
 
-
+; ---------------------------------------------------------------------------
+; Les treize sons confirmes a l'oreille (03/09/2026) : blocs GENERES par
+; tools/sms_sfx_to_soundfx.py depuis le corpus Master System, inclus tels
+; quels — ne pas les editer ici, regenerer (`--tout --sortie ...`).
+; Cinq d'entre eux (35, 48, 49, 50, 51) jouent sur l'instrument personnalise
+; du YM2413 et commencent par le redefinir (registres $00-$07) : c'est le
+; geste 6 de l'outil. Le lecteur de musique partage cet instrument — la
+; Master System faisait exactement de meme, son pilote le reecrivait avant
+; chaque bruitage.
+; ---------------------------------------------------------------------------
+        INCLUDE "reference/sms/sfx/soundfx/35-missile-launch.asm"
+        INCLUDE "reference/sms/sfx/soundfx/37-pod-eject.asm"
+        INCLUDE "reference/sms/sfx/soundfx/39-extra-life.asm"
+        INCLUDE "reference/sms/sfx/soundfx/41-rebound-laser.asm"
+        INCLUDE "reference/sms/sfx/soundfx/42-ground-laser.asm"
+        INCLUDE "reference/sms/sfx/soundfx/43-counterair-laser.asm"
+        INCLUDE "reference/sms/sfx/soundfx/44-pod-simple-fire.asm"
+        INCLUDE "reference/sms/sfx/soundfx/45-explosion-small.asm"
+        INCLUDE "reference/sms/sfx/soundfx/47-explosion-turret.asm"
+        INCLUDE "reference/sms/sfx/soundfx/48-explosion-big.asm"
+        INCLUDE "reference/sms/sfx/soundfx/49-explosion-wick.asm"
+        INCLUDE "reference/sms/sfx/soundfx/50-enemy-hit.asm"
+        INCLUDE "reference/sms/sfx/soundfx/51-boss-hit.asm"

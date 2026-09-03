@@ -3,7 +3,7 @@
 ; Genere par tools/sms_sfx_to_soundfx.py, ne pas editer a la main.
 soundFX.sms38PodAttach.data
         ; header
-        fcb     43                  ; Number of commands
+        fcb     42                  ; Number of commands
         fcb     5                   ; Channel number (5)
 
         fcb     $30,$B0,0 ; vol:2
@@ -68,5 +68,3 @@ soundFX.sms38PodAttach.data
 
         fcb     $20,$1F,0
         fcb     $10,$01,2
-
-        fcb     $30,$00,0 ; vol:15

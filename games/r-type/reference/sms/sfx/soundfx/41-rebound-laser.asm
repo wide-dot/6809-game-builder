@@ -1,9 +1,9 @@
-; soundFX.sms41.data
-; Source : 41 (Master System FM), voie 6.
+; soundFX.sms41ReboundLaser.data
+; Source : 41-rebound-laser (Master System FM), voie 6.
 ; Genere par tools/sms_sfx_to_soundfx.py, ne pas editer a la main.
-soundFX.sms41.data
+soundFX.sms41ReboundLaser.data
         ; header
-        fcb     51                  ; Number of commands
+        fcb     50                  ; Number of commands
         fcb     5                   ; Channel number (5)
 
         fcb     $30,$50,0 ; vol:0
@@ -95,5 +95,3 @@ soundFX.sms41.data
         fcb     $20,$1B,1
 
         fcb     $20,$1B,1
-
-        fcb     $30,$00,0 ; vol:15

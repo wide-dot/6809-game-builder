@@ -148,7 +148,7 @@ part.Live
         sta   part.lastP,u
         jsr   LoadObject_x
         beq   @rien
-        _ldd  ObjID_explosion,explosion.subtype.smallx2
+        _ldd  ObjID_explosion,explosion.subtype.smallx2+explosion.sfx.turret
         std   id,x
         jsr   RandomNumber
         andb  #7
@@ -170,7 +170,7 @@ part.Boom
         jsr   AwardScore
         jsr   LoadObject_x
         beq   part.Vanish
-        _ldd  ObjID_explosion,explosion.subtype.big.brown
+        _ldd  ObjID_explosion,explosion.subtype.big.brown+explosion.sfx.turret
         std   id,x
         ldd   x_pos,u
         std   x_pos,x

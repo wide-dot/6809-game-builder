@@ -1236,6 +1236,7 @@ slither.FollowerLive
         cmpa  slither.fPrevP,u
         bhs   @noflash
         sta   slither.fPrevP,u
+        _soundFX.play soundFX.BossHitSound,1 ; borne $57 (tete, corps et queue)
         lda   #1
         sta   slither.fBlink,u
 @noflash

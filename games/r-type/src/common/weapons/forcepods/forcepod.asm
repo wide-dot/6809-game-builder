@@ -328,6 +328,7 @@ RunFloating
         ora   #0
         sta   render_flags,u          
 @rear
+        _soundFX.play soundFX.PodAttachSound,2 ; borne $37 (run_force_pod_floating) — en donnees depuis la v1, jamais joue
         lda   #RunAttached_rtn
         sta   routine,u
         lda   #1
@@ -809,6 +810,7 @@ RunAttached
         ldd   #$fca0
 !       std   x_vel,u
         clr   return_to_ship,u
+        _soundFX.play soundFX.PodEjectSound,2 ; borne $36 (run_force_pod_attached)
         lda   #RunEjected_rtn
         sta   routine,u
         clr   player1+forcepod_attached

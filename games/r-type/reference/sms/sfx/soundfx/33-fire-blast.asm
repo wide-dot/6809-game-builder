@@ -3,7 +3,7 @@
 ; Genere par tools/sms_sfx_to_soundfx.py, ne pas editer a la main.
 soundFX.sms33FireBlast.data
         ; header
-        fcb     38                  ; Number of commands
+        fcb     37                  ; Number of commands
         fcb     5                   ; Channel number (5)
 
         fcb     $30,$E0,0 ; vol:2
@@ -61,5 +61,3 @@ soundFX.sms33FireBlast.data
 
         fcb     $20,$15,0
         fcb     $10,$81,1
-
-        fcb     $30,$00,0 ; vol:15

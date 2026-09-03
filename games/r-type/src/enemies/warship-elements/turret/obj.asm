@@ -180,7 +180,7 @@ turret.Boom
 !       jsr   AwardScore
         jsr   LoadObject_x
         beq   turret.Vanish
-        _ldd  ObjID_explosion,explosion.subtype.smallx2
+        _ldd  ObjID_explosion,explosion.subtype.smallx2+explosion.sfx.turret
         std   id,x
         ldd   x_pos,u
         std   x_pos,x

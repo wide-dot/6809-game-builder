@@ -40,7 +40,21 @@ l'en-tête du bloc, pas dans les registres. Les six effets déjà portés
    ne garde que le « note on » ;
 5. **le volume est poussé à fond** — le quartet bas du registre $30 est mis
    à 0, et la valeur d'origine est notée en commentaire (`; vol:2`), comme
-   dans les blocs écrits à la main.
+   dans les blocs écrits à la main ;
+6. **l'instrument personnalisé est réécrit en tête quand le corps s'en
+   sert** — cinq sons du corpus (35, 48, 49, 50, 51) jouent sur l'instrument
+   0, celui que les registres $00-$07 définissent, et cette définition vit
+   dans le préambule que le geste 1 coupe. L'outil la retient (la dernière
+   valeur écrite dans chaque registre avant le corps) et la remet en tête du
+   bloc en huit commandes ordinaires, délai 0 — les registres sous $0F sont
+   écrits tels quels par le pilote. La commande `$FF` du pilote, prévue pour
+   ça, n'est pas employée : son octet de délai est relu à l'adresse de la
+   table, c'est-à-dire n'importe quoi (`lda -1,x` après `leax 3,x`). Aucun
+   des six blocs écrits à la main n'en avait besoin : ils jouent tous sur un
+   instrument de la ROM du YM2413 ;
+7. **la remise à plat finale part** — la Master System clôt chaque son en
+   remettant la voie sur l'instrument 0 à volume 15, muet ; ce n'est pas du
+   son, et les blocs à la main ne la gardent pas.
 
 Les délais sont conservés tels quels : ce sont déjà des trames 50 Hz.
 
@@ -99,6 +113,27 @@ def sans_preambule(cmds):
            and len({c[1] for c in f}) == 1:
             dernier = i + 8
     return cmds[dernier + 1:] if dernier >= 0 else cmds
+
+
+def instrument_perso(cmds):
+    """[8 octets] : la dernière valeur écrite dans chacun des registres
+    $00-$07 avant le corps (geste 6). Un registre jamais écrit vaut 0."""
+    inst = [0] * 8
+    corps = len(cmds) - len(sans_preambule(cmds))
+    for reg, dat, _, _ in cmds[:corps]:
+        if reg <= 7:
+            inst[reg] = dat
+    return inst
+
+
+def utilise_instrument_0(cmds, voie):
+    """Le corps sélectionne-t-il l'instrument 0 sur la voie gardée, pour en
+    JOUER ? La Master System termine chaque son en remettant la voie à plat
+    — instrument 0, volume 15 (muet) — et cette remise à plat n'est pas un
+    usage : seul compte un instrument 0 à volume audible."""
+    return any(reg & 0xF0 == REG_INST_VOL and v == voie
+               and dat >> 4 == 0 and dat & 0x0F != 0x0F
+               for reg, dat, _, v in cmds)
 
 
 def voies(cmds):
@@ -175,14 +210,24 @@ def bloc(nom, cmds, voie, source, alternatives):
 
 
 def convertir(chemin, voie=None, report=None):
-    corps = sans_preambule(lire(chemin))
+    tout = lire(chemin)
+    corps = sans_preambule(tout)
     v = voies(corps)
     if not v:
         return None, None, {}
     retenue = voie if voie is not None else max(v, key=lambda k: (v[k], k))
     if report is None:                 # le son multi-voies a besoin du report
         report = len(v) > 1
-    return reduire(corps, retenue, report), retenue, v
+    cmds = list(reduire(corps, retenue, report))
+    # geste 7 : la remise a plat finale de la voie (instrument 0, volume 15)
+    # n'est pas du son — les blocs a la main ne la gardent pas.
+    if cmds and cmds[-1][0] == REG_INST_VOL and cmds[-1][3] == ' ; vol:15':
+        cmds.pop()
+    if utilise_instrument_0(corps, retenue):                     # geste 6
+        tete = [(reg, dat, 0, ' ; instrument perso' if reg == 0 else '')
+                for reg, dat in enumerate(instrument_perso(tout))]
+        cmds = tete + list(cmds)
+    return cmds, retenue, v
 
 
 def blocs_portes():

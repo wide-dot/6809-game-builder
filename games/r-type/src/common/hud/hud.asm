@@ -244,6 +244,7 @@ hud.checkExtraLife
         blo   @rts
 @grant  inc   globals.lives
         inc   globals.lifeUpIdx
+        _soundFX.play soundFX.ExtraLifeSound,4 ; borne $38 (update_current_stage_score)
 @rts    rts
 
 hud.nbExtraLifeThresholds equ 5

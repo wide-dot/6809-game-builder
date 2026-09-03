@@ -111,6 +111,7 @@ Spawn
         ; les slots de la volee precedente sont morts avec elle (une volee
         ; exige les deux tetes mortes) : on les eteint avant d'y republier
         jsr   groundmgr.reset
+        _soundFX.play soundFX.GroundLaserSound,1 ; borne $3C (arm_ground_laser_*)
         ; le troisieme OST : celui qui dessinera les cellules des deux chaines
         ; — un seul, et pas un de plus (cf. gl.renderLive plus haut)
         lda   gl.renderLive

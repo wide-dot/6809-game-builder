@@ -1034,7 +1034,7 @@ PartBoom
         pshs  x
         jsr   LoadObject_x
         beq   @pop
-        _ldd  ObjID_explosion,explosion.subtype.smallx3
+        _ldd  ObjID_explosion,explosion.subtype.smallx3+explosion.sfx.cascade2
         std   id,x
         ldy   ,s                       ; l'entree, remise de la pile
         ldb   ,y                       ; dx, signe

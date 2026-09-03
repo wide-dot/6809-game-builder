@@ -42,6 +42,7 @@ Routines
         fdb   AlreadyDeleted
 
 GenChilds
+        _soundFX.play soundFX.CounterAirSound,1 ; borne $3D (create_counter_air_laser_a/b)
         ldd   #0
         std   glb_d2
         jsr   InitFirstChild

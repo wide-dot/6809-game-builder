@@ -24,6 +24,8 @@ counterairlaser.Object EXPORT
         INCLUDE "engine/macros.asm"
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/collision/macros.asm"
+        INCLUDE "src/common/fx/soundfx/soundFX.const.asm"
+        INCLUDE "engine/sound/soundFX.macro.asm"
         INCLUDE "engine/collision/struct_AABB.equ"
         INCLUDE "src/common/lib/object.const.asm"
         INCLUDE "src/stages/01/objid.const.asm"

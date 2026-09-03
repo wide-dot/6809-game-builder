@@ -74,6 +74,12 @@ Collision_Do_2 equ *-2
 @loose  nega                          ; loose
         sta   AABB.p,x
         stb   AABB.p,u
+ IFDEF COLLISION_ON_LOOSE
+        ; V2-DEVIATION (03/09/2026) : X garde du potentiel, c'est un COUP
+        ; ENCAISSE — l'includeur pose ce qu'il veut en faire (R-Type : le
+        ; bruitage, src/common/engine/engine.asm). Le noyau ne sait rien du son.
+        _Collision_OnLoose
+ ENDC
 @continue
 @skipx  ldx   AABB.next,x
         bne   @loopx

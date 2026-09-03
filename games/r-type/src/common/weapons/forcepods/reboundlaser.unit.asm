@@ -24,6 +24,8 @@ reboundlaser.Object EXPORT
         INCLUDE "engine/macros.asm"
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/collision/macros.asm"
+        INCLUDE "src/common/fx/soundfx/soundFX.const.asm"
+        INCLUDE "engine/sound/soundFX.macro.asm"
         INCLUDE "engine/collision/struct_AABB.equ"
         INCLUDE "src/common/lib/object.const.asm"
         ; Les variables inter-main : le laser lit backgroundSolid pour savoir

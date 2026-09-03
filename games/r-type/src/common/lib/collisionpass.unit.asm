@@ -27,6 +27,8 @@ weaponPodImmune EXPORT
         INCLUDE "engine/collision/macros.asm"
         INCLUDE "engine/collision/struct_AABB.equ"
         INCLUDE "engine/system/to8/map.const.asm"
+        INCLUDE "src/common/fx/soundfx/soundFX.const.asm"
+        INCLUDE "engine/sound/soundFX.macro.asm"
         ; Le contact arme lit les trois OST statiques et leurs identifiants de
         ; routine : le force pod et les deux bit devices.
         INCLUDE "src/common/weapons/forcepods/forcepod.equ"

@@ -175,7 +175,7 @@ fireball.Flight
 @mur    ; ECART : l'explosion standard tient lieu de dissipation
         jsr   LoadObject_x
         beq   fireball.Vanish
-        _ldd  ObjID_explosion,explosion.subtype.smallx2
+        _ldd  ObjID_explosion,explosion.subtype.smallx2+explosion.sfx.small
         std   id,x
         ldd   x_pos,u
         std   x_pos,x

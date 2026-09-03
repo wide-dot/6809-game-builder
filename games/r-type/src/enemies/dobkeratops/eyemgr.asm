@@ -243,7 +243,7 @@ Kill
         ; l'explosion a la position de l'oeil
         jsr   LoadObject_x
         beq   EMk2                     ; plus de slot libre
-        _ldd  ObjID_explosion,explosion.subtype.smallx2
+        _ldd  ObjID_explosion,explosion.subtype.smallx2+explosion.sfx.turret
         std   id,x
         ldb   EMsys
         aslb

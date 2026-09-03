@@ -279,7 +279,7 @@ LAB_0000_86a0_DestroyScant
         jsr   AwardScore
         jsr   LoadObject_x ; make then die early ... to be removed
         beq   FUN_0000_6a07_DeleteScant
-        _ldd  ObjID_explosion,explosion.subtype.big
+        _ldd  ObjID_explosion,explosion.subtype.big+explosion.sfx.big
         std   id,x
         ldd   x_pos,u
         std   x_pos,x

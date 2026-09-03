@@ -34,6 +34,10 @@ s'assemble tel quel.
 
 ## 2. Ce que notre portage joue aujourd'hui
 
+> **Depuis le 03/09/2026 (soir)** : dix-neuf sons en données, tous joués,
+> une trentaine de sites — voir « Le câblage » en §6. Ce qui suit est l'état
+> du matin, gardé comme point de départ.
+
 Six sons en données, **cinq** joués, huit sites d'appel.
 
 | Son | Priorité | Site |
@@ -385,3 +389,117 @@ identifiant Master System sous émulateur sans repasser par le test sonore —
 c'est ainsi que ce relevé a été fait. Les 54 blocs de
 `reference/sms/sfx/soundfx/` sont au format du pilote et s'assemblent tels
 quels côté portage.
+
+## 6. Le câblage (03/09/2026)
+
+Les treize sons confirmés qui manquaient sont en données et branchés, plus
+l'accrochage du pod, qui dormait en données depuis la v1. Le corpus est
+inclus **tel que l'outil le génère** (`reference/sms/sfx/soundfx/`, treize
+`INCLUDE` en queue de `soundFX.asm`) : rien n'est retouché à la main, une
+reconversion suffit.
+
+### Deux gestes de plus dans l'outil
+
+- **l'instrument personnalisé** — cinq sons (35, 48, 49, 50, 51) jouent sur
+  l'instrument 0, celui que les registres $00-$07 définissent, et cette
+  définition vivait dans le préambule que l'outil coupe. Il la retient et la
+  remet en tête du bloc, en huit commandes ordinaires. La commande `$FF` du
+  pilote, prévue pour ça, n'est pas employée : après `leax 3,x` le pilote
+  relit son délai en `-1,x`, c'est-à-dire l'octet bas de l'adresse de la
+  table — un délai au hasard. La remise à plat finale de la voie (instrument
+  0, volume 15) n'est pas un usage : elle passait pour tel, et faussait la
+  calibration ;
+- **cette remise à plat part** — les blocs à la main ne la gardaient pas. La
+  calibration remonte à 95-97 % sur les cinq sons mono-voie.
+
+Le lecteur de musique partage l'instrument personnalisé ; la Master System
+faisait exactement de même, son pilote le réécrivait avant chaque bruitage.
+À écouter sur un stage dont la musique s'en sert.
+
+### Le son d'une explosion : cinq paliers et deux cascades
+
+La borne ne tire pas le son du sprite mais de l'ennemi qui meurt. Chez nous
+l'objet explosion joue le son ; le palier voyage donc dans les **bits 4-6 du
+subtype**, à côté de l'animation (bits 0-3), posé sur le site qui crée
+l'explosion (`explosion.sfx.*`, `explosion.const.asm`). Sans palier, le son
+est celui d'avant, l'explosion moyenne ($51). Quarante sites classés d'après
+`arcade-sound-reference.md` :
+
+| Palier | Borne | Sites |
+|---|---|---|
+| small | $50 | pata-pata, bug (deux), canon du tabrok, missile commun, POW, boule du warship |
+| medium | $51 | bink, cytron, p-staff, slither (trois), cancer, geld — inchangés |
+| turret | $52 | shell, blaster, brood, zoid, nerfs, outslay, warship (huit) |
+| big | $53 | tabrok, gouger, scant, capsule du warship |
+| wick | $54 | wick |
+| cascade | $51/$52/$53 au sort, un quart de silence | gomander, dobkeratops (cinq sites) |
+| cascade2 | $52/$53 au sort | pièces du compiler |
+| none | — | l'explosion du missile du joueur, muette sur la borne |
+
+Les cascades sont celles de la borne (`AND AL,3 / JZ / ADD CL,AL` depuis
+$50 ; un bit depuis $52 pour le compiler), tirées par `RandomNumber`.
+L'outslay et le gomander demandaient le son à part en plus de l'explosion :
+ces demandes sont retirées, l'explosion porte le son.
+
+### Le coup encaissé : un crochet dans le noyau
+
+Le son le plus fréquent du jeu n'avait aucun point d'accroche : la passe de
+collision décrémente le potentiel de l'ennemi et lui seul s'en aperçoit,
+quand il s'en aperçoit. Le point commun est `Collision_Do` (engine, importé
+1:1) : sa branche `@loose` est exactement « l'arme meurt, la cible garde du
+potentiel », c'est-à-dire un coup non fatal, pour toutes les paires de listes
+— le joueur, boîte faible, n'y passe jamais. Un `IFDEF COLLISION_ON_LOOSE`
+y appelle un macro que l'includeur définit ; le noyau ne sait rien du son
+(V2-DEVIATION, tracée au manifeste). R-Type le définit dans `engine.asm` :
+un `jsr Collision_OnLoose` — une expansion en ligne faisait déborder les
+branchements courts du noyau — vers une routine résidente qui applique la
+règle de `_soundFX.play` avec l'id et la priorité en pile :
+
+- **$56** (`HitSound`, priorité 0) par défaut ;
+- **$57** (`BossHitSound`, priorité 1) quand la seconde liste est
+  `AABB_list_target`, les points faibles de boss — `Collision_Do_2` porte la
+  tête de la liste, il suffit de la comparer. Aujourd'hui c'est l'œil du
+  gomander, un $57 chez la borne ;
+- les ennemis de la liste ordinaire qui sonnent $57 sur la borne et
+  détectent déjà leurs coups (dobkeratops, gouger, slither) le demandent
+  eux-mêmes, priorité 1 : la passe précède `RunObjects` dans la trame, leur
+  demande gagne la boîte aux lettres avant l'IRQ ;
+- le contact du pod et des bits (`WeaponContactTick`) joue $56 quand son
+  `dec` laisse du potentiel.
+
+Restent $56 au lieu de $57 : le brood et le parasite du zoid, sans
+détection de coup propre. Une trame de frame-drop peut aussi glisser une IRQ
+entre la passe et le tick du boss, et faire entendre $56 une trame avant
+$57.
+
+### Les autres sites
+
+| Son | Où |
+|---|---|
+| missile (35) | `player_missile.asm`, à la place du son du beam |
+| éjection du pod (37) | `forcepod.asm`, passage à `RunEjected` |
+| accrochage (38) | `forcepod.asm`, `@rear` — jamais joué jusqu'ici |
+| vie supplémentaire (39) | `hud.asm`, `@grant` |
+| laser reflex (41) | `obj_reboundlaser.asm` : la volée après `reboundmgr.reset`, puis chaque rebond (entrées `.rebound`) |
+| laser de sol (42) | `obj_groundlaser.asm`, la volée armée après `groundmgr.reset` |
+| counter-air (43) | `obj_counterairlaser.asm`, `GenChilds` |
+| tir simple du pod (44) | `obj_counterairreflect.asm`, `Init` — c'est le reflet qui le joue sur la borne |
+
+Priorités : tirs et coups 0, explosions et lasers 1, pod 2, vie 4 — la
+même échelle que les six d'avant.
+
+### La place
+
+Le fichier de sons passe de 1 003 à 2 492 octets et ne tient plus en page
+$08 : l'arène commune manquait de 152 octets, mais en premier ajustement les
+miettes ne s'additionnent pas. La frontière de la page $0C avec l'arène des
+lots — que le config disait pouvoir bouger — recule de $0A80 à $0E80 ;
+le lot pstaff, seul occupant, tient entier derrière. Après build : 2 420
+octets contigus en queue de $17, le reste en miettes.
+
+### Ce qui reste
+
+- le début et l'arrêt de charge du beam ($32, $33) : le 34 est le seul
+  candidat, non confirmé ; et le relâchement du beam (33, en données) a
+  toujours son appel commenté ;
+- au-delà de $57 : rien de relevé.

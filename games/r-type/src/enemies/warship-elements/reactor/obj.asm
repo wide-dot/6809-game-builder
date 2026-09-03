@@ -224,7 +224,7 @@ rreactor.Boom
         jsr   AwardScore
         jsr   LoadObject_x
         beq   rreactor.Vanish
-        _ldd  ObjID_explosion,explosion.subtype.big.brown
+        _ldd  ObjID_explosion,explosion.subtype.big.brown+explosion.sfx.turret
         std   id,x
         ldd   x_pos,u
         std   x_pos,x
@@ -404,7 +404,7 @@ breactor.Boom
         jsr   AwardScore
         jsr   LoadObject_x
         beq   breactor.Vanish
-        _ldd  ObjID_explosion,explosion.subtype.big.brown
+        _ldd  ObjID_explosion,explosion.subtype.big.brown+explosion.sfx.turret
         std   id,x
         ldd   x_pos,u
         std   x_pos,x
