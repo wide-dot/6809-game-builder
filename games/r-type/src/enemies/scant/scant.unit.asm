@@ -47,6 +47,10 @@ Img_scant_2                  equ set_scant_2
 Img_scant_3                  equ set_scant_3
 Img_scant_4                  equ set_scant_4
 Img_scant_5                  equ set_scant_5
+; Le flash de coup : la pose 00 blanchie, ses deux orientations. Elles vivent
+; dans images/hit/, d'ou le prefixe `hit` que gfxcomp tire du dossier.
+Img_scant_hit_left           equ set_hit_0
+Img_scant_hit_right          equ set_hit_1
 
 ; V2-DEVIATION : l'entrée v1 s'appelle `Onject` (sic), un nom qui ne franchit
 ; pas la frontière de lien.

@@ -272,7 +272,7 @@ LAB_0000_8668
         subd  glb_camera_x_pos
         addd  #5
         lbmi  FUN_0000_6a07_DeleteScant
-        jmp   DisplaySprite
+        jmp   scant.hitBlink
 
 LAB_0000_86a0_DestroyScant                     
         ldb   #scant_scoreIdx
@@ -361,7 +361,7 @@ LAB_0000_871b
         sta   routine,u
 LAB_0000_874a
         sta   scant_0x3a
-        jmp   DisplaySprite
+        jmp   scant.hitBlink
 
 FUN_0000_8755_ScantShoots
 	jsr   LoadObject_x
@@ -431,6 +431,13 @@ scant_0x26      fdb $0
 scant_0x30      fdb $0
 scant_0x32      fdb $0
 scant_0x38      fcb $0
+
+; LE FLASH DE COUP (03/09/2026). Comme le reste de l'etat de cet objet, ces
+; deux octets sont a l'UNITE et non par instance : le scant est seul dans la
+; vague du stage 1, et le fichier v1 fait deja ce choix pour scant_0x24 et
+; scant_0x38.
+scant.blink     fcb $0                  ; 1 = la trame de blanc est due
+scant.prevP     fcb $0                  ; le potentiel du tour precedent
 scant_0x3a      fdb $0
 
 scant_0x3856
@@ -443,6 +450,51 @@ scant_0x3856
                 fdb $fb00
                 fdb $f900
                 fdb $f700
+
+; ---------------------------------------------------------------------------
+; scant.hitBlink — le flash de coup, puis l'affichage
+;
+; La borne (draw_scant_sprite_with_hit_blink, 0x40:8409) echange la palette de
+; l'objet pour la palette de flash 0x55 une trame sur quatre pendant SEIZE
+; trames : quatre flashs par coup encaisse, la fenetre la plus longue des
+; ennemis du stage.
+;
+; UNE SEULE TRAME DE BLANC CHEZ NOUS (mesure en jeu sur le p-staff, 03/09) :
+; notre trame effective est plus lente, le compte a rebours de la borne
+; s'etire et le blanc reste colle a l'ennemi.
+;
+; Notre palette est globale au stage : on echange l'IMAGE (gen_scant_hit.py).
+; La passe de collision ne dit rien a l'objet — elle decremente son potentiel :
+; UNE BAISSE EST UN COUP. Elle precede RunObjects dans la trame.
+;
+; UNE seule pose blanchie pour les trois : la 00, celle du deplacement, qui
+; porte aussi trois temps sur quatre du tir. L'orientation se lit sur l'image
+; affichee — les index 0 a 2 regardent a gauche, 3 a 5 a droite.
+;
+; Trente PV (arcade : +0x2F = 30) : c'est l'ennemi du stage ou le flash se
+; verra le plus.
+; ---------------------------------------------------------------------------
+scant.hitBlink
+        lda   AABB_0+AABB.p,u
+        cmpa  scant.prevP
+        bhs   @noHit                   ; pas de baisse : rien de neuf
+        ldb   #1
+        stb   scant.blink
+@noHit  sta   scant.prevP
+        lda   scant.blink
+        beq   @show                    ; pas de flash en cours
+        clr   scant.blink              ; une seule trame
+        ldx   image_set,u
+        ldd   #Img_scant_hit_left
+        cmpx  #Img_scant_3
+        beq   @right
+        cmpx  #Img_scant_4
+        beq   @right
+        cmpx  #Img_scant_5
+        bne   @put
+@right  ldd   #Img_scant_hit_right
+@put    std   image_set,u
+@show   jmp   DisplaySprite
 
 scant_0x385e
         fdb $feb0  ; original value 0xfc00

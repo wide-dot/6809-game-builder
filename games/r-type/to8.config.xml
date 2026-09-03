@@ -2111,8 +2111,22 @@
                         <gfxcomp file="lib.scant" gendir="gen/enemies/scant"
                                 gensource="gen/enemies/scant/includes.asm"
                                 genindex="gen/enemies/scant/index.asm">
-                            <images dir="src/enemies/scant/images" shifts="0,1"/>
-                            <images dir="src/enemies/scant/images" mirror="x" shifts="0,1"/>
+                            <!-- LE DECALAGE 1 EST PARTI des trois poses
+                                 (03/09/2026, decision auteur) : le Scant VOLE,
+                                 il n'est jamais pose sur une grille, et la
+                                 variante pre-decalee ne se voit pas. Six
+                                 sprites rendus, environ 4 500 octets — de quoi
+                                 payer son flash de coup et plus encore. -->
+                            <images dir="src/enemies/scant/images" shifts="0"/>
+                            <images dir="src/enemies/scant/images" mirror="x" shifts="0"/>
+                            <!-- LE FLASH DE COUP : la pose 00 blanchie et
+                                 tachee de gris (tools/gen_scant_hit.py), ses
+                                 deux orientations, decalage 0. Elle sert de
+                                 jumelle a TOUTES les poses — trente PV et
+                                 quatre flashs arcade par coup, c'est ici que
+                                 l'effet se voit le plus. Index 6 et 7. -->
+                            <images dir="src/enemies/scant/images/hit" shifts="0"/>
+                            <images dir="src/enemies/scant/images/hit" mirror="x" shifts="0"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
