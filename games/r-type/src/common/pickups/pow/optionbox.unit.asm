@@ -36,6 +36,7 @@ powOptionbox.Object EXPORT
         INCLUDE "src/common/state/variables.asm"
         INCLUDE "src/common/player/player1.equ"
         INCLUDE "src/common/weapons/forcepods/forcepod.equ"
+        INCLUDE "src/common/objid-common.const.asm" ; ObjID_engineflames (flamme de vitesse)
         ; Le bruitage : le macro écrit la boîte aux lettres résidente, que le
         ; pilote dépile dans l'IRQ.
         INCLUDE "src/common/fx/soundfx/soundFX.const.asm"

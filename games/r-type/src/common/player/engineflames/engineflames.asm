@@ -44,12 +44,13 @@ Ani_engineflames_init
         fdb   Img_engineflames_0
         fdb   Img_engineflames_1
         fcb   _resetAnim
+; ARCADE (run_bonus_speed_flame 0x405914) : le compteur part de 0x10 et
+; l'image se lit dans ses bits 2-3 — QUATRE images, quatre trames chacune,
+; SEIZE trames en tout, puis l'objet se libere. Quatre entrees a duree 4 :
+; meme duree au chiffre pres. V2-DEVIATION : deux images au lieu de quatre,
+; c'est l'art que le portage a (celui de la sequence d'intro).
         fcb   4
 Ani_engineflames_speed
-        fdb   Img_engineflames_0
-        fdb   Img_engineflames_1
-        fdb   Img_engineflames_0
-        fdb   Img_engineflames_1
         fdb   Img_engineflames_0
         fdb   Img_engineflames_1
         fdb   Img_engineflames_0

@@ -113,6 +113,20 @@ Live
         beq   >                 ;   128 (Configuration 5 = niveau 4, le plus rapide) ;
         std   globals.speedlevel ;  sans ca on restait bloque au niveau 3 (config 4).
 !
+        ; LA FLAMME DE VITESSE (arcade create_bonus_speed_flame 0x4058E9) : la
+        ; borne ne cree pas d'objet, elle PROMEUT l'enregistrement du bonus en
+        ; flamme — meme chose ici a un slot pres, le bonus se supprimant juste
+        ; apres. Elle ne le fait que pour la vitesse : les autres types >= 8
+        ; incrementent leur compteur et s'en vont sans flamme.
+        ; L'objet et son art existent depuis la sequence d'intro ; le subtype
+        ; non nul choisit l'animation courte (Ani_engineflames_speed), et son
+        ; Live le colle a 12 px derriere le vaisseau — les 0x1F px arcade.
+        jsr   LoadObject_x
+        beq   @delete           ; pool plein : le bonus s'applique sans flamme
+        lda   #ObjID_engineflames
+        sta   id,x
+        lda   #1                ; subtype != 0 : l'animation de vitesse
+        sta   subtype,x
         jmp   @delete
 @missiles
         lda   #1                        ; débloque l'arme missile sous-nacelle (paire homing)
