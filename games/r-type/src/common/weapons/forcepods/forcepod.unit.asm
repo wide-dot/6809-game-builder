@@ -39,6 +39,7 @@ forcepod.Object EXPORT
         INCLUDE "engine/system/to8/controller/joypad.const.asm"
         INCLUDE "src/common/player/player1.equ"
         INCLUDE "src/common/weapons/forcepods/forcepod.equ"
+        INCLUDE "src/common/weapons/bitdevice/bitdevice.equ"  ; bitdev.rtnid.ActiveTick (reflets)
         ; Les offsets d'OST de l'éclat d'émission : le force pod le fait naître
         ; en s'attachant, et renseigne ses trois champs.
         INCLUDE "src/common/player/emitter-flash.equ"

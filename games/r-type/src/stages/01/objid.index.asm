@@ -36,7 +36,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage1.sawmgr.page ; ObjID_dobkeratops_saw (le manager de scies)
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
-        fcb   0 ; 31 : reserve commune libre
+        fcb   map.RAM_OVER_CART+common.counterairreflect.page ; ObjID_forcepod_counterairreflect
         fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
@@ -96,7 +96,7 @@ Obj_Index_Address
         fdb   sawmgr.Object ; ObjID_dobkeratops_saw (le manager de scies)
         fdb   dobkeratopsExplosion.Object ; ObjID_dobkeratops_explosion
         fdb   groundlaser.Object ; ObjID_forcepod_groundlaser
-        fdb   0 ; 31 : reserve commune libre
+        fdb   counterairreflect.Object ; ObjID_forcepod_counterairreflect
         fdb   patapata.Object ; ObjID_patapata
         fdb   bug.Object ; ObjID_bug
         fdb   bink.Object ; ObjID_bink
@@ -150,7 +150,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage1.sawmgr.page ; ObjID_dobkeratops_saw (le manager de scies)
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
-        fcb   0 ; 31 : reserve commune libre
+        fcb   map.RAM_OVER_CART+common.counterairreflect.page ; ObjID_forcepod_counterairreflect
         fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
@@ -204,7 +204,7 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_dobkeratops_saw
         fdb   Ani_Asd_none ; ObjID_dobkeratops_explosion
         fdb   Ani_Asd_none ; ObjID_forcepod_groundlaser
-        fdb   0 ; 31 : reserve commune libre
+        fdb   Ani_Asd_none ; ObjID_forcepod_counterairreflect
         fdb   Ani_Asd_none ; ObjID_patapata
         fdb   Ani_Asd_none ; ObjID_bug
         fdb   Ani_Asd_none ; ObjID_bink
@@ -261,7 +261,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage1.sawmgr.page ; ObjID_dobkeratops_saw (le manager de scies)
         fcb   map.RAM_OVER_CART+stage1.dobkeratopsexplosion.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
-        fcb   0 ; 31 : reserve commune libre
+        fcb   map.RAM_OVER_CART+common.counterairreflect.page ; ObjID_forcepod_counterairreflect
         fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bug
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink

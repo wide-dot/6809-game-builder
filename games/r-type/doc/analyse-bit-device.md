@@ -280,3 +280,29 @@ consomme — aucun cycle de vie à tenir. Approximation, marquée TODO dans
 `bitdevice/obj.asm` : tant qu'une pièce vit, tout ennemi de la liste est à
 l'abri du pod, et les tourelles/ondes/lasers du compiler n'ont pas été
 vérifiés côté arcade. `rtype_bench` 7/7.
+
+## 7. Réalisé (03/09/2026) : les reflets du counter-air
+
+- **Art** : entité `counter-air-laser` ajoutée au catalogue de
+  re.arcade.r-type (reflet haut 0x267C, bas 0x2694, fondu 0x26AC, éclair de
+  bouche 0x26F2, palette 0x3D), export `meta_sprite`, conversion en palette
+  commune avec le rose forcé sur la rampe rouge. Procédure :
+  `tools/counterair-reflection-art.txt`. Direntry `common.counterairreflect`
+  (arène objects), 2 316 octets avec l'objet.
+- **Objet** `obj_counterairreflect.asm`, id commun 31 (la réserve) : dégâts 2,
+  +3 px/trame vers l'avant du pod (miroir et recul si le pod est derrière),
+  boîte 6/6, alternance normale/miroir vertical toutes les 4 trames, labour
+  des gommes (bloc $22), sonde du décor ; mort hors écran ; dégâts épuisés ou
+  décor rencontré → fondu de huit images à l'arrêt (fade7 en premier, comme
+  la borne), plus aucun contact. Pas de SFX (écart consigné).
+- **Salve** : `ForcePodReflections` dans `forcepod.asm`, après la tête —
+  coin haut-droit et bas-droit du pod (−6, ∓6), puis chaque bit dont la
+  routine est `ActiveTick`. Un slot OST manquant coupe la série.
+
+Vérifié sous toje au stage 1, pod armé par écriture mémoire (palier 2, type
+counter-air, accroché), bits armés, invincibilité posée : à la salve, quatre
+reflets naissent aux positions attendues (y ± 6 du pod, y ± 24 du vaisseau),
+p = 2, boîte 6/6, x + 3 par trame, images alternées ; à l'écran deux bleus
+en haut, deux rouges en bas devant l'arc de la tête ; hors écran, les quatre
+slots sont rendus. Le fondu sur décor n'a pas été provoqué. `rtype_bench`
+7/7. Reste de l'arène objects au pire : 1 529 (page 12) et 1 468 (page 23).

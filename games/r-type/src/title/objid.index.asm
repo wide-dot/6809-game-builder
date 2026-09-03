@@ -42,7 +42,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_groundlaser
-        fcb   0 ; 31 : reserve commune libre
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_counterairreflect
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_logo
         fcb   map.RAM_OVER_CART+title.text.page ; ObjID_text
         fcb   map.RAM_OVER_CART+title.pushbutton.page ; ObjID_push_button
@@ -82,7 +82,7 @@ Obj_Index_Address
         fdb   title.placeholder ; ObjID_dobkeratops_saw
         fdb   title.placeholder ; ObjID_dobkeratops_explosion
         fdb   title.placeholder ; ObjID_forcepod_groundlaser
-        fdb   0 ; 31 : reserve commune libre
+        fdb   title.placeholder ; ObjID_forcepod_counterairreflect
         fdb   logo.Object       ; ObjID_logo
         fdb   title.text.Object ; ObjID_text
         fdb   title.pushbutton.Object ; ObjID_push_button
@@ -122,7 +122,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_groundlaser
-        fcb   0 ; 31 : reserve commune libre
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_counterairreflect
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_logo
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_text
         fcb   map.RAM_OVER_CART+title.pushbutton.page ; ObjID_push_button
@@ -162,7 +162,7 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_dobkeratops_saw
         fdb   Ani_Asd_none ; ObjID_dobkeratops_explosion
         fdb   Ani_Asd_none ; ObjID_forcepod_groundlaser
-        fdb   0 ; 31 : reserve commune libre
+        fdb   Ani_Asd_none ; ObjID_forcepod_counterairreflect
         fdb   Ani_Asd_none ; ObjID_logo
         fdb   Ani_Asd_none ; ObjID_text
         fdb   Ani_Asd_none ; ObjID_push_button
@@ -205,7 +205,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_groundlaser
-        fcb   0 ; 31 : reserve commune libre
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_forcepod_counterairreflect
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_logo
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_text
         fcb   map.RAM_OVER_CART+title.pushbutton.page ; ObjID_push_button

@@ -36,7 +36,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
-        fcb   0 ; 31 : reserve commune libre
+        fcb   map.RAM_OVER_CART+common.counterairreflect.page ; ObjID_forcepod_counterairreflect
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
@@ -89,7 +89,7 @@ Obj_Index_Address
         fdb   stage.placeholder ; ObjID_dobkeratops_saw
         fdb   stage.placeholder ; ObjID_dobkeratops_explosion
         fdb   groundlaser.Object ; ObjID_forcepod_groundlaser
-        fdb   0 ; 31 : reserve commune libre
+        fdb   counterairreflect.Object ; ObjID_forcepod_counterairreflect
         fdb   pow.Object ; ObjID_pow
         fdb   stage.placeholder ; ObjID_checkpoint
         fdb   bossmusic.Object ; ObjID_bossmusic
@@ -136,7 +136,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
-        fcb   0 ; 31 : reserve commune libre
+        fcb   map.RAM_OVER_CART+common.counterairreflect.page ; ObjID_forcepod_counterairreflect
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
@@ -183,7 +183,7 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_dobkeratops_saw
         fdb   Ani_Asd_none ; ObjID_dobkeratops_explosion
         fdb   Ani_Asd_none ; ObjID_forcepod_groundlaser
-        fdb   0 ; 31 : reserve commune libre
+        fdb   Ani_Asd_none ; ObjID_forcepod_counterairreflect
         fdb   Ani_Asd_none ; ObjID_pow
         fdb   Ani_Asd_none ; ObjID_checkpoint
         fdb   Ani_Asd_none ; ObjID_bossmusic
@@ -233,7 +233,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_saw
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_explosion
         fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
-        fcb   0 ; 31 : reserve commune libre
+        fcb   map.RAM_OVER_CART+common.counterairreflect.page ; ObjID_forcepod_counterairreflect
         fcb   map.RAM_OVER_CART+common.pow.page ; ObjID_pow
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic

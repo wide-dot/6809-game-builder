@@ -878,11 +878,76 @@ ForcePodAttachedFire
         lda   #20
         sta   counterair_lock
         lda   #ObjID_forcepod_counterairlaser
+        sta   id,x
+        lda   mount_side,u
+        sta   subtype,x
+        bra   ForcePodReflections      ; la salve cree aussi ses reflets
 !
         sta   id,x
         lda   mount_side,u
         sta   subtype,x
 @rts    rts
+
+; ---------------------------------------------------------------------------
+; ForcePodReflections — les etincelles secondaires de la salve du counter-air
+; ---------------------------------------------------------------------------
+; ARCADE (tables de tir du pod, paliers 2 et 3, type counter-air) : a chaque
+; salve un reflet au coin haut-droit du pod (pod_x - 0x10, pod_y + 8 : au
+; DESSUS, l'axe arcade monte), un au coin bas-droit (pod_y - 8), et un sur
+; chaque bit device dont le tick tourne — create_counter_air_reflection_*
+; (0x404CD3..0x404D60). Chez nous : (-6, -+6) du pod, la position des bits.
+; subtype = variante (0 haut / 1 bas) | miroir (bit 1 = pod derriere).
+; Un slot manquant coupe la serie : c'est ce que fait LoadObject_x.
+;   [u] = pod OST
+; ---------------------------------------------------------------------------
+ForcePodReflections
+        ldy   #@anchors
+@loop
+        ldx   1,y                      ; l'OST d'ancrage (0 = le pod lui-meme)
+        beq   @spawn
+        lda   routine,x
+        cmpa  #bitdev.rtnid.ActiveTick ; le bit doit etre VIVANT
+        bne   @next
+@spawn  jsr   LoadObject_x
+        beq   @done
+        lda   #ObjID_forcepod_counterairreflect
+        sta   id,x
+        lda   mount_side,u
+        asla                           ; bit 1 = derriere
+        ora   ,y                       ; | variante
+        sta   subtype,x
+        pshs  y
+        ldy   1,y
+        bne   @bit
+        ldd   x_pos,u                  ; un coin du pod
+        subd  #6
+        std   x_pos,x
+        ldd   y_pos,u
+        ldy   ,s
+        addd  3,y                      ; -+6
+        std   y_pos,x
+        puls  y
+        bra   @next
+@bit    ldd   x_pos,y                  ; sur le bit
+        std   x_pos,x
+        ldd   y_pos,y
+        std   y_pos,x
+        puls  y
+@next   leay  5,y
+        tst   ,y
+        bpl   @loop
+@done   rts
+        ; variante, OST d'ancrage (0 = pod), decalage y
+@anchors
+        fcb   0                        ; coin haut-droit du pod
+        fdb   0,-6
+        fcb   1                        ; coin bas-droit du pod
+        fdb   0,6
+        fcb   0                        ; bit du haut
+        fdb   bitdevTopOST,0
+        fcb   1                        ; bit du bas
+        fdb   bitdevBotOST,0
+        fcb   -1                       ; fin
 
 ForcePodDetachedFire
         ldb   joypad.pressed.fire

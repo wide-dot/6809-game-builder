@@ -45,8 +45,9 @@ ObjID_dobkeratops_explosion equ 29
 * suiveurs sera une ROUTINE de ce meme objet, comme reboundmgr — il ne
 * coute pas d'identifiant.
 ObjID_forcepod_groundlaser equ 30
+ObjID_forcepod_counterairreflect equ 31
 
-objid.common.count equ 30
+objid.common.count equ 31
 
 * LE DECOUPAGE DE L'ESPACE D'IDENTIFIANTS (26/08/2026)
 *

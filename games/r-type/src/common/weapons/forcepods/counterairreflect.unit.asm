@@ -11,10 +11,6 @@
 ;
 ; PAS DE SOURCE V1. Art extrait de la borne : tools/counterair-reflection-art.txt.
 ;
-; ETAT (03/09/2026) : l'unite porte les IMAGES et leur index ; l'objet reflet
-; n'est pas encore ecrit — ce direntry existe pour mesurer et reserver sa
-; place dans l'arene des objets.
-;
 ; Unite separee — cf. l'en-tete de `forcepod.unit.asm`.
 ; C'est du COMMUN : l'arme suit le pod, donc les huit stages.
 ;
@@ -38,7 +34,7 @@ counterairreflect.Object EXPORT
         INCLUDE "src/common/lib/object.const.asm"
         INCLUDE "src/common/player/player1.equ"
         INCLUDE "src/stages/01/objid.const.asm"
-        INCLUDE "src/common/state/variables.asm"
+        INCLUDE "src/common/state/variables.asm"   ; stage.gum.hook, globals.backgroundSolid
 
 ; V2-DEVIATION : gfxcomp genere `set_<nom>` la ou la v1 nommait `Img_<nom>`.
 Img_careflect_up0    equ set_careflect_up0     ; reflet du haut (bleu), normal
@@ -54,9 +50,7 @@ Img_careflect_fade5  equ set_careflect_fade5
 Img_careflect_fade6  equ set_careflect_fade6
 Img_careflect_fade7  equ set_careflect_fade7
 
-; L'objet viendra ici (Routines, Init/Live/Fade). En attendant, une entree
-; inerte garde l'unite valide et son entree a l'offset zero.
 counterairreflect.Object
-        rts
+        INCLUDE "src/common/weapons/forcepods/obj_counterairreflect.asm"
 
  ENDSECTION
