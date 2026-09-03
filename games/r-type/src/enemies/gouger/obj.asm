@@ -430,7 +430,7 @@ gouger.Frame
         cmpa  gouger.prevP,u           ; un coup depuis le tour precedent ?
         bhs   @cadre
         sta   gouger.prevP,u
-        _soundFX.play soundFX.BossHitSound,1 ; borne $57 (run_gouger)
+        _soundFX.play soundFX.HitSound,0     ; borne $57 (run_gouger)
         lda   #1
         sta   gouger.blink,u           ; une trame blanche
         lda   routine,u

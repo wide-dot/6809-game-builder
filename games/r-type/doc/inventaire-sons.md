@@ -34,9 +34,10 @@ s'assemble tel quel.
 
 ## 2. Ce que notre portage joue aujourd'hui
 
-> **Depuis le 03/09/2026 (soir)** : dix-neuf sons en données, tous joués,
-> une trentaine de sites — voir « Le câblage » en §6. Ce qui suit est l'état
-> du matin, gardé comme point de départ.
+> **Depuis le 03/09/2026 (soir)** : treize sons en données, tous joués, une
+> trentaine de sites — voir « Le câblage » en §6, et le tri d'écoute qui a
+> abandonné six sons du corpus. Ce qui suit est l'état du matin, gardé comme
+> point de départ.
 
 Six sons en données, **cinq** joués, huit sites d'appel.
 
@@ -472,34 +473,79 @@ détection de coup propre. Une trame de frame-drop peut aussi glisser une IRQ
 entre la passe et le tick du boss, et faire entendre $56 une trame avant
 $57.
 
-### Les autres sites
+### Ce que l'écoute a tranché
+
+Le testeur `examples/soundfx` a servi à écouter chaque son sur son instrument
+d'origine puis sur les quinze de la ROM du chip. Décisions de l'auteur :
+
+**Le critère** : un bruitage ne doit pas réécrire l'instrument personnalisé du
+YM2413, parce que la musique s'en sert. Les cinq sons du corpus qui le
+demandent sont donc abandonnés — aucun preset ne les rendait acceptables — à
+une exception près.
+
+| Master System | Borne | Sort |
+|---|---|---|
+| 35 missile | $34 | abandonné, **et l'événement devient muet** |
+| 48 grosse explosion | $53 | abandonné, emprunte l'explosion moyenne |
+| 49 explosion du Wick | $54 | abandonné, emprunte l'explosion moyenne |
+| 50 coup encaissé | $56 | abandonné, emprunte le coup de boss |
+| 51 coup de boss | $57 | **gardé, forcé au piano**, sert aux deux coups |
+| 41 laser reflex | $3B | abandonné à l'oreille, emprunte le counter-air |
+| 42 laser de sol | $3C | abandonné à l'oreille, emprunte le counter-air |
+
+Le missile est muet par choix : la borne a bien un son propre, mais le
+remettre sur celui du beam, ce qu'on faisait avant, fait un son de trop quand
+tout tire en même temps.
+
+Le laser reflex et celui de sol ne sont pas des cas d'instrument : leurs sons
+d'origine sonnaient simplement mal en jeu. Ils empruntent le counter-air, qui
+est le même geste d'arme.
+
+Conséquence sur le code : le coup encaissé n'a plus qu'un son et une
+priorité, la 0, celle d'une texture de fond qui cède à une explosion. Le
+crochet du noyau n'a donc plus rien à distinguer et tient en un appel ; les
+trois ennemis qui demandaient $57 eux-mêmes (dobkeratops, gouger, slither)
+demandent le même son que les autres.
+
+**Le geste 6 de l'outil ne sert plus au jeu.** Aucun bruitage embarqué ne
+redéfinit l'instrument personnalisé. `--instrument N` a été ajouté à l'outil
+pour produire le coup au piano : il pose l'instrument demandé dans le quartet
+haut des commandes `$30` et n'émet pas la redéfinition.
+
+### Les sites
 
 | Son | Où |
 |---|---|
-| missile (35) | `player_missile.asm`, à la place du son du beam |
 | éjection du pod (37) | `forcepod.asm`, passage à `RunEjected` |
 | accrochage (38) | `forcepod.asm`, `@rear` — jamais joué jusqu'ici |
 | vie supplémentaire (39) | `hud.asm`, `@grant` |
-| laser reflex (41) | `obj_reboundlaser.asm` : la volée après `reboundmgr.reset`, puis chaque rebond (entrées `.rebound`) |
-| laser de sol (42) | `obj_groundlaser.asm`, la volée armée après `groundmgr.reset` |
-| counter-air (43) | `obj_counterairlaser.asm`, `GenChilds` |
+| counter-air (43) | `obj_counterairlaser.asm` `GenChilds`, plus la volée et les rebonds du laser reflex et la volée du laser de sol |
 | tir simple du pod (44) | `obj_counterairreflect.asm`, `Init` — c'est le reflet qui le joue sur la borne |
+| petite explosion (45) | palier `small` |
+| explosion de tourelle (47) | palier `turret` |
+| coup encaissé (51 piano) | crochet du noyau, contact pod/bits, et les trois ennemis à détection propre |
 
-Priorités : tirs et coups 0, explosions et lasers 1, pod 2, vie 4 — la
-même échelle que les six d'avant.
+Priorités : coups 0, tirs 0, explosions et lasers 1, pod 2, vie 4 — la même
+échelle que les six d'avant.
 
 ### La place
 
-Le fichier de sons passe de 1 003 à 2 492 octets et ne tient plus en page
-$08 : l'arène commune manquait de 152 octets, mais en premier ajustement les
-miettes ne s'additionnent pas. La frontière de la page $0C avec l'arène des
-lots — que le config disait pouvoir bouger — recule de $0A80 à $0E80 ;
-le lot pstaff, seul occupant, tient entier derrière. Après build : 2 420
-octets contigus en queue de $17, le reste en miettes.
+Le fichier de sons passe de 1 003 à **1 709 octets**, et la carte mémoire ne
+bouge pas. Le premier câblage, à dix-neuf sons, le portait à 2 492 et forçait
+la frontière de la page $0C à reculer de $0A80 à $0E80 ; les six abandons
+rendent 771 octets et la frontière est revenue exactement où elle était, le
+lot pstaff à son adresse d'origine.
+
+À retenir de l'aller-retour : le packer place en **premier ajustement**, donc
+les miettes ne s'additionnent pas. Il manquait 152 octets et 512 octets de
+zone n'ont déplacé l'échec que d'un fichier ; il en fallait 1 024.
 
 ### Ce qui reste
 
 - le début et l'arrêt de charge du beam ($32, $33) : le 34 est le seul
   candidat, non confirmé ; et le relâchement du beam (33, en données) a
   toujours son appel commenté ;
-- au-delà de $57 : rien de relevé.
+- au-delà de $57 : rien de relevé ;
+- les sept événements qui empruntent le son d'un autre ($34 muet, $3B, $3C,
+  $53, $54, $56) attendent un son qui leur aille. Les équates de palier
+  d'explosion sont en place : le jour où l'un convient, il se pose seul.

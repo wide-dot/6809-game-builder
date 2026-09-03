@@ -256,7 +256,7 @@ UpdateHitBox
         ; hit this frame? the boss damage potential dropped since last frame
         cmpa  hitFlash.prevP
         bhs   @noHit
-        _soundFX.play soundFX.BossHitSound,1 ; borne $57 (run_dobkeratops_monster_main)
+        _soundFX.play soundFX.HitSound,0     ; borne $57 (run_dobkeratops_monster_main)
         ; L'index qui porte la teinte du boss a change a la migration de
         ; palette : son olive #617A00 est passee de la case 12 a la case 14.
         ; Mesure sur ses images : 248 px en 14, ZERO en 12 — le flash sur 12

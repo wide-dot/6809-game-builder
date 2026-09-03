@@ -64,6 +64,12 @@ Les délais sont conservés tels quels : ce sont déjà des trames 50 Hz.
     tools/sms_sfx_to_soundfx.py --tout --sortie reference/sms/sfx/soundfx
     tools/sms_sfx_to_soundfx.py --calibrer   # rejoue les six sons portés
 
+`--instrument N` force un des quinze instruments de la ROM du chip à la place
+de celui du bloc : le quartet haut des commandes `$30` devient N, et la
+redéfinition de l'instrument personnalisé (geste 6) ne sert plus, donc elle
+n'est pas émise. C'est la seule façon de garder un son qui joue sur
+l'instrument personnalisé sans que le bruitage n'écrase celui de la musique.
+
 `--calibrer` compare la sortie de l'outil aux six blocs de `soundFX.asm` :
 c'est la preuve que la règle ci-dessus est bien celle qui a été appliquée à
 la main, et le garde-fou si l'outil change.
@@ -209,7 +215,7 @@ def bloc(nom, cmds, voie, source, alternatives):
     return '\n'.join(l).rstrip() + '\n'
 
 
-def convertir(chemin, voie=None, report=None):
+def convertir(chemin, voie=None, report=None, instrument=None):
     tout = lire(chemin)
     corps = sans_preambule(tout)
     v = voies(corps)
@@ -223,7 +229,12 @@ def convertir(chemin, voie=None, report=None):
     # n'est pas du son — les blocs a la main ne la gardent pas.
     if cmds and cmds[-1][0] == REG_INST_VOL and cmds[-1][3] == ' ; vol:15':
         cmds.pop()
-    if utilise_instrument_0(corps, retenue):                     # geste 6
+    if instrument is not None:         # instrument de la ROM impose
+        cmds = [(reg, (instrument << 4) | (dat & 0x0F), delai,
+                 note + ' ; instrument %d impose' % instrument)
+                if reg == REG_INST_VOL else (reg, dat, delai, note)
+                for reg, dat, delai, note in cmds]
+    elif utilise_instrument_0(corps, retenue):                   # geste 6
         tete = [(reg, dat, 0, ' ; instrument perso' if reg == 0 else '')
                 for reg, dat in enumerate(instrument_perso(tout))]
         cmds = tete + list(cmds)
@@ -288,6 +299,7 @@ def main():
     ap = argparse.ArgumentParser(add_help=False)
     ap.add_argument('fichier', nargs='?')
     ap.add_argument('--voie', type=int, default=None)
+    ap.add_argument('--instrument', type=int, default=None)
     ap.add_argument('--tout', action='store_true')
     ap.add_argument('--sortie', default=None)
     ap.add_argument('--calibrer', action='store_true')
@@ -308,7 +320,7 @@ def main():
     for f in fichiers:
         base = os.path.basename(f)[:-4]
         report = True if a.reporter_delais else (False if a.delais_voie else None)
-        cmds, voie, v = convertir(f, a.voie, report)
+        cmds, voie, v = convertir(f, a.voie, report, a.instrument)
         if not cmds:
             print('%-20s VIDE (aucune commande apres le preambule)' % base,
                   file=sys.stderr)

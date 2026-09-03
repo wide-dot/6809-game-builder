@@ -57,12 +57,10 @@ pm_trailseed equ ext_variables+10  ; 1 octet  - graine de traînée (arcade imag
 ; seek : cx/cy missile sur la PILE (plus d'ext dédié) ; ext+19 libre
 
 PlayerMissile_Init
-        ; SFX lancement : TOP seulement (arcade : bottom omet pour éviter le double-trigger)
-        lda   subtype,u
-        cmpa  #3
-        beq   PM_noLaunchSfx
-        _soundFX.play soundFX.MissileSound,1 ; borne $34 (create_top_missile) — jouait le son du beam
-PM_noLaunchSfx
+        ; SFX lancement : MUET (decision auteur, 03/09/2026). La borne a un son
+        ; propre ($34) ; le sien joue sur l'instrument personnalise du YM2413,
+        ; que la musique utilise — abandonne. Et jouer celui du beam a la place,
+        ; ce qu'on faisait, fait un son de trop quand tout tire en meme temps.
         ; flamme : PAS allumée ici. Allumage retardé à phase>=0x22 (arcade 0x346c), cf. AfterMove.
         lda   #4                    ; direction initiale = droite (arcade +0x12 = 4)
         sta   missile_0x16,u

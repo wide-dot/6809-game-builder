@@ -226,7 +226,7 @@ Orchestrate
         ; avec elle (une volee exige les trois slots libres), on les eteint
         ; avant que les nouvelles chaines n'y publient.
         jsr   reboundmgr.reset
-        _soundFX.play soundFX.ReboundLaserSound,1 ; borne $3B (instantiate_*_segment_2)
+        _soundFX.play soundFX.CounterAirSound,1 ; borne $3B — le son du reflex sonnait mal, on emprunte le counter-air
 
         ; initiate the lasers
         lda   glb.slotsState
@@ -600,7 +600,7 @@ RunHorizontalLaser.frameDropLoop
         lbeq  RunHorizontalLaser.forward
 
 RunHorizontalLaser.rebound
-        _soundFX.play soundFX.ReboundLaserSound,1 ; borne $3B, le rebond (tick horizontal 0x404529)
+        _soundFX.play soundFX.CounterAirSound,1 ; borne $3B, le rebond (tick horizontal 0x404529)
         ldb   direction,u
         eorb  #%00000010
         stb   direction,u
@@ -832,7 +832,7 @@ RunDiagonalLaser.frameDropLoop
         lbeq  RunDiagonalLaser.forward
 
 RunDiagonalLaser.rebound
-        _soundFX.play soundFX.ReboundLaserSound,1 ; borne $3B, le rebond (tick diagonal 0x404359)
+        _soundFX.play soundFX.CounterAirSound,1 ; borne $3B, le rebond (tick diagonal 0x404359)
         ldx   #ReboundPresets
         ldb   direction,u
         aslb                    ; mult by 6

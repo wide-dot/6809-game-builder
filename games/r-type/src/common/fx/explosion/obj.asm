@@ -134,12 +134,17 @@ exp.playSound
 
 ; le son de chaque palier (indexe par les bits 4-6 du subtype) ;
 ; $FF = cascade de boss, $FE = cascade du compiler, 0 = muet
+; Les paliers $53 (grosse) et $54 (Wick) n'ont plus de son propre : les leurs
+; jouaient sur l'instrument personnalise du YM2413 et sont abandonnes, ils
+; empruntent l'explosion moyenne (decision d'ecoute, soundFX.const.asm). Les
+; equates de palier restent : elles disent ce que fait la borne, et le jour ou
+; un son convient il se pose ici seul.
 exp.sfx
         fcb   soundFX.ExplosionSound        ; medium  $51
         fcb   soundFX.SmallExplosionSound   ; small   $50
         fcb   soundFX.TurretExplosionSound  ; turret  $52
-        fcb   soundFX.BigExplosionSound     ; big     $53
-        fcb   soundFX.WickExplosionSound    ; wick    $54
+        fcb   soundFX.ExplosionSound        ; big     $53 — emprunte la moyenne
+        fcb   soundFX.ExplosionSound        ; wick    $54 — emprunte la moyenne
         fcb   $FF                           ; cascade
         fcb   $FE                           ; cascade2
         fcb   0                             ; none
@@ -149,7 +154,7 @@ exp.cascade
         fcb   0
         fcb   soundFX.ExplosionSound
         fcb   soundFX.TurretExplosionSound
-        fcb   soundFX.BigExplosionSound
+        fcb   soundFX.ExplosionSound        ; $53 emprunte la moyenne
 
 exp.animations
         fdb   exp.animation.smallx3
