@@ -842,6 +842,20 @@ ForcePodAttachedFire
         lda   #0
 !       sta   counterair_lock
 
+        ; LES REFLETS DU COUNTER-AIR partent sur le bouton TENU, pas sur le
+        ; front : sur la borne chaque reflet a son slot d'arme, qui retire des
+        ; que son objet a fini (force_pod_fire_held). Palier 2 et 3.
+        lda   globals.forcepodtype
+        cmpa  #2
+        bne   >
+        lda   power_level,u
+        cmpa  #2
+        blo   >
+        ldb   joypad.held.fire
+        andb  #joypad.0.A
+        beq   >
+        lbsr  ForcePodReflections
+!
         ldb   joypad.pressed.fire
         andb  #joypad.0.A
         beq   @rts
@@ -871,6 +885,14 @@ ForcePodAttachedFire
         lda   #ObjID_forcepod_groundlaser
         bra   >
 @counterairlaser
+        ; LE PALIER FAIT L'ARME (tables de tir du pod 0x1B80.., type
+        ; counter-air, pod accroche) : au palier 2 la borne ne cree QUE les
+        ; reflets — deux aux coins du pod, un par bit — et aucune tete ; au
+        ; palier 3 les deux tetes et les reflets des bits, sans les coins.
+        ; Le laser rouge « faible » de l'arcade, ce sont ces deux etincelles.
+        lda   power_level,u
+        cmpa  #3
+        blo   @rts                     ; palier 2 : pas de tete
         lda   counterair_lock
         bne   @rts
         jsr   LoadObject_x
@@ -878,10 +900,6 @@ ForcePodAttachedFire
         lda   #20
         sta   counterair_lock
         lda   #ObjID_forcepod_counterairlaser
-        sta   id,x
-        lda   mount_side,u
-        sta   subtype,x
-        bra   ForcePodReflections      ; la salve cree aussi ses reflets
 !
         sta   id,x
         lda   mount_side,u
@@ -889,32 +907,152 @@ ForcePodAttachedFire
 @rts    rts
 
 ; ---------------------------------------------------------------------------
-; ForcePodReflections — les etincelles secondaires de la salve du counter-air
+; ForcePodReflections — les etincelles secondaires du counter-air, 1:1 arcade
 ; ---------------------------------------------------------------------------
-; ARCADE (tables de tir du pod, paliers 2 et 3, type counter-air) : a chaque
-; salve un reflet au coin haut-droit du pod (pod_x - 0x10, pod_y + 8 : au
-; DESSUS, l'axe arcade monte), un au coin bas-droit (pod_y - 8), et un sur
-; chaque bit device dont le tick tourne — create_counter_air_reflection_*
-; (0x404CD3..0x404D60). Chez nous : (-6, -+6) du pod, la position des bits.
-; subtype = variante (0 haut / 1 bas) | miroir (bit 1 = pod derriere).
-; Un slot manquant coupe la serie : c'est ce que fait LoadObject_x.
-;   [u] = pod OST
+; ARCADE (tables de tir du pod, type counter-air, pod accroche) : quatre
+; ANCRAGES — coin haut-droit du pod (pod_x - 0x10, pod_y + 8 : au DESSUS,
+; l'axe arcade monte), coin bas-droit (pod_y - 8), bit du haut, bit du bas —
+; les coins au palier 2 seulement, les bits aux deux paliers, un bit devant
+; etre VIVANT. Chaque ancrage a DEUX slots d'arme (create_counter_air_
+; reflection_* 0x404CD3..0x404E0E) :
+;   - le PRINCIPAL (slots 2, 3, 4, 5) : tant que le bouton est tenu, il tire
+;     des que son objet a fini — son enregistrement redevient le slot idle
+;     a l'unload, et l'idle retire a la trame suivante ;
+;   - l'ALT (slots 10, 11, 12, 13) : memes conditions, PLUS « l'enregistrement
+;     huit slots en arriere » — le principal du meme ancrage — ne porte pas
+;     0x4E0F, le point d'entree de run_counter_air_reflection, qu'un
+;     enregistrement ne garde que de sa creation a son premier tick. Le
+;     principal etant servi avant lui, l'alt part la trame SUIVANTE.
+; D'ou, vaisseau immobile, deux reflets par bit alignes en x et decales
+; d'une trame (8 px arcade, 3 des notres), jamais trois. Chez nous : deux
+; OST retenus par ancrage (reflect.slots), un objet n'est cru que si id +
+; ancrage (subtype bits 2-3) + routine < AlreadyDeleted concordent.
+; Le principal est servi avant l'alt, comme les slots de la borne.
+;   [u] = pod OST ; bouton tenu, type counter-air et palier >= 2 deja testes
 ; ---------------------------------------------------------------------------
 ForcePodReflections
         ldy   #@anchors
+        clr   reflect.idx
 @loop
-        ldx   1,y                      ; l'OST d'ancrage (0 = le pod lui-meme)
-        beq   @spawn
+        ; l'ancrage est-il ouvert a ce palier ?
+        lda   5,y                      ; 2 = coins, au palier 2 seulement
+        beq   >
+        cmpa  power_level,u
+        lbne  @next
+!       ldx   1,y                      ; l'OST d'ancrage (0 = le pod lui-meme)
+        beq   >
         lda   routine,x
         cmpa  #bitdev.rtnid.ActiveTick ; le bit doit etre VIVANT
-        bne   @next
-@spawn  jsr   LoadObject_x
-        beq   @done
-        lda   #ObjID_forcepod_counterairreflect
+        lbne  @next
+!
+        ldb   reflect.idx
+        aslb
+        aslb                           ; deux mots par ancrage
+        ldx   #reflect.slots
+        abx
+        stx   reflect.cur
+        ; --- le slot PRINCIPAL : tire des qu'il est libre ---
+        ldx   ,x
+        lbsr  ReflectAlive
+        beq   @alt                     ; son objet vit encore : occupe
+        clr   reflect.lag              ; le principal nait sur l'ancrage
+        lbsr  ReflectSpawn
+        pshs  x
+        ldx   reflect.cur
+        puls  d
+        std   ,x
+@alt
+        ; --- le slot ALT : libre ; s'il suit un principal NE CE RENDU, il
+        ; nait une trame de vol en arriere ---
+        ; La garde arcade compare l'enregistrement du principal a 0x4E0F, le
+        ; point d'ENTREE de run_counter_air_reflection, qu'il ne porte
+        ; qu'entre sa creation et son premier tick : l'alt part donc LA TRAME
+        ; SUIVANTE, 8 px arcade derriere, puis les deux vivent chacun leur
+        ; vie. Le pod ne tourne qu'au rendu : attendre le rendu suivant
+        ; ecarterait les deux de frameDrop trames (vu a la sonde : 5). On
+        ; fait naitre l'alt dans le meme rendu, un pas de vol en arriere —
+        ; le resultat de la borne a toute cadence.
+        ldx   reflect.cur
+        ldx   2,x
+        lbsr  ReflectAlive
+        lbeq  @next                    ; l'alt vit encore : occupe
+        clr   reflect.lag
+        ldx   reflect.cur
+        ldx   ,x
+        lbsr  ReflectAlive
+        bne   >                        ; pas de principal : rien ne retarde
+        tsta
+        bne   >                        ; principal plus vieux : rien non plus
+        inc   reflect.lag              ; principal ne ce rendu : une trame de retard
+!       lbsr  ReflectSpawn
+        pshs  x
+        ldx   reflect.cur
+        puls  d
+        std   2,x
+@next   leay  6,y
+        inc   reflect.idx
+        tst   ,y
+        lbpl  @loop
+        rts
+        ; variante, OST d'ancrage (0 = pod), decalage y, palier (0 = tous)
+@anchors
+        fcb   0                        ; coin haut-droit du pod
+        fdb   0,-6
+        fcb   2
+        fcb   1                        ; coin bas-droit du pod
+        fdb   0,6
+        fcb   2
+        fcb   0                        ; bit du haut
+        fdb   bitdevTopOST,0
+        fcb   0
+        fcb   1                        ; bit du bas
+        fdb   bitdevBotOST,0
+        fcb   0
+        fcb   -1                       ; fin
+
+; ---------------------------------------------------------------------------
+; ReflectAlive — l'OST retenu porte-t-il encore le reflet de cet ancrage ?
+;   [x] = OST retenu (0 = aucun) ; reflect.idx = l'ancrage
+;   sortie : Z=1 vivant, A = sa routine (0 Init, 1 Live, 2 Fade) ; Z=0 sinon
+; ---------------------------------------------------------------------------
+ReflectAlive
+        cmpx  #0
+        beq   @no
+        lda   id,x
+        cmpa  #ObjID_forcepod_counterairreflect
+        bne   @no
+        lda   subtype,x
+        lsra
+        lsra
+        cmpa  reflect.idx
+        bne   @no
+        lda   routine,x
+        cmpa  #3                       ; AlreadyDeleted : le slot est rendu
+        bhs   @no
+        clrb                           ; Z=1, A intact
+        rts
+@no     ldb   #1                       ; Z=0
+        rts
+
+; ---------------------------------------------------------------------------
+; ReflectSpawn — un reflet de cet ancrage nait
+;   [u] = pod OST, [y] = l'entree d'ancrage ; sortie : [x] = l'OST, 0 si aucun
+; ---------------------------------------------------------------------------
+ReflectSpawn
+        jsr   LoadObject_x
+        bne   >
+        ldx   #0
+        rts
+!       lda   #ObjID_forcepod_counterairreflect
         sta   id,x
-        lda   mount_side,u
-        asla                           ; bit 1 = derriere
+        lda   reflect.idx
+        asla
+        asla                           ; bits 2-3 = ancrage
         ora   ,y                       ; | variante
+        ldb   mount_side,u
+        aslb                           ; bit 1 = derriere
+        pshs  b
+        ora   ,s+
         sta   subtype,x
         pshs  y
         ldy   1,y
@@ -927,27 +1065,31 @@ ForcePodReflections
         addd  3,y                      ; -+6
         std   y_pos,x
         puls  y
-        bra   @next
+        bra   ReflectLag
 @bit    ldd   x_pos,y                  ; sur le bit
         std   x_pos,x
         ldd   y_pos,y
         std   y_pos,x
         puls  y
-@next   leay  5,y
-        tst   ,y
-        bpl   @loop
-@done   rts
-        ; variante, OST d'ancrage (0 = pod), decalage y
-@anchors
-        fcb   0                        ; coin haut-droit du pod
-        fdb   0,-6
-        fcb   1                        ; coin bas-droit du pod
-        fdb   0,6
-        fcb   0                        ; bit du haut
-        fdb   bitdevTopOST,0
-        fcb   1                        ; bit du bas
-        fdb   bitdevBotOST,0
-        fcb   -1                       ; fin
+        ; fall through
+        ; la trame de retard de l'alt : un pas de vol EN ARRIERE (vers le pod)
+ReflectLag
+        tst   reflect.lag
+        beq   @rts
+        ldd   x_pos,x
+        subd  #REFLECT_STEP
+        tst   mount_side,u
+        beq   >
+        addd  #2*REFLECT_STEP          ; pod derriere : le vol va a gauche
+!       std   x_pos,x
+@rts    rts
+
+; les deux reflets retenus par ancrage (principal, alt), et l'index de boucle
+reflect.slots     fdb   0,0,0,0,0,0,0,0
+reflect.cur       fdb   0
+reflect.idx       fcb   0
+reflect.lag       fcb   0
+REFLECT_STEP      equ   3             ; = CR_STEP du reflet (8 px arcade x 0,375)
 
 ForcePodDetachedFire
         ldb   joypad.pressed.fire

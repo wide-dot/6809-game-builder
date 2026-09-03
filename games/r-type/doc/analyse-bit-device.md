@@ -306,3 +306,33 @@ p = 2, boîte 6/6, x + 3 par trame, images alternées ; à l'écran deux bleus
 en haut, deux rouges en bas devant l'arc de la tête ; hors écran, les quatre
 slots sont rendus. Le fondu sur décor n'a pas été provoqué. `rtype_bench`
 7/7. Reste de l'arène objects au pire : 1 529 (page 12) et 1 468 (page 23).
+
+### 7.1 La salve, 1:1 avec les tables de tir (03/09/2026, décision auteur)
+
+Relecture complète des recettes de tir du pod (ROM 0x1B80..0x1E20, quatorze
+slots, type counter-air, pod accroché) :
+
+| Palier | Ce que la borne crée |
+|---|---|
+| 2 (faible) | reflets aux deux coins du pod (slots 4, 5) + alts (12, 13), un reflet par bit vivant (2, 3) + alts (10, 11) — **pas de tête** |
+| 3 (fort) | têtes A et B (slots 1, 9), un reflet par bit vivant (2, 3) + alts (10, 11) — **pas de reflet aux coins** |
+
+Le laser rouge faible de l'arcade, ce sont ces étincelles. Chaque ancrage a
+deux slots : le **principal** retire dès que son objet a fini (bouton tenu,
+`force_pod_fire_held`) ; l'**alt** tire aux mêmes conditions si
+l'enregistrement huit slots en arrière — le principal du même ancrage — ne
+porte pas 0x4E0F, le point d'entrée de `run_counter_air_reflection`, qu'il ne
+garde que de sa création à son premier tick. L'alt part donc **la trame
+suivante**, 8 px arcade derrière, puis les deux vivent chacun leur vie :
+vaisseau immobile, deux reflets par bit alignés en x, jamais trois.
+
+Chez nous (`forcepod.asm`) : les reflets partent sur le bouton **tenu**, la
+tête sur le front avec son verrou ; palier 2 sans tête, palier 3 sans coins ;
+deux OST retenus par ancrage, un objet n'étant cru que si id + ancrage
+(subtype bits 2-3) + routine concordent. Le pod ne tournant qu'au rendu,
+« la trame suivante » deviendrait « le rendu suivant » (5 trames vues à la
+sonde) : l'alt naît dans le même rendu **un pas de vol en arrière** (3 px),
+le résultat de la borne à toute cadence. Vérifié sous toje au palier 3 :
+paires 208/205 sur chaque bit, aucun reflet aux coins ; le premier essai
+laissait traîner le retard sur le principal suivant (205/205), corrigé.
+`rtype_bench` 7/7.
