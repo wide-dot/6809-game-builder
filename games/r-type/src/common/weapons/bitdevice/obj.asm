@@ -223,6 +223,21 @@ ActiveTick
         mul
         ldx   #bit.state
         leax  d,x                      ; X = l'etat de CETTE instance
+        ; LE DEFILEMENT D'ABORD. x_pos est en coordonnees de TERRAIN : un
+        ; vaisseau immobile a l'ecran avance avec la camera, et le bit le
+        ; poursuivrait par pas de 1,5 px avec sa bande morte — un tremblement
+        ; de 1-2 px au repos (constate par l'auteur). L'arcade poursuit en
+        ; coordonnees ecran ; on y ramene le bit et sa cible d'avant en leur
+        ; ajoutant le defilement de ce rendu, ce que le vaisseau a deja eu.
+        ldd   glb_camera_x_pos
+        subd  glb_camera_x_pos_old
+        std   bit.off
+        ldd   x_pos,u
+        addd  bit.off
+        std   x_pos,u
+        ldd   bs.tx,x
+        addd  bit.off
+        std   bs.tx,x
         ldb   gfxlock.frameDrop.count
         bne   >
         ldb   #1

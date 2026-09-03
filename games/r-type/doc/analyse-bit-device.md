@@ -260,5 +260,12 @@ Vérifié sous toje au stage 1, slots armés par écriture de leur routine,
 manette 0 libérée de la souris : au repos les bits sont à y−24 et y+24,
 alignés en x à la bande morte près ; « haut » tenu, le vaisseau monte à
 ~0,9 px/trame et les bits traînent ~10 px sous leur repos, x aligné ;
-relâché, retour exact au repos. `rtype_bench` 7/7. L'effacement des gommes
-par les bits au stage 4 n'est pas vérifié sur machine : à l'auteur.
+relâché, retour exact au repos. `rtype_bench` 7/7. Validé par l'auteur en jeu :
+suivi et gommes du stage 4 détruites.
+
+**Tremblement au repos, corrigé dans la foulée** : `x_pos` est en
+coordonnées de terrain, un vaisseau immobile à l'écran avance donc avec la
+caméra, et le bit le poursuivait par pas de 1,5 px avec sa bande morte — un
+ou deux pixels de temps en temps. L'arcade poursuit en coordonnées écran. Le
+tick ajoute le défilement du rendu au bit et à sa cible d'avant avant la
+poursuite : au repos, plus rien ne bouge.
