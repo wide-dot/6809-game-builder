@@ -1,0 +1,73 @@
+L'art des reflets du counter-air — extraction et conversion
+============================================================
+
+Les REFLETS du laser ROUGE du Force Pod (« counter-air ») : a chaque salve la
+borne cree, en plus des deux tetes, une etincelle a chaque coin du pod
+(create_counter_air_reflection_up_right / down_right) et une sur chaque bit
+device vivant (…_bit_top / _bit_bottom). Tick commun run_counter_air_reflection
+(0x404E0F) ; analyse dans doc/analyse-bit-device.md §1.6. Meme demarche que
+tools/groundlaser-art.txt ; chemins relatifs a games/r-type/, depot
+d'extraction voisin (../../../re.arcade.r-type).
+
+1. AMONT — les recettes entrent au catalogue
+--------------------------------------------
+Rien a coder : le moteur `meta_sprite` decode les rangees de six octets.
+Entree ajoutee a data/catalog.yaml (03/09/2026) :
+
+    - name: counter-air-laser
+      - reflection-up     nb_frames 4  addr 0x1267c  palette 0x3d
+      - reflection-down   nb_frames 4  addr 0x12694  palette 0x3d
+      - reflection-fade   nb_frames 8  addr 0x126ac  palette 0x3d
+      - muzzle-flash      nb_frames 2  addr 0x126f2  palette 0x3d
+
+Les tables (ES:0x267C, 0x2694, 0x26AC, 0x26F2 ; adresse plate = 0x10000 +
+offset de segment) :
+  * reflection-up   : tuile 0x0025, attributs 0x4000/0x4400/0x4800/0x4C00 —
+    un sprite 32x16, puis ses miroirs vertical, horizontal et les deux. Le
+    tick alterne les rangees 0 et 1 (normal / miroir vertical) toutes les
+    quatre trames ; le pod accroche a l'ARRIERE prend les rangees 2 et 3
+    (+0xC sur le pointeur), les miroirs horizontaux. Ancre au bit du haut et
+    au coin haut-droit du pod (pod_x - 0x10, pod_y + 8).
+  * reflection-down : tuile 0x0026, memes attributs ; bit du bas et coin
+    bas-droit (pod_x - 0x10, pod_y - 8).
+  * reflection-fade : tuiles 0x09FD..0x09F6 (16x16, sans miroir). La borne
+    les joue A L'ENVERS : phase 0x30 moins 6 avant chaque image, donc les
+    rangees 7, 6 … 0 — le code objet doit jouer 07.png en premier.
+  * muzzle-flash    : tuiles 0x000E/0x000F a (+8, -8) du vaisseau, une trame,
+    parite du compteur global (run_small_impact 0x404EAF).
+  * boite partagee 0x26DC : demi-largeurs 16/16 en X, 8/8 en Y (arcade).
+La palette 0x3D est celle que reserve run_counter_air_reflection.
+
+    cd ../../../re.arcade.r-type
+    java -Xmx1G -jar target/re.arcade.r-type-0.0.1.jar --export-catalog -r rom/rtype.zip
+
+2. AVAL — les PNG arcade deviennent des sprites TO8
+---------------------------------------------------
+    cp -R ../../../re.arcade.r-type/out/sprites/counter-air-laser/* \
+          src/common/weapons/forcepods/reflection/images/original/
+    rm src/common/weapons/forcepods/reflection/images/original/reflection-*/00[23]_*
+    python3 tools/arcade_to_sprites.py src/common/weapons/forcepods/reflection \
+            --forcer 232,0,0:8 --forcer 232,152,152:9
+
+Les rangees 2 et 3 (miroirs horizontaux) sont RETIREES avant conversion :
+gfxcomp les produit (`mirror="x"`), et les garder elargirait le cadre commun.
+
+Le reflet du bas est un degrade rouge a trois niveaux (rouge, rose, blanc) :
+en Lab le rose tombait sur le GRIS commun. Les deux forcages posent le rouge
+sur (171,0,0) et le rose sur l'orange (204,97,0) — la rampe rouge de la
+palette commune, celle de la tete du counter-air (decision auteur, 03/09).
+Le reflet du haut (bleu, bleu clair, blanc) tombe juste sans forcage.
+
+L'eclair de bouche (muzzle-flash) reste au catalogue mais N'ENTRE PAS dans le
+build : c'est l'eclair du tir simple (run_small_impact), pas un reflet.
+
+Geometrie obtenue :
+
+    reflection-up     2 frames  cadre 48x8  -> 18x6   ancre -9,-3
+    reflection-down   2 frames  cadre 48x8  -> 18x6   ancre -9,-3
+    reflection-fade   8 frames  cadre 16x16 -> 6x12   ancre -3,-6
+    muzzle-flash      2 frames  cadre 48x16 -> 18x12  ancre -9,-6
+
+Palette `communs` (le defaut) : l'arme est chargee une fois pour les huit
+stages. L'export lui-meme sort le reflet du haut en bleu et celui du bas en
+rouge — les deux couleurs de la tete du counter-air.

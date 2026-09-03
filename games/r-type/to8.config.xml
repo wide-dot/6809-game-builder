@@ -1495,6 +1495,62 @@
                     </lwasm>
                 </file>
 
+                <!-- Les REFLETS du counter-air : les etincelles secondaires
+                     qui partent des coins du pod et des bit devices a chaque
+                     salve, leur fondu, et l'eclair de bouche. Art extrait de
+                     la borne — voir tools/counterair-reflection-art.txt. -->
+                <file name="common.counterairreflect" linkdata="LINK" arena="objects">
+                    <lwasm gensource="gen/weapons/counterairreflect.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/weapons/forcepods/counterairreflect.unit.asm"/>
+                        <gfxcomp gendir="gen/weapons/counterairreflect"
+                                 gensource="gen/weapons/counterairreflect/includes.asm"
+                                 genindex="gen/weapons/counterairreflect/index.asm"
+                                 file="common.counterairreflect">
+                            <image name="careflect_up0" filename="src/common/weapons/forcepods/reflection/images/reflection-up/00.png" index="0">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="careflect_up1" filename="src/common/weapons/forcepods/reflection/images/reflection-up/01.png" index="1">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="careflect_dn0" filename="src/common/weapons/forcepods/reflection/images/reflection-down/00.png" index="2">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="careflect_dn1" filename="src/common/weapons/forcepods/reflection/images/reflection-down/01.png" index="3">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="x" shift="0"/>
+                            </image>
+                            <image name="careflect_fade0" filename="src/common/weapons/forcepods/reflection/images/reflection-fade/00.png" index="4">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="careflect_fade1" filename="src/common/weapons/forcepods/reflection/images/reflection-fade/01.png" index="5">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="careflect_fade2" filename="src/common/weapons/forcepods/reflection/images/reflection-fade/02.png" index="6">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="careflect_fade3" filename="src/common/weapons/forcepods/reflection/images/reflection-fade/03.png" index="7">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="careflect_fade4" filename="src/common/weapons/forcepods/reflection/images/reflection-fade/04.png" index="8">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="careflect_fade5" filename="src/common/weapons/forcepods/reflection/images/reflection-fade/05.png" index="9">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="careflect_fade6" filename="src/common/weapons/forcepods/reflection/images/reflection-fade/06.png" index="10">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="careflect_fade7" filename="src/common/weapons/forcepods/reflection/images/reflection-fade/07.png" index="11">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <!-- Le laser de sol (cristal jaune) : deux faisceaux qui
                      rampent le long du decor. Art extrait de la borne — voir
                      tools/groundlaser-art.txt. -->
@@ -2089,6 +2145,7 @@
                     <load name="common.forcepod"/>
                     <load name="common.reboundlaser"/>
                     <load name="common.counterairlaser"/>
+                    <load name="common.counterairreflect"/>
                     <load name="common.groundlaser"/>
                     <load name="common.simplefire"/>
                     <load name="common.firechain"/>
