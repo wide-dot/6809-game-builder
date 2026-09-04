@@ -28,8 +28,11 @@ Weapon
         ldx   #Weapon_Routines
         jmp   [a,x]
 
-; Le depart du pas courant, garde le temps d'un tick pour la boite balayee
-; (un seul tir a la fois dans Live : un scratch partage suffit).
+; L'ARRIERE de la boite balayee du tick courant (monde), garde le temps d'un
+; tick : la frontiere avant d'avant le pas — ou, a la naissance, le bord
+; arriere du tir lui-meme, sinon un trou de 6 px reste entre le vaisseau et
+; la premiere boite (04/09/2026). Un seul tir a la fois dans Live : un
+; scratch partage suffit.
 weapon.sweepFrom fdb 0
 
 Weapon_Routines
@@ -101,14 +104,20 @@ Init
         inc   gumHit,u
 @destiny
         inc   routine,u
-        ; ET LE PREMIER TICK TOUT DE SUITE — on TOMBE dans Live entier, pas
-        ; dans sa queue. L'arcade fait exactement ca (create_force_pod_simple_
-        ; fire $3EA7 « falls through for an immediate first tick ») : le tir
-        ; rattrape son frame drop des la trame de naissance, et la boite
-        ; balayee s'etire de la position INITIALE (bouche du canon, sondee
-        ; pour le destin ci-dessus) a la position rattrapee. L'ancien `bra >`
-        ; sautait le deplacement : le tir restait une trame a la bouche, et
-        ; le balayage y partait meme a l'envers (centre - demi-pas).
+        ; ET LE PREMIER TICK TOUT DE SUITE — on entre dans Live par son pas,
+        ; pas par sa queue. L'arcade fait exactement ca (create_force_pod_
+        ; simple_fire $3EA7 « falls through for an immediate first tick ») :
+        ; le tir rattrape son frame drop des la trame de naissance, et la
+        ; boite balayee s'etire de la position INITIALE (bouche du canon,
+        ; sondee pour le destin ci-dessus) a la position rattrapee. L'ancien
+        ; `bra >` sautait le deplacement : le tir restait une trame a la
+        ; bouche, et le balayage y partait meme a l'envers (centre - demi-pas).
+        ; L'arriere de cette premiere boite est le bord arriere du tir, pas une
+        ; frontiere d'avant le pas qui n'existe pas encore.
+        ldd   x_pos,u
+        subd  #3
+        std   weapon.sweepFrom
+        bra   weapon.step
 
 Live
         ; LE COUP ENCAISSE S'AFFICHE. Quand un ennemi consomme le tir (p=0 a
@@ -123,8 +132,10 @@ Live
 
         ; update weapon position
         ldd   x_pos,u
-        std   weapon.sweepFrom         ; le depart du pas : la boite balayee
-                                       ; s'etire d'ici, impact compris
+        addd  #3
+        std   weapon.sweepFrom         ; la frontiere avant d'avant le pas :
+                                       ; l'arriere de la boite balayee
+weapon.step
         lda   #6
         ldb   gfxlock.frameDrop.count
         mul
@@ -179,8 +190,7 @@ Live
         ; ou deux pixels derriere l'arriere : AABB.spanX sert les deux sens,
         ; la boite couvre alors ce petit segment.
         ldd   weapon.sweepFrom
-        subd  glb_camera_x_pos
-        addd  #3                       ; l'arriere : la frontiere avant d'avant le pas
+        subd  glb_camera_x_pos         ; l'arriere
         tfr   d,x
         ldd   x_pos,u
         subd  glb_camera_x_pos
@@ -206,8 +216,7 @@ Live
         ; le seul centre laissait le rayon (jusqu'a 27) deborder a gauche et
         ; reapparaitre a droite (04/09/2026, doc/analyse-wrap-boites.md).
         ldd   weapon.sweepFrom
-        subd  glb_camera_x_pos
-        addd  #3                       ; l'arriere : la frontiere avant d'avant le pas
+        subd  glb_camera_x_pos         ; l'arriere
         tfr   d,x
         ldd   x_pos,u
         subd  glb_camera_x_pos

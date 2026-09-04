@@ -31,8 +31,10 @@ Beam
         ldx   #Beam_Routines
         jmp   [a,x]
 
-; Le depart du pas courant, garde le temps d'un tick pour la boite balayee
-; (meme patron que weapon.sweepFrom — un seul beam a la fois dans Live).
+; L'ARRIERE de la boite balayee du tick courant (monde) : la frontiere avant
+; d'avant le pas — ou, a la naissance, le bord arriere du beam lui-meme, sinon
+; un trou reste entre le vaisseau et la premiere boite (meme patron que
+; weapon.sweepFrom — un seul beam a la fois dans Live).
 beam.sweepFrom fdb 0
 
 Beam_Routines
@@ -108,10 +110,19 @@ beam.gum.call equ *-2
         ldd   terrainCollision.impact.x
         std   impactX,u
         inc   routine,u
-        ; ET LE PREMIER TICK TOUT DE SUITE — on TOMBE dans Live entier (meme
-        ; geste que le tir simple) : rattrapage du frame drop des la trame de
-        ; naissance, boite balayee de la position initiale a la position
-        ; rattrapee. L'ancien `bra >` sautait le deplacement.
+        ; ET LE PREMIER TICK TOUT DE SUITE — on entre dans Live par son pas
+        ; (meme geste que le tir simple) : rattrapage du frame drop des la
+        ; trame de naissance, boite balayee de la position initiale a la
+        ; position rattrapee. L'ancien `bra >` sautait le deplacement.
+        ; L'arriere de cette premiere boite est le bord arriere du beam
+        ; (x_pos - demi-largeur = la bouche du canon), pas une frontiere
+        ; d'avant le pas qui n'existe pas encore.
+        ldd   x_pos,u
+        subd  halfWidth,u
+        std   beam.sweepFrom
+        ldx   x_pos,u
+        pshs  x                        ; le depart, pour le sillage
+        bra   beam.step
 
 Live
         ; LE DERNIER COUP S'AFFICHE — meme retour que le tir simple : quand le
@@ -151,9 +162,12 @@ Live
         ; 0x40:027A). Le moteur audio n'est pas porte : rien ici. Ce n'est PAS
         ; du score, verifie sur la plate de erase_green_ball_cell_stage4.
         ldx   x_pos,u
-        stx   beam.sweepFrom           ; le depart du pas : la boite balayee
         pshs  x                        ; le depart, avant le deplacement
-
+        tfr   x,d
+        addd  halfWidth,u
+        std   beam.sweepFrom           ; la frontiere avant d'avant le pas :
+                                       ; l'arriere de la boite balayee
+beam.step
         ; update beam position
         lda   #3
         ldb   gfxlock.frameDrop.count
@@ -198,8 +212,7 @@ beam.gum.call2 equ *-2
         ; pas du mur ne touchait rien du segment traverse (l'orbe du gomander).
         ; LA BOITE PAR SES BORDS (04/09/2026) — voir le site en vol plus bas.
         ldd   beam.sweepFrom
-        subd  glb_camera_x_pos
-        addd  halfWidth,u              ; l'arriere : la frontiere avant d'avant le pas
+        subd  glb_camera_x_pos         ; l'arriere
         tfr   d,x
         ldd   x_pos,u
         subd  glb_camera_x_pos
@@ -218,8 +231,7 @@ beam.gum.call2 equ *-2
         ; double : la boite large du segment peut toucher PLUSIEURS ennemis
         ; dans la meme passe, comme l'arcade.
         ldd   beam.sweepFrom
-        subd  glb_camera_x_pos
-        addd  halfWidth,u              ; l'arriere : la frontiere avant d'avant le pas
+        subd  glb_camera_x_pos         ; l'arriere
         tfr   d,x
         ldd   x_pos,u
         subd  glb_camera_x_pos
