@@ -51,26 +51,22 @@ soundfx.frame      EXTERNAL
         INCLUDE "engine/system/to8/controller/joypad.const.asm"
         INCLUDE "engine/object-management/Obj_Run.macro.asm"
         INCLUDE "engine/pack/ymm.asm"
-        INCLUDE "engine/pack/vgc.asm"
 
         INCLUDE "gen/layout.asm"
 
-; le son : lecteurs et donnees, resolus par le lien (dialecte v2 des lecteurs
-; conserves — kept-v2-api.md). Le YMM est resident, le VGC est charge par la
-; scene du title dans son arene, donnees colocalisees dans le meme direntry.
+; le son : lecteur et donnees, resolus par le lien (dialecte v2 du lecteur
+; conserve — kept-v2-api.md). Le YMM est resident. Le SN76489 (musique VGC
+; du title) est RETIRE le 04/09/2026 : deux modeles de carte son mappent la
+; puce a des adresses differentes, et la compatibilite n'est pas geree —
+; le jeu ne parle plus qu'au YM2413.
 ymm.obj.play     EXTERNAL
 ymm.frame.play   EXTERNAL
 ym2413.init      EXTERNAL
-vgc.obj.play     EXTERNAL
-vgc.frame.play   EXTERNAL
-sn76489.init     EXTERNAL
 sounds.title.ymm EXTERNAL
-sounds.title.vgc EXTERNAL
 playfield.clearBlast  EXTERNAL
 playfield.clearLines  EXTERNAL
 
 page.ymm equ map.RAM_OVER_CART+engine.sound.ymm.page
-page.vgc equ map.RAM_OVER_CART+title.sound.vgc.page
 
 ; l'entree est le premier octet de l'unite (cf. unit-entry-point.md) ; le
 ; moteur resident y saute par le LIEN (`jmp stage.main` dans
@@ -87,11 +83,8 @@ stage.main
         ; demarrage et lit les sprites comme du 320x200 deux couleurs
         _gfxmode.setBM16
 
-        ; les deux puces au silence — l'etat connu du demarrage (v1 :
-        ; resetsn/resetym ; v2 : les routines init des lecteurs, montees
-        ; chacune avec sa page)
-        _ram.cart.set #page.vgc
-        _sn76489.init
+        ; la puce au silence — l'etat connu du demarrage (v1 : resetym ;
+        ; v2 : la routine init du lecteur, montee avec sa page)
         _ram.cart.set #page.ymm
         ; DESARMER le morceau du mode precedent, PAS SEULEMENT faire taire la
         ; puce. `_ym2413.init` coupe le son a l'instant t ; il ne coupe pas la
@@ -417,14 +410,13 @@ title.p5.set
         lda   #$12
         sta   ,x
 
-        ; la musique, au moment v1 (phase 5 : l'arret du logo) : les DEUX
-        ; flux, armes sous masque IRQ comme la v1 (v1-main.asm:445-451) —
-        ; frame.play tourne deja dans l'IRQ, obj.play remet le flux a zero
+        ; la musique, au moment v1 (phase 5 : l'arret du logo), armee sous
+        ; masque IRQ comme la v1 (v1-main.asm:445-451) — frame.play tourne
+        ; deja dans l'IRQ, obj.play remet le flux a zero. La v1 armait un
+        ; second flux, SN76489 : retire (cf. en-tete).
         jsr   IrqOff
         _ram.cart.set #page.ymm
         _ymm.obj.play #page.ymm,#sounds.title.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
-        _ram.cart.set #page.vgc
-        _vgc.obj.play #page.vgc,#sounds.title.vgc,#vgc.LOOP,#vgc.NO_CALLBACK
         jsr   IrqOn
 title.p5.live
         ; la machine a ecrire s'eteint elle-meme a la fin de sa frappe :
@@ -654,8 +646,6 @@ title.launchGame
         jsr   PalUpdateNow
 
         jsr   IrqOff
-        _ram.cart.set #page.vgc
-        _sn76489.init
         _ram.cart.set #page.ymm
         _ym2413.init
 
@@ -777,7 +767,6 @@ title.userIRQ
         ; le son dans l'IRQ, comme la v1 (UserIRQ : une trame de chaque flux) ;
         ; sans morceau arme les lecteurs ressortent d'eux-memes
         _ymm.frame.play #page.ymm
-        _vgc.frame.play #page.vgc
         ; le pilote de bruitages, comme stage.userIRQ : sans lui la boite aux
         ; lettres soundFX.newSound (le bip du cheat) reste muette au title —
         ; l'unite soundfx est en RAM depuis scenes.boot

@@ -410,10 +410,9 @@
                 <zone page="$15" address="$0000" size="$4000"/>
                 <zone page="$16" address="$0000" size="$4000"/>
             </arena>
-            <!-- La musique SN76489, migree mais debranchee (rendre du temps CPU,
-                 comme la v1) ; la declaration reste pour ne pas perdre la config. -->
-            <!-- <region name="vgc.player" page="$19" size="$0A80"/> -->
-            <!-- <region name="vgc.data"   page="$19" address="$0A80" size="$3580"/> -->
+            <!-- Plus de SN76489 dans le jeu (04/09/2026, voir la scene du
+                 title) : les anciennes regions vgc.player/vgc.data sont
+                 retirees, le lecteur VGC reste dans engine/ pour les exemples. -->
 
             <!-- Ce que le jeu occupe sans jamais rien y charger : des equates du
                  code, declarees pour que le builder refuse d'y faire atterrir quoi
@@ -1066,10 +1065,6 @@
                         <asm filename="src/common/hud/messages/messages.unit.asm"/>
                     </lwasm>
                 </file>
-
-                <!-- VGC migre mais debranche : rebrancher engine.sound.vgc (region
-                     vgc.player, engine/sound/vgc[.buffers].asm) et stage1.music.vgc
-                     (region vgc.data, music/vgc.unit.asm). -->
 
                 <!-- Les flammes de reacteur de la sequence d'ouverture        -->
                 <file name="common.engineflames" linkdata="LINK" arena="objects">
@@ -2183,7 +2178,6 @@
                     <load name="common.collisionpass"/>
                     <load name="common.messages"/>
                     <load name="common.checkpoint"/>
-                    <!-- VGC debranche cote stage : recharger engine.sound.vgc + stage1.music.vgc ici. -->
                     <load name="common.hud"/>
                     <load name="common.pow"/>
                     <load name="common.optionbox"/>
@@ -2280,25 +2274,12 @@
                     </lwasm>
                 </file>
 
-                <!-- VGC : premier consommateur v2 du lecteur. Lecteur, tampons et
-                     donnees dans UN direntry — la colocalisation exigee par le
-                     montage unique sous IRQ est structurelle. -->
-                <file name="title.sound.vgc" linkdata="LINK" arena="title">
-                    <lwasm gensource="gen/sound/title-vgc.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="engine/sound/vgc.buffers.asm"/>
-                        <asm filename="engine/sound/vgc.asm"/>
-                        <asm filename="src/title/music/vgc.unit.asm"/>
-                    </lwasm>
-                </file>
-
-                <!-- Le port du SN76489 par le lien, comme le YM : la variante
-                     2 ($E7F7), celle du modele sound. -->
-                <file name="engine.sound.sn.const" linkdata="LINK">
-                    <lwasm gensource="gen/sound/sn-const.asm">
-                        <asm filename="engine/system/to8/sound/sn.2.const.asm"/>
-                    </lwasm>
-                </file>
+                <!-- Le SN76489 est RETIRE du jeu (decision auteur, 04/09/2026) :
+                     le title jouait un second flux VGC (lecteur + tampons +
+                     donnees dans un direntry, port sn.2 par le lien). Deux
+                     modeles de carte son mappent la puce a des adresses
+                     differentes et la compatibilite n'est pas geree ; le jeu ne
+                     parle plus qu'au YM2413 (ym.2, $E7FC/$E7FD). -->
 
                 <!-- L'unite du title : la troisieme alternative du creneau
                      d'echange ($01/$8000, comme stage1 et stage2). -->
@@ -2346,8 +2327,6 @@
                     <load name="title.text"/>
                     <load name="title.loading"/>
                     <load name="title.music.ymm"/>
-                    <load name="title.sound.vgc"/>
-                    <load name="engine.sound.sn.const"/>
                 </scene>
 
                 <!-- Les scenes de LOT : le stage entrant porte un masque de bits
