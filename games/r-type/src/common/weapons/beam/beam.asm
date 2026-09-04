@@ -196,51 +196,38 @@ beam.gum.call2 equ *-2
         ; d'impact, largeur du beam comprise. Meme correctif que le tir simple :
         ; la branche court-circuitait la pose de boite, un beam ne a moins d'un
         ; pas du mur ne touchait rien du segment traverse (l'orbe du gomander).
+        ; LA BOITE PAR SES BORDS (04/09/2026) — voir le site en vol plus bas.
         ldd   beam.sweepFrom
         subd  glb_camera_x_pos
-        pshs  b                        ; l'arriere du segment (ecran, un octet)
+        addd  halfWidth,u              ; l'arriere : la frontiere avant d'avant le pas
+        tfr   d,x
         ldd   x_pos,u
-        subd  glb_camera_x_pos         ; l'avant = le point d'impact
-        subb  ,s                       ; B = la longueur du segment
-        bpl   @sbiOk
-        clrb                           ; recul d'impact colle au mur : ponctuel
-@sbiOk  lsrb                           ; B = le demi-segment
-        pshs  b
-        addb  halfWidth+1,u
-        stb   AABB_0+AABB.rx,u         ; rx = demi-segment + demi-largeur du beam
-        puls  b
-        addb  ,s+                      ; cx = arriere + demi-segment
-        stb   AABB_0+AABB.cx,u
+        subd  glb_camera_x_pos
+        addd  halfWidth,u              ; l'avant : le point d'impact
+        leay  AABB_0,u
+        jsr   AABB.spanX
         ldd   #set_beam_impact_0
         std   image_set,u
         inc   routine,u
         jmp   DisplaySprite
 !
-        ; update hitbox position — LA BOITE BALAYEE (voir le tir simple) :
-        ; centre au milieu du pas, rx = demi-segment + demi-largeur du tier.
-        ; Un beam qui penetre y gagne double : la boite large du segment peut
-        ; toucher PLUSIEURS ennemis dans la meme passe, comme l'arcade.
+        ; update hitbox position — LA BOITE BALAYEE, PAR SES BORDS (voir le
+        ; tir simple) : de la frontiere avant de la trame precedente (x d'avant
+        ; le pas + demi-largeur du tier) a la frontiere courante, les deux
+        ; calees dans l'octet par AABB.spanX. Un beam qui penetre y gagne
+        ; double : la boite large du segment peut toucher PLUSIEURS ennemis
+        ; dans la meme passe, comme l'arcade.
+        ldd   beam.sweepFrom
+        subd  glb_camera_x_pos
+        addd  halfWidth,u              ; l'arriere : la frontiere avant d'avant le pas
+        tfr   d,x
         ldd   x_pos,u
         subd  glb_camera_x_pos
         cmpd  #160-8/2                 ; delete beam if out of screen range
         bhs   Delete
-        pshs  b                        ; l'avant du segment (ecran, un octet)
-        ldd   beam.sweepFrom
-        subd  glb_camera_x_pos
-        negb
-        addb  ,s                       ; B = la longueur du segment
-        bpl   @sbvOk
-        clrb                           ; camera en avance sur un pas nul
-@sbvOk  lsrb                           ; B = le demi-segment
-        pshs  b
-        addb  halfWidth+1,u
-        stb   AABB_0+AABB.rx,u         ; rx = demi-segment + demi-largeur
-        puls  b
-        negb
-        addb  ,s+                      ; cx = avant - demi-segment
-        bpl   @sbvCl
-        clrb                           ; ne au bord gauche : cale a zero
-@sbvCl  stb   AABB_0+AABB.cx,u
+        addd  halfWidth,u              ; l'avant : la frontiere courante
+        leay  AABB_0,u
+        jsr   AABB.spanX
         ldb   beamTier,u                ; sprite tier = current power band (arcade unified image_id)
         aslb
         ldx   #Ani_Beams

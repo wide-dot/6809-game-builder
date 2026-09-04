@@ -174,49 +174,48 @@ Live
         ; naissance, un tir parti a moins d'un pas du mur ne pouvait plus
         ; RIEN toucher (31/08/2026). p reste arme : la passe de collision de
         ; la trame suivante teste ce segment, puis Impact/Delete le retire.
+        ; LA BOITE PAR SES BORDS (04/09/2026) — voir le site en vol plus bas.
+        ; L'avant est le point d'impact ; l'aleas du recul peut le mettre un
+        ; ou deux pixels derriere l'arriere : AABB.spanX sert les deux sens,
+        ; la boite couvre alors ce petit segment.
         ldd   weapon.sweepFrom
         subd  glb_camera_x_pos
-        pshs  b                        ; l'arriere du segment (ecran, un octet)
+        addd  #3                       ; l'arriere : la frontiere avant d'avant le pas
+        tfr   d,x
         ldd   x_pos,u
-        subd  glb_camera_x_pos         ; l'avant = le point d'impact
-        subb  ,s                       ; B = la longueur du segment
-        bpl   @swiOk                   ; l'aleas du recul d'impact peut la
-        clrb                           ; rendre negative d'un ou deux pixels :
-@swiOk  lsrb                           ; boite ponctuelle dans ce cas
-        addb  #3
-        stb   AABB_0+AABB.rx,u         ; rx = demi-segment + demi-largeur
-        subb  #3
-        addb  ,s+                      ; cx = arriere + demi-segment
-        stb   AABB_0+AABB.cx,u
+        subd  glb_camera_x_pos
+        addd  #3                       ; l'avant : le point d'impact
+        leay  AABB_0,u
+        jsr   AABB.spanX
         ldd   #set_weapon_impact0
         std   image_set,u
         inc   routine,u
         jmp   DisplaySprite
 !
-        ; update hitbox position — LA BOITE BALAYEE. Un seul echantillon par
-        ; trame et un pas de 6*frameDrop : une boite posee sur la seule
-        ; position courante laisse des trous des que le pas depasse sa
-        ; largeur. La boite couvre donc LE SEGMENT PARCOURU : centre au
-        ; milieu du pas, rayon = demi-pas + demi-largeur (3). A 50 fps c'est
-        ; l'ancienne boite (rx 6) ; a 7 fps elle s'etire a rx 27 — aucun
-        ; ennemi ne passe plus entre deux trames, et le bout portant est
-        ; couvert par la position de naissance posee par Init.
+        ; update hitbox position — LA BOITE BALAYEE, PAR SES BORDS. Un seul
+        ; echantillon par trame et un pas de 6*frameDrop : une boite posee sur
+        ; la seule position courante laisse des trous des que le pas depasse
+        ; sa largeur. La boite couvre donc le segment parcouru, de la
+        ; FRONTIERE AVANT DE LA TRAME PRECEDENTE (x d'avant le pas + 3) a la
+        ; frontiere courante (x + 3) : contigue d'une trame a l'autre, sans
+        ; recouvrement — a 50 img/s c'est la largeur du tir (6 px), a 7 img/s
+        ; elle s'etire a 48 px. Aucun ennemi ne passe entre deux trames, et le
+        ; bout portant est couvert par la position de naissance posee par Init.
+        ; Les deux bords sont cales dans [0,255] par AABB.spanX AVANT la
+        ; conversion en centre + rayon : le noyau compare modulo 256, et caler
+        ; le seul centre laissait le rayon (jusqu'a 27) deborder a gauche et
+        ; reapparaitre a droite (04/09/2026, doc/analyse-wrap-boites.md).
+        ldd   weapon.sweepFrom
+        subd  glb_camera_x_pos
+        addd  #3                       ; l'arriere : la frontiere avant d'avant le pas
+        tfr   d,x
         ldd   x_pos,u
         subd  glb_camera_x_pos
         cmpd  #160-8/2                 ; delete weapon if out of screen range
         bhs   Delete
-        pshs  b                        ; le bord courant (ecran, < 160 : un octet)
-        lda   #3
-        ldb   gfxlock.frameDrop.count
-        mul                            ; B = le demi-pas (A reste 0, <= 24)
-        addb  #3
-        stb   AABB_0+AABB.rx,u         ; rx = demi-pas + demi-largeur
-        subb  #3
-        negb
-        addb  ,s+                      ; centre = bord courant - demi-pas
-        bpl   @swvOk                   ; sous zero (tir ne au bord gauche a
-        clrb                           ; bas regime) : cale a 0 — deborder a
-@swvOk  stb   AABB_0+AABB.cx,u         ; droite oui, s'enrouler jamais
+        addd  #3                       ; l'avant : la frontiere courante
+        leay  AABB_0,u
+        jsr   AABB.spanX
         jmp   DisplaySprite
 
 weapon.HitFeedback

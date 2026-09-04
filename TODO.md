@@ -120,8 +120,10 @@ Trois régressions dormantes, bissectées contre un état connu-bon (loader-ut �
         exportée par `api.asm`) : la boîte balayée par ses BORDS, calés dans
         [0,255], les deux sens de tir. La macro de centre du 03/09 est
         retirée (un centre calé laisse le rayon déborder).
-  - [ ] convertir le tir simple (3 sites) et le beam (3 sites) à `AABB.spanX`
-        — arrière = frontière avant de la trame précédente
+  - [x] tir simple et beam convertis à `AABB.spanX` (04/09) : vol et
+        impact, quatre sites — arrière = frontière avant de la trame
+        précédente, plus de calcul de centre dans les objets ; les `cy`
+        d'Init restent des octets (y est déjà dans [0,255]). Banc r-type 7/7
   - [ ] le reste des sites à rayon fixe (`grep 'stb.*AABB\.c[xy]' games/r-type/src/`),
         centre calé dans `[rx, 255 − rx]` — en priorité la tête du laser
         reflex (zone de vie −64 px, le cas rapporté au niveau 3), puis les
