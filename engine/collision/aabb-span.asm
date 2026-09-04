@@ -28,9 +28,10 @@
 *          X = l'arriere (idem)
 *          Y = la boite (AABB)
 * Sortie : AABB.cx,y et AABB.rx,y ; D, X detruits ; Y, U intacts.
-* Cout : ~60 cycles sans les bords hors champ, +6 par bord cale. Les octets
-* intermediaires vivent dans des immediats auto-modifies : le resident est en
-* RAM, et la routine n'est appelee que hors interruption.
+* Cout : 63 cycles avec le jsr, bords a l'ecran ; +6 par bord cale. L'avant
+* vit dans un immediat auto-modifie (le resident est en RAM, et la routine
+* n'est appelee que hors interruption) ; la demi-longueur est relue de la
+* boite ou elle vient d'etre ecrite.
 *
 * Le cas ou les deux bords sont du meme cote hors champ donne une boite
 * ponctuelle sur le bord de l'ecran : l'objet est alors deja hors de sa zone
@@ -59,9 +60,7 @@ AABB.spanX.front equ *-1               ;   C = 1 : arriere < avant, le tir va a 
         ; vers la gauche (ou longueur nulle) : la boite s'etire a droite de l'avant
         lsrb                           ; B = la demi-longueur
         stb   AABB.rx,y
-        stb   AABB.spanX.half
-        adda  #0                       ; cx = avant + demi-longueur
-AABB.spanX.half equ *-1
+        adda  AABB.rx,y                ; cx = avant + demi-longueur (relue de la boite)
         sta   AABB.cx,y
         rts
 AABB.spanX.right
@@ -69,8 +68,6 @@ AABB.spanX.right
         negb                           ; B = avant - arriere, la longueur
         lsrb                           ; B = la demi-longueur
         stb   AABB.rx,y
-        stb   AABB.spanX.halfR
-        suba  #0                       ; cx = avant - demi-longueur
-AABB.spanX.halfR equ *-1
+        suba  AABB.rx,y                ; cx = avant - demi-longueur (relue de la boite)
         sta   AABB.cx,y
         rts
