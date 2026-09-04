@@ -98,12 +98,16 @@ Live
         lda   globals.forcepodlevel
         cmpa  #3
         beq   >
-        inca  
+        inca
         sta   globals.forcepodlevel
 !
+        ; LE MEME SON POUR TOUT BONUS RAMASSE (decision auteur, 04/09/2026) :
+        ; lasers, vitesse, missiles — et le bit device, qui le joue lui-meme
+        ; (bitdevice/obj.asm). Seule la sortie par la gauche ne passe pas ici.
+@sound
         _soundFX.play soundFX.BonusSound,4
 @delete
-        inc   routine,u     
+        inc   routine,u
         _Collision_RemoveAABB AABB_0,AABB_list_bonus
         jmp   DeleteObject
 @speed
@@ -122,17 +126,16 @@ Live
         ; non nul choisit l'animation courte (Ani_engineflames_speed), et son
         ; Live le colle a 12 px derriere le vaisseau — les 0x1F px arcade.
         jsr   LoadObject_x
-        beq   @delete           ; pool plein : le bonus s'applique sans flamme
+        beq   @sound            ; pool plein : le bonus s'applique sans flamme
         lda   #ObjID_engineflames
         sta   id,x
         lda   #1                ; subtype != 0 : l'animation de vitesse
         sta   subtype,x
-        jmp   @delete
+        jmp   @sound
 @missiles
         lda   #1                        ; débloque l'arme missile sous-nacelle (paire homing)
         sta   globals.missileUnlocked
-        _soundFX.play soundFX.BonusSound,4
-        jmp   @delete
+        jmp   @sound
 AlreadyDeleted
         rts
 

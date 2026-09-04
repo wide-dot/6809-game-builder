@@ -101,6 +101,7 @@ Collect
         lda   #bitdev.rtnid.ActiveInit
         sta   routine,x                ; activate the static slot (ActiveInit next frame)
         inc   globals.bitdevice        ; one more active bit device
+        _soundFX.play soundFX.BonusSound,4 ; le meme son que tout autre bonus (04/09/2026)
 
         ; delete the floating pickup (transient): drop its bonus hitbox and free it
         _Collision_RemoveAABB AABB_0,AABB_list_bonus

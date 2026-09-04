@@ -38,6 +38,11 @@ bitdevice.Object EXPORT
         INCLUDE "src/common/state/variables.asm"
         INCLUDE "src/common/weapons/bitdevice/bitdevice.equ"
         INCLUDE "src/stages/01/objid.const.asm"
+        ; Le bruitage du ramassage : le meme que les boites a option
+        ; (decision auteur, 04/09/2026). Le macro ecrit la boite aux lettres
+        ; residente, exposee par api.asm.
+        INCLUDE "src/common/fx/soundfx/soundFX.const.asm"
+        INCLUDE "engine/sound/soundFX.macro.asm"
 
 ; V2-DEVIATION : gfxcomp génère `set_<nom>` là où la v1 nommait `Img_<nom>`.
 Img_bitdevice_0 equ set_bitdevice_0
