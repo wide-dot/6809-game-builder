@@ -135,12 +135,25 @@ public final class ArenaPacker {
 		final int page;
 		final int address;
 		final int size;
+		/**
+		 * Which slice of the page, when the window shows less than one — null
+		 * when the window shows a whole page, or when the declaration did not
+		 * say (a bare page/address place). Two contents on the same page but
+		 * DIFFERENT slices never share a byte : without this the packer read
+		 * them as one and started an arena after content it does not touch.
+		 */
+		final Integer slice;
 
 		Placed(String file, int page, int address, int size) {
+			this(file, page, address, size, null);
+		}
+
+		Placed(String file, int page, int address, int size, Integer slice) {
 			this.file = file;
 			this.page = page;
 			this.address = address;
 			this.size = size;
+			this.slice = slice;
 		}
 	}
 
@@ -244,7 +257,7 @@ public final class ArenaPacker {
 						// the real destinations back from the RAM map and
 						// refuses an overlap the packer did not avoid.
 						Regions.Zone z = r.zones.get(0);
-						taken.add(new Placed(file, z.page, z.address, size));
+						taken.add(new Placed(file, z.page, z.address, size, z.slice));
 					}
 					continue;
 				}
@@ -269,6 +282,14 @@ public final class ArenaPacker {
 		}
 		for (Placed p : taken) {
 			if (p.page != z.page || p.address + p.size <= z.address || p.address >= z.end()) {
+				continue;
+			}
+			// Même page, adresses qui se croisent — mais deux TRANCHES
+			// différentes d'une page ne partagent aucun octet : la fenêtre
+			// vidéo en montre 8 Ko sur 16, et ce qui vit dans l'autre moitié
+			// n'est pas là. Sans ce test, un tas placé dans une tranche
+			// repoussait le début d'une arène déclarée dans l'autre.
+			if (p.slice != null && z.slice != null && !p.slice.equals(z.slice)) {
 				continue;
 			}
 			Set<String> theirs = statesOf.get(p.file);
