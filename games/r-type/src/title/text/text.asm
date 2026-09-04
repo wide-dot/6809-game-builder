@@ -169,8 +169,12 @@ LiveScoresContinue
 	ldx   a,x
 	asra
 	sta   subtype,x
-	ldy   #allscores
-	ldb   #9
+	; LA TABLE EST VIVANTE (04/09/2026). Elle ne vit plus ici en dur mais
+	; dans l'unite RESIDENTE de classement, ou la fin de partie l'ecrit :
+	; l'attract montre desormais les scores reellement faits. Dix octets par
+	; entree — trois de score, sept de nom — la ou allscores en avait neuf.
+	ldy   #ranking.table
+	ldb   #10
 	mul
 	leay  b,y
 	lda   @livescoresmainloop
@@ -181,17 +185,34 @@ LiveScoresContinue
 	ldu   #$C0F0+17+40*30
 	leau  d,u
 	stu   @nextsavedu
-	ldx   ,y++
-	ldb   #4
+	; SEPT CHIFFRES et non six : le score du portage va jusqu'a 9 999 900,
+	; que les seize bits de DisplayDigit ne savaient pas porter. La
+	; conversion est residente et partagee avec l'ecran de fin de partie ;
+	; le dessin, lui, se fait avec la police d'ici.
 	sty   @savedy
-	jsr   DisplayDigit
-	jsr   DRAW_text_0
+	tfr   y,x
+	jsr   ranking.digits7
+	ldx   #ranking.dig
+	ldb   #7
+@dg	lda   ,x+
+	pshs  b,x
+	cmpa  #$FF
+	beq   @dgblank
+	asla
+	ldx   #numbers_addr
+	jsr   [a,x]
+	bra   @dgnext
+@dgblank
+	jsr   DRAW_text_space
+@dgnext	puls  b,x
 	leau  1,u
-	jsr   DRAW_text_0
+	decb
+	bne   @dg
 	ldy   #0
 @savedy equ *-2
 @nextsavedu equ *-2
-	leau  4,u
+	leay  3,y                          ; le nom suit les trois octets de score
+	leau  3,u
 	lda   #7
 	sta   @scorenameloop
 	ldx   #letter_addr
@@ -215,7 +236,7 @@ LiveScoresContinue
 	lda   @livescoresmainloop
 	inca
 	sta   @livescoresmainloop
-	bra   LiveScoresContinue
+	lbra  LiveScoresContinue
 !
 	inca 
 	cmpa  #10
@@ -308,36 +329,9 @@ allstrings
 scorestring     fcc 'R A N K I N G'
 		fcb $00
 
-allscores
-	fdb 1745
-        fcc 'ABIKO..'
-
-	fdb 1686
-	fcc 'SUMITA '
-	
-	fdb 1597
-	fcc 'AKIO.O '
-
-	fdb 1179
-	fcc 'SHINJI.'
-
-	fdb 1005
-	fcc 'MISAKO!'
-
-	fdb 989
-	fcc 'MASATO '
-
-	fdb 920
-	fcc 'HAMA...'
-
-	fdb 800
-	fcc 'KENT.K '
-
-	fdb 760
-	fcc 'JIJEE..'
-
-	fdb 750
-	fcc 'IREM . '
+; `allscores` a disparu le 04/09/2026 : les dix entrees par defaut vivent
+; desormais dans l'unite residente de classement, avec la table VIVANTE qu'une
+; fin de partie ecrit. Le tableau d'attract les lit la-bas.
 
 letter_addr     fdb DRAW_text_space                * 32 = space
                 fdb DRAW_text_exclam               * 33 = !

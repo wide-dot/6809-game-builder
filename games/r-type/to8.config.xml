@@ -338,6 +338,21 @@
                 <zone page="$0E" address="$0000" size="$4000"/>
                 <zone page="$0F" address="$0000" size="$4000"/>
             </arena>
+            <!-- LA QUEUE DE LA DEMI-PAGE DE L'OST (04/09/2026). Le pool d'objets,
+                 les quatre OST statiques et la table du manager de tirs tiennent
+                 en $4000-$51BF (voir les <reserved objects.*> plus bas, dont les
+                 tailles comptaient 117 octets par objet la ou l'overlay en met
+                 63). Restent 3 648 octets de RAM STABLE, montee en permanence,
+                 dans une fenetre que le loader sait ecrire — le stage 4 y charge
+                 deja sa part fixe de pscroll, dans l'autre moitie.
+
+                 Le systeme de CLASSEMENT y vit : ses tables doivent survivre a
+                 l'echange de scenes (stage vers title et retour), donc etre
+                 residentes, et son code doit rester atteignable quelle que soit
+                 la page en fenetre cartouche. Voir doc/plan-game-over-ranking.md. -->
+            <arena name="ranking">
+                <zone page="$00" slice="1" address="$51C0" size="$0E40"/>
+            </arena>
             <arena name="stage1.foes">
                 <zone page="$10" address="$0000" size="$4000"/>
                 <zone page="$11" address="$0000" size="$4000"/>
@@ -497,13 +512,25 @@
                  demi-page vue en $4000-$5FFF (PRC bit 0 epingle a 0 par
                  _gfxlock.init sous OverlayMode) est de la RAM stable. Le pool
                  d'objets y vit : 60 slots dynamiques puis les 4 OST statiques
-                 (fondu + 3 slots d'armement), 64 x 117 = $1D40, poses par
-                 ram.const.asm (Dynamic_Object_RAM = $4000) — ce <reserved> les
-                 DECRIT, rien ne verifie l'accord des deux. Le reste de la
-                 demi-page (704 o) et l'autre moitie ($2000-$3FFF, accessible
-                 par montage seulement) sont libres. -->
-            <reserved name="objects.pool"   page="$00" slice="1" address="$4000" size="$1B6C"/>
-            <reserved name="objects.static" page="$00" slice="1" address="$5B6C" size="$01D4"/>
+                 (fondu + 3 slots d'armement), poses par ram.const.asm
+                 (Dynamic_Object_RAM = $4000) — ce <reserved> les DECRIT, rien
+                 ne verifie l'accord des deux.
+
+                 TAILLES CORRIGEES le 04/09/2026. Ces reservations comptaient
+                 117 octets par objet ; sous `OverlayMode` — que ce jeu pose —
+                 `object_rsvd_size` vaut 5 et non 59, donc `object_size` = 38 +
+                 20 + 5 = 63 (verifie a l'assemblage : $3F, et
+                 Dynamic_Object_RAM_End = $4EC4). Le layout sur-reservait donc
+                 3 456 octets de RAM stable que rien n'occupait, et que rien ne
+                 signalait : le builder se contente de refuser d'y placer
+                 quelque chose.
+
+                 Tout tient desormais en $4000-$51BF, et la queue de la
+                 demi-page devient l'arene `ranking` (declaree plus haut).
+                 L'autre moitie ($2000-$3FFF, accessible par montage seulement)
+                 reste libre. -->
+            <reserved name="objects.pool"   page="$00" slice="1" address="$4000" size="$0EC4"/>
+            <reserved name="objects.static" page="$00" slice="1" address="$4EC4" size="$00FC"/>
             <!-- La table du manager de tirs : RESIDENTE, comme outslay.boxes.
                  Les boites AABB y vivent ; une boite dans une page montee est
                  un desastre — Collision_Do la parcourt avec la page de
@@ -511,7 +538,7 @@
                  pointeurs pourris en ecrivant AABB.p n'importe ou (gel du
                  29/08/2026, pile retrouvee en $168D). 24 slots de 21 octets
                  dans la marge de la demi-page 0, derriere les OST statiques. -->
-            <reserved name="objects.bullets" page="$00" slice="1" address="$5D40" size="$0200"/>
+            <reserved name="objects.bullets" page="$00" slice="1" address="$4FC0" size="$0200"/>
             <!-- Pages 2-3 : les deux framebuffers de gfxlock (8000 octets par
                  moitie, 192 octets libres en fin de chaque moitie — reserves
                  plage par plage pour que la carte les montre). Le loader se
@@ -562,6 +589,11 @@
                 <scene name="scenes.boot"/>
                 <scene name="scenes.title"/>
             </composition>
+            <!-- LE CLASSEMENT (game over) : meme etat que le stage, moins sa
+                 musique, plus celle de la saisie des initiales. Le corps de
+                 stage y converge avant de rendre la main au title — la piste du
+                 stage occupe la place ($1A:$2C09) que celle de la saisie
+                 demande, la convergence la lache. Voir doc/plan-game-over-ranking.md. -->
             <composition name="stage1">
                 <scene name="scenes.boot"/>
                 <scene name="scenes.stage1"/>
@@ -570,16 +602,41 @@
                 <scene name="scenes.lot.cancer"/>
                 <scene name="scenes.lot.bugpstaff"/>
                 <scene name="scenes.lot.scant"/>
+                <scene name="scenes.stage1.music"/>
+            </composition>
+            <composition name="stage1.ranking">
+                <scene name="scenes.boot"/>
+                <scene name="scenes.stage1"/>
+                <scene name="scenes.lot.bink"/>
+                <scene name="scenes.lot.patapata"/>
+                <scene name="scenes.lot.cancer"/>
+                <scene name="scenes.lot.bugpstaff"/>
+                <scene name="scenes.lot.scant"/>
+                <scene name="scenes.nameentry.music"/>
             </composition>
             <composition name="stage2">
                 <scene name="scenes.boot"/>
                 <scene name="scenes.stage2"/>
+                <scene name="scenes.stage2.music"/>
+            </composition>
+            <composition name="stage2.ranking">
+                <scene name="scenes.boot"/>
+                <scene name="scenes.stage2"/>
+                <scene name="scenes.nameentry.music"/>
             </composition>
             <composition name="stage3">
                 <scene name="scenes.boot"/>
                 <scene name="scenes.stage3"/>
                 <scene name="scenes.lot.bink"/>
                 <scene name="scenes.lot.patapata"/>
+                <scene name="scenes.stage3.music"/>
+            </composition>
+            <composition name="stage3.ranking">
+                <scene name="scenes.boot"/>
+                <scene name="scenes.stage3"/>
+                <scene name="scenes.lot.bink"/>
+                <scene name="scenes.lot.patapata"/>
+                <scene name="scenes.nameentry.music"/>
             </composition>
             <composition name="stage4">
                 <scene name="scenes.boot"/>
@@ -589,17 +646,43 @@
                 <scene name="scenes.lot.patapata"/>
                 <scene name="scenes.lot.cancer"/>
                 <scene name="scenes.lot.bugpstaff"/>
+                <scene name="scenes.stage4.music"/>
+            </composition>
+            <composition name="stage4.ranking">
+                <scene name="scenes.boot"/>
+                <scene name="scenes.stage4"/>
+                <scene name="scenes.lot.stage4"/>
+                <scene name="scenes.lot.bink"/>
+                <scene name="scenes.lot.patapata"/>
+                <scene name="scenes.lot.cancer"/>
+                <scene name="scenes.lot.bugpstaff"/>
+                <scene name="scenes.nameentry.music"/>
             </composition>
             <composition name="stage5">
                 <scene name="scenes.boot"/>
                 <scene name="scenes.stage5"/>
                 <scene name="scenes.lot.cancer"/>
                 <scene name="scenes.lot.mid"/>
+                <scene name="scenes.stage5.music"/>
+            </composition>
+            <composition name="stage5.ranking">
+                <scene name="scenes.boot"/>
+                <scene name="scenes.stage5"/>
+                <scene name="scenes.lot.cancer"/>
+                <scene name="scenes.lot.mid"/>
+                <scene name="scenes.nameentry.music"/>
             </composition>
             <composition name="stage6">
                 <scene name="scenes.boot"/>
                 <scene name="scenes.stage6"/>
                 <scene name="scenes.lot.bink"/>
+                <scene name="scenes.stage6.music"/>
+            </composition>
+            <composition name="stage6.ranking">
+                <scene name="scenes.boot"/>
+                <scene name="scenes.stage6"/>
+                <scene name="scenes.lot.bink"/>
+                <scene name="scenes.nameentry.music"/>
             </composition>
             <composition name="stage7">
                 <scene name="scenes.boot"/>
@@ -610,10 +693,28 @@
                 <scene name="scenes.lot.bugpstaff"/>
                 <scene name="scenes.lot.scant"/>
                 <scene name="scenes.lot.mid"/>
+                <scene name="scenes.stage7.music"/>
+            </composition>
+            <composition name="stage7.ranking">
+                <scene name="scenes.boot"/>
+                <scene name="scenes.stage7"/>
+                <scene name="scenes.lot.bink"/>
+                <scene name="scenes.lot.patapata"/>
+                <scene name="scenes.lot.cancer"/>
+                <scene name="scenes.lot.bugpstaff"/>
+                <scene name="scenes.lot.scant"/>
+                <scene name="scenes.lot.mid"/>
+                <scene name="scenes.nameentry.music"/>
             </composition>
             <composition name="stage8">
                 <scene name="scenes.boot"/>
                 <scene name="scenes.stage8"/>
+                <scene name="scenes.stage8.music"/>
+            </composition>
+            <composition name="stage8.ranking">
+                <scene name="scenes.boot"/>
+                <scene name="scenes.stage8"/>
+                <scene name="scenes.nameentry.music"/>
             </composition>
 
         </layout>
@@ -1034,6 +1135,35 @@
                     <lwasm gensource="gen/sound/common-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/music/ymm.unit.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- La musique de la SAISIE DES INITIALES. Elle est declaree ici,
+                     avec les musiques communes, mais elle vit dans le creneau des
+                     musiques de STAGE ($2C09) : 3 588 octets, le bloc commun est
+                     plein a l'octet. Alternative des huit pistes de stage et de
+                     celle du title — jamais co-chargee avec elles, la composition
+                     de classement lache la piste du stage avant de prendre
+                     celle-ci. Voir src/common/music/nameentry.unit.asm. -->
+                <file name="common.nameentry.ymm" linkdata="LINK" page="$1A" address="$2C09">
+                    <lwasm gensource="gen/sound/nameentry-ymm.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/music/nameentry.unit.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- LE CLASSEMENT : ses tables doivent survivre a l'echange de
+                     scenes, donc vivre en RAM residente ; son code doit rester
+                     atteignable quelle que soit la page en fenetre cartouche,
+                     puisque le moteur l'appelle au game over. L'arene `ranking`
+                     est la queue de la demi-page de l'OST, rendue disponible le
+                     04/09/2026 par la correction des <reserved objects.*>.
+                     Charge par scenes.boot, jamais echange : son contenu initial
+                     (les dix scores par defaut de la borne) tient tout seul. -->
+                <file name="common.ranking" linkdata="LINK" arena="ranking">
+                    <lwasm gensource="gen/ranking/ranking.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/common/ranking/ranking.unit.asm"/>
                     </lwasm>
                 </file>
 
@@ -2194,6 +2324,7 @@
                     <load name="common.simplefire"/>
                     <load name="common.firechain"/>
                     <load name="common.foefire"/>
+                    <load name="common.ranking"/>
                     <!-- Le boot ouvre sur le TITLE ; le contenu stage 1 vit dans
                          scenes.stage1, chargee par le press start et les retours. -->
                 </scene>
@@ -2327,6 +2458,13 @@
                     <load name="title.text"/>
                     <load name="title.loading"/>
                     <load name="title.music.ymm"/>
+                </scene>
+
+                <!-- La musique de la saisie des initiales : une scene a elle
+                     seule, pour que la composition de classement d'un stage la
+                     prenne a la place de la piste du stage. -->
+                <scene name="scenes.nameentry.music" section="SCENE" gensource="gen/scenes/nameentry-music.asm">
+                    <load name="common.nameentry.ymm"/>
                 </scene>
 
                 <!-- Les scenes de LOT : le stage entrant porte un masque de bits
@@ -3309,10 +3447,16 @@
                     <load name="stage1.maps.odd"/>
                     <load name="stage1.wave"/>
                     <load name="stage1.collision"/>
-                    <load name="stage1.music.ymm"/>
                     <load name="stage1"/>
                     <load name="stage1.bugres"/>
 </scene>
+
+                <!-- La piste du stage, dans SA scene : la composition de
+                     classement (game over) prend `scenes.nameentry.music` a sa
+                     place, et la convergence du loader la lache. -->
+                <scene name="scenes.stage1.music" section="SCENE" gensource="gen/scenes/stage1-music.asm">
+                    <load name="stage1.music.ymm"/>
+                </scene>
             </directory>
 
             <directory id="2" section="INDEX2" gensymbols="gen/directories/dir2/entries.asm">
@@ -3896,8 +4040,14 @@
                     <load name="stage2.maps"/>
                     <load name="stage2.wave"/>
                     <load name="stage2.collision"/>
-                    <load name="stage2.music.ymm"/>
                     <load name="stage2"/>
+                </scene>
+
+                <!-- La piste du stage, dans SA scene : la composition de
+                     classement (game over) prend `scenes.nameentry.music` a sa
+                     place, et la convergence du loader la lache. -->
+                <scene name="scenes.stage2.music" section="SCENE" gensource="gen/scenes/stage2-music.asm">
+                    <load name="stage2.music.ymm"/>
                 </scene>
             </directory>
 
@@ -4186,8 +4336,14 @@
                     <load name="stage3.flame.res"/>
                     <load name="stage3.cast"/>
                     <load name="stage3.collision"/>
-                    <load name="stage3.music.ymm"/>
                     <load name="stage3"/>
+                </scene>
+
+                <!-- La piste du stage, dans SA scene : la composition de
+                     classement (game over) prend `scenes.nameentry.music` a sa
+                     place, et la convergence du loader la lache. -->
+                <scene name="scenes.stage3.music" section="SCENE" gensource="gen/scenes/stage3-music.asm">
+                    <load name="stage3.music.ymm"/>
                 </scene>
             </directory>
 
@@ -4336,11 +4492,17 @@
                     <load name="stage4.pscroll.res"/>
                     <load name="stage4.pscroll.edit"/>
                     <load name="stage4.pscroll.vid"/>
-                    <load name="stage4.music.ymm"/>
                     <load name="stage4"/>
                     <load name="stage4.bugres"/>
                     <load name="stage4.gumres"/>
 </scene>
+
+                <!-- La piste du stage, dans SA scene : la composition de
+                     classement (game over) prend `scenes.nameentry.music` a sa
+                     place, et la convergence du loader la lache. -->
+                <scene name="scenes.stage4.music" section="SCENE" gensource="gen/scenes/stage4-music.asm">
+                    <load name="stage4.music.ymm"/>
+                </scene>
             </directory>
 
             <directory id="5" section="INDEX5" gensymbols="gen/directories/dir5/entries.asm">
@@ -4530,8 +4692,14 @@
                     <load name="stage5.maps"/>
                     <load name="stage5.wave"/>
                     <load name="stage5.collision"/>
-                    <load name="stage5.music.ymm"/>
                     <load name="stage5"/>
+                </scene>
+
+                <!-- La piste du stage, dans SA scene : la composition de
+                     classement (game over) prend `scenes.nameentry.music` a sa
+                     place, et la convergence du loader la lache. -->
+                <scene name="scenes.stage5.music" section="SCENE" gensource="gen/scenes/stage5-music.asm">
+                    <load name="stage5.music.ymm"/>
                 </scene>
             </directory>
 
@@ -4622,8 +4790,14 @@
                     <load name="stage6.maps"/>
                     <load name="stage6.wave"/>
                     <load name="stage6.collision"/>
-                    <load name="stage6.music.ymm"/>
                     <load name="stage6"/>
+                </scene>
+
+                <!-- La piste du stage, dans SA scene : la composition de
+                     classement (game over) prend `scenes.nameentry.music` a sa
+                     place, et la convergence du loader la lache. -->
+                <scene name="scenes.stage6.music" section="SCENE" gensource="gen/scenes/stage6-music.asm">
+                    <load name="stage6.music.ymm"/>
                 </scene>
             </directory>
 
@@ -4721,10 +4895,16 @@
                     <load name="stage7.maps"/>
                     <load name="stage7.wave"/>
                     <load name="stage7.collision"/>
-                    <load name="stage7.music.ymm"/>
                     <load name="stage7"/>
                     <load name="stage7.bugres"/>
 </scene>
+
+                <!-- La piste du stage, dans SA scene : la composition de
+                     classement (game over) prend `scenes.nameentry.music` a sa
+                     place, et la convergence du loader la lache. -->
+                <scene name="scenes.stage7.music" section="SCENE" gensource="gen/scenes/stage7-music.asm">
+                    <load name="stage7.music.ymm"/>
+                </scene>
             </directory>
 
             <directory id="8" section="INDEX8" gensymbols="gen/directories/dir8/entries.asm">
@@ -4810,8 +4990,14 @@
                     <load name="stage8.maps"/>
                     <load name="stage8.wave"/>
                     <load name="stage8.collision"/>
-                    <load name="stage8.music.ymm"/>
                     <load name="stage8"/>
+                </scene>
+
+                <!-- La piste du stage, dans SA scene : la composition de
+                     classement (game over) prend `scenes.nameentry.music` a sa
+                     place, et la convergence du loader la lache. -->
+                <scene name="scenes.stage8.music" section="SCENE" gensource="gen/scenes/stage8-music.asm">
+                    <load name="stage8.music.ymm"/>
                 </scene>
             </directory>
 

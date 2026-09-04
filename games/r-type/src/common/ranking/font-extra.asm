@@ -1,0 +1,239 @@
+; -------------------------------------------------------------------------
+; LES GLYPHES DE PONCTUATION DE LA SAISIE DU HIGH SCORE
+; -------------------------------------------------------------------------
+; Fichier GENERE — ne pas editer.
+; Rejeu : python3 tools/gen_font_glyphs.py > gen/hud/font-extra.asm
+;
+; La police du title n'avait que A-Z, 0-9, l'espace, '!' et '.'.
+; L'alphabet de la saisie (arcade 0x1000:0B5C) demande six signes de
+; plus, dont '<' pour RUB et ':' pour END. Format et charte de
+; couleur : voir l'en-tete du generateur et
+; doc/high-score-entry-arcade.md.
+; -------------------------------------------------------------------------
+
+; .██.
+; █..█
+; ...█
+; ..█.
+; .█..
+; ....
+; .█..
+; ....
+DRAW_text_question
+        pshs u
+        leau  40,u
+        lda   #$00
+        sta   -80,U
+        sta   -40,U
+        sta   40,U
+        sta   120,U
+        lda   #$03
+        sta   -160,U
+        lda   #$04
+        sta   80,U
+        lda   #$05
+        sta   ,U
+        lda   #$30
+        sta   -120,U
+        leau  -$2000,u
+        leau  40,u
+        lda   #$00
+        sta   ,U
+        sta   40,U
+        sta   80,U
+        sta   120,U
+        lda   #$05
+        sta   -80,U
+        lda   #$06
+        sta   -120,U
+        lda   #$50
+        sta   -40,U
+        lda   #$60
+        sta   -160,U
+        puls  u,pc
+
+; █...
+; .█..
+; ..█.
+; ...█
+; ..█.
+; .█..
+; █...
+; ....
+DRAW_text_gt
+        pshs u
+        leau  40,u
+        lda   #$00
+        sta   -80,U
+        sta   -40,U
+        sta   ,U
+        sta   120,U
+        lda   #$03
+        sta   -120,U
+        lda   #$04
+        sta   40,U
+        lda   #$30
+        sta   -160,U
+        lda   #$40
+        sta   80,U
+        leau  -$2000,u
+        leau  40,u
+        lda   #$00
+        sta   -160,U
+        sta   -120,U
+        sta   40,U
+        sta   80,U
+        sta   120,U
+        lda   #$05
+        sta   -40,U
+        lda   #$50
+        sta   -80,U
+        sta   ,U
+        puls  u,pc
+
+; ...█
+; ..█.
+; .█..
+; █...
+; .█..
+; ..█.
+; ...█
+; ....
+DRAW_text_lt
+        pshs u
+        leau  40,u
+        lda   #$00
+        sta   -160,U
+        sta   -120,U
+        sta   40,U
+        sta   80,U
+        sta   120,U
+        lda   #$05
+        sta   -80,U
+        sta   ,U
+        lda   #$50
+        sta   -40,U
+        leau  -$2000,u
+        leau  40,u
+        lda   #$00
+        sta   -80,U
+        sta   -40,U
+        sta   ,U
+        sta   120,U
+        lda   #$03
+        sta   -160,U
+        lda   #$04
+        sta   80,U
+        lda   #$30
+        sta   -120,U
+        lda   #$40
+        sta   40,U
+        puls  u,pc
+
+; ....
+; ....
+; ....
+; ....
+; ....
+; .█..
+; .█..
+; █...
+DRAW_text_comma
+        pshs u
+        leau  40,u
+        lda   #$00
+        sta   -160,U
+        sta   -120,U
+        sta   -80,U
+        sta   -40,U
+        sta   ,U
+        lda   #$04
+        sta   80,U
+        lda   #$06
+        sta   40,U
+        lda   #$40
+        sta   120,U
+        leau  -$2000,u
+        leau  40,u
+        lda   #$00
+        sta   -160,U
+        sta   -120,U
+        sta   -80,U
+        sta   -40,U
+        sta   ,U
+        sta   40,U
+        sta   80,U
+        sta   120,U
+        puls  u,pc
+
+; ....
+; ....
+; ....
+; ███.
+; ....
+; ....
+; ....
+; ....
+DRAW_text_dash
+        pshs u
+        leau  40,u
+        lda   #$00
+        sta   -160,U
+        sta   -120,U
+        sta   -80,U
+        sta   ,U
+        sta   40,U
+        sta   80,U
+        sta   120,U
+        lda   #$55
+        sta   -40,U
+        leau  -$2000,u
+        leau  40,u
+        lda   #$00
+        sta   -160,U
+        sta   -120,U
+        sta   -80,U
+        sta   ,U
+        sta   40,U
+        sta   80,U
+        sta   120,U
+        lda   #$50
+        sta   -40,U
+        puls  u,pc
+
+; ....
+; █...
+; █...
+; ....
+; ....
+; █...
+; █...
+; ....
+DRAW_text_colon
+        pshs u
+        leau  40,u
+        lda   #$00
+        sta   -160,U
+        sta   -40,U
+        sta   ,U
+        sta   120,U
+        lda   #$30
+        sta   -120,U
+        lda   #$40
+        sta   40,U
+        sta   80,U
+        lda   #$50
+        sta   -80,U
+        leau  -$2000,u
+        leau  40,u
+        lda   #$00
+        sta   -160,U
+        sta   -120,U
+        sta   -80,U
+        sta   -40,U
+        sta   ,U
+        sta   40,U
+        sta   80,U
+        sta   120,U
+        puls  u,pc
+

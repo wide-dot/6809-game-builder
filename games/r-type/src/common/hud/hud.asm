@@ -691,9 +691,12 @@ hud.cont.line3U equ $C000+184*40+11   ; " F R E E   P L A Y" (18 cellules)
 
 hud.continueScreen
  IFNE game.continue.MAX-$FF           ; $FF : infini, aucun compte a tenir
+        tst   cheat.freeContinue      ; le cheat du title (gauche) : pas de quota
+        bne   >
         lda   game.continueUsed
         cmpa  #game.continue.MAX      ; avec MAX=0 le test est toujours vrai :
         lbhs  hud.cont.refuse         ;   quota consomme, la partie est finie
+!
  ENDC
 
         clr   hud.cont.keydown        ; le front clavier part desarme

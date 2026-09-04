@@ -88,11 +88,16 @@ boot.entry
 ; compteurs de vies dans deux endroits n'en font pas un.
 game.stage      fcb   0
 ; les effets des cheats du title : ecrits par title.cheat.launch a CHAQUE
-; depart (0 = pas de cheat), lus par player1 (invincible) et par le semis de
-; premiere entree (vies). Un banc les force par write_memory — l'ancien
-; define invincible est retire.
-cheat.invincible fcb   0
-cheat.extraLives fcb   0
+; depart (0 = pas de cheat), lus par player1 (invincible), par l'ecran de
+; continue (quota) et par le semis de premiere entree (score). Un banc les
+; force par write_memory — l'ancien define invincible est retire.
+;
+; `cheat.extraLives` est retire le 04/09/2026 (decision auteur) : un comptage
+; de vies sans plafond — 254 pressions debordaient l'octet en silence — pour
+; un service que le continue infini rend mieux.
+cheat.invincible   fcb   0
+cheat.freeContinue fcb   0   ; 1 = l'ecran de continue ignore son quota
+cheat.startScore   fcb   0   ; 1 = la partie demarre a 100 000 points
 ; partie fraiche : pose par title.cheat.launch (l'unique sortie du title),
 ; consomme par le semis de premiere entree de stage-main. Le numero de stage
 ; ne fait plus foi — un depart cheat vers le stage N est AUSSI une premiere
@@ -296,7 +301,14 @@ ymm.obj.play EXTERNAL
 
 game.stage.switch
         stb   game.stage.target
-        jsr   IrqOff                       ; le chargement parle au contrôleur disque
+        ; UNE PARTIE FRAICHE remet a zero la table des scores par stage : ces
+        ; seize cases decrivent une partie, pas la machine. Le drapeau est pose
+        ; par title.cheat.launch, l'unique sortie du title, et consomme plus tard
+        ; par le semis de premiere entree du stage — on ne fait que le LIRE ici.
+        tst   game.fresh
+        beq   >
+        jsr   ranking.reset
+!       jsr   IrqOff                       ; le chargement parle au contrôleur disque
         ; Le loader vit dans une page commutée de la fenêtre DATA : il faut la
         ; monter pour l'atteindre. L'écran sortant vient d'y effacer ses tampons
         ; d'écran, donc c'est une autre page qui est en place. La macro détruit
@@ -318,6 +330,63 @@ game.stage.switch
         INCLUDE "gen/compositions.asm"
 
 ; L'écran par numéro : ceci n'est que l'ordre dans lequel le jeu les nomme.
+; SONDE DE PHASE 0 (04/09/2026) — la convergence au GAME OVER
+;
+; Le classement de fin de partie (STAGE SCORE, saisie des initiales, RANKING)
+; a besoin de deux choses que le stage n'a pas sous la main : la musique de
+; saisie, qui occupe la place de celle du stage ($1A:$2C09), et le lot
+; Pata-Pata. Les deux s'obtiennent en convergeant vers un ETAT declare — la
+; composition `stageN.ranking`, le stage moins sa musique plus celle de la
+; saisie. C'est le meme geste que game.stage.switch, sans le saut : on revient
+; a l'appelant, l'IRQ rallumee par game.music.play.
+;
+; Ce que cette sonde etablit, et qui conditionne tout le chantier :
+; `composition.load` est appelable DEPUIS un stage en cours, pas seulement
+; pour en changer. Voir doc/plan-game-over-ranking.md, phase 0.
+;
+; game.stage vaut le stage courant MOINS UN (0 en stage 1) : c'est l'index de
+; la table telle quelle.
+sounds.nameentry.ymm EXTERNAL
+; Le classement vit dans la queue de la demi-page de l'OST, RESIDENTE : ses
+; tables traversent l'echange de scenes que le game over declenche.
+ranking.insert EXTERNAL
+ranking.reset  EXTERNAL
+ranking.stageAdd EXTERNAL
+ranking.screen EXTERNAL
+
+game.ranking.run EXPORT
+game.ranking.run
+        ; CLASSER D'ABORD. Un score qui n'entre pas dans les dix ne fait rien
+        ; charger et ne joue rien : le title suit, comme avant ce chantier.
+        jsr   ranking.insert               ; B = le rang, 0 = pas classe
+        tstb
+        bne   >
+        rts
+!       jsr   IrqOff                       ; le chargement parle au contrôleur disque
+        _ram.data.set #loader.PAGE         ; le loader vit dans la fenêtre DATA
+        ldb   game.stage
+        aslb
+        ldx   #game.ranking.states
+        abx
+        ldx   ,x
+        jsr   loader.ADDRESS+loader.composition.load.IDX
+        ldx   #sounds.nameentry.ymm        ; le morceau boucle : c'est l'écran
+        ldb   #ymm.LOOP                    ;   de saisie qui en décidera la fin
+        jsr   game.music.play              ; monte la page du lecteur, rend celle
+                                           ;   de l'appelant, rallume l'IRQ
+        jsr   ranking.screen               ; STAGE SCORE, puis la saisie des
+        rts                                ;   initiales : elle tient l'écran
+
+game.ranking.states
+        fdb   compositions.stage1.ranking
+        fdb   compositions.stage2.ranking
+        fdb   compositions.stage3.ranking
+        fdb   compositions.stage4.ranking
+        fdb   compositions.stage5.ranking
+        fdb   compositions.stage6.ranking
+        fdb   compositions.stage7.ranking
+        fdb   compositions.stage8.ranking
+
 game.stage.target fcb 0
 game.stage.states
         fdb   compositions.title

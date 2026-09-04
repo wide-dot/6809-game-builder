@@ -14,6 +14,11 @@ AwardScore
         aslb                          ; index*2 (word table)
         ldx   #scoreTable
         ldd   b,x                     ; D = reward (in hundreds)
+        ; LA MEME RECOMPENSE VA A LA CASE DU STAGE COURANT, comme la borne le
+        ; fait dans update_current_stage_score : le recapitulatif de fin de
+        ; partie compte alors les points du stage ou l'on MEURT. D et X sont
+        ; rendus intacts.
+        jsr   ranking.stageAdd
         addd  globals.score+1         ; + low 16 bits
         std   globals.score+1
         bcc   >

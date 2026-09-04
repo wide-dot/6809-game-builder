@@ -6,10 +6,15 @@
 ; bas, gauche, droite. Puis la premiere direction choisit le cheat, et le
 ; depart NORMAL (A, B ou n'importe quelle touche clavier, le declencheur
 ; d'origine du title) l'applique :
-;   N x haut   -> depart au stage N (1..8), un FireSound par haut ;
-;   bas        -> invincible, ExplosionSound (redite : le son rejoue) ;
-;   N x gauche -> N vies en plus, un BonusSound par gauche ;
-;   droite     -> abandon TOTAL, silencieux (cheats acceptes compris).
+;   N x haut   -> depart au stage N (1..8), un bip par haut ;
+;   bas        -> invincible ;
+;   gauche     -> continue infini (le quota de l'ecran de continue saute) ;
+;   droite     -> depart a 100 000 points, pour eprouver le classement.
+; Un seul bruitage pour les quatre (BonusSound) : c'est un accuse de reception.
+; Il n'y a plus d'abandon par direction — DEUX SECONDES sans presser efface
+; tout, prefixe et cheats acceptes (04/09/2026). L'ancien comptage de vies par
+; `gauche` est retire : sans plafond, il debordait son octet a la 254e pression,
+; et le continue infini rend mieux le meme service.
 ; Les cheats sont ACCEPTES a la pression (le son est l'accuse de reception),
 ; fire ne fait que lancer — et ils se COMBINENT : une direction hors mode
 ; laisse les cheats acceptes en place et repart en prefixe (haut le rouvre).
@@ -40,10 +45,26 @@ STAGE_SCENE equ scenes.title
  SECTION code
 
 ; --- un front dpad par trame nourrit la machine ---------------------------
+; LE COMPTE A REBOURS (04/09/2026, decision auteur). Deux secondes sans
+; direction et tout retombe — le prefixe comme les cheats deja acceptes. Il
+; remplace l'abandon par `droite`, dont la direction sert desormais le cheat de
+; score. Casser la sequence ne suffisait pas : ca ne remet que l'etape a zero,
+; les cheats acceptes survivaient (c'est ce qui permet de les combiner) sans
+; aucun moyen de les retirer.
+CHEAT_TIMEOUT equ 100                  ; 2 s a 50 Hz
+
 title.cheat.tick
+        lda   tct.timer
+        beq   >                        ; rien en cours : pas de compte a tenir
+        deca
+        sta   tct.timer
+        lbeq  tct.wipe                 ; expire : on efface tout et on sort
+!
         ldb   joypad.pressed.dpad
         andb  #$0F                     ; port 0 seulement
         beq   tct.rts
+        lda   #CHEAT_TIMEOUT
+        sta   tct.timer                ; toute direction relance le compte
         clra
 tct.scan
         inca                           ; 1..4 = haut, bas, gauche, droite
@@ -60,9 +81,8 @@ tct.scan
         bne   tct.rts
         inc   tct.step
 tct.rts rts
-tct.armed                              ; A = la direction
-        cmpa  #4
-        beq   tct.wipe                 ; droite : abandon total, silencieux
+
+tct.armed                              ; A = la direction, B = le mode courant
         ldb   tct.mode
         cmpa  #1
         bne   tct.notUp
@@ -74,13 +94,11 @@ tct.armed                              ; A = la direction
         stb   tct.mode
         clr   tct.pstage               ; nouvelle selection : compte a zero
 tct.moreStage
-        inc   tct.pstage               ; accepte a la pression — le son est
-        ldd   #(soundFX.FireSound<<8)|1 ; l'accuse de reception
-        std   soundFX.newSound
-        rts
+        inc   tct.pstage
+        bra   tct.ding
 tct.notUp
         cmpa  #2
-        bne   tct.left
+        bne   tct.notDown
         cmpb  #2                       ; bas : invincible
         beq   tct.dingInv              ; redite : le son rejoue
         tstb
@@ -90,19 +108,34 @@ tct.notUp
 tct.dingInv
         lda   #1
         sta   tct.pinv
-        ldd   #(soundFX.ExplosionSound<<8)|1
-        std   soundFX.newSound
-        rts
-tct.left
-        cmpb  #3                       ; gauche : le comptage de vies
-        beq   tct.oneUp
+        bra   tct.ding
+tct.notDown
+        cmpa  #3
+        bne   tct.right
+        cmpb  #3                       ; gauche : le continue infini
+        beq   tct.dingCont
         tstb
         bne   tct.rearm
         ldb   #3
         stb   tct.mode
-        clr   tct.plives
-tct.oneUp
-        inc   tct.plives
+tct.dingCont
+        lda   #1
+        sta   tct.pcont
+        bra   tct.ding
+tct.right
+        cmpb  #4                       ; droite : cent mille points au depart
+        beq   tct.dingScore
+        tstb
+        bne   tct.rearm
+        ldb   #4
+        stb   tct.mode
+tct.dingScore
+        lda   #1
+        sta   tct.pscore
+; UN SEUL BRUITAGE pour les quatre cheats (decision auteur, 04/09/2026) : c'est
+; un accuse de reception, pas une signature. Trois sons differents coutaient
+; trois ecritures de la boite aux lettres pour la meme information.
+tct.ding
         ldd   #(soundFX.BonusSound<<8)|1
         std   soundFX.newSound
         rts
@@ -115,11 +148,12 @@ tct.rearm
 tct.rts2
         rts
 tct.wipe
-        clr   tct.step                 ; droite : on efface TOUT, y compris
-        clr   tct.mode                 ; les cheats deja acceptes
+        clr   tct.step                 ; le delai a expire : on efface TOUT,
+        clr   tct.mode                 ; y compris les cheats deja acceptes
         clr   tct.pstage
         clr   tct.pinv
-        clr   tct.plives
+        clr   tct.pcont
+        clr   tct.pscore
         rts
 
 ; --- la cible du depart : X scene, Y repertoire, U lots — jmp switch ------
@@ -132,8 +166,10 @@ title.cheat.launch
         ; sans cheat remet tout a zero
         lda   tct.pinv
         sta   cheat.invincible
-        lda   tct.plives
-        sta   cheat.extraLives
+        lda   tct.pcont
+        sta   cheat.freeContinue
+        lda   tct.pscore
+        sta   cheat.startScore
         lda   #1                       ; tout depart du title est une partie
         sta   game.fresh               ; fraiche : le stage semera vies/score
         clrb                           ; stage 1 par defaut
@@ -151,11 +187,14 @@ tcl.go
 ; l'etat (la page est de la RAM, et l'unite revient du disque a chaque
 ; entree au title)
 tct.step   fcb 0                       ; 0..4 : progression du prefixe
-tct.mode   fcb 0                       ; 0 rien, 1 stage, 2 invincible, 3 vies
-; les cheats ACCEPTES (survivent au rearmement, effaces par droite ou au depart)
+tct.mode   fcb 0                       ; 0 rien, 1 stage, 2 invincible,
+                                       ;   3 continue infini, 4 score
+tct.timer  fcb 0                       ; trames avant l'effacement general
+; les cheats ACCEPTES (survivent au rearmement, effaces par le delai ou au depart)
 tct.pstage fcb 0                       ; 0 aucun, 1..8 le stage compte
 tct.pinv   fcb 0                       ; 1 = invincible accepte
-tct.plives fcb 0                       ; les vies en plus acceptees
+tct.pcont  fcb 0                       ; 1 = continue infini accepte
+tct.pscore fcb 0                       ; 1 = depart a 100 000 points
 
 ; la table des cibles (une ligne par stage) : les ids de scene viennent des
 ; entries.asm des repertoires 1..8, inclus par l'unite

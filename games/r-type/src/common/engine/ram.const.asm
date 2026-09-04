@@ -46,6 +46,15 @@ moveByScript.POSYSTEP        equ  $00C0
 ; a $8850, bench ($87DB) et cast ($87EB) remontent d'autant, et les unites
 ; title/stage disposent de $8000-$87DA (+117 octets).
 ;
+; TAILLE REELLE D'UN OBJET (04/09/2026) : le recit ci-dessous parle de 117
+; octets, la valeur HORS overlay. Ce jeu pose `OverlayMode`, donc
+; `object_rsvd_size` vaut 5 et non 59 : object_size = 38 + 20 + 5 = **63**, le
+; pool des 60 slots fait $0EC4 et non $1B6C, et Dynamic_Object_RAM_End tombe en
+; $4EC4. Les <reserved objects.*> du config comptaient 117 : ils reservaient
+; 3 456 octets que rien n'occupait. Corriges le meme jour, la queue de la
+; demi-page devenant l'arene `ranking`. Les nombres du recit qui suit sont
+; ceux d'alors ; les ancres, elles, sont a jour.
+;
 ; 43 -> 60 ET DEMENAGEMENT (2026-08-20, decision auteur) : depuis l'overlay,
 ; la demi-page 0 ($4000-$5FFF) n'a plus de cellules de fond — c'est de la RAM
 ; stable (PRC bit 0 epingle par _gfxlock.init sous OverlayMode, il ne suit

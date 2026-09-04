@@ -35,6 +35,16 @@ hud.continue EXPORT
 ; et l'attente est la meme pour les huit.
 hud.gameOverWait EXPORT
 
+; LA POLICE, prêtée à l'écran de classement. Il vit dans la demi-page de l'OST
+; (toujours montée) mais la police est ici : il monte cette page-ci le temps de
+; peindre, et appelle ces quatre-là. Voir src/common/ranking/ranking.unit.asm.
+hud.drawStr      EXPORT
+letter_addr      EXPORT
+numbers_addr     EXPORT
+DRAW_text_space  EXPORT
+ScoreToDigits    EXPORT
+hud.scoreWork    EXPORT
+
 ; Ce que l'unité emprunte au moteur résident.
 RandomNumber            EXTERNAL
 gfxlock.frame.count     EXTERNAL
@@ -51,6 +61,9 @@ game.stage               EXTERNAL
 ; La limite arcade du continue : un seul par partie. Residente dans le moteur
 ; a cote de game.stage, remise a zero en meme temps que lui.
 game.continueUsed        EXTERNAL
+; le cheat du title (gauche) : quand il est arme, l'ecran de continue ne tient
+; plus son quota. Resident, comme les autres effets de cheat.
+cheat.freeContinue       EXTERNAL
 ; Ce que l'ecran continue emprunte au moteur resident : la manette, la palette.
 joypad.readKbd           EXTERNAL
 joypad.pressed.fire      EXTERNAL

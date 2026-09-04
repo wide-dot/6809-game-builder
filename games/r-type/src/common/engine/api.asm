@@ -336,7 +336,8 @@ Collision_Run EXTERNAL
         ; swap cannot take it with it ---
         _api game.stage
         _api cheat.invincible
-        _api cheat.extraLives
+        _api cheat.freeContinue
+        _api cheat.startScore
         _api game.fresh
         _api game.continueUsed
         ; Armer un morceau depuis une unite paginee : le relais qui commute la
@@ -348,5 +349,8 @@ Collision_Run EXTERNAL
         ; game.stage.unload a disparu le 01/09/2026 : la convergence vers un
         ; etat declare lache elle-meme ce que la cible ne tient pas.
         _api game.stage.switch
+        ; La convergence vers l'état de CLASSEMENT du stage courant (game over) :
+        ; la musique de saisie prend la place de celle du stage. Voir engine.asm.
+        _api game.ranking.run
 
  ENDC

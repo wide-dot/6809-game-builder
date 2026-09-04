@@ -18,6 +18,13 @@
 
 title.text.Object EXPORT
 
+; LE TABLEAU DES SCORES EST VIVANT : sa table et la conversion de ses chiffres
+; vivent dans l'unite RESIDENTE de classement, ecrite par la fin de partie.
+; L'attract du title n'a donc plus sa copie en dur.
+ranking.table    EXTERNAL
+ranking.digits7  EXTERNAL
+ranking.dig      EXTERNAL
+
  SECTION code
 
         INCLUDE "engine/system/to8/memory-map.equ"

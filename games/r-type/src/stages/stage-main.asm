@@ -73,10 +73,27 @@ stage.main
         ldd   #0
         std   globals.score
         sta   globals.score+2
+        ; LE CHEAT DE SCORE (droite, 04/09/2026) : cent mille points au depart.
+        ; Il sert a eprouver le CLASSEMENT de fin de partie sans avoir a gagner
+        ; les points — la table par defaut demande plus de 75 000 pour entrer.
+        ; Le score compte par centaines : 100 000 points = 1 000. L'octet de
+        ; poids fort reste a zero, pose juste au-dessus.
+        tst   cheat.startScore
+        beq   >
+        ldd   #1000
+        std   globals.score+1
+!
         ; Le quota de continues se rearme avec la partie — c'etait fait au
         ; game over, mais finir le jeu (stage 8 -> title) ne repassait pas
         ; par la : le quota fuyait d'une partie a l'autre.
-        sta   game.continueUsed
+        ;
+        ; `clr` ET NON `sta` (04/09/2026). Cette ligne tenait de ce que A valait
+        ; encore zero depuis le `ldd #0` du score, six instructions plus haut :
+        ; le cheat de score glisse un `ldd #1000` entre les deux, A vaut alors
+        ; 3, le quota part consomme et l'ecran CONTINUE ne s'affiche plus
+        ; jamais (releve par l'auteur). Un etat de registre implicite sur six
+        ; instructions ne se defend pas — la remise a zero est desormais dite.
+        clr   game.continueUsed
         ; La difficulte est un PARAMETRE GLOBAL de la partie (decision auteur,
         ; 20/08) : semee ici, plus jamais remise a zero par stage. La RAM
         ; reservee ne charge rien — sale, elle indexerait la table de presets
@@ -88,7 +105,6 @@ stage.main
         ; variable de la v1 (main.asm:127), celle que le HUD dessine. Deux, comme
         ; elle — le compteur du banc en faisait trois sans raison.
         ldb   #2
-        addb  cheat.extraLives             ; les vies du cheat title, en plus
         stb   globals.lives
         ; L'ARMEMENT part a zero — et ICI SEULEMENT, comme le score et les vies.
         ; Le bloc reserve n'est ni charge ni mis a zero : sans ce semis, une
@@ -1097,6 +1113,11 @@ stage.state.checkpoint
         sta   mainloop.state
         tst   globals.lives
         bpl   >
+        ; SONDE DE PHASE 0 (04/09/2026) : converger vers l'état de CLASSEMENT du
+        ; stage — sa musique lâchée, celle de la saisie chargée à sa place — et
+        ; la jouer cinq secondes. C'est ici que viendront les trois écrans
+        ; (STAGE SCORE, saisie, RANKING). Résident : trois octets par stage.
+        jsr   game.ranking.run
         jmp   stage.gameOver
 !
         ; IRQ COUPEE le temps du rechargement, comme la v1 — qui rechargeait
