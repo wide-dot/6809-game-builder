@@ -221,15 +221,29 @@ Le plus propre, et le plus cher.
 
 ### Décision (auteur, 03/09/2026) : B, et B seulement
 
-Un chantier d'uniformisation par macro, traité progressivement. Les macros
-`_AABB.setCx` / `_AABB.setCy` vivent dans `engine/collision/macros.asm`
-(V2-DEVIATION tracée au manifest) ; la règle est écrite en cas de migration
-dans `docs/lang/en/migration/aabb-screen-projection.md`. Premiers sites
-convertis, pour prendre la main avant de scaler : le tir simple
-(`weapon/obj.asm`, trois sites) et le beam (`beam/beam.asm`, trois sites) —
-les segments balayés y sont désormais calculés en 16 bits de bout en bout,
-le calage n'intervenant qu'au dernier geste. Le reste des sites
-(`grep 'stb.*AABB\.c[xy]' src/`) est le reste-à-faire.
+Un chantier d'uniformisation, traité progressivement. La règle est écrite
+en cas de migration dans `docs/lang/en/migration/aabb-screen-projection.md`.
+
+**Correction du 04/09/2026.** Une première tentative calait le *centre*
+dans [0,255] par une macro : c'était insuffisant, et l'auteur a mis le
+doigt sur la vraie source du symptôme. Depuis les boîtes balayées du 31/08,
+le rayon du tir simple monte à 27 px au plafond de frame drop (8) ; un tir
+né au bord gauche, centre calé à 0, a sa boîte qui court jusqu'à −27, que
+le noyau lit 229..255 — un ennemi de rayon 9 dès `cx = 220` est tué. Avant
+le 31/08 le rayon fixe (15) et un centre jamais sous 11 ne descendaient qu'à
+−4. **L'invariant qui compte est que la boîte entière `[cx − rx, cx + rx]`
+reste dans l'octet.** Pour une boîte balayée, cela s'obtient en raisonnant
+en *bords* : arrière = frontière avant de la trame précédente, avant =
+frontière courante ; les deux sont calés dans [0,255], puis seulement
+convertis en centre et rayon. C'est la routine résidente `AABB.spanX`
+(`engine/collision/aabb-span.asm`, exportée par `api.asm`), qui sert les
+deux sens de tir. Au passage l'ancien balayage couvrait `[x_prev − 3, x + 3]`
+(l'union des deux boîtes, 6 px de recouvrement inutile) au lieu de
+`[x_prev + 3, x + 3]`.
+
+Pour les objets à rayon fixe, la même règle s'écrit « centre calé dans
+`[rx, 255 − rx]` » — c'est le reste-à-faire (`grep 'stb.*AABB\.c[xy]' src/`),
+en priorité la tête du laser reflex.
 
 ## 8. Ce qui reste à relever avant d'implémenter B
 

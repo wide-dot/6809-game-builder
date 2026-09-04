@@ -83,7 +83,7 @@ Init
         ldd   y_pos,u
         addd  #2
         std   y_pos,u
-        _AABB.setCy AABB_0
+        stb   AABB_0+AABB.cy,u
 
         ; --- L'ALLUMAGE NETTOIE DEVANT LE CANON (3168..3180)
         ; La borne y pose QUATRE grappes, a +0, +0x0E, +0x1C et +0x2A px
@@ -196,23 +196,21 @@ beam.gum.call2 equ *-2
         ; d'impact, largeur du beam comprise. Meme correctif que le tir simple :
         ; la branche court-circuitait la pose de boite, un beam ne a moins d'un
         ; pas du mur ne touchait rien du segment traverse (l'orbe du gomander).
-        ; Centre en 16 bits, cale a la fin par _AABB.setCx (03/09/2026) : le
-        ; noyau compare modulo 256 — cf. engine/collision/macros.asm.
         ldd   beam.sweepFrom
         subd  glb_camera_x_pos
-        pshs  d                        ; l'arriere du segment (ecran, 16 bits)
+        pshs  b                        ; l'arriere du segment (ecran, un octet)
         ldd   x_pos,u
         subd  glb_camera_x_pos         ; l'avant = le point d'impact
-        subd  ,s                       ; D = la longueur du segment
+        subb  ,s                       ; B = la longueur du segment
         bpl   @sbiOk
-        ldd   #0                       ; recul d'impact colle au mur : ponctuel
-@sbiOk  _lsrd                          ; D = le demi-segment (tient sur B)
+        clrb                           ; recul d'impact colle au mur : ponctuel
+@sbiOk  lsrb                           ; B = le demi-segment
         pshs  b
         addb  halfWidth+1,u
         stb   AABB_0+AABB.rx,u         ; rx = demi-segment + demi-largeur du beam
         puls  b
-        addd  ,s++                     ; D = arriere + demi-segment
-        _AABB.setCx AABB_0
+        addb  ,s+                      ; cx = arriere + demi-segment
+        stb   AABB_0+AABB.cx,u
         ldd   #set_beam_impact_0
         std   image_set,u
         inc   routine,u
@@ -226,21 +224,23 @@ beam.gum.call2 equ *-2
         subd  glb_camera_x_pos
         cmpd  #160-8/2                 ; delete beam if out of screen range
         bhs   Delete
-        pshs  d                        ; l'avant du segment (ecran, 16 bits)
+        pshs  b                        ; l'avant du segment (ecran, un octet)
         ldd   beam.sweepFrom
         subd  glb_camera_x_pos
-        _negd
-        addd  ,s                       ; D = la longueur du segment
+        negb
+        addb  ,s                       ; B = la longueur du segment
         bpl   @sbvOk
-        ldd   #0                       ; camera en avance sur un pas nul
-@sbvOk  _lsrd                          ; D = le demi-segment (tient sur B)
+        clrb                           ; camera en avance sur un pas nul
+@sbvOk  lsrb                           ; B = le demi-segment
         pshs  b
         addb  halfWidth+1,u
         stb   AABB_0+AABB.rx,u         ; rx = demi-segment + demi-largeur
         puls  b
-        _negd
-        addd  ,s++                     ; D = avant - demi-segment
-        _AABB.setCx AABB_0             ; ne au bord gauche : cale a zero
+        negb
+        addb  ,s+                      ; cx = avant - demi-segment
+        bpl   @sbvCl
+        clrb                           ; ne au bord gauche : cale a zero
+@sbvCl  stb   AABB_0+AABB.cx,u
         ldb   beamTier,u                ; sprite tier = current power band (arcade unified image_id)
         aslb
         ldx   #Ani_Beams

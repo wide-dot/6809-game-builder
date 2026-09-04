@@ -67,8 +67,8 @@ Init
         _ldd  3,1                      ; set hitbox xy radius
         std   AABB_0+AABB.rx,u
 
-        ldd   y_pos,u
-        _AABB.setCy AABB_0
+        ldb   y_pos+1,u
+        stb   AABB_0+AABB.cy,u
         ; (cx n'est pas pose ici : l'Init tombe dans Live — voir plus bas —
         ; et le premier tick ecrit la boite balayee de la trame de naissance)
 
@@ -174,24 +174,20 @@ Live
         ; naissance, un tir parti a moins d'un pas du mur ne pouvait plus
         ; RIEN toucher (31/08/2026). p reste arme : la passe de collision de
         ; la trame suivante teste ce segment, puis Impact/Delete le retire.
-        ; LE CENTRE SE CALCULE EN 16 BITS ET SE CALE A LA FIN (03/09/2026) :
-        ; le noyau compare les centres modulo 256, un centre negatif ou
-        ; au-dela de 255 reapparaitrait de l'autre cote de l'ecran.
-        ; _AABB.setCx le cale dans [0,255] — cf. engine/collision/macros.asm.
         ldd   weapon.sweepFrom
         subd  glb_camera_x_pos
-        pshs  d                        ; l'arriere du segment (ecran, 16 bits)
+        pshs  b                        ; l'arriere du segment (ecran, un octet)
         ldd   x_pos,u
         subd  glb_camera_x_pos         ; l'avant = le point d'impact
-        subd  ,s                       ; D = la longueur du segment
+        subb  ,s                       ; B = la longueur du segment
         bpl   @swiOk                   ; l'aleas du recul d'impact peut la
-        ldd   #0                       ; rendre negative d'un ou deux pixels :
-@swiOk  _lsrd                          ; boite ponctuelle dans ce cas
-        addb  #3                       ; (le demi-segment tient sur un octet)
+        clrb                           ; rendre negative d'un ou deux pixels :
+@swiOk  lsrb                           ; boite ponctuelle dans ce cas
+        addb  #3
         stb   AABB_0+AABB.rx,u         ; rx = demi-segment + demi-largeur
         subb  #3
-        addd  ,s++                     ; D = arriere + demi-segment
-        _AABB.setCx AABB_0
+        addb  ,s+                      ; cx = arriere + demi-segment
+        stb   AABB_0+AABB.cx,u
         ldd   #set_weapon_impact0
         std   image_set,u
         inc   routine,u
@@ -209,18 +205,18 @@ Live
         subd  glb_camera_x_pos
         cmpd  #160-8/2                 ; delete weapon if out of screen range
         bhs   Delete
-        pshs  d                        ; le bord courant (ecran, 16 bits)
+        pshs  b                        ; le bord courant (ecran, < 160 : un octet)
         lda   #3
         ldb   gfxlock.frameDrop.count
         mul                            ; B = le demi-pas (A reste 0, <= 24)
         addb  #3
         stb   AABB_0+AABB.rx,u         ; rx = demi-pas + demi-largeur
         subb  #3
-        _negd
-        addd  ,s++                     ; D = bord courant - demi-pas
-        _AABB.setCx AABB_0             ; sous zero (tir ne au bord gauche a
-                                       ; bas regime) : cale a 0 — s'enrouler
-                                       ; jamais (cf. engine/collision/macros.asm)
+        negb
+        addb  ,s+                      ; centre = bord courant - demi-pas
+        bpl   @swvOk                   ; sous zero (tir ne au bord gauche a
+        clrb                           ; bas regime) : cale a 0 — deborder a
+@swvOk  stb   AABB_0+AABB.cx,u         ; droite oui, s'enrouler jamais
         jmp   DisplaySprite
 
 weapon.HitFeedback

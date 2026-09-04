@@ -185,6 +185,9 @@ checkpoint.clearData EXTERNAL
         _api object_wave_data_start
         _api object_wave_data_page
 
+        ; --- hitboxes : the swept box of a projectile, built from its edges ---
+        _api AABB.spanX
+
         ; --- terrain collision : the resident half, the stage mounts the map ---
         _api terrainCollision.init.do
         _api terrainCollision.do

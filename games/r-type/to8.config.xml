@@ -275,11 +275,10 @@
                      permanent. -->
                 <!-- Tete de $0C jusqu'a $0B00, frontiere avec l'arene des lots :
                      si le commun grossit, le controle de scene refuse le build.
-                     $0A80 -> $0B00 le 03/09/2026 (soir) : les boites du tir
-                     simple et du beam se projettent par _AABB.setCx (centre en
-                     16 bits, cale dans [0,255] — le chantier B de
-                     doc/analyse-wrap-boites.md), +~60 octets dans le commun, et
-                     common.fade (279 o) ne trouvait plus que 269 o d'un tenant.
+                     $0A80 -> $0B00 le 03/09/2026 (soir), pour le chantier des
+                     boites qui s'enroulent (doc/analyse-wrap-boites.md) : une
+                     soixantaine d'octets de plus dans le commun, et common.fade
+                     (279 o) ne trouvait plus que 269 o d'un tenant.
                      (La raison historique — le visage du Dobkeratops a 3 octets
                      pres dans la zone ennemis de cette page, 18/08 — n'a plus
                      cours : depuis la partition des arenes du 24/08 le visage est

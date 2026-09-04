@@ -112,18 +112,21 @@ Trois régressions dormantes, bissectées contre un état connu-bon (loader-ut �
 
 ## En cours
 
-- [ ] **Boîtes qui s'enroulent — uniformisation par `_AABB.setCx`/`setCy`**
+- [ ] **Boîtes qui s'enroulent — la boîte entière reste dans l'octet**
       (décision auteur 03/09/2026 : l'option B seule, progressive). Étude :
       [`games/r-type/doc/analyse-wrap-boites.md`](games/r-type/doc/analyse-wrap-boites.md) ;
       cas : [`aabb-screen-projection.md`](docs/lang/en/migration/aabb-screen-projection.md).
-  - [x] macros dans `engine/collision/macros.asm` (10 octets/site, le signe
-        passe par la retenue) ; tir simple (3 sites) et beam (3 sites)
-        convertis, segments balayés en 16 bits ; frontière $0C → $0B00 ;
-        banc r-type 7/7
-  - [ ] le reste des sites (`grep 'stb.*AABB\.c[xy]' games/r-type/src/`) —
-        en priorité la tête du laser reflex (zone de vie −64 px, le cas
-        rapporté au niveau 3), puis les ennemis qui sortent à droite, le
-        guidage du missile et le gestionnaire de balles
+  - [x] routine résidente `AABB.spanX` (`engine/collision/aabb-span.asm`,
+        exportée par `api.asm`) : la boîte balayée par ses BORDS, calés dans
+        [0,255], les deux sens de tir. La macro de centre du 03/09 est
+        retirée (un centre calé laisse le rayon déborder).
+  - [ ] convertir le tir simple (3 sites) et le beam (3 sites) à `AABB.spanX`
+        — arrière = frontière avant de la trame précédente
+  - [ ] le reste des sites à rayon fixe (`grep 'stb.*AABB\.c[xy]' games/r-type/src/`),
+        centre calé dans `[rx, 255 − rx]` — en priorité la tête du laser
+        reflex (zone de vie −64 px, le cas rapporté au niveau 3), puis les
+        ennemis qui sortent à droite, le guidage du missile et le
+        gestionnaire de balles
 - [ ] **Migration engine v1 → v2 + sprites compilés** — stratégie actée le
       31/07/2026 : import ASM v1 **en 1:1** (la v1 reste la référence
       opérationnelle, pas de gel — traçage par commit), builder migré en

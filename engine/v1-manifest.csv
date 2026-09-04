@@ -49,7 +49,7 @@ engine/graphics/tilemap/hscroll/hscroll.asm,engine/graphics/tilemap/hscroll/hscr
 engine/graphics/tilemap/hscroll/hscroll.macro.asm,engine/graphics/tilemap/hscroll/hscroll.macro.asm,c1223d82c74d749e292840857abf0742fa72c3c4,2026-08-01,
 engine/graphics/tilemap/horizontal-scroll/scroll-map-buffered-even.asm,engine/graphics/tilemap/horizontal-scroll/scroll-map-buffered-even.asm,4ae73421e65a093300509a9c8125c8ef3a157f30,2026-08-19,setdp neutralized (obj target)
 engine/collision/struct_AABB.equ,engine/collision/struct_AABB.equ,73138a07b43e7f8ad41c7f99f242b23a7f4a4ec6,2026-08-02,
-engine/collision/macros.asm,engine/collision/macros.asm,4be934d5e5096696d52ae3d99edb5a5890867bc1,2026-08-02,V2-DEVIATION 2026-09-03 : macros _AABB.setCx/_AABB.setCy ajoutees (projection ecran calee dans [0,255] — le noyau compare modulo 256) ; les macros v1 sont intactes (voir migration/aabb-screen-projection.md)
+engine/collision/macros.asm,engine/collision/macros.asm,4be934d5e5096696d52ae3d99edb5a5890867bc1,2026-08-02,
 engine/collision/collision-list.asm,engine/collision/collision-list.asm,bc2a6189e4b620af6d2fa9a6bbeee86a850e6dc9,2026-08-02,
 engine/collision/collision-do.asm,engine/collision/collision-do.asm,bc2a6189e4b620af6d2fa9a6bbeee86a850e6dc9,2026-08-02,V2-DEVIATION 2026-09-03 : crochet IFDEF COLLISION_ON_LOOSE a la branche @loose (la cible garde du potentiel = coup encaisse) — le macro _Collision_OnLoose est defini par l'includeur (r-type : le bruitage $56/$57 dans src/common/engine/engine.asm) ; sans le define, le fichier est le v1 a l'octet pres
 engine/collision/collision.asm,engine/collision/collision.asm,bc2a6189e4b620af6d2fa9a6bbeee86a850e6dc9,2026-08-02,

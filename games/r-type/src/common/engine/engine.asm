@@ -28,6 +28,7 @@ ENGINE_RESIDENT equ 1
         INCLUDE "engine/constants.asm"
         INCLUDE "engine/macros.asm"
         INCLUDE "engine/collision/macros.asm"
+        INCLUDE "engine/collision/struct_AABB.equ"
         INCLUDE "engine/graphics/buffer/gfxlock.macro.asm"
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/system/to8/ram/ram.macro.asm"
@@ -373,6 +374,11 @@ terrainCollision.init.do
         INCLUDE "engine/graphics/tilemap/horizontal-scroll/scroll-map-buffered-even.asm"
         INCLUDE "engine/graphics/tilemap/patch/tilemap-patch.asm"
         INCLUDE "engine/objects/collision/terrainCollision.main.asm"
+        ; La boite balayee d'un projectile, construite par ses bords et calee
+        ; dans l'octet — le noyau compare modulo 256 (analyse-wrap-boites.md).
+        ; Residente : tous les tirs l'appellent, et elle porte des immediats
+        ; auto-modifies qui exigent la RAM.
+        INCLUDE "engine/collision/aabb-span.asm"
         INCLUDE "engine/object-management/RunObjects.asm"
         INCLUDE "engine/object-management/ObjectWave-subtype.asm"
         ; L'appel d'objet factorise : un stage lance un objet nomme par son
