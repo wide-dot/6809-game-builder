@@ -656,8 +656,8 @@ ranking.input
 @dec    deca
 @setAlpha
         sta   ranking.in.alpha
-        ldd   #(soundFX.FireSound<<8)|1
-        std   soundFX.newSound
+        ldd   #(soundFX.SmallExplosionSound<<8)|1   ; essai du 05/09 : la petite
+        std   soundFX.newSound                      ;   explosion au lieu du tir
         bra   @loop
 @commit
         lda   ranking.in.alpha
