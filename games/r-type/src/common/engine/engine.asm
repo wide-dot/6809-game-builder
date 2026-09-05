@@ -142,18 +142,32 @@ game.continueUsed fcb 0
 ;          rendue, et l'IRQ tourne.
 ;*******************************************************************************
 game.music.play EXPORT
+game.music.stop EXPORT
+; game.music.stop — FAIRE TAIRE LA PUCE avant de couper l'IRQ
+;
+; Couper l'IRQ n'arrête pas le son : le YM2413 tient ses notes tant que ses
+; registres ne sont pas remis à zéro. Sans ce geste la dernière note reste
+; suspendue pendant tout un chargement disque, et les réglages laissés dans
+; les registres perturbent le morceau suivant (relevé de l'auteur, 04/09/2026).
+; `ymm.stop` met le statut à zéro ET réinitialise la puce, donc le silence.
+;
+; À appeler AVANT `IrqOff`, jamais après : tant que l'IRQ tourne encore, la
+; trame en cours se termine proprement. L'appelant garde la main sur l'IRQ.
+game.music.stop
+        jmp   ymm.stop                 ; lecteur resident : rien a monter
+
 game.music.play
-        pshs  b                        ; 1,s apres le prochain push : le mode
+        pshs  a,b                      ; 0,s la page du morceau, 1,s le mode
         _GetCartPageB
-        pshs  b                        ; 0,s : la page de l'appelant
-        lda   #map.RAM_OVER_CART+engine.sound.ymm.page
-        _SetCartPageA                  ; A reste la page des donnees : le lecteur la range
-        ldb   1,s                      ; le mode demande
+        pshs  b                        ; 0,s la page de l'appelant
+        lda   1,s                      ; LA PAGE DU MORCEAU, plus celle du
+        _SetCartPageA                  ;   lecteur : il est resident depuis le
+        ldb   2,s                      ;   04/09/2026, chaque morceau a la sienne
         ldy   #ymm.NO_CALLBACK
         jsr   ymm.obj.play
         puls  b
         _SetCartPageB                  ; sa page a l'appelant
-        leas  1,s                      ; le mode, dont personne n'a plus besoin
+        leas  2,s                      ; page et mode, dont personne n'a plus besoin
         jmp   irq.on
 
 
@@ -298,7 +312,14 @@ Collision_ClearLists
 stage.main EXTERNAL
 ; Le lecteur YMM, dans sa page : le relais game.music.play l'y atteint.
 ymm.obj.play EXTERNAL
+ymm.stop     EXTERNAL
 
+; PAS DE `game.music.stop` ICI, et ce n'est pas un oubli. Ses deux appelants
+; ont deja fait le silence : `stage.gameOver` juste avant d'y sauter, et le
+; title qui coupe l'IRQ puis reinitialise la puce avant de partir. L'y ajouter
+; a fait PLANTER le chargement du title le 04/09/2026 — le CPU partait dans le
+; pool d'objets ($46xx) apres la lecture disque, DP corrompu. Cause non
+; elucidee ; la coupure etant redondante, elle est restee dehors.
 game.stage.switch
         stb   game.stage.target
         ; UNE PARTIE FRAICHE remet a zero la table des scores par stage : ces
@@ -307,7 +328,8 @@ game.stage.switch
         ; par le semis de premiere entree du stage — on ne fait que le LIRE ici.
         tst   game.fresh
         beq   >
-        jsr   ranking.reset
+        ldb   game.stage                   ; 0-base, deja pose par le title :
+        jsr   ranking.reset                ;   le premier stage du credit
 !       jsr   IrqOff                       ; le chargement parle au contrôleur disque
         ; Le loader vit dans une page commutée de la fenêtre DATA : il faut la
         ; monter pour l'atteindre. L'écran sortant vient d'y effacer ses tampons
@@ -362,30 +384,17 @@ game.ranking.run
         tstb
         bne   >
         rts
-!       jsr   IrqOff                       ; le chargement parle au contrôleur disque
-        _ram.data.set #loader.PAGE         ; le loader vit dans la fenêtre DATA
-        ldb   game.stage
-        aslb
-        ldx   #game.ranking.states
-        abx
-        ldx   ,x
-        jsr   loader.ADDRESS+loader.composition.load.IDX
+!       ; PLUS AUCUN CHARGEMENT (04/09/2026) : la piste de saisie est permanente,
+        ; en tete de la page 26 avec les musiques communes, et le lecteur est
+        ; resident. La sequence s'enchaine sans disque, comme sur la borne.
         ldx   #sounds.nameentry.ymm        ; le morceau boucle : c'est l'écran
-        ldb   #ymm.LOOP                    ;   de saisie qui en décidera la fin
+        ldb   #ymm.LOOP                    ;   CONTINUE qui le remplacera
+        lda   #map.RAM_OVER_CART+common.nameentry.ymm.page
         jsr   game.music.play              ; monte la page du lecteur, rend celle
                                            ;   de l'appelant, rallume l'IRQ
         jsr   ranking.screen               ; STAGE SCORE, puis la saisie des
         rts                                ;   initiales : elle tient l'écran
 
-game.ranking.states
-        fdb   compositions.stage1.ranking
-        fdb   compositions.stage2.ranking
-        fdb   compositions.stage3.ranking
-        fdb   compositions.stage4.ranking
-        fdb   compositions.stage5.ranking
-        fdb   compositions.stage6.ranking
-        fdb   compositions.stage7.ranking
-        fdb   compositions.stage8.ranking
 
 game.stage.target fcb 0
 game.stage.states

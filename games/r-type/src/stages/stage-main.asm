@@ -46,6 +46,16 @@ pscroll.stage4.frame EXTERNAL
 pscroll.stage4.init  EXTERNAL
  ENDC
 
+; Le semis de score d'une partie fraiche passe par la case du stage, comme
+; une recompense : la somme des cases doit faire le total (voir plus bas).
+ranking.stageAdd EXTERNAL
+; Le continue accepte ouvre un nouveau credit : la table par stage repart de
+; zero depuis ce stage (ranking.reset), et le GAME OVER arme lui-meme son
+; morceau, puisqu'il vient desormais AVANT l'ecran CONTINUE.
+ranking.reset EXTERNAL
+sounds.gameover.ymm EXTERNAL
+game.music.stop EXTERNAL
+
 stage.main
         ; un échange arrive avec l'IRQ du stage précédent encore active
         jsr   IrqOff
@@ -82,6 +92,11 @@ stage.main
         beq   >
         ldd   #1000
         std   globals.score+1
+        ; ET DANS LA CASE DU STAGE (04/09/2026, releve de l'auteur) : la somme
+        ; des cases par stage doit faire le total, cheat ou pas. Ces cent mille
+        ; points appartiennent au stage ou la partie commence — c'est le meme
+        ; geste que pour une recompense, D est encore la somme semee.
+        jsr   ranking.stageAdd
 !
         ; Le quota de continues se rearme avec la partie — c'etait fait au
         ; game over, mais finir le jeu (stage 8 -> title) ne repassait pas
@@ -394,7 +409,7 @@ statics.SIZE  equ nb_static_objects*object_size
         ; tout ce qui suit heriterait de la page du lecteur.
         _GetCartPageB
         pshs  b
-        _ymm.obj.play #map.RAM_OVER_CART+engine.sound.ymm.page,#stage.music,#ymm.LOOP,#ymm.NO_CALLBACK
+        _ymm.obj.play #map.RAM_OVER_CART+stage.music.page,#stage.music,#ymm.LOOP,#ymm.NO_CALLBACK
         puls  b
         _SetCartPageB
 
@@ -857,7 +872,7 @@ stage.userIRQ
         ; musique, puis le pilote de bruitages qui depile la boite aux lettres.
         ; La ligne SN76489 de la v1 est commentee chez elle aussi — voir la
         ; region vgc.* du layout.
-        _ymm.frame.play #map.RAM_OVER_CART+engine.sound.ymm.page
+        jsr   ymm.frame.play           ; lecteur resident : rien a monter
         ;_vgc.frame.play #map.RAM_OVER_CART+vgc.player.page
         lda   #map.RAM_OVER_CART+common.soundfx.page
         ldx   #soundfx.frame
@@ -1038,47 +1053,45 @@ stage.state.checkpoint
         _Obj_Mount ObjID_messages
         dec   globals.lives
         bpl   @ready
-        ; PLUS DE VIE : l'ecran CONTINUE avant d'annoncer GAME OVER, l'ordre
-        ; de l'arcade. Il ne rend pas de statut — `paged.call` ecrase B — il
-        ; REND SES VIES au joueur qui reprend, et le test juste apres prend
-        ; alors la branche READY puis le rechargement de checkpoint. Il
-        ; s'efface tout seul avant de rendre la main : la suite repasse en
-        ; 320x200 pour les messages. X porte l'objet messages, que l'appel
-        ; ecrase.
+        ; PLUS DE VIE : L'ORDRE DE LA BORNE (04/09/2026, releve de l'auteur sur
+        ; la machine) — GAME OVER d'abord, le classement si le score entre,
+        ; l'ecran CONTINUE en dernier ; accepte, le score repart de zero. Le
+        ; morceau de GAME OVER s'arme ici, avant le message que gameOverWait
+        ; tiendra jusqu'a sa fin (l'ecran CONTINUE l'armait, quand il venait
+        ; avant). game.music.play consomme X : l'objet messages passe par la
+        ; pile.
         pshs  x
-        lda   #map.RAM_OVER_CART+common.hud.page
-        ldx   #hud.continue
-        jsr   paged.call
+        ldx   #sounds.gameover.ymm
+        ldb   #ymm.NO_LOOP
+        lda   #map.RAM_OVER_CART+common.music.ymm.page
+        jsr   game.music.play
         puls  x
-        tst   globals.lives
-        bmi   @gameOverMsg
-        ; CONTINUE ACCEPTE. L'ecran a arme sa propre musique : il faut rendre
-        ; sa place a celle du stage, sans quoi le `ymm.restart` du
-        ; rechargement de checkpoint relancerait le continue avec le niveau.
-        ; `_ymm.obj.play` coupe l'IRQ et ne la rend pas — c'est ce qui nous
-        ; laisse le READY en silence, exactement comme une mort ordinaire,
-        ; jusqu'a ce que le rechargement rallume l'IRQ sur le point de
-        ; bouclage.
-        ; Le macro ecrase DEUX choses que le READY attend : X (`ldx <donnees>`)
-        ; et la fenetre cartouche (`_ram.cart.set` monte la page du lecteur et
-        ; ne rend rien — seul le relais resident `game.music.play` la rend, et
-        ; il rallume l'IRQ, ce qu'on ne veut pas ici). Re-monter l'objet
-        ; messages refait les deux ; sans ca le `jsr ,x` du READY tombe a la
-        ; meme adresse dans la page du lecteur — la queue de tuiles compilees —
-        ; et peint de la bouillie a la place du message (vecu : ecran corrompu
-        ; le temps du READY, puis reprise normale une fois les tampons
-        ; repeints par le rechargement).
-        _ymm.obj.play #map.RAM_OVER_CART+engine.sound.ymm.page,#stage.music,#ymm.LOOP,#ymm.NO_CALLBACK
-        _Obj_Mount ObjID_messages
-        bra   @ready
+        ; LES MESSAGES DANS LES DEUX TAMPONS (05/09/2026). L'objet ne peint que
+        ; la page en fenetre DATA ; la page AFFICHEE est celle de $E7DD, et les
+        ; deux sont opposees apres une bascule. Le READY qui suit un continue
+        ; accepte tombait ainsi dans le tampon cache — releve de l'auteur,
+        ; mesure sous toje : zero pixel jusqu'a la reprise du jeu. Meme regle
+        ; que l'ecran CONTINUE et le classement : on peint, on bascule, on
+        ; repeint, on rebascule. L'objet rend X intact.
 @gameOverMsg
         ldb   #messages.GAME           ; deux mots a poser, GAME puis OVER
         jsr   ,x
         ldb   #messages.OVER
         jsr   ,x
+        _SwitchScreenBuffer
+        ldb   #messages.GAME
+        jsr   ,x
+        ldb   #messages.OVER
+        jsr   ,x
+        _SwitchScreenBuffer
         bra   @displaymessage
+stage.death.ready                      ; atteint aussi depuis le continue accepte
 @ready  ldb   #messages.READY
         jsr   ,x
+        _SwitchScreenBuffer
+        ldb   #messages.READY
+        jsr   ,x
+        _SwitchScreenBuffer
 @displaymessage
         clra                           ; le message est en 320x200x16c
         sta   map.CF74021.LGAMOD
@@ -1112,14 +1125,49 @@ stage.state.checkpoint
         lda   #mainloop.state.RUNNING
         sta   mainloop.state
         tst   globals.lives
-        bpl   >
-        ; SONDE DE PHASE 0 (04/09/2026) : converger vers l'état de CLASSEMENT du
-        ; stage — sa musique lâchée, celle de la saisie chargée à sa place — et
-        ; la jouer cinq secondes. C'est ici que viendront les trois écrans
-        ; (STAGE SCORE, saisie, RANKING). Résident : trois octets par stage.
+        lbpl  @resume
+        ; GAME OVER. Le classement d'abord — STAGE SCORE, saisie, tableau,
+        ; seulement si le score entre dans les dix, et sans disque : la piste
+        ; de saisie est residente. Puis l'ecran CONTINUE, sur un ecran remis au
+        ; noir dans les deux tampons : le message GAME OVER (320x200) y est
+        ; encore, et le classement a peint les deux.
         jsr   game.ranking.run
-        jmp   stage.gameOver
-!
+        _ram.data.set #2
+        ldu   #$0000
+        lda   #map.RAM_OVER_CART+common.checkpoint.page
+        ldx   #checkpoint.clearData
+        jsr   paged.call
+        _SwitchScreenBuffer
+        ldu   #$0000
+        lda   #map.RAM_OVER_CART+common.checkpoint.page
+        ldx   #checkpoint.clearData
+        jsr   paged.call
+        _SwitchScreenBuffer
+        lda   #map.RAM_OVER_CART+common.hud.page
+        ldx   #hud.continue
+        jsr   paged.call
+        tst   globals.lives
+        lbmi  stage.gameOver           ; refuse, ou quota epuise : le title
+        ; CONTINUE ACCEPTE — comme la borne, UN NOUVEAU CREDIT : le score et la
+        ; table par stage repartent de zero, et le recapitulatif du prochain
+        ; game over partira de CE stage (decision auteur, 04/09/2026 ; elle
+        ; annule celle de juin qui gardait le score a travers le continue).
+        ldd   #0
+        std   globals.score
+        sta   globals.score+2
+        std   globals.stageScoreBase
+        sta   globals.stageScoreBase+2
+        ldb   game.stage
+        jsr   ranking.reset
+        ; La musique du stage reprend sa place (celle du continue tournait) :
+        ; `_ymm.obj.play` coupe l'IRQ et ne la rend pas, le READY se joue en
+        ; silence jusqu'au rechargement de checkpoint, qui la rallume — voir la
+        ; note du rechargement plus bas. Le macro change la page : l'objet
+        ; messages est remonte pour le READY.
+        _ymm.obj.play #map.RAM_OVER_CART+stage.music.page,#stage.music,#ymm.LOOP,#ymm.NO_CALLBACK
+        _Obj_Mount ObjID_messages
+        jmp   stage.death.ready        ; READY, puis le rechargement de checkpoint
+@resume
         ; IRQ COUPEE le temps du rechargement, comme la v1 — qui rechargeait
         ; tout le game mode et ne rearmait l'IRQ qu'a la fin de son init. Le
         ; rejeu de la vague (ObjectWave_Init) marche PLUS D'UNE TRAME dans la
@@ -1131,6 +1179,10 @@ stage.state.checkpoint
         ; seme des objets dans les temoins du banc et la machine est partie
         ; dans le decor. Une roulette de phase d'IRQ : la partition des
         ; repertoires n'a fait que deplacer le tirage perdant.
+        ; PAS DE COUPURE ICI : ce chemin est celui de TOUTE mort, ou la
+        ; musique du stage doit simplement continuer. Le seul cas ou la puce
+        ; garde les reglages d'un AUTRE morceau est la reprise apres continue,
+        ; et la c'est `_ymm.obj.play` qui la reinitialise juste au-dessus.
         jsr   IrqOff
         ; (la table du manager de tirs, elle, est remise a neuf par
         ; Collision_ClearLists — l'invariant vit avec les tetes de listes,
@@ -1160,9 +1212,7 @@ stage.state.checkpoint
         ; La musique repart, comme la v1 (main.asm:383) et au meme endroit :
         ; apres le chargement du checkpoint, avant de rendre la main a la
         ; boucle. Elle reprend a son point de bouclage, pas au debut.
-        lda   #map.RAM_OVER_CART+engine.sound.ymm.page
-        ldx   #ymm.restart
-        jsr   paged.call
+        jsr   ymm.restart                    ; lecteur resident : appel direct
         jsr   IrqOn
         lbra  stage.loop
 
@@ -1182,7 +1232,8 @@ stage.state.checkpoint
 ; (title.launchGame) qui le fait foi pour la partie suivante.
 ;*******************************************************************************
 stage.gameOver
-        jsr   IrqOff
+        jsr   game.music.stop              ; le silence pendant le chargement du
+        jsr   IrqOff                       ;   title, qui dure une seconde
         clr   game.stage
         ; (le quota de continues se rearme au semis de partie fraiche, plus ici
         ;  — finir le jeu ne passait pas par le game over et le quota fuyait)

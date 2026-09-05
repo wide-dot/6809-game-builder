@@ -343,6 +343,7 @@ Collision_Run EXTERNAL
         ; Armer un morceau depuis une unite paginee : le relais qui commute la
         ; page du lecteur et la rend. Voir engine.asm.
         _api game.music.play
+        _api game.music.stop
 
         ; --- l'échange lui-même : il doit être résident, puisqu'il survit à
         ; l'écrasement de la région du stage qui l'appelle ---

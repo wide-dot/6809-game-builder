@@ -65,6 +65,12 @@ CONTINUE → refus → GAME OVER → title, score conservé.
 
 Recommandation : **A**.
 
+> **Révisé le 04/09/2026** : l'auteur a rejoué la borne — classement AVANT le
+> continue, et le continue remet le score et la table par stage à zéro (un
+> nouveau crédit, dont le récapitulatif ne montre que ses stages). C'est
+> l'ordre B qui est retenu, avec le score à zéro. Rendu possible sans
+> chargement supplémentaire par la musique de saisie résidente (voir le plan).
+
 ## Q3. Où vit le code de ces écrans ?
 
 Deux hôtes possibles, avec des conséquences très différentes.

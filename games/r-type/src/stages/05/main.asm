@@ -97,6 +97,7 @@ sounds.level5.ymm EXTERNAL
 sounds.boss.ymm   EXTERNAL
 sounds.clearstage.ymm EXTERNAL
 stage.music       equ sounds.level5.ymm
+stage.music.page  equ stage5.music.ymm.page
 
 ; Le sequenceur de fin generique et le jingle qu'il demande au stage de
 ; jouer (protocole du stage 1, objet commun monte au boot).
@@ -273,7 +274,7 @@ stage.endTick
         ; complete. Les gels attribues un temps au relancement etaient l'IRQ
         ; tombant dans la pile privee du depaqueteur — corrige dans le module
         ; (docs/lang/en/migration/ymm-private-stack-irq.md).
-        _ymm.obj.play #map.RAM_OVER_CART+engine.sound.ymm.page,#sounds.boss.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
+        _ymm.obj.play #map.RAM_OVER_CART+common.music.ymm.page,#sounds.boss.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
         puls  b
         _SetCartPageB
         jsr   IrqOn
@@ -294,7 +295,7 @@ stage.endTick.jingle
         jsr   IrqOff
         _GetCartPageB
         pshs  b
-        _ymm.obj.play #map.RAM_OVER_CART+engine.sound.ymm.page,#sounds.clearstage.ymm,#ymm.NO_LOOP,#ymm.NO_CALLBACK
+        _ymm.obj.play #map.RAM_OVER_CART+common.music.ymm.page,#sounds.clearstage.ymm,#ymm.NO_LOOP,#ymm.NO_CALLBACK
         puls  b
         _SetCartPageB
         jsr   IrqOn
@@ -336,9 +337,7 @@ stage.handOver
         jsr   IrqOff
         ; Même geste qu'au stage 1 : la musique s'arrête avant l'échange, voir
         ; le commentaire de son handOver.
-        lda   #map.RAM_OVER_CART+engine.sound.ymm.page
-        ldx   #ymm.stop
-        jsr   paged.call
+        jsr   ymm.stop                    ; lecteur resident : appel direct
 
         lda   #5
         sta   game.stage

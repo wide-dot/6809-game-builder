@@ -31,8 +31,7 @@
                 <!-- $1A : bloc musical en $1C9B-$3C00 — lecteur YMM (résident) puis
                      les musiques communes (résidentes) puis la piste du stage
                      (alternative). Deux fenetres libres de part et d'autre. -->
-                <zone page="$1A" address="$0000" size="$1C9B"/>
-                <zone page="$1A" address="$3C00" size="$0400"/>
+                <zone page="$1A" address="$1FCF" size="$2031"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -44,8 +43,7 @@
             <arena name="stage2.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <zone page="$1A" address="$0000" size="$1C9B"/>
-                <zone page="$1A" address="$3C00" size="$0400"/>
+                <zone page="$1A" address="$1FCF" size="$2031"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -55,8 +53,7 @@
             <arena name="stage3.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <zone page="$1A" address="$0000" size="$1C9B"/>
-                <zone page="$1A" address="$3C00" size="$0400"/>
+                <zone page="$1A" address="$1FCF" size="$2031"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <!-- $1C-$1F : la couche battleship (mscroll) est POSEE en dur —
                      les tilesets doivent partager la meme adresse dans leurs
@@ -130,7 +127,7 @@
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
                 <!-- $1A : fenetre de tete seule (queue laissee au bloc musical) -->
-                <zone page="$1A" address="$0000" size="$1C9B"/>
+                <zone page="$1A" address="$1FCF" size="$2031"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <!-- $1D RETIREE (28/08/2026) : c'est pscroll.buf3, le quatrieme
@@ -146,8 +143,7 @@
             <arena name="stage5.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <zone page="$1A" address="$0000" size="$1C9B"/>
-                <zone page="$1A" address="$3C00" size="$0400"/>
+                <zone page="$1A" address="$1FCF" size="$2031"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -157,8 +153,7 @@
             <arena name="stage6.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <zone page="$1A" address="$0000" size="$1C9B"/>
-                <zone page="$1A" address="$3C00" size="$0400"/>
+                <zone page="$1A" address="$1FCF" size="$2031"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -168,8 +163,7 @@
             <arena name="stage7.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <zone page="$1A" address="$0000" size="$1C9B"/>
-                <zone page="$1A" address="$3C00" size="$0400"/>
+                <zone page="$1A" address="$1FCF" size="$2031"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -180,7 +174,7 @@
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
                 <!-- $1A : fenetre de tete seule (queue laissee au bloc musical) -->
-                <zone page="$1A" address="$0000" size="$1C9B"/>
+                <zone page="$1A" address="$1FCF" size="$2031"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -590,10 +584,11 @@
                 <scene name="scenes.title"/>
             </composition>
             <!-- LE CLASSEMENT (game over) : meme etat que le stage, moins sa
-                 musique, plus celle de la saisie des initiales. Le corps de
-                 stage y converge avant de rendre la main au title — la piste du
-                 stage occupe la place ($1A:$2C09) que celle de la saisie
-                 demande, la convergence la lache. Voir doc/plan-game-over-ranking.md. -->
+                 musique, plus celle de la saisie des initiales — la piste du stage
+                 occupe la place ($1A:$2C09) que celle de la saisie demande, la
+                 convergence la lache. Le continue accepte reconverge vers l'etat
+                 normal du stage pour retrouver sa musique.
+                 Voir doc/plan-game-over-ranking.md. -->
             <composition name="stage1">
                 <scene name="scenes.boot"/>
                 <scene name="scenes.stage1"/>
@@ -604,25 +599,10 @@
                 <scene name="scenes.lot.scant"/>
                 <scene name="scenes.stage1.music"/>
             </composition>
-            <composition name="stage1.ranking">
-                <scene name="scenes.boot"/>
-                <scene name="scenes.stage1"/>
-                <scene name="scenes.lot.bink"/>
-                <scene name="scenes.lot.patapata"/>
-                <scene name="scenes.lot.cancer"/>
-                <scene name="scenes.lot.bugpstaff"/>
-                <scene name="scenes.lot.scant"/>
-                <scene name="scenes.nameentry.music"/>
-            </composition>
             <composition name="stage2">
                 <scene name="scenes.boot"/>
                 <scene name="scenes.stage2"/>
                 <scene name="scenes.stage2.music"/>
-            </composition>
-            <composition name="stage2.ranking">
-                <scene name="scenes.boot"/>
-                <scene name="scenes.stage2"/>
-                <scene name="scenes.nameentry.music"/>
             </composition>
             <composition name="stage3">
                 <scene name="scenes.boot"/>
@@ -630,13 +610,6 @@
                 <scene name="scenes.lot.bink"/>
                 <scene name="scenes.lot.patapata"/>
                 <scene name="scenes.stage3.music"/>
-            </composition>
-            <composition name="stage3.ranking">
-                <scene name="scenes.boot"/>
-                <scene name="scenes.stage3"/>
-                <scene name="scenes.lot.bink"/>
-                <scene name="scenes.lot.patapata"/>
-                <scene name="scenes.nameentry.music"/>
             </composition>
             <composition name="stage4">
                 <scene name="scenes.boot"/>
@@ -648,16 +621,6 @@
                 <scene name="scenes.lot.bugpstaff"/>
                 <scene name="scenes.stage4.music"/>
             </composition>
-            <composition name="stage4.ranking">
-                <scene name="scenes.boot"/>
-                <scene name="scenes.stage4"/>
-                <scene name="scenes.lot.stage4"/>
-                <scene name="scenes.lot.bink"/>
-                <scene name="scenes.lot.patapata"/>
-                <scene name="scenes.lot.cancer"/>
-                <scene name="scenes.lot.bugpstaff"/>
-                <scene name="scenes.nameentry.music"/>
-            </composition>
             <composition name="stage5">
                 <scene name="scenes.boot"/>
                 <scene name="scenes.stage5"/>
@@ -665,24 +628,11 @@
                 <scene name="scenes.lot.mid"/>
                 <scene name="scenes.stage5.music"/>
             </composition>
-            <composition name="stage5.ranking">
-                <scene name="scenes.boot"/>
-                <scene name="scenes.stage5"/>
-                <scene name="scenes.lot.cancer"/>
-                <scene name="scenes.lot.mid"/>
-                <scene name="scenes.nameentry.music"/>
-            </composition>
             <composition name="stage6">
                 <scene name="scenes.boot"/>
                 <scene name="scenes.stage6"/>
                 <scene name="scenes.lot.bink"/>
                 <scene name="scenes.stage6.music"/>
-            </composition>
-            <composition name="stage6.ranking">
-                <scene name="scenes.boot"/>
-                <scene name="scenes.stage6"/>
-                <scene name="scenes.lot.bink"/>
-                <scene name="scenes.nameentry.music"/>
             </composition>
             <composition name="stage7">
                 <scene name="scenes.boot"/>
@@ -695,27 +645,12 @@
                 <scene name="scenes.lot.mid"/>
                 <scene name="scenes.stage7.music"/>
             </composition>
-            <composition name="stage7.ranking">
-                <scene name="scenes.boot"/>
-                <scene name="scenes.stage7"/>
-                <scene name="scenes.lot.bink"/>
-                <scene name="scenes.lot.patapata"/>
-                <scene name="scenes.lot.cancer"/>
-                <scene name="scenes.lot.bugpstaff"/>
-                <scene name="scenes.lot.scant"/>
-                <scene name="scenes.lot.mid"/>
-                <scene name="scenes.nameentry.music"/>
-            </composition>
             <composition name="stage8">
                 <scene name="scenes.boot"/>
                 <scene name="scenes.stage8"/>
                 <scene name="scenes.stage8.music"/>
             </composition>
-            <composition name="stage8.ranking">
-                <scene name="scenes.boot"/>
-                <scene name="scenes.stage8"/>
-                <scene name="scenes.nameentry.music"/>
-            </composition>
+
 
         </layout>
 
@@ -1117,7 +1052,22 @@
                     </lwasm>
                 </file>
 
-                <file name="engine.sound.ymm" linkdata="LINK" page="$1A" address="$1C9B">
+                <!-- LE LECTEUR EST RESIDENT (04/09/2026, proposition de l'auteur). Il montait
+                     la page de ses donnees puis lisait son anneau de decompression, situe
+                     dans son propre code : les deux devaient donc vivre dans la MEME page,
+                     et toutes les musiques du jeu etaient condamnees a s'entasser dans
+                     celle-la. Code et anneau residents ($01:$76E4, 1 057 octets dans le
+                     page 1 fixe, $77DF-$7C00), l'anneau reste adressable quelle que soit
+                     la page montee : chaque morceau porte desormais SA page et peut vivre
+                     ou il y a de la place.
+                     PAS DANS LA DEMI-PAGE $4000-$5FFF : l'IRQ y force la moitie 0
+                     pendant toute sa duree, et le lecteur est appele DEPUIS l'IRQ —
+                     loge en moitie 1 (l'arene de classement) il devenait invisible a
+                     chaque interruption, l'anneau se vidait sans jamais se remplir et
+                     la musique se taisait (vecu le 04/09/2026). La page 1 fixe n'a
+                     pas de moitie. Il ne reste que 16 octets entre la fin du moteur
+                     et lui : s'il grandit, le build refuse et le dit. -->
+                <file name="engine.sound.ymm" linkdata="LINK" page="$01" address="$77DF">
                     <lwasm gensource="gen/sound/ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="engine/sound/ymm.asm"/>
@@ -1131,21 +1081,23 @@
                      seul exemplaire, charge au boot, jamais echange : il tient
                      juste apres le lecteur ($1C9B+1057 = $20BC) et les pistes de
                      stage commencent apres lui ($2C09). -->
-                <file name="common.music.ymm" linkdata="LINK" page="$1A" address="$20BC">
+                <file name="common.music.ymm" linkdata="LINK" page="$1A" address="$0000">
                     <lwasm gensource="gen/sound/common-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/music/ymm.unit.asm"/>
                     </lwasm>
                 </file>
 
-                <!-- La musique de la SAISIE DES INITIALES. Elle est declaree ici,
-                     avec les musiques communes, mais elle vit dans le creneau des
-                     musiques de STAGE ($2C09) : 3 588 octets, le bloc commun est
-                     plein a l'octet. Alternative des huit pistes de stage et de
-                     celle du title — jamais co-chargee avec elles, la composition
-                     de classement lache la piste du stage avant de prendre
-                     celle-ci. Voir src/common/music/nameentry.unit.asm. -->
-                <file name="common.nameentry.ymm" linkdata="LINK" page="$1A" address="$2C09">
+                <!-- La musique de la SAISIE DES INITIALES, PERMANENTE (04/09/2026,
+                     plan de l'auteur) : le bloc musical de la page 26 est cale en
+                     TETE de page — musiques communes $0000-$0B4D, creneau
+                     de stage $0B4D-$1B0D dimensionne sur la plus grosse (stage 1,
+                     4032 octets), puis cette piste $1B0D-$1FCF — et les tuiles
+                     coulent dans l'unique zone qui reste, $1FCF-$4000. Chargee au
+                     boot, jamais echangee : plus aucun chargement au game over ni au
+                     continue. Si une musique de stage depasse le creneau, elle
+                     recouvre celle-ci et le build refuse. -->
+<file name="common.nameentry.ymm" linkdata="LINK" page="$1A" address="$1B0D">
                     <lwasm gensource="gen/sound/nameentry-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/music/nameentry.unit.asm"/>
@@ -2325,6 +2277,7 @@
                     <load name="common.firechain"/>
                     <load name="common.foefire"/>
                     <load name="common.ranking"/>
+                    <load name="common.nameentry.ymm"/>
                     <!-- Le boot ouvre sur le TITLE ; le contenu stage 1 vit dans
                          scenes.stage1, chargee par le press start et les retours. -->
                 </scene>
@@ -2398,7 +2351,7 @@
                 <!-- Musiques du title. YMM : le lecteur resident ne monte qu'une page,
                      les donnees d'un morceau vivent avec lui — la place du title est
                      CELLE du bloc musical des stages (alternative). -->
-                <file name="title.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
+                <file name="title.music.ymm" linkdata="LINK" page="$1A" address="$0B4D">
                     <lwasm gensource="gen/sound/title-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/title/music/ymm.unit.asm"/>
@@ -2463,9 +2416,6 @@
                 <!-- La musique de la saisie des initiales : une scene a elle
                      seule, pour que la composition de classement d'un stage la
                      prenne a la place de la piste du stage. -->
-                <scene name="scenes.nameentry.music" section="SCENE" gensource="gen/scenes/nameentry-music.asm">
-                    <load name="common.nameentry.ymm"/>
-                </scene>
 
                 <!-- Les scenes de LOT : le stage entrant porte un masque de bits
                      (cast.const.asm), l'engine converge lot par lot ; ce que deux
@@ -2522,7 +2472,7 @@
                 <default name="images.encoder"   value="draw"/>
 
 
-                <file name="stage1.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
+                <file name="stage1.music.ymm" linkdata="LINK" page="$1A" address="$0B4D">
                     <lwasm gensource="gen/sound/ymm-data.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/01/music/ymm.unit.asm"/>
@@ -3451,9 +3401,9 @@
                     <load name="stage1.bugres"/>
 </scene>
 
-                <!-- La piste du stage, dans SA scene : la composition de
-                     classement (game over) prend `scenes.nameentry.music` a sa
-                     place, et la convergence du loader la lache. -->
+                <!-- La piste du stage, dans SA scene : alternative des sept
+                     autres et de celle du title dans le creneau qui suit les
+                     musiques communes. -->
                 <scene name="scenes.stage1.music" section="SCENE" gensource="gen/scenes/stage1-music.asm">
                     <load name="stage1.music.ymm"/>
                 </scene>
@@ -4005,7 +3955,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage2.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
+                <file name="stage2.music.ymm" linkdata="LINK" page="$1A" address="$0B4D">
                     <lwasm gensource="gen/sound/stage2-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/02/music/ymm.unit.asm"/>
@@ -4043,9 +3993,9 @@
                     <load name="stage2"/>
                 </scene>
 
-                <!-- La piste du stage, dans SA scene : la composition de
-                     classement (game over) prend `scenes.nameentry.music` a sa
-                     place, et la convergence du loader la lache. -->
+                <!-- La piste du stage, dans SA scene : alternative des sept
+                     autres et de celle du title dans le creneau qui suit les
+                     musiques communes. -->
                 <scene name="scenes.stage2.music" section="SCENE" gensource="gen/scenes/stage2-music.asm">
                     <load name="stage2.music.ymm"/>
                 </scene>
@@ -4309,7 +4259,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage3.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
+                <file name="stage3.music.ymm" linkdata="LINK" page="$1A" address="$0B4D">
                     <lwasm gensource="gen/sound/stage3-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/03/music/ymm.unit.asm"/>
@@ -4339,9 +4289,9 @@
                     <load name="stage3"/>
                 </scene>
 
-                <!-- La piste du stage, dans SA scene : la composition de
-                     classement (game over) prend `scenes.nameentry.music` a sa
-                     place, et la convergence du loader la lache. -->
+                <!-- La piste du stage, dans SA scene : alternative des sept
+                     autres et de celle du title dans le creneau qui suit les
+                     musiques communes. -->
                 <scene name="scenes.stage3.music" section="SCENE" gensource="gen/scenes/stage3-music.asm">
                     <load name="stage3.music.ymm"/>
                 </scene>
@@ -4423,7 +4373,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage4.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
+                <file name="stage4.music.ymm" linkdata="LINK" page="$1A" address="$0B4D">
                     <lwasm gensource="gen/sound/stage4-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/04/music/ymm.unit.asm"/>
@@ -4497,9 +4447,9 @@
                     <load name="stage4.gumres"/>
 </scene>
 
-                <!-- La piste du stage, dans SA scene : la composition de
-                     classement (game over) prend `scenes.nameentry.music` a sa
-                     place, et la convergence du loader la lache. -->
+                <!-- La piste du stage, dans SA scene : alternative des sept
+                     autres et de celle du title dans le creneau qui suit les
+                     musiques communes. -->
                 <scene name="scenes.stage4.music" section="SCENE" gensource="gen/scenes/stage4-music.asm">
                     <load name="stage4.music.ymm"/>
                 </scene>
@@ -4673,7 +4623,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage5.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
+                <file name="stage5.music.ymm" linkdata="LINK" page="$1A" address="$0B4D">
                     <lwasm gensource="gen/sound/stage5-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/05/music/ymm.unit.asm"/>
@@ -4695,9 +4645,9 @@
                     <load name="stage5"/>
                 </scene>
 
-                <!-- La piste du stage, dans SA scene : la composition de
-                     classement (game over) prend `scenes.nameentry.music` a sa
-                     place, et la convergence du loader la lache. -->
+                <!-- La piste du stage, dans SA scene : alternative des sept
+                     autres et de celle du title dans le creneau qui suit les
+                     musiques communes. -->
                 <scene name="scenes.stage5.music" section="SCENE" gensource="gen/scenes/stage5-music.asm">
                     <load name="stage5.music.ymm"/>
                 </scene>
@@ -4777,7 +4727,7 @@
                 <!-- Pas de musique de niveau 6 en v1 : l'unite rejoue les octets du
                      niveau 1 sous SON nom. Un <load> inter-repertoires ne marcherait
                      pas — le loader ne lit que le repertoire courant. -->
-                <file name="stage6.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
+                <file name="stage6.music.ymm" linkdata="LINK" page="$1A" address="$0B4D">
                     <lwasm gensource="gen/sound/stage6-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/06/music/ymm.unit.asm"/>
@@ -4793,9 +4743,9 @@
                     <load name="stage6"/>
                 </scene>
 
-                <!-- La piste du stage, dans SA scene : la composition de
-                     classement (game over) prend `scenes.nameentry.music` a sa
-                     place, et la convergence du loader la lache. -->
+                <!-- La piste du stage, dans SA scene : alternative des sept
+                     autres et de celle du title dans le creneau qui suit les
+                     musiques communes. -->
                 <scene name="scenes.stage6.music" section="SCENE" gensource="gen/scenes/stage6-music.asm">
                     <load name="stage6.music.ymm"/>
                 </scene>
@@ -4872,7 +4822,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage7.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
+                <file name="stage7.music.ymm" linkdata="LINK" page="$1A" address="$0B4D">
                     <lwasm gensource="gen/sound/stage7-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/07/music/ymm.unit.asm"/>
@@ -4899,9 +4849,9 @@
                     <load name="stage7.bugres"/>
 </scene>
 
-                <!-- La piste du stage, dans SA scene : la composition de
-                     classement (game over) prend `scenes.nameentry.music` a sa
-                     place, et la convergence du loader la lache. -->
+                <!-- La piste du stage, dans SA scene : alternative des sept
+                     autres et de celle du title dans le creneau qui suit les
+                     musiques communes. -->
                 <scene name="scenes.stage7.music" section="SCENE" gensource="gen/scenes/stage7-music.asm">
                     <load name="stage7.music.ymm"/>
                 </scene>
@@ -4977,7 +4927,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage8.music.ymm" linkdata="LINK" page="$1A" address="$2C09">
+                <file name="stage8.music.ymm" linkdata="LINK" page="$1A" address="$0B4D">
                     <lwasm gensource="gen/sound/stage8-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/stages/08/music/ymm.unit.asm"/>
@@ -4993,9 +4943,9 @@
                     <load name="stage8"/>
                 </scene>
 
-                <!-- La piste du stage, dans SA scene : la composition de
-                     classement (game over) prend `scenes.nameentry.music` a sa
-                     place, et la convergence du loader la lache. -->
+                <!-- La piste du stage, dans SA scene : alternative des sept
+                     autres et de celle du title dans le creneau qui suit les
+                     musiques communes. -->
                 <scene name="scenes.stage8.music" section="SCENE" gensource="gen/scenes/stage8-music.asm">
                     <load name="stage8.music.ymm"/>
                 </scene>

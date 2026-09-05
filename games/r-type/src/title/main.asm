@@ -66,7 +66,7 @@ sounds.title.ymm EXTERNAL
 playfield.clearBlast  EXTERNAL
 playfield.clearLines  EXTERNAL
 
-page.ymm equ map.RAM_OVER_CART+engine.sound.ymm.page
+page.ymm equ map.RAM_OVER_CART+title.music.ymm.page   ; la page du MORCEAU
 
 ; l'entree est le premier octet de l'unite (cf. unit-entry-point.md) ; le
 ; moteur resident y saute par le LIEN (`jmp stage.main` dans
@@ -85,7 +85,6 @@ stage.main
 
         ; la puce au silence — l'etat connu du demarrage (v1 : resetym ;
         ; v2 : la routine init du lecteur, montee avec sa page)
-        _ram.cart.set #page.ymm
         ; DESARMER le morceau du mode precedent, PAS SEULEMENT faire taire la
         ; puce. `_ym2413.init` coupe le son a l'instant t ; il ne coupe pas la
         ; LECTURE, dont le statut est resident — des que l'IRQ du title tourne,
@@ -415,7 +414,6 @@ title.p5.set
         ; deja dans l'IRQ, obj.play remet le flux a zero. La v1 armait un
         ; second flux, SN76489 : retire (cf. en-tete).
         jsr   IrqOff
-        _ram.cart.set #page.ymm
         _ymm.obj.play #page.ymm,#sounds.title.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
         jsr   IrqOn
 title.p5.live
@@ -646,8 +644,7 @@ title.launchGame
         jsr   PalUpdateNow
 
         jsr   IrqOff
-        _ram.cart.set #page.ymm
-        _ym2413.init
+        _ym2413.init                   ; lecteur resident
 
         ; l'unite paginee rend la scene du title (game.stage.unload), choisit
         ; la cible du depart — stage 1, ou celle que le cheat a comptee —,
@@ -766,7 +763,7 @@ title.userIRQ
         jsr   PalUpdateNow
         ; le son dans l'IRQ, comme la v1 (UserIRQ : une trame de chaque flux) ;
         ; sans morceau arme les lecteurs ressortent d'eux-memes
-        _ymm.frame.play #page.ymm
+        jsr   ymm.frame.play           ; lecteur resident : rien a monter
         ; le pilote de bruitages, comme stage.userIRQ : sans lui la boite aux
         ; lettres soundFX.newSound (le bip du cheat) reste muette au title —
         ; l'unite soundfx est en RAM depuis scenes.boot

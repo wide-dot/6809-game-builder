@@ -43,6 +43,8 @@ ranking.table      EXPORT
 ranking.stage      EXPORT
 ranking.rank       EXPORT
 ranking.screen     EXPORT
+text.recolor       EXPORT              ; réemployables : voir leurs notices
+text.hiliteLine    EXPORT
 ranking.digits7    EXPORT
 ranking.dig        EXPORT
 
@@ -160,10 +162,15 @@ ranking.insert
 ;-------------------------------------------------------------------------------
 ; ranking.reset — la table par stage repart à zéro
 ;
-; Appelée au SEMIS D'UNE PARTIE FRAÎCHE, là où les vies et le score le sont :
-; ces seize cases décrivent UNE partie, pas la machine.
+; entrée : [b] le premier stage du crédit, 0..15 — le récapitulatif du prochain
+;              game over partira de là, comme la borne qui ne montre que les
+;              stages joués depuis le dernier continue (relevé de l'auteur).
+;
+; Appelée au SEMIS D'UNE PARTIE FRAÎCHE et au CONTINUE ACCEPTÉ, là où le score
+; repart de zéro : ces seize cases décrivent UN crédit, pas la machine.
 ;-------------------------------------------------------------------------------
 ranking.reset
+        stb   ranking.firstStage       ; B = le premier stage du crédit (0..15)
         ldx   #ranking.stage
         ldd   #0
 @z      std   ,x++
@@ -231,78 +238,293 @@ ranking.SCR_CELL  equ $C000+175*40+21  ; la première case de saisie
 ranking.screen
         _GetCartPageB
         pshs  b                        ; la page de l'appelant, rendue en sortie
-        ldd   #Pal_stage
+        ; LA PALETTE DE TRAVAIL : celle du stage — ses index 0 à 11 sont les
+        ; mêmes sur les huit stages, la police y prend le blanc (3) et trois
+        ; bleus (4 à 6) — plus DEUX ROUGES en 12 et 13, des entrées que rien
+        ; de ces écrans n'emploie. Aucun rouge n'existe parmi les communs, et
+        ; le curseur de saisie clignote blanc/rouge (décision auteur, 04/09).
+        ldx   #Pal_stage
+        ldu   #ranking.pal
+@pal    ldd   ,x++                     ; D = A:B — pas de compteur en B ici
+        std   ,u++
+        cmpu  #ranking.pal+32
+        blo   @pal
+        ldd   #$0E00                   ; 12 : rouge vif   (250,0,0)
+        std   ranking.pal+24
+        ldd   #$0400                   ; 13 : rouge sombre (158,0,0)
+        std   ranking.pal+26
+        ldd   #ranking.pal
         std   Pal_current
         clr   PalRefresh
         jsr   PalUpdateNow
         _ram.data.set #2
-        jsr   ranking.scr.oneBuffer
-        _SwitchScreenBuffer
-        jsr   ranking.scr.oneBuffer
-        _SwitchScreenBuffer            ; retour sur la page 2
+        jsr   ranking.scr.clear2
         lda   #map.RAM_OVER_CART+common.hud.page
-        _SetCartPageA                  ; la police, pour toute la saisie
+        _SetCartPageA                  ; la police, pour toute la suite
+        jsr   ranking.scr.reveal       ; le texte apparaît, au rythme de la borne
         jsr   ranking.input
         jsr   ranking.tableScreen      ; puis le tableau des dix
         puls  b
         _SetCartPageB
         rts
 ;
-ranking.scr.oneBuffer
-        ldu   #$0000                   ; les deux plans au noir
+; LA RÉVÉLATION, AU RYTHME DE LA BORNE (04/09/2026, relevé dans le code arcade)
+;
+;   `run_high_score_name_entry_setup` 0x1515 arme une ligne par stage, chacune
+;   avec un compte à rebours `+0x20` valant 0x20 puis +8 par ligne ;
+;   `run_high_score_row_render` 0x188E construit alors la ligne de 16 cases
+;   (libellé de 8, une espace, 7 chiffres) et passe la main à
+;   `run_high_score_row_tile_streamer` 0x18EB, qui écrit UNE case par trame ;
+;   les chaînes fixes passent par `run_high_score_row_streamer` 0x19D3, qui en
+;   écrit TROIS par trame.
+;
+; Ici, pas d'objets : un pilote de trame sans état par ligne. La case due se
+; DÉDUIT du numéro de trame — la ligne i tient les trames 32+8i à 32+8i+15 —
+; ce qui donne le chevauchement de la borne (deux lignes se remplissent en même
+; temps) sans table d'objets. Chaque case est peinte DANS LES DEUX TAMPONS,
+; comme le curseur de saisie : rien ne redessine derrière nous.
+ranking.TITLE_N   equ 21                ; « S T A G E   S C O R E »
+ranking.ENTER_N   equ 20                ; « ENTER YOUR INITIALS. »
+ranking.BOT_N     equ 32                ; 20 + « NO.n » 5 + 7 tirets
+ranking.RATE      equ 3                 ; cases par trame d'une chaîne fixe
+ranking.ROW_START equ 32                ; trames avant la première ligne
+ranking.ROW_STEP  equ 8                 ; une ligne de plus toutes les huit
+ranking.ROW_N     equ 16                ; cases d'une ligne, une par trame
+
+ranking.scr.clear2
+        ldu   #$0000                   ; les deux tampons au noir
         lda   #map.RAM_OVER_CART+common.checkpoint.page
         ldx   #checkpoint.clearData
         jsr   paged.call
-        lda   #map.RAM_OVER_CART+common.hud.page
-        _SetCartPageA                  ; la police
-        ldu   #ranking.SCR_TITLE       ; le titre, lettres espacées
-        ldy   #ranking.str.title
-        jsr   hud.drawStr
-        clr   ranking.scr.slot         ; une ligne par stage joué
-@line
-        lda   ranking.scr.slot
-        jsr   ranking.scr.slotU        ; U = l'emplacement
-        lda   ranking.scr.slot
-        inca                           ; le numéro affiché : 1..16
-        jsr   ranking.scr.stageLabel
-        lda   ranking.scr.slot
-        jsr   ranking.scr.stagePtr
-        jsr   ranking.scr.digits7
-        lda   ranking.scr.slot
-        cmpa  game.stage               ; le stage courant est le dernier
-        bhs   @total
-        cmpa  #ranking.STAGES-1
-        bhs   @total                   ; garde-fou : jamais plus de seize
-        inc   ranking.scr.slot
-        bra   @line
-@total
-        inc   ranking.scr.slot         ; le TOTAL prend l'emplacement suivant
-        lda   ranking.scr.slot
-        jsr   ranking.scr.slotU
-        ldy   #ranking.str.total
-        jsr   hud.drawStr
-        jsr   DRAW_text_space
-        leau  1,u
-        ldx   #globals.score
-        jsr   ranking.scr.digits7
-        ldu   #ranking.SCR_ENTER       ; l'invite et la ligne de saisie
-        ldy   #ranking.str.enter
-        jsr   hud.drawStr
-        ldu   #ranking.SCR_NO
-        ldy   #ranking.str.no
-        jsr   hud.drawStr
-        lda   ranking.rank             ; le rang, derrière « NO. »
-        jsr   ranking.scr.rankDigits
-        ldu   #ranking.SCR_CELL        ; les sept cases, en tirets
-        ldb   #7
-@dash   pshs  b,u
-        jsr   DRAW_text_dash
-        puls  b,u
-        leau  2,u
-        decb
-        bne   @dash
+        _SwitchScreenBuffer
+        ldu   #$0000
+        lda   #map.RAM_OVER_CART+common.checkpoint.page
+        ldx   #checkpoint.clearData
+        jsr   paged.call
+        _SwitchScreenBuffer
         rts
-;
+
+ranking.scr.reveal
+        lda   game.stage               ; les lignes : les stages du crédit…
+        cmpa  #ranking.STAGES-1
+        blo   >
+        lda   #ranking.STAGES-1
+!       suba  ranking.firstStage
+        inca
+        inca                           ; …plus celle du TOTAL
+        sta   ranking.scr.rows
+        deca                           ; les textes du bas suivent la dernière
+        ldb   #ranking.ROW_STEP        ;   ligne : 0x40 + 8*(lignes-1)
+        mul
+        addd  #64
+        std   ranking.scr.bot
+        addd  #(ranking.BOT_N+ranking.RATE-1)/ranking.RATE
+        std   ranking.scr.end
+        lda   ranking.rank             ; « NO.n », le rang de la partie
+        jsr   ranking.tbl.rankLabel
+        ldd   #0
+        std   ranking.scr.f
+@frame  _waitFrames #1
+        jsr   ranking.scr.stepTitle
+        jsr   ranking.scr.stepRows
+        jsr   ranking.scr.stepBottom
+        ldd   ranking.scr.f
+        addd  #1
+        std   ranking.scr.f
+        cmpd  ranking.scr.end
+        blo   @frame
+        rts
+
+ranking.scr.stepTitle
+        lda   ranking.scr.f            ; le titre tient les sept premières
+        bne   @out                     ;   trames : le poids fort suffit
+        lda   ranking.scr.f+1
+        cmpa  #(ranking.TITLE_N+ranking.RATE-1)/ranking.RATE
+        bhs   @out
+        ldb   #ranking.RATE
+        mul                            ; B = la première case due
+        ldx   #ranking.str.title
+        ldu   #ranking.SCR_TITLE
+        lda   #ranking.TITLE_N
+        jmp   ranking.scr.emit3
+@out    rts
+
+; X = chaîne, U = début écran, B = première case due, A = cases de la chaîne
+; -> jusqu'à trois cases peintes
+ranking.scr.emit3
+        sta   ranking.e.cnt
+        stb   ranking.e.idx
+        stx   ranking.e.src
+        stu   ranking.e.dst
+        ldb   #ranking.RATE
+@loop   lda   ranking.e.idx
+        cmpa  ranking.e.cnt
+        bhs   @out
+        pshs  b
+        ldx   ranking.e.src
+        lda   a,x                      ; le caractère
+        ldu   ranking.e.dst
+        ldb   ranking.e.idx
+        leau  b,u
+        jsr   ranking.scr.cell
+        inc   ranking.e.idx
+        puls  b
+        decb
+        bne   @loop
+@out    rts
+
+; A = caractère, U = adresse -> peint DANS LES DEUX TAMPONS
+ranking.scr.cell
+        pshs  a,u
+        jsr   ranking.in.glyph
+        _SwitchScreenBuffer
+        puls  a,u
+        jsr   ranking.in.glyph
+        _SwitchScreenBuffer
+        rts
+
+ranking.scr.stepRows
+        clr   ranking.scr.i
+@row    lda   ranking.scr.i
+        cmpa  ranking.scr.rows
+        bhs   @out
+        ldb   #ranking.ROW_STEP
+        mul                            ; D = 8i
+        addd  #ranking.ROW_START
+        pshs  a,b
+        ldd   ranking.scr.f
+        subd  ,s++
+        bmi   @next                    ; la ligne n'a pas commencé
+        cmpd  #ranking.ROW_N
+        bhs   @next                    ; elle est finie
+        pshs  b                        ; LA CASE DUE, 0..15, TENUE SUR LA PILE :
+        tstb                           ;   rowLabel et rowDigits écrasent B
+        bne   >
+        jsr   ranking.scr.rowLabel     ; sa case zéro : le libellé
+!       ldb   ,s
+        cmpb  #9
+        bne   >
+        jsr   ranking.scr.rowDigits    ; sa première case de chiffre
+!       lda   ranking.scr.i
+        jsr   ranking.scr.slotU        ; U = l'emplacement de la ligne
+        puls  b
+        leau  b,u
+        jsr   ranking.scr.rowChar
+        jsr   ranking.scr.cell
+@next   inc   ranking.scr.i
+        bra   @row
+@out    rts
+
+; DEUX TAMPONS SUFFISENT, ET AUCUN N'EST À PART. Deux lignes se remplissent en
+; même temps, décalées de huit cases : quand l'une en est à ses CHIFFRES
+; (cases 9 à 15) l'autre en est à son LIBELLÉ (0 à 7). Le libellé de l'une ne
+; croise donc jamais celui de l'autre, ni les chiffres les chiffres — la chaîne
+; de libellé et le tampon de chiffres déjà en place se partagent sans conflit.
+; C'est le chevauchement de la borne, sans une ligne de RAM de plus. Le libellé
+; du TOTAL écrase « NN STAGE » : il est la DERNIÈRE ligne, aucune ligne de
+; stage ne le suit.
+ranking.scr.rowLabel
+        lda   ranking.scr.i
+        inca
+        cmpa  ranking.scr.rows
+        bne   @stage
+        ldy   #ranking.str.total
+        ldx   #ranking.str.stage
+        ldb   #8
+@c      lda   ,y+
+        sta   ,x+
+        decb
+        bne   @c
+        rts
+@stage  lda   ranking.firstStage
+        adda  ranking.scr.i
+        inca                           ; le numéro affiché : 1..16
+        ldb   #' '
+        cmpa  #10
+        blo   >
+        ldb   #'1'
+        suba  #10
+!       stb   ranking.str.stage
+        adda  #'0'
+        sta   ranking.str.stage+1
+        rts
+
+ranking.scr.rowDigits
+        lda   ranking.scr.i
+        inca
+        cmpa  ranking.scr.rows
+        bne   @sc
+        ldx   #globals.score           ; la dernière ligne : le TOTAL
+        bra   @conv
+@sc     lda   ranking.firstStage
+        adda  ranking.scr.i
+        jsr   ranking.scr.stagePtr
+@conv   jmp   ranking.digits7
+
+; B = case 0..15 -> A = son caractère : libellé, espace, puis les chiffres
+ranking.scr.rowChar
+        cmpb  #8
+        blo   @label
+        beq   @space
+        subb  #9
+        ldx   #ranking.dig
+        lda   b,x
+        cmpa  #$FF
+        bne   >
+        lda   #' '-'0'                 ; un zéro de tête : une espace
+!       adda  #'0'
+        rts
+@space  lda   #' '
+        rts
+@label  ldx   #ranking.str.stage
+        lda   b,x
+        rts
+
+ranking.scr.stepBottom
+        ldd   ranking.scr.f
+        subd  ranking.scr.bot
+        bmi   @out                     ; le bas n'a pas commencé
+        tsta
+        bne   @out
+        lda   #ranking.RATE
+        mul                            ; B = la première case due
+        stb   ranking.e.idx
+        ldb   #ranking.RATE
+@loop   lda   ranking.e.idx
+        cmpa  #ranking.BOT_N
+        bhs   @out
+        pshs  b
+        jsr   ranking.scr.botCell
+        inc   ranking.e.idx
+        puls  b
+        decb
+        bne   @loop
+@out    rts
+
+; A = case 0..31 du bas : l'invite, puis « NO.n », puis les sept tirets
+ranking.scr.botCell
+        cmpa  #ranking.ENTER_N
+        bhs   @no
+        ldx   #ranking.str.enter
+        ldu   #ranking.SCR_ENTER
+        leau  a,u
+        lda   a,x
+        jmp   ranking.scr.cell
+@no     suba  #ranking.ENTER_N
+        cmpa  #5
+        bhs   @dash
+        ldx   #ranking.str.no2
+        ldu   #ranking.SCR_NO
+        leau  a,u
+        lda   a,x
+        jmp   ranking.scr.cell
+@dash   suba  #5
+        asla                           ; une cellule vide entre deux cases
+        ldu   #ranking.SCR_CELL
+        leau  a,u
+        lda   #'-'
+        jmp   ranking.scr.cell
+
 ; slot (A, 0..16) -> U. Les huit premiers à gauche, les neuf suivants à droite :
 ; le dix-septième est celui où le TOTAL tombe quand la partie a fait tout le
 ; tour, exactement comme la borne.
@@ -324,19 +546,6 @@ ranking.scr.slotU
         rola
         leau  d,u
 @done   rts
-;
-; A = numéro de stage (1..16) -> « NN STAGE » peint à U, U avancé de 8
-ranking.scr.stageLabel
-        ldb   #' '
-        cmpa  #10
-        blo   >
-        ldb   #'1'
-        suba  #10
-!       stb   ranking.str.stage
-        adda  #'0'
-        sta   ranking.str.stage+1
-        ldy   #ranking.str.stage
-        jmp   hud.drawStr
 ;
 ; A = slot (0..15) -> X = &ranking.stage[slot]
 ranking.scr.stagePtr
@@ -366,23 +575,7 @@ ranking.scr.digits7
         decb
         bne   @d
         rts
-;
-; A = rang (1..10), peint à l'emplacement qui suit « NO. » (U y pointe déjà)
-ranking.scr.rankDigits
-        tsta
-        beq   @out                     ; rang nul : la ligne reste telle quelle
-        ldb   #' '
-        cmpa  #10
-        blo   >
-        ldb   #'1'
-        suba  #10
-!       stb   ranking.str.rank
-        adda  #'0'
-        sta   ranking.str.rank+1
-        ldu   #ranking.SCR_NO+3        ; juste derrière « NO. »
-        ldy   #ranking.str.rank
-        jmp   hud.drawStr
-@out    rts
+
 
 
 ;-------------------------------------------------------------------------------
@@ -508,16 +701,37 @@ ranking.input
         _waitFrames #ranking.IN_HOLD
         rts
 ;
-; le clignotement : la lettre candidate une demi-période, le tiret l'autre
+; le clignotement : la lettre candidate, BLANCHE une demi-période et ROUGE
+; l'autre (décision auteur, 04/09/2026 — l'alternance lettre/tiret d'avant
+; lisait mal). La lettre est peinte puis recoloriée par table, dans les deux
+; tampons : c'est `text.recolor`, écrit pour être réemployé ailleurs.
 ranking.in.blink
-        lda   ranking.in.frame
-        anda  #ranking.IN_BLINK
-        bne   @off
         lda   ranking.in.alpha
         jsr   ranking.in.letter
-        bra   ranking.in.paintCursor
-@off    lda   #'-'
-        bra   ranking.in.paintCursor
+        jsr   ranking.in.paintCursor
+        ldx   #text.map.white
+        lda   ranking.in.frame
+        anda  #ranking.IN_BLINK
+        beq   >
+        ldx   #text.map.red
+!       ldb   ranking.in.cursor
+        jsr   ranking.in.cursorU       ; U = la case
+        pshs  u,x
+        jsr   text.recolor
+        puls  u,x
+        _SwitchScreenBuffer
+        pshs  u,x
+        jsr   text.recolor
+        puls  u,x
+        _SwitchScreenBuffer
+        rts
+;
+; B = index de case (0..6) -> U = son adresse écran ; A préservé
+ranking.in.cursorU
+        aslb                           ; une cellule vide entre deux cases
+        ldu   #ranking.SCR_CELL
+        leau  b,u
+        rts
 ;
 ; index d'alphabet (A) -> caractère (A)
 ranking.in.letter
@@ -527,12 +741,8 @@ ranking.in.letter
 ;
 ; peindre le caractère A dans la case du curseur, DANS LES DEUX TAMPONS
 ranking.in.paintCursor
-        pshs  a
         ldb   ranking.in.cursor
-        aslb                           ; une cellule vide entre deux cases
-        ldu   #ranking.SCR_CELL
-        leau  b,u
-        puls  a
+        jsr   ranking.in.cursorU
         pshs  a,u
         jsr   ranking.in.glyph
         puls  a,u
@@ -749,7 +959,8 @@ ranking.tbl.oneBuffer
         cmpa  ranking.rank
         bne   @plain
         ldu   ,s
-        jsr   ranking.tbl.hilite
+        ldb   #23                      ; « NO. n » plus le score plus le nom
+        jsr   text.hiliteLine
 @plain  puls  u
         inc   ranking.tbl.row
         lda   ranking.tbl.row
@@ -777,48 +988,101 @@ ranking.tbl.entry
         leax  d,x
         rts
 ;
-; U = début de la ligne -> ses dix-sept cellules recoloriées, sur les deux plans
-ranking.tbl.hilite
-        leau  -120,u                   ; la première des huit rangées du glyphe
-        ldb   #8
-@hrow   pshs  b,u
-        ldb   #23                      ; « NO. n » plus le score plus le nom
-@hcell  lda   ,u
-        jsr   ranking.hi.byte
-        sta   ,u
-        lda   -$2000,u
-        jsr   ranking.hi.byte
-        sta   -$2000,u
+; text.hiliteLine — une LIGNE de texte passée au rouge du classement
+;
+; entrée : [u] l'ancre de sa première cellule, [b] le nombre de cellules
+;
+; RÉSIDENTE ET PARTAGÉE : le tableau y met en valeur l'entrée que la partie
+; vient de poser, et l'écran CONTINUE y met son « PUSH FIRE BUTTON » (décision
+; auteur, 05/09/2026). La table reste privée, les appelants n'ont qu'un nom à
+; connaître.
+text.hiliteLine
+        ldx   #text.map.hilite
+@cell   pshs  b,x,u
+        jsr   text.recolor
+        puls  b,x,u
         leau  1,u
         decb
-        bne   @hcell
-        puls  b,u
+        bne   @cell
+        rts
+
+;-------------------------------------------------------------------------------
+; text.recolor — recolorier UNE cellule de texte par table de correspondance
+;
+; entrée : [u] l'ancre de la cellule, la même que celle des glyphes (les huit
+;              rangées vont de U-120 à U+160, sur les deux plans)
+;          [x] une table de seize octets : l'index de couleur de sortie pour
+;              chacun des seize d'entrée
+; sortie : A, B, X, U détruits
+;
+; RÉSIDENTE ET RÉEMPLOYABLE (décision auteur, 04/09/2026) : un caractère déjà
+; peint change de couleurs sans être redessiné ni connaître son glyphe. La
+; police écrit les index 3 à 6 : une table n'a que ces quatre entrées à
+; décider, le zéro du fond restant zéro. Le curseur de saisie l'emploie pour
+; clignoter blanc/rouge, le tableau pour mettre en valeur l'entrée nouvelle.
+;-------------------------------------------------------------------------------
+text.recolor
+        leau  -120,u                   ; la première des huit rangées
+        ldb   #8
+@row    lda   ,u
+        bsr   text.recolor.byte
+        sta   ,u
+        lda   -$2000,u
+        bsr   text.recolor.byte
+        sta   -$2000,u
         leau  40,u
         decb
-        bne   @hrow
+        bne   @row
         rts
 ;
-; A = un octet, deux quartets -> chaque quartet non nul décalé de quatre
-ranking.hi.byte
+; A = un octet, deux quartets -> chacun passé par la table X ; B préservé
+text.recolor.byte
         pshs  b
         tfr   a,b
-        anda  #$F0
-        beq   @lo
-        adda  #$40
-@lo     andb  #$0F
-        beq   @join
-        addb  #$04
-@join   pshs  a
-        tfr   b,a
+        lsra
+        lsra
+        lsra
+        lsra
+        lda   a,x                      ; le quartet haut
+        asla
+        asla
+        asla
+        asla
+        andb  #$0F
+        pshs  a
+        lda   b,x                      ; le quartet bas
         ora   ,s+
-        puls  b
-        rts
+        puls  b,pc
+
+; Les tables : l'identité partout, sauf les quatre index de la police.
+;
+; La police dessine ses glyphes en DÉGRADÉ sur les index 3 à 6. Les deux
+; premières tables les écrasent toutes les quatre sur une SEULE couleur : le
+; caractère en cours de saisie doit être une masse pleine qui bat blanc puis
+; rouge, pas un dégradé qui change de teinte (décision auteur, 05/09/2026).
+; La troisième garde un dégradé, celui des rouges communs aux huit palettes de
+; stage : c'est la mise en valeur d'une ligne entière, où le relief se lit.
+;                  0 1 2 3  4  5  6 7 8 9 10 11 12 13 14 15
+text.map.white fcb 0,1,2,3,3,3,3,7,8,9,10,11,12,13,14,15       ; blanc uni
+text.map.red   fcb 0,1,2,12,12,12,12,7,8,9,10,11,12,13,14,15    ; rouge uni
+text.map.hilite fcb 0,1,2,7,8,9,10,7,8,9,10,11,12,13,14,15      ; rouge dégradé
 
 ranking.str.ranking fcc 'R A N K I N G'
                     fcb 0
 ranking.str.no2     fcc 'NO. 1'
                     fcb 0
 ranking.tbl.row     fcb 0
+ranking.firstStage  fcb 0              ; le premier stage du crédit en cours
+ranking.pal         fill 0,32          ; la palette de travail de ces écrans
+ranking.scr.f       fdb 0              ; la trame courante de la révélation
+ranking.scr.bot     fdb 0              ; celle où les textes du bas commencent
+ranking.scr.end     fdb 0              ; celle où tout est peint
+ranking.scr.rows    fcb 0              ; lignes de stage + celle du TOTAL
+ranking.scr.i       fcb 0              ; la ligne examinée
+ranking.e.idx       fcb 0
+ranking.e.cnt       fcb 0
+ranking.e.src       fdb 0
+ranking.e.dst       fdb 0
 
 ; LES SIX GLYPHES QUE LA POLICE DU HUD N'A PAS — fichier GÉNÉRÉ par
 ; tools/gen_font_glyphs.py, commité à côté. Ils vivent ICI et non dans la
@@ -835,13 +1099,9 @@ ranking.str.total  fcc 'TOTAL SC'
                    fcb 0
 ranking.str.enter  fcc 'ENTER YOUR INITIALS.'
                    fcb 0
-ranking.str.no     fcc 'NO.'
                    fcb 0
 ranking.str.stage  fcc ' 1 STAGE'      ; les deux premiers octets sont écrits
                    fcb 0
-ranking.str.rank   fcc ' 1'
-                   fcb 0
-ranking.scr.slot   fcb 0
 ranking.scr.dig    fcb 0,0,0,0,0,0,0
 
 ;-------------------------------------------------------------------------------

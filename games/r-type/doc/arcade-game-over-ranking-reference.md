@@ -138,6 +138,14 @@ stage 3 a TOTAL SC en ligne 29 colonne 12.
   trame** (16 trames), palette 6. Le titre et les deux textes du bas sont
   révélés à **3 cases par trame**.
 
+  Vérifié instruction par instruction le 04/09/2026 : `run_high_score_name_entry_setup`
+  (0x1515) écrit `+0x20` = 0x20 puis `ADD word [BP+0x16],0x8` par ligne, et
+  arme l'attente suivante à `BP[+0x16] + 0x20` ; `run_high_score_row_render`
+  (0x188E) construit les 16 octets puis passe à `run_high_score_row_tile_streamer`
+  (0x18EB), qui écrit **une** cellule par trame et se décharge à zéro ;
+  `run_high_score_row_streamer` (0x19D3) déroule **trois** cellules par trame,
+  c'est le tick des chaînes fixes (descripteurs 0x0CCE, 0x0CE0, 0x0CFA, 0x0CBA).
+
 ### 3.3 Les Pata-Pata décoratifs
 
 `run_score_screen_patapata_emitter` (0xFAE1) : toutes les 8 trames, un bit

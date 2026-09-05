@@ -476,6 +476,211 @@ significatifs — sans quoi un score nul s'affichait « 000 ».
   sans resynchronisation après le chargement disque (un patch `IrqSync`
   essayé puis retiré, inutile).
 
+- *« 0 sur le stage dans lequel on meurt ».* Le semis du cheat de score
+  (100 000 points) n'allait que dans le total : la case du stage ne
+  recevait que les récompenses, l'écran montrait « 1 STAGE 600 / TOTAL SC
+  100600 ». Règle posée par l'auteur : la somme des cases par stage FAIT le
+  total, cheat ou pas — les points semés appartiennent au stage où la partie
+  commence. Le semis passe désormais par `ranking.stageAdd` comme une
+  récompense (`stage-main.asm`). Vérifié : « 1 STAGE 101000 / TOTAL SC
+  101000 », case et total égaux en mémoire tout au long du stage.
+
+- *Le clignotement lettre/tiret lisait mal* (auteur, 04/09). Remplacé par un
+  clignotement **blanc/rouge de la lettre**, obtenu par `text.recolor` : une
+  routine RÉSIDENTE et réemployable qui recolorie une cellule déjà peinte par
+  une table de seize index, sur les deux plans, sans connaître son glyphe
+  (~600 cycles). Trois tables : blanc ombré de gris, rouge, et les verts
+  communs pour l'entrée nouvelle du tableau — qui passe par la même routine.
+  Aucun rouge n'existant parmi les index 0-11 communs aux huit palettes de
+  stage (blanc, gris, bleus, verts), les écrans de classement travaillent
+  sur une COPIE de la palette du stage avec deux rouges posés en 12 et 13,
+  entrées que rien de ces écrans n'emploie. Vérifié : la case du curseur
+  alterne (251,0,0)/(163,0,0) et (251,251,247)/(179,179,179)/(100,100,100)
+  toutes les huit trames, le reste de l'écran intact.
+
+### L'ordre de la borne, et le continue comme nouveau crédit — FAIT le 04/09/2026
+
+L'auteur a rejoué la borne : GAME OVER, classement si le score entre, saisie,
+tableau, puis CONTINUE ; accepté, le score repart de zéro et le récapitulatif
+du game over suivant ne montre que les stages du nouveau crédit. Décisions :
+**musique de saisie résidente, score à zéro au continue** (ce qui annule le
+choix de Q2 de garder le score).
+
+- **La piste de saisie est résidente** (1 218 octets, arène de classement,
+  chargée au boot) : le lecteur lit ses données par adressage CPU et la
+  demi-page est montée en permanence. Les huit compositions de classement,
+  leur scène de musique et la convergence de `game.ranking.run` ont disparu.
+  Toute la séquence GAME OVER -> classement -> CONTINUE se joue **sans
+  disque**, classé ou non ; seul le retour au title charge.
+- **Chemin de mort réordonné** (`stage-main.asm`) : le GAME OVER arme
+  lui-même son morceau puis affiche le message ; le classement suit ; l'écran
+  CONTINUE vient en dernier, sur un écran remis au noir dans les deux tampons
+  (le message 320x200 y était encore). Refusé ou quota épuisé : title.
+  Accepté : score et base de stage à zéro, `ranking.reset` avec le stage
+  courant en premier stage du crédit, musique du stage réarmée, READY, puis
+  le rechargement de checkpoint existant. `hud.cont.refuse` n'arme plus le
+  jingle, déjà joué.
+- **`ranking.firstStage`** : posé par `ranking.reset` (B = premier stage,
+  0-base — `game.stage`, que le title pose avant l'échange, et non le numéro
+  cible 1-base). L'écran STAGE SCORE part de là ; les lignes commencent en
+  haut quel que soit le premier stage, comme sur la borne.
+
+Vérifié sous toje, états mémoire lus à chaque écran : classé au rang 6,
+saisie, tableau, CONTINUE affiché proprement, accepté -> score 0, table à
+zéro, premier stage = stage courant, deux vies, quota consommé ; seconde mort
+non classée -> CONTINUE refusé (quota) -> title. Banc 7/7.
+
+### Le texte apparaît progressivement — FAIT le 04/09/2026
+
+Relevé de l'auteur, vérifié dans le code arcade : l'écran STAGE SCORE ne se
+peint pas d'un coup. Le titre et les textes du bas se déroulent à **trois
+cases par trame** ; chaque ligne de stage attend `0x20 + 8·i` trames puis se
+remplit à **une case par trame** sur seize — deux lignes se chevauchant donc
+toujours de huit cases.
+
+Porté sans objets : un pilote de trame qui DÉDUIT la case due du numéro de
+trame, ce qui donne le chevauchement gratuitement. Chaque case est peinte dans
+les deux tampons. Deux tampons de texte suffisent sans en ajouter : quand une
+ligne en est à ses chiffres (cases 9 à 15), l'autre en est à son libellé (0 à
+7), si bien que la chaîne de libellé et le tampon de chiffres déjà présents ne
+se croisent jamais.
+
+### Le lecteur de musique devient résident — FAIT le 04/09/2026
+
+Proposition de l'auteur, et c'est la bonne. Le lecteur montait la page de ses
+données puis lisait son anneau de décompression, situé dans son propre code :
+les deux devaient donc vivre dans la MÊME page, et toutes les musiques du jeu
+étaient condamnées à s'entasser dans celle-là. Code et anneau résidents
+(1 057 octets, page 1 fixe, $77DF-$7C00), l'anneau reste adressable quelle que
+soit la page montée : chaque morceau porte désormais sa page et peut vivre où
+il y a de la place. La page 26 rend 1 057 octets.
+
+**Pas dans la demi-page $4000-$5FFF.** Premier essai : l'arène de classement.
+L'IRQ y force la moitié 0 pendant toute sa durée, et le lecteur est appelé
+DEPUIS l'IRQ — logé en moitié 1 il devenait invisible à chaque interruption,
+l'anneau se vidait sans se remplir et la musique se taisait. La page 1 fixe n'a
+pas de moitié. Il ne reste que 16 octets entre la fin du moteur et le lecteur :
+s'il grandit, le build refuse et le dit.
+
+**Ce que ça a coûté en code** : `game.music.play` prend maintenant la page du
+morceau en A, chaque site d'appel la nomme (`common.music.ymm.page`,
+`stage.music.page` défini par chaque stage, `title.music.ymm.page`), les douze
+appels paginés vers le lecteur deviennent directs, et `game.music.stop` se
+réduit à un saut.
+
+**La coupure propre entre deux morceaux** (relevé de l'auteur) : couper l'IRQ
+n'arrête pas le son, le YM2413 tient ses notes tant que ses registres ne sont
+pas remis à zéro. `game.music.stop` (statut à zéro + réinitialisation de la
+puce) est appelé avant chaque coupure d'IRQ qui précède un chargement : game
+over, convergence de classement, retour au stage après continue. Mesuré : 1,75 s
+de silence réel pendant le chargement, contre une note tenue avant.
+
+### Le caractère de saisie en couleur unie — FAIT le 05/09/2026
+
+La police dessine ses glyphes en dégradé sur les index 3 à 6. Les tables de
+`text.recolor` les écrasent désormais toutes les quatre sur UNE couleur : le
+caractère en cours de saisie est une masse pleine qui bat blanc puis rouge,
+et non plus un dégradé qui change de teinte (demande de l'auteur). Mesuré sur
+la case du curseur : une seule couleur par phase, (251,251,247) puis
+(251,0,0), 112 pixels dans les deux cas.
+
+La recoloration d'une LIGNE devient `text.hiliteLine` (U = première cellule,
+B = leur nombre), résidente et exportée, la table restant privée. Le tableau
+des scores l'emploie pour l'entrée nouvelle.
+
+### Le READY après un continue accepté — CORRIGÉ le 05/09/2026
+
+Relevé de l'auteur sur la borne : après un continue accepté, READY s'affiche
+avant la reprise. Le chemin du portage y passait déjà (`stage.death.ready`),
+mais l'objet message ne peint que la page en fenêtre DATA, forcée sur la 2
+par la séquence, pendant que `$E7DD` affichait la 3 : READY tombait dans le
+tampon caché. Mesuré sous toje avant correction : zéro pixel du continue
+accepté jusqu'à la reprise du jeu ; après : READY visible quarante trames
+(1 088 pixels) puis la reprise. GAME OVER est peint de la même façon dans les
+deux tampons, par précaution — il était exposé au même tirage.
+
+**Correction de ma note de la veille** : toje rend la page VISIBLE, celle de
+`$E7DD`, et non la page DATA ; écrire `$E7E5` ne change pas sa capture. Le bug
+s'y voit donc, quand la parité tombe mal — mes scripts, déterministes,
+tombaient souvent du bon côté. La page visible se déduit de
+`gfxlock.backBuffer.status` : 00 → page 3, FF → page 2.
+
+### L'écran CONTINUE noir avec sa musique — CORRIGÉ le 05/09/2026
+
+Relevé de l'auteur : depuis l'ordre de la borne, l'écran CONTINUE restait
+noir chez lui, musique et décompte tournant. Invisible sous toje, qui rend la
+page en fenêtre DATA. Cause : la bascule d'écran affiche une page par `$E7DD`
+et monte l'AUTRE en fenêtre DATA, les deux sont donc toujours opposées après
+le dernier échange du stage, et laquelle est laquelle dépend de la parité de
+la trame de mort. L'écran CONTINUE ne peignait que la page DATA — une fois sur
+deux le tampon caché. La séquence force en plus DATA sur la page 2 avant lui,
+ce qui rendait le tirage systématique selon la parité. Les écrans de
+classement peignent les deux tampons et se voyaient toujours : même geste pour
+le continue (`hud.cont.paintLines2`, `hud.cont.paintDigit2`). Vérifié en
+lisant les deux pages : titre et invite identiques en page 2 et en page 3.
+Règle à retenir : **tout écran peint hors de la boucle gfxlock peint les deux
+tampons.**
+
+**« PUSH FIRE BUTTON » en rouge — FAIT le 05/09/2026**, une fois l'écran
+peint dans les deux tampons : `text.hiliteLine` sur les seize cellules de
+l'invite, une passe par tampon, la même mise en valeur que l'entrée nouvelle
+du tableau. Vérifié : index 7 à 10 relevés à $D8BC sur les pages 2 et 3, et la
+capture montre l'invite en rouge dégradé entre le titre et « FREE PLAY » restés
+bleus. L'échec de la veille venait du même tampon caché que l'écran noir : la
+note ci-dessous en garde la trace. Appelée
+depuis l'écran CONTINUE, `text.hiliteLine` laisse l'écran entièrement noir.
+Ce n'est ni un blocage ni un mauvais paramètre : la routine est atteinte avec
+U = $D90C et B = 16, elle s'exécute normalement, les pixels sont bien
+recoloriés en mémoire (index 10 relevés à $D8BC), `Pal_current` pointe sur
+`Pal_stage` et `PalRefresh` vaut $FF, le déroulé de la séquence garde
+exactement le même minutage — et pourtant rien ne s'affiche, titre et
+« FREE PLAY » compris, alors qu'ils ne sont pas touchés. Déplacer l'appel
+avant ou après la pose de la palette ne change rien. Retiré plutôt que livré
+à moitié ; l'écran CONTINUE est intact.
+
+### Le bloc musical calé en tête de page 26 — FAIT le 04/09/2026, plus aucun chargement
+
+Plan de l'auteur : le lecteur parti, le bloc musical est tassé en tête de
+page et la fin calculée à l'octet ; les tuiles coulent dans l'unique zone qui
+reste. Carte de la page 26 :
+
+| Adresses | Contenu |
+|---|---|
+| $0000-$0B4D | les quatre musiques communes (2 893) |
+| $0B4D-$1B0D | le créneau de la musique de stage, dimensionné sur le stage 1 (4 032) |
+| $1B0D-$1FCF | la piste de saisie (1 218), permanente |
+| $1FCF-$4000 | les tuiles, une seule zone de 8 241 octets (au lieu de deux totalisant 8 347) |
+
+Les huit arènes de tuiles ont perdu 106 octets sur cette page et le packer a
+recoupé ses lots : il reste 18 octets au pire stage (stage 7). La piste de
+saisie est chargée au boot ; la scène `scenes.nameentry.music`, les huit
+compositions `stageN.ranking`, la convergence de `game.ranking.run` et
+`game.stage.reload` ont disparu. **La séquence GAME OVER -> classement ->
+CONTINUE ne charge plus rien, classé ou non.** Vérifié sous toje : le lecteur
+arme $0B4D en jeu, $0A3B au game over, $1B0D sur l'écran de saisie, dont
+l'audio est présent (amplitude 1 600-3 400) ; banc 7/7.
+
+**Où la musique vit, et pourquoi pas en résident** (historique, avant le
+recalage) **.** Elle est retournée dans le
+créneau des musiques de stage ($1A:$2C09), dont elle est une alternative
+chargée par la convergence du game over. Deux contraintes l'y forcent : le
+lecteur monte la page de ses données et y lit aussi son anneau, donc ses
+données sont forcément dans SA page ; et cette page est pleine au stage 1
+(7 274 + 1 057 + 2 893 + 4 032 + 852 = 16 108 sur 16 384). Le résident
+supprimerait le chargement, mais 1 218 octets de RAM toujours montée pour une
+séquence jouée presque jamais ne se défendent pas (décision auteur). Le prix :
+un chargement au game over, quand le jeu est de toute façon à l'arrêt, et un
+second — `game.stage.reload` — seulement si le joueur a été classé PUIS reprend
+au continue, pour retrouver la musique du stage. Sans classement rien n'a bougé
+et l'appel ne charge rien. Vérifié sous toje en lisant les octets du créneau
+sous le point d'arrêt du lecteur : musique du stage en jeu, piste de saisie sur
+les écrans de classement et le continue, musique du stage à nouveau après un
+continue accepté.
+
+Vérifié sous toje : la densité de pixels allumés monte par paliers (928, 1744,
+3152, 3264, 4968, 5456) sur une soixantaine de trames, puis se stabilise ; la
+saisie, le tableau et le continue sont intacts. Banc 7/7.
+
 Vérifié : capture continue de 44 s depuis la mort — continue (12 s), game
 over, chargement, puis l'écran de saisie de 24 à 44 s dont l'audio varie
 comme une mélodie (passages par zéro de 4 600 à 700 par seconde) là où la

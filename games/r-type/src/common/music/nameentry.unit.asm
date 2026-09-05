@@ -1,10 +1,19 @@
 ;*******************************************************************************
 ; La musique de la saisie des initiales — données seules
 ;
-; Elle NE PEUT PAS rejoindre `common.music.ymm` (le bloc des quatre morceaux
-; communs) : ce bloc va de $20BC à $2C08 et il est plein à l'octet près, la
-; piste suivante commençant à $2C09. Même compressée (1 218 octets) celle-ci
-; n'y tiendrait pas.
+; ELLE EST PERMANENTE, EN PAGE 26 AVEC LES AUTRES MUSIQUES (04/09/2026, plan de
+; l'auteur). Le bloc musical de la page est calé en TÊTE : musiques communes
+; $0000-$0B4D, créneau de stage $0B4D-$1B0D dimensionné sur la plus grosse
+; (stage 1, 4 032 octets), puis cette piste $1B0D-$1FCF ; les tuiles coulent
+; dans l'unique zone qui reste, $1FCF-$4000 (8 241 octets, il en reste 18 au
+; pire stage). Chargée au boot, jamais échangée : la séquence GAME OVER ->
+; classement -> CONTINUE se joue SANS AUCUN CHARGEMENT, comme sur la borne.
+;
+; Ce qui l'a rendu possible : le lecteur est devenu RÉSIDENT (page 1 fixe).
+; Avant, il montait la page de ses données et y lisait son anneau, situé dans
+; son propre code — les 1 057 octets du lecteur occupaient le milieu de la page
+; et forçaient deux zones de tuiles autour. Partis, le bloc musical se tasse en
+; tête et la place manquante (82 octets) est apparue.
 ;
 ; ELLE DOIT ÊTRE COMPRESSÉE EN ZX0 — `vgm2ymm -c zx0` — parce que le lecteur
 ; décompresse TOUJOURS : il n'y a pas de format brut côté 6809. Le codec par

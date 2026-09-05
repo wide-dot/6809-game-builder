@@ -714,9 +714,29 @@ hud.continueScreen
         ; le rechargement de checkpoint relance (`ymm.restart`).
         ldx   #sounds.continue.ymm
         ldb   #ymm.NO_LOOP
+        lda   #map.RAM_OVER_CART+common.music.ymm.page
         jsr   game.music.play
         ldx   #hud.cont.screenOn
-        jsr   hud.cont.paintLines
+        jsr   hud.cont.paintLines2     ; DANS LES DEUX TAMPONS, voir la notice
+        ; L'INVITE EN ROUGE, par le meme geste que la mise en valeur d'une
+        ; ligne du tableau des scores : la ligne est peinte normalement puis
+        ; relue et recoloriee, sans que la police ni les chaines n'en sachent
+        ; rien (decision auteur, 05/09/2026). Une passe par tampon, comme les
+        ; lignes. Les index employes sont ceux, communs aux huit palettes de
+        ; stage, que `Pal_stage` porte deja.
+        ldu   #hud.cont.line2U
+        ldb   #16                      ; « PUSH FIRE BUTTON »
+        jsr   text.hiliteLine
+        _SwitchScreenBuffer
+        ldu   #hud.cont.line2U
+        ldb   #16
+        jsr   text.hiliteLine
+        _SwitchScreenBuffer
+        ; L'INVITE EN ROUGE, par le meme geste que la mise en valeur d'une
+        ; ligne du tableau des scores : la ligne est peinte normalement puis
+        ; relue et recoloriee, sans que la police ni les chaines n'en sachent
+        ; rien (decision auteur, 05/09/2026). Les index employes sont ceux,
+        ; communs aux huit palettes de stage, que `Pal_stage` porte deja.
         ldd   #Pal_stage              ; le texte doit se voir : l'ecran vient
         std   Pal_current             ;   d'etre noirci par le fondu de mort
         clr   PalRefresh
@@ -734,7 +754,7 @@ hud.continueScreen
         mul
         ldx   #hud.cont.digits
         leax  d,x
-        jsr   hud.cont.paintDigit
+        jsr   hud.cont.paintDigit2
         lda   #CONTINUE_TICKS
         sta   hud.cont.ticks
 @frame  _waitFrames #1
@@ -768,12 +788,10 @@ hud.cont.accept
         bra   hud.cont.leave
 
 hud.cont.refuse
-        ; Les vies restent negatives : GAME OVER suit chez l'appelant. On lui
-        ; pose sa musique au passage — c'est le meme geste, et le chemin
-        ; « continue deja consomme » passe ici sans avoir rien affiche.
-        ldx   #sounds.gameover.ymm
-        ldb   #ymm.NO_LOOP
-        jsr   game.music.play
+        ; Les vies restent negatives : le title suit chez l'appelant. Rien a
+        ; jouer — depuis l'ordre de la borne (04/09/2026) le GAME OVER et son
+        ; morceau viennent AVANT cet ecran, armes par le corps de stage. Le
+        ; chemin « continue deja consomme » passe ici sans avoir rien affiche.
 
 ; L'ecran s'efface lui-meme avant de rendre la main — la suite repasse en
 ; 320x200 pour READY / GAME OVER, ou nos octets BM16 se reliraient en bouillie.
@@ -783,9 +801,9 @@ hud.cont.leave
         clr   PalRefresh
         jsr   PalUpdateNow
         ldx   #hud.cont.screenOff
-        jsr   hud.cont.paintLines
+        jsr   hud.cont.paintLines2
         ldx   #hud.cont.blank
-        jmp   hud.cont.paintDigit
+        jmp   hud.cont.paintDigit2
 
 ; ---------------------------------------------------------------------------
 ; hud.cont.gameOverWait — tenir GAME OVER a l'ecran jusqu'a la fin du morceau
@@ -815,9 +833,7 @@ hud.cont.gameOverWait
         _waitFrames #150               ; le plancher v1 : trois secondes
 hud.cont.musicWait
 @wait   _waitFrames #1
-        lda   #map.RAM_OVER_CART+engine.sound.ymm.page
-        ldx   #ymm.playing
-        jsr   paged.call
+        jsr   ymm.playing                    ; lecteur resident : appel direct
         tsta
         bne   @wait
         rts
@@ -827,6 +843,35 @@ hud.cont.musicWait
 ; `hud.drawStr` ecrase A, X, Y et U : la table et le compteur passent par la
 ; pile.
 ; ---------------------------------------------------------------------------
+; ---------------------------------------------------------------------------
+; DANS LES DEUX TAMPONS (05/09/2026). La bascule d'ecran affiche une page par
+; $E7DD et monte l'AUTRE en fenetre DATA : apres le dernier echange du stage,
+; page visible et page de travail sont toujours OPPOSEES, et laquelle est
+; laquelle depend de la parite de la trame de mort. Cet ecran ne peignait que
+; la page DATA — donc, une fois sur deux, le tampon cache : ecran noir avec la
+; musique qui joue (releve de l'auteur ; invisible sous toje, qui rend la page
+; DATA). Les ecrans de classement peignent les deux tampons et se voient
+; toujours : meme geste ici. La sequence arrive DATA sur la page 2, les deux
+; tampons effaces ; on peint 2, on bascule, on peint 3, on rebascule.
+; ---------------------------------------------------------------------------
+hud.cont.paintLines2
+        pshs  x                        ; paintLines consomme la table
+        jsr   hud.cont.paintLines
+        _SwitchScreenBuffer
+        puls  x
+        jsr   hud.cont.paintLines
+        _SwitchScreenBuffer
+        rts
+
+hud.cont.paintDigit2
+        pshs  x                        ; paintDigit consomme le glyphe
+        jsr   hud.cont.paintDigit
+        _SwitchScreenBuffer
+        puls  x
+        jsr   hud.cont.paintDigit
+        _SwitchScreenBuffer
+        rts
+
 hud.cont.paintLines
         ldb   #3
 @l      ldu   ,x++

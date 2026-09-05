@@ -84,6 +84,7 @@ soundfx.frame     EXTERNAL
 ; $1A (music/ymm.unit.asm — le choix du fichier v1 y est justifie).
 sounds.level8.ymm EXTERNAL
 stage.music       equ sounds.level8.ymm
+stage.music.page  equ stage8.music.ymm.page
 
 ; Le sequenceur de fin generique (protocole du stage 1, objet commun monte
 ; au boot). Pas de jingle au stage 8 : son bloc musical n'a pas la place.
@@ -257,9 +258,7 @@ stage.endTick.jingle
         jsr   IrqOff
         _GetCartPageB
         pshs  b
-        lda   #map.RAM_OVER_CART+engine.sound.ymm.page
-        ldx   #ymm.stop
-        jsr   paged.call
+        jsr   ymm.stop                    ; lecteur resident : appel direct
         puls  b
         _SetCartPageB
         jsr   IrqOn
@@ -300,9 +299,7 @@ stage.handOver
         jsr   IrqOff
         ; Même geste qu'au stage 1 : la musique s'arrête avant l'échange, voir
         ; le commentaire de son handOver.
-        lda   #map.RAM_OVER_CART+engine.sound.ymm.page
-        ldx   #ymm.stop
-        jsr   paged.call
+        jsr   ymm.stop                    ; lecteur resident : appel direct
 
         clr   game.stage                   ; la partie est finie
         clrb                               ; 0 : le title

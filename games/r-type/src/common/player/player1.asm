@@ -333,9 +333,7 @@ PlayerDeathReal
 ; dans sa page et n'a pas de macro sans argument ; surtout, le joueur tourne
 ; lui-meme depuis une page montee, donc l'appel DOIT rendre la fenetre —
 ; ce que _ram.cart.set (que les macros _ymm.* emploient) ne fait pas.
-        lda   #map.RAM_OVER_CART+engine.sound.ymm.page
-        ldx   #ymm.stop
-        jsr   paged.call
+        jsr   ymm.stop                    ; lecteur resident : appel direct
         _soundFX.play soundFX.PlayerHitSound,$85
         ldd   #Ani_Player1_explode
         std   anim,u

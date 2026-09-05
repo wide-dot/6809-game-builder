@@ -64,6 +64,9 @@ game.continueUsed        EXTERNAL
 ; le cheat du title (gauche) : quand il est arme, l'ecran de continue ne tient
 ; plus son quota. Resident, comme les autres effets de cheat.
 cheat.freeContinue       EXTERNAL
+; La recoloration d'une ligne deja peinte, residente : voir sa notice dans
+; src/common/ranking/ranking.unit.asm.
+text.hiliteLine          EXTERNAL
 ; Ce que l'ecran continue emprunte au moteur resident : la manette, la palette.
 joypad.readKbd           EXTERNAL
 joypad.pressed.fire      EXTERNAL
