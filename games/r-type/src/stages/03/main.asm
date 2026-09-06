@@ -14,6 +14,9 @@
 STAGE_ID equ 3
 ; La scène de CE stage — voir stage 1 : le sortant décharge, jamais l'entrant.
 STAGE_SCENE equ scenes.stage3
+; La carte de ce stage est en colonnes creuses (<tilecols> dans le config) :
+; stage-main.asm appelle ScrollCols/DrawTilesCols et pose tilemap.mode.
+stage.TILES_COLS equ 1
 ; Ce stage a une couche mobile (le battleship, module mscroll résident) :
 ; stage-main remplace clearblast/clearWindow par le blast mscroll en tête de
 ; trame — la couche repeint tout le champ, c'est elle l'effaceur.

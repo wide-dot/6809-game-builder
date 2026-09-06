@@ -85,8 +85,19 @@ checkpoint.clearData EXTERNAL
 
         ; --- tilemap scroll : the routines, then the state a stage sets up ---
         _api InitScroll
+        ; Le moteur dense n'est pas assemble dans le resident (TILEMAP_DENSE_OFF,
+        ; engine.asm) : ses deux routines ne sont exportees que s'il l'est.
+ IFNDEF TILEMAP_DENSE_OFF
         _api Scroll
         _api DrawTiles
+ ENDC
+        ; La carte en colonnes creuses (plan-tilemap-colonnes-2026-09.md) : le
+        ; meme defilement sur une table de colonnes, un stage choisit sa forme
+        ; par stage.TILES_COLS et le resident retient laquelle (tilemap.mode).
+        _api ScrollCols
+        _api DrawTilesCols
+        _api tilemap.mode
+        _api tilemap.null
         _api scroll_map_even
         _api scroll_map_odd
         _api scroll_map_page_even

@@ -14,6 +14,9 @@ STAGE_ID equ 1
 ; La scène de CE stage : ce qu'il rend en partant, et ce que le game over du
 ; corps partagé décharge sans savoir dans quel stage il tourne.
 STAGE_SCENE equ scenes.stage1
+; La carte de ce stage est en colonnes creuses (<tilecols> dans le config) :
+; stage-main.asm appelle ScrollCols/DrawTilesCols et pose tilemap.mode.
+stage.TILES_COLS equ 1
 
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT

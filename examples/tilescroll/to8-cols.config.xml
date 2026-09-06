@@ -20,6 +20,7 @@
                 <default name="lwasm.format"     value="obj"/>
 
                 <define symbol="loader.PAGE" value="4"/>
+                <define symbol="TILES_COLS"/>
                 <define symbol="loader.ADDRESS" value="$A000"/>
 
                 <!-- Compiled tiles. Each one twice : unshifted for the even   -->

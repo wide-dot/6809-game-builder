@@ -100,10 +100,21 @@ main
         sta   $9C00
 
         ; the map, and where it lives
+; TILES_COLS (define) : the column engine on the column tables ; without it
+; the dense engine on the dense tables. Same picture expected, to the pixel.
+ IFDEF TILES_COLS
+        ldd   #map.cols.even
+        std   scroll_map_even
+        ldd   #map.cols.odd
+        std   scroll_map_odd
+        lda   #1
+        sta   tilemap.mode
+ ELSE
         ldd   #map.even
         std   scroll_map_even
         ldd   #map.odd
         std   scroll_map_odd
+ ENDC
         lda   #map.RAM_OVER_CART+assets.gm.main.page
         sta   scroll_map_page_even
         sta   scroll_map_page_odd
@@ -221,7 +232,11 @@ mainLoop
         ; Scroll advances the camera and works out what has to be repainted ;
         ; DrawTiles does the painting. They sit on either side of the lock,
         ; because only the second one touches the screen.
+ IFDEF TILES_COLS
+        jsr   ScrollCols
+ ELSE
         jsr   Scroll
+ ENDC
 
         ; Le decor anime, hors du verrou comme Scroll : l'objet fait avancer
         ; SON horloge et empile une demande quand l'image change ; c'est
@@ -246,7 +261,11 @@ mainLoop
         ; applique tout ce qui s'est accumule. Le seul endroit qui pagine.
         jsr   tilemap.flush
         _gfxlock.on
+ IFDEF TILES_COLS
+        jsr   DrawTilesCols
+ ELSE
         jsr   DrawTiles
+ ENDC
         _gfxlock.off
 
         inc   $9C01
@@ -283,6 +302,7 @@ Obj_Index_Address
         INCLUDE "engine/graphics/buffer/gfxlock.asm"
         INCLUDE "engine/graphics/clear/ClearInterlacedDataMemory.asm"
         INCLUDE "engine/graphics/tilemap/horizontal-scroll/scroll-map-buffered-even.asm"
+        INCLUDE "engine/graphics/tilemap/horizontal-scroll/scroll-columns.asm"
         INCLUDE "engine/graphics/tilemap/patch/tilemap-patch.asm"
         INCLUDE "engine/objects/collision/terrainCollision.main.asm"
 

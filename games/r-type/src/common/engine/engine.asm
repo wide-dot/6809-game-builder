@@ -17,6 +17,10 @@
 ;*******************************************************************************
 
 ENGINE_RESIDENT equ 1
+; Toutes les cartes sont en colonnes creuses : les routines du moteur dense
+; (Scroll, DrawTiles, tilemap.patch.dense — 476 o) ne sont pas assemblees,
+; scroll-map-buffered-even.asm ne fournit que ses variables et InitScroll.
+TILEMAP_DENSE_OFF equ 1
 
  SECTION code
 
@@ -450,6 +454,7 @@ terrainCollision.init.do
 ; octets pour un travail qui n'arrive qu'a l'ouverture d'un stage et au
 ; rechargement d'un checkpoint. Voir src/common/lib/clear.unit.asm.
         INCLUDE "engine/graphics/tilemap/horizontal-scroll/scroll-map-buffered-even.asm"
+        INCLUDE "engine/graphics/tilemap/horizontal-scroll/scroll-columns.asm"
         INCLUDE "engine/graphics/tilemap/patch/tilemap-patch.asm"
         INCLUDE "engine/objects/collision/terrainCollision.main.asm"
         ; La boite balayee d'un projectile, construite par ses bords et calee

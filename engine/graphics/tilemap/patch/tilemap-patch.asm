@@ -319,7 +319,20 @@ tilemap.flush
 * cotes et se copie d'un seul bloc. C'est ce qui rend la routine courte.
 * clobbe : a, b, x, y, u
 * ---------------------------------------------------------------------------
+* MODE (2026-09-06) : 0 = carte dense (3 octets par cellule, colonnes de
+* scroll_vp_v_tiles cellules), 1 = carte en COLONNES CREUSES (scroll-columns.asm :
+* table d'entrees de colonnes, cellules de 5 octets — les colonnes qu'un
+* rectangle touche sont generees denses, tilemap.null pour les vides). Le
+* stage le pose a son init ; les deux corps partagent tout le reste.
+tilemap.mode          fcb   0
 tilemap.patch
+* Sous TILEMAP_DENSE_OFF, la carte est en colonnes creuses et seulement elle :
+* l'entree tombe directement sur tilemap.patch.sparse (cf. scroll-columns.asm).
+ IFNDEF TILEMAP_DENSE_OFF
+        tst   tilemap.mode
+        beq   tilemap.patch.dense
+        jmp   tilemap.patch.sparse
+tilemap.patch.dense
         lda   tilemap.patch.plane
         bne   @odd
         lda   scroll_map_page_even
@@ -364,6 +377,75 @@ tilemap.patch
         bne   @cell
         ldd   tilemap.patch.colStep
         leay  d,y
+        dec   tilemap.patch.colCnt
+        bne   @column
+@rts    rts
+
+* ---------------------------------------------------------------------------
+* tilemap.patch.sparse — le meme rectangle, dans une carte en colonnes creuses
+* ---------------------------------------------------------------------------
+* entree : X = bloc source (3 octets par cellule, colonne-majeur), cols/rows/
+*          col/row/plane poses. La colonne visee DOIT etre dense (<tilecols
+*          dense=...>) : ses cellules font 5 octets a partir de son entree,
+*          les 3 premiers sont ceux de la carte dense — on les recopie et on
+*          saute l'offset.
+* clobbe : a, b, x, y, u
+ ENDC
+* ---------------------------------------------------------------------------
+tilemap.patch.sparse
+        lda   tilemap.patch.plane
+        bne   @odd
+        lda   scroll_map_page_even
+        ldy   scroll_map_even
+        bra   @mount
+@odd    lda   scroll_map_page_odd
+        ldy   scroll_map_odd
+@mount  _SetCartPageA
+        lda   tilemap.patch.cols
+        beq   @rts
+        lda   tilemap.patch.rows
+        beq   @rts
+        sta   tilemap.patch.runLen     ; ici : des cellules, pas des octets
+        lda   tilemap.patch.col
+        ldb   #2                        ; col x 2 EN 16 BITS : `leay a,y` prend A
+        mul                             ; pour un offset SIGNE, donc une colonne
+        leay  d,y                       ; >= 64 (col x 2 >= 128) reculait Y. Le
+                                        ; stage 2 patche a la colonne 84.
+        lda   tilemap.patch.row
+        ldb   #5
+        mul
+        std   tilemap.patch.colStep    ; le decalage de la ligne dans la colonne
+        lda   tilemap.patch.cols
+        sta   tilemap.patch.colCnt
+@column ldu   ,y++                     ; U = la liste de la colonne
+        ldd   tilemap.patch.colStep
+        leau  d,u
+        ldb   tilemap.patch.runLen
+@cell   lda   ,x+                      ; la page de la cellule source
+        beq   @empty
+        sta   ,u+
+        lda   ,x+
+        sta   ,u+
+        lda   ,x+
+        sta   ,u+
+        bra   @skip
+* UNE CASE VIDE NE S'ECRIT PAS EN ZERO ICI. Dans la carte dense une page nulle
+* veut dire « rien a dessiner » et le moteur passe a la ligne suivante ; dans
+* une colonne creuse le zero est LA FIN DE LA COLONNE, et tout ce qui suit
+* disparait. Le stage 2 le montrait : blink (colonne 84, ligne 6) et tube1/
+* tube3 (ligne 11) coupaient six colonnes du boss sous leur premiere case
+* vide. On garde donc la page de destination — le generateur en a pose une
+* valide dans chaque case d'une colonne dense — et on pose la tuile qui ne
+* dessine rien.
+@empty  leax  2,x                      ; l'adresse source, nulle, ne sert pas
+        leau  1,u                      ; la page de destination reste
+        pshs  b                        ; B porte le compteur de cellules
+        ldd   #tilemap.null
+        std   ,u++
+        puls  b
+@skip   leau  2,u                      ; l'offset, intact
+        decb
+        bne   @cell
         dec   tilemap.patch.colCnt
         bne   @column
 @rts    rts
