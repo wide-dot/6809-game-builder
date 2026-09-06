@@ -237,3 +237,34 @@ migration n'a pas lieu (rien de v1 ici).
   les 87 autres images identiques à l'octet.
 - Reste : `docs/lang/en/tilemaps.md` mentionne déjà le moteur ; profil complet
   in-game du stage 1 (boucle entière) et banc auteur à la demande.
+
+### 06/09/2026 (suite) — le boss du stage 2 : une case vide n'est pas un zéro
+
+Trouvé en filmant les stages 1 et 2 : au boss du stage 2, la masse centrale du
+décor manquait, six colonnes sur dix. Log complet dans le recueil de session
+(point d'arrêt sur `tilemap.patch`, colonnes relues en mémoire).
+
+- **Ce que le log a écarté** : un seul rectangle est jamais posé au boss
+  (`tube0`, colonne 85, plan pair), et le moteur DENSE donne exactement la même
+  séquence — l'animation n'était pas la différence. La confrontation statique
+  de l'assembleur généré au `.bin` source donne **0 désaccord sur 96 colonnes** :
+  l'encodage `<tilecols>` n'était pas en cause non plus.
+- **Le défaut** : relues en mémoire, les colonnes 84, 87, 88 et 91 s'arrêtaient
+  à la ligne 6 et les colonnes 83 et 92 à la ligne 11 — exactement là où
+  commencent `blink` (col 84, 8×9, ligne 6), `tube1` et `tube3` (ligne 11).
+- **La cause** : dans la carte dense une case vide vaut page 0 et le moteur la
+  saute ; dans une colonne creuse un zéro est **le terminateur de colonne**.
+  `tilemap.patch.sparse` recopiait la case vide telle quelle et coupait la
+  colonne, faisant disparaître tout ce qui était en dessous. Incompatibilité de
+  convention entre le format des rectangles et celui des colonnes, pas une
+  donnée fausse.
+- **Le correctif** : une case vide garde la page de destination (le générateur
+  en pose une valide dans chaque case d'une colonne dense) et reçoit
+  `tilemap.null`. Après quoi les dix colonnes du boss listent leurs 15 cellules
+  sur les deux plans et le décor redevient continu.
+- Revalidé : tilescroll 101/101 au pixel, `rtype_bench` 7/7, corpus inchangé
+  hors des trois projets qui embarquent le moteur.
+
+**À retenir pour la suite** : tout ce qui ÉCRIT dans une carte en colonnes doit
+traduire « case vide » en `tilemap.null`, jamais en page nulle. Cela vaut pour
+`<tilepatch>`, `<tilereset>` et tout futur écrivain de carte.

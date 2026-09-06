@@ -421,13 +421,29 @@ tilemap.patch.sparse
         ldd   tilemap.patch.colStep
         leau  d,u
         ldb   tilemap.patch.runLen
-@cell   lda   ,x+
+@cell   lda   ,x+                      ; la page de la cellule source
+        beq   @empty
         sta   ,u+
         lda   ,x+
         sta   ,u+
         lda   ,x+
         sta   ,u+
-        leau  2,u                      ; l'offset, intact
+        bra   @skip
+* UNE CASE VIDE NE S'ECRIT PAS EN ZERO ICI. Dans la carte dense une page nulle
+* veut dire « rien a dessiner » et le moteur passe a la ligne suivante ; dans
+* une colonne creuse le zero est LA FIN DE LA COLONNE, et tout ce qui suit
+* disparait. Le stage 2 le montrait : blink (colonne 84, ligne 6) et tube1/
+* tube3 (ligne 11) coupaient six colonnes du boss sous leur premiere case
+* vide. On garde donc la page de destination — le generateur en a pose une
+* valide dans chaque case d'une colonne dense — et on pose la tuile qui ne
+* dessine rien.
+@empty  leax  2,x                      ; l'adresse source, nulle, ne sert pas
+        leau  1,u                      ; la page de destination reste
+        pshs  b                        ; B porte le compteur de cellules
+        ldd   #tilemap.null
+        std   ,u++
+        puls  b
+@skip   leau  2,u                      ; l'offset, intact
         decb
         bne   @cell
         dec   tilemap.patch.colCnt
