@@ -34,17 +34,42 @@
 ; 22 455 cycles. Chaque rangee de tuiles zappee rend ~747 cycles de PSHS.
 ; ===========================================================================
 
-NPUSH    equ 800                       ; 180 lignes x 40 / 9 — tout le champ
+; DEUX ENTREES FIXES, UN SEUL DEROULE (06/09/2026, decision auteur) : le
+; deroule couvre les 200 lignes (889 poussees, 8 001 octets) ; l'entree
+; plein ecran part un octet plus haut que la fin du tampon ($BF41) pour que
+; l'octet en trop tombe sur $BF40, apres le tampon et dans la fenetre video,
+; jamais dans la page directe ; l'entree champ de jeu (lignes 11-190, le HUD
+; du stage intact) entre 89 poussees plus loin. La fenetre dynamique (pose
+; par timeline, conversion de lignes) est retiree : les deux usages sont
+; fixes, et ses 4 operandes ne sont plus poses que par ces deux entrees.
+NPUSH    equ 889                       ; 200 lignes x 40 / 9, arrondi au-dessus
+NPUSH_FIELD equ 800                    ; 180 lignes : le champ 11-190
 
-playfield.clearBlast   EXPORT
-playfield.clearWindow  EXPORT
-playfield.clearLines   EXPORT
+playfield.clearBlast     EXPORT      ; le champ de jeu, lignes 11-190
+playfield.clearBlastFull EXPORT      ; tout l'ecran, lignes 0-199
 
  SECTION code
 
  OPT C,CT
 
 playfield.clearBlast
+        ldy   #$A000+191*40            ; borne basse : la ligne 190
+        ldu   #(NPUSH-NPUSH_FIELD)*2   ; 800 poussees : l'entree saute les 89 premieres
+        bra   clr.run
+playfield.clearBlastFull
+        ldy   #$A000+200*40+1          ; un octet plus haut que la fin du tampon
+        ldu   #0                       ; tout le deroule
+clr.run
+        sty   >clr.ldsA+2              ; les quatre operandes du deroule
+        tfr   y,d
+        addd  #$2000
+        std   >clr.ldsB+2
+        tfr   u,d
+        addd  #clr.blockA
+        std   >clr.jmpA+1
+        tfr   u,d
+        addd  #clr.blockB
+        std   >clr.jmpB+1
         sts   >glb_register_s          ; meme convention que les sprites bdraw
         clra
         clrb
@@ -58,6 +83,95 @@ clr.ldsA
 clr.jmpA
         jmp   clr.blockA               ; operande PILOTE (borne haute)
 clr.blockA
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
@@ -1663,62 +1777,98 @@ clr.blockB
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
         pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
+        pshs  a,b,dp,x,y,u
         lda   #dp/256                  ; DP moteur ($9F) — la page directe du jeu
         tfr   a,dp
         lds   >glb_register_s
-        rts
-
-; ---------------------------------------------------------------------------
-; playfield.clearWindow - pose la fenetre d'effacement (les 4 operandes SMC).
-;   in : Y = operande LDS du plan couleur ($A000 + (borne_basse+1)*40)
-;        U = offset de saut dans le bloc deroule (2 x poussees zappees)
-; Appele par paged.call aux changements de la timeline — jamais par trame.
-; ---------------------------------------------------------------------------
-; ---------------------------------------------------------------------------
-; playfield.clearLines — la fenetre en LIGNES ecran, convertie en operandes.
-; Les stages gardent leur timeline PRECALCULEE (zero calcul runtime) ; ceci
-; sert les fenetres calculees a l'init d'une phase (le title et ses bandes
-; d'animation). La conversion vit ici, a cote de NPUSH, la seule constante
-; qu'elle partage avec le deroule.
-;
-; Entree : Y = premiere ligne (octet haut) : derniere ligne (octet bas),
-;          lignes ecran 0-199, premiere <= derniere, au plus 180 lignes.
-; L'arrondi AU-DESSUS du nombre de poussees fait deborder <= 8 octets
-; au-dessus de la premiere ligne : l'appelant garde une ligne de marge et ne
-; passe JAMAIS premiere = 0 (le debordement sortirait de la fenetre video).
-; ---------------------------------------------------------------------------
-playfield.clearLines
-        tfr   y,d
-        pshs  d                        ; 0,s = premiere ; 1,s = derniere
-        lda   #40
-        ldb   1,s
-        incb                           ; (derniere+1)*40 : l'operande LDS
-        mul
-        addd  #$A000
-        tfr   d,y
-        lda   1,s
-        suba  ,s
-        inca                           ; nombre de lignes...
-        ldb   #40
-        mul                            ; ...en octets (<= 7200)
-        ldu   #NPUSH*2
-!       leau  -2,u                     ; une poussee de 9 octets a la fois :
-        subd  #9                       ; U descend de 2 (l'offset saute des jmp)
-        bgt   <
-        leas  2,s
-        ; Y = operande LDS, U = offset de saut — la pose standard suit
-
-playfield.clearWindow
-        sty   >clr.ldsA+2
-        tfr   y,d
-        addd  #$2000
-        std   >clr.ldsB+2
-        tfr   u,d
-        addd  #clr.blockA
-        std   >clr.jmpA+1
-        tfr   u,d
-        addd  #clr.blockB
-        std   >clr.jmpB+1
         rts
 
  ENDSECTION

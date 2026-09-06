@@ -1,0 +1,60 @@
+# Le config du banc est DERIVE de celui du jeu : meme carte memoire, memes
+# fichiers communs, un seul game mode (main.asm) a la place du title.
+# Rejeu : python3 gen-config.py   (depuis ce repertoire)
+import sys
+src=open('../../to8.config.xml').read().split('\n')
+def find(pred, start=0):
+    for i in range(start,len(src)):
+        if pred(src[i]): return i
+    raise SystemExit("marqueur absent")
+i_comp=find(lambda l:'<composition name="boot">' in l)
+i_layout_end=find(lambda l:'</layout>' in l)
+i_floppy=find(lambda l:'<floppydisk' in l)
+i_dir0=find(lambda l:'<directory id="0"' in l)
+i_libbink=find(lambda l:'<file name="lib.bink"' in l)
+j=i_libbink-4
+assert src[j].strip().startswith('<!-- LA BIBLIOTHEQUE'), src[j]
+i_boot=find(lambda l:'<scene name="scenes.boot" section=' in l)
+i_boot_end=find(lambda l:'</scene>' in l, i_boot)
+i_loaderdef=find(lambda l:'boot.CHECK_MEMORY_EXT' in l)
+k=i_loaderdef-8
+assert src[k].strip().startswith('<!-- Le pool du loader'), src[k]
+i_fd=find(lambda l:'<fd ' in l)
+out=['<!-- GENERE par gen-config.py depuis ../../to8.config.xml : ne pas editer. -->']
+out+=src[:i_comp]
+comps=['            <composition name="boot">','                <scene name="scenes.boot"/>','            </composition>']
+for n in ['title']+['stage%d'%d for d in range(1,9)]:
+    comps+=['            <composition name="%s">'%n,'                <scene name="scenes.boot"/>','                <scene name="scenes.bench"/>','            </composition>']
+out+=['            <!-- BANC : neuf etats identiques — le moteur nomme les huit stages',
+      '                 dans game.stage.states, le banc n\'en a qu\'un. -->']+comps
+out+=src[i_layout_end:i_floppy+1]
+out+=['            <section name="SCENE" track="1" face="0" sector="1"/>',
+      '            <section name="LINK"  track="2" face="0" sector="1"/>',
+      '            <section name="DATA"  track="8" face="0" sector="1"/>',
+      '            <define symbol="OverlayMode"/>',
+      '            <define symbol="LOG_INFO"/>']
+# python3 gen-config.py --no-text : la saisie sans son texte (mesure des
+# blasts et des Pata-Pata seuls, 05/09/2026) — jamais dans le jeu.
+if '--no-text' in sys.argv:
+    out+=['            <define symbol="RANKING_TEXT_OFF"/>']
+out+=['']
+out+=src[i_dir0:j]
+out+=['                <!-- ===== LE BANC, a la place du title ===================== -->',
+      '                <file name="bench.main" linkdata="LINK" region="stage">',
+      '                    <lwasm gensource="gen/bench/main.asm">',
+      '                        <asm filename="gen/directories/disk0/entries.asm"/>',
+      '                        <asm filename="main.asm"/>',
+      '                        <png2pal section="palette" symbol="Pal_stage" filename="src/stages/01/palette/pal.png"/>',
+      '                        <png2pal section="palette" symbol="Pal_black" filename="engine/palette/color/Pal_black.png"/>',
+      '                    </lwasm>',
+      '                </file>','']
+out+=src[i_boot:i_boot_end+1]
+out+=['','                <scene name="scenes.bench" section="SCENE" gensource="gen/scenes/bench.asm">',
+      '                    <load name="bench.main"/>','                </scene>','            </directory>','']
+out+=src[k:i_fd]
+out+=['            <fd  filename="to8.fd"/>','        </floppydisk>','    </target>','</configuration>']
+# les regions SANS adresse prennent celle de leur contenu ; le banc n'en a
+# aucun, le builder refuserait — on les retire (aucun fichier du banc n'y vit).
+out=[l for l in out if not (l.strip().startswith('<region') and 'address=' not in l)]
+open('to8.config.xml','w').write('\n'.join(out))
+print("config :", len(out), "lignes ; fichiers :", sum(1 for l in out if '<file name=' in l))

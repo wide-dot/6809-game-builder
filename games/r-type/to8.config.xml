@@ -286,7 +286,7 @@
                      packer place en PREMIER AJUSTEMENT, les miettes ne
                      s'additionnent pas — il manquait 152 octets et 512 de zone
                      n'ont deplace l'echec que d'un fichier. -->
-                <zone page="$0C" address="$0000" size="$0B00"/>
+                <zone page="$0C" address="$0000" size="$1C00"/>
                 <!-- La queue de la page collision ($17) : les collisions des huit
                      stages sont des ALTERNATIVES a $0000. La borne n'est plus
                      ecrite ici : depuis que le packer place CONTRE les etats de
@@ -327,7 +327,7 @@
                      plus petit dans l'ordre des zones, une page entiere en premier
                      evite d'eclater un lot. -->
                 <zone page="$0B" address="$0000" size="$4000"/>
-                <zone page="$0C" address="$0B00" size="$3500"/>
+                <zone page="$0C" address="$1C00" size="$2400"/>
                 <zone page="$0D" address="$0000" size="$4000"/>
                 <zone page="$0E" address="$0000" size="$4000"/>
                 <zone page="$0F" address="$0000" size="$4000"/>
@@ -593,7 +593,6 @@
                 <scene name="scenes.boot"/>
                 <scene name="scenes.stage1"/>
                 <scene name="scenes.lot.bink"/>
-                <scene name="scenes.lot.patapata"/>
                 <scene name="scenes.lot.cancer"/>
                 <scene name="scenes.lot.bugpstaff"/>
                 <scene name="scenes.lot.scant"/>
@@ -608,7 +607,6 @@
                 <scene name="scenes.boot"/>
                 <scene name="scenes.stage3"/>
                 <scene name="scenes.lot.bink"/>
-                <scene name="scenes.lot.patapata"/>
                 <scene name="scenes.stage3.music"/>
             </composition>
             <composition name="stage4">
@@ -616,7 +614,6 @@
                 <scene name="scenes.stage4"/>
                 <scene name="scenes.lot.stage4"/>
                 <scene name="scenes.lot.bink"/>
-                <scene name="scenes.lot.patapata"/>
                 <scene name="scenes.lot.cancer"/>
                 <scene name="scenes.lot.bugpstaff"/>
                 <scene name="scenes.stage4.music"/>
@@ -638,7 +635,6 @@
                 <scene name="scenes.boot"/>
                 <scene name="scenes.stage7"/>
                 <scene name="scenes.lot.bink"/>
-                <scene name="scenes.lot.patapata"/>
                 <scene name="scenes.lot.cancer"/>
                 <scene name="scenes.lot.bugpstaff"/>
                 <scene name="scenes.lot.scant"/>
@@ -1767,6 +1763,23 @@
                 </file>
 
 
+                <!-- Le Pata-Pata, COMMUN depuis le 06/09/2026 (decision auteur) :
+                     l'ecran de saisie du classement le fait voler dans tous les
+                     stages, il sort des lots et vit dans l'arene des objets — la
+                     frontiere de la page $0C est reculee pour lui. Son identifiant
+                     est commun (ObjID_patapata = 32, objid-common.const.asm). -->
+                <file name="lib.patapata" linkdata="LINK" arena="objects">
+                    <lwasm gensource="gen/enemies/patapata.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="src/enemies/pata-pata/enemy.asm"/>
+                                <gfxcomp file="lib.patapata" gendir="gen/enemies/pata-pata"
+                                         gensource="gen/enemies/pata-pata/includes.asm"
+                                         genindex="gen/enemies/pata-pata/index.asm">
+                                    <images dir="src/enemies/pata-pata/images" names="patapata" shifts="0,1"/>
+                                </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <!-- LA BIBLIOTHEQUE D'ENNEMIS : les ennemis partages entre stages
                      (analyse-lots-ennemis-2026-08.md). Sur disque UNE fois ; chaque
                      stage charge SA combinaison par sa scene de cast, la dedup du
@@ -1788,17 +1801,6 @@
                                         <images dir="src/enemies/bink/images" match="00.png" mirror="x" shifts="0,1"/>
                                         <images dir="src/enemies/bink/images" match="0[1-5].png" mirror="x" shifts="0,1"/>
                                     </gfxcomp>
-                    </lwasm>
-                </file>
-                <file name="lib.patapata" linkdata="LINK" arena="enemies">
-                    <lwasm gensource="gen/enemies/patapata.asm">
-                        <asm filename="gen/directories/disk0/entries.asm"/>
-                        <asm filename="src/enemies/pata-pata/enemy.asm"/>
-                                <gfxcomp file="lib.patapata" gendir="gen/enemies/pata-pata"
-                                         gensource="gen/enemies/pata-pata/includes.asm"
-                                         genindex="gen/enemies/pata-pata/index.asm">
-                                    <images dir="src/enemies/pata-pata/images" names="patapata" shifts="0,1"/>
-                                </gfxcomp>
                     </lwasm>
                 </file>
                 <file name="lib.cancer" linkdata="LINK" arena="enemies">
@@ -2276,6 +2278,7 @@
                     <load name="common.simplefire"/>
                     <load name="common.firechain"/>
                     <load name="common.foefire"/>
+                    <load name="lib.patapata"/>
                     <load name="common.ranking"/>
                     <load name="common.nameentry.ymm"/>
                     <!-- Le boot ouvre sur le TITLE ; le contenu stage 1 vit dans
@@ -2422,9 +2425,6 @@
                      stages consecutifs partagent reste en RAM. -->
                 <scene name="scenes.lot.bink" section="SCENE" gensource="gen/scenes/lot-bink.asm">
                     <load name="lib.bink"/>
-                </scene>
-                <scene name="scenes.lot.patapata" section="SCENE" gensource="gen/scenes/lot-patapata.asm">
-                    <load name="lib.patapata"/>
                 </scene>
                 <!-- Le lot C, c'est CANCER — l'ennemi partage par les stages 1, 4,
                      5 et 7 (analyse-lots-ennemis-2026-08.md, tableau des lots).

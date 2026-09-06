@@ -7,7 +7,6 @@ OBJID_CONST_01 equ 1
 
         INCLUDE "src/common/objid-common.const.asm"
 
-ObjID_patapata equ 32
 ObjID_bug equ 33
 ObjID_bink equ 34
 ObjID_pow equ 35

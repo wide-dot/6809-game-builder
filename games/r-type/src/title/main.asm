@@ -64,7 +64,7 @@ ymm.frame.play   EXTERNAL
 ym2413.init      EXTERNAL
 sounds.title.ymm EXTERNAL
 playfield.clearBlast  EXTERNAL
-playfield.clearLines  EXTERNAL
+playfield.clearBlastFull EXTERNAL
 
 page.ymm equ map.RAM_OVER_CART+title.music.ymm.page   ; la page du MORCEAU
 
@@ -120,9 +120,7 @@ stage.main
         ; redessin — l'overlay garde ses pixels, le clignotant se recouvre
         ; lui-meme (trois frames opaques de meme boite), la machine a ecrire
         ; est additive, et chaque transition repart d'un title.clearBuffers.
-        jsr   title.initClearBands
-        ldy   title.band.p12
-        jsr   title.clearBand
+        jsr   title.clearBand          ; l'effacement plein ecran, arme
 
         ; le title s'inscrit dans les temoins : « qui tourne » est observable
         ; de bout en bout par la lane (le title est l'unite 0 du creneau)
@@ -283,11 +281,7 @@ title.p2.live
 ; PHASE 3 : realignement, entree du TM en diagonale (v1 phase 3)
 ; ---------------------------------------------------------------------------
 title.p3.init
-        ; le TM traverse tout le haut de l'ecran : la bande s'elargit et la
-        ; marge 0-10 (hors fenetre du blast) s'ajoute (drapeau a 2)
-        ldy   title.band.p3
-        jsr   title.clearBand
-        inc   title.clear.on
+        jsr   title.clearBand          ; (plein ecran : la marge 0-10 est dedans)
 
         ldu   #addr_logo
         ldy   #logo_finalpos
@@ -335,10 +329,7 @@ title.p4.init
         ; la descente : du haut des lettres (celui de la bande p1/p2) au bas
         ; du champ (le TM finit vers y=156, sous les lettres) ; le TM a
         ; quitte la marge du haut
-        lda   title.band.p12
-        ldb   #190
-        tfr   d,y
-        jsr   title.clearBand          ; repose le drapeau a 1 : marge finie
+        jsr   title.clearBand
 
         ldu   #addr_logo
         lda   #6
@@ -675,89 +666,24 @@ title.frame
         ; ne changent pas.
         _gfxlock.on
         jsr   RunObjects
-        ; OVERLAY : l'effacement, seulement quand une phase l'a arme — la
-        ; bande verticale de l'animation en cours (fenetre posee par
-        ; title.clearBand ; 2 = plus la marge 0-10 quand le TM la traverse).
-        ; Ecran statique = drapeau a zero = ce bloc ne coute qu'un test.
+        ; OVERLAY : l'effacement, seulement quand une phase l'a arme — tout
+        ; l'ecran d'un blast (les bandes par fenetre dynamique sont retirees
+        ; le 06/09/2026 avec la fenetre elle-meme). Ecran statique = drapeau
+        ; a zero = ce bloc ne coute qu'un test.
         lda   title.clear.on
         beq   >
         lda   #map.RAM_OVER_CART+common.overlay.page
-        ldx   #playfield.clearBlast
+        ldx   #playfield.clearBlastFull
         jsr   paged.call
-        lda   title.clear.on
-        cmpa  #2
-        bne   >
-        jsr   title.clearTop
 !       jsr   BuildSprites          ; OVERLAY : la passe unique remplace le quatuor
         _gfxlock.off
         _gfxlock.loop
         rts
 
-; les lignes 0-10, au-dessus de la fenetre maximale du blast : le stage les
-; laisse au masque, mais le title n'a pas de masque et le TM y passe
-title.clearTop
-        ldd   #0
-        ldx   #$A000
-!       std   ,x++
-        std   $2000-2,x                ; le plan forme, au meme pas
-        cmpx  #$A000+11*40
-        blo   <
-        rts
-
-; ---------------------------------------------------------------------------
-; L'effacement sequence : la bande Y = [premiere:derniere] devient la fenetre
-; du blast, et l'effacement par trame s'allume. Les phases s'en servent a
-; leur init ; title.clear.top s'ajoute quand l'anim traverse les lignes 0-10.
-; ---------------------------------------------------------------------------
-title.clearBand
-        lda   #map.RAM_OVER_CART+common.overlay.page
-        ldx   #playfield.clearLines
-        jsr   paged.call
+title.clearBand                        ; arme l'effacement plein ecran
         lda   #1
         sta   title.clear.on
         rts
-
-; ---------------------------------------------------------------------------
-; Les bandes, calculees une fois des imagesets (rien de code en dur ne depend
-; de la taille des sprites) :
-;   p1/p2 : les lettres defilent a y=100        -> [100+y1-2 .. 100+y1+h+1]
-;   p3    : le TM traverse depuis (0,0)         -> [11 .. max(bas lettres,
-;           bas du TM a sa cible y=125)+2], la marge 0-10 au clearTop
-;   p4    : derivee sur place (haut p1/p2 .. 190), pas de table
-; ---------------------------------------------------------------------------
-title.initClearBands
-        ; la lettre R : son y1 (signe) et sa hauteur, lus dans l'imageset —
-        ; les images du logo vivent dans CETTE unite, aucune page a monter
-        ldx   #set_logo_1
-        ldb   image_y_size,x
-        lda   ,x                       ; offset du sous-ensemble non miroir
-        leay  a,x
-        lda   image_subset_y1_offset,y
-        pshs  a                        ; y1 lettre
-        adda  #100-2
-        sta   title.band.p12           ; haut p1/p2
-        lda   ,s+                      ; y1 + y_size, l'arithmetique du bas
-        pshs  b
-        adda  ,s+
-        adda  #100+2
-        sta   title.band.p12+1         ; bas p1/p2
-        ; le TM : son bas a la cible p3 (y=125)
-        ldx   #set_logo_0
-        ldb   image_y_size,x
-        lda   ,x
-        leay  a,x
-        lda   image_subset_y1_offset,y
-        pshs  b
-        adda  ,s+
-        adda  #125+2
-        cmpa  title.band.p12+1         ; le bas p3 : le plus bas des deux
-        bhs   >
-        lda   title.band.p12+1
-!       sta   title.band.p3+1
-        lda   #11                      ; la fenetre du blast s'arrete la ;
-        sta   title.band.p3            ; les lignes 0-10 sont au clearTop
-        rts
-
 title.userIRQ
         jsr   gfxlock.bufferSwap.check
         jsr   PalUpdateNow
@@ -837,8 +763,6 @@ title.p9.counter fdb  0
 ; marge 0-10) et les bandes precalculees a l'init (title.initClearBands) —
 ; chaque bande = premiere ligne : derniere ligne
 title.clear.on   fcb  0
-title.band.p12   fdb  0
-title.band.p3    fdb  0
 
 logo_startx
         fdb   150,146,150,150,150,149

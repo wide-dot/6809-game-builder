@@ -7,16 +7,16 @@ OBJID_CONST_02 equ 1
 
         INCLUDE "src/common/objid-common.const.asm"
 
-ObjID_pow equ 32
-ObjID_checkpoint equ 33
-ObjID_bossmusic equ 34
+ObjID_pow equ 33
+ObjID_checkpoint equ 34
+ObjID_bossmusic equ 35
 * Le cast du chantier 3 — squelettes (spawn + delete immédiat), les
 * implémentations viendront de la référence arcade, ennemi par ennemi.
-ObjID_gouger equ 35
-ObjID_wick equ 36
-ObjID_brood equ 37
-ObjID_outslay equ 38
-ObjID_gomander equ 39
+ObjID_gouger equ 36
+ObjID_wick equ 37
+ObjID_brood equ 38
+ObjID_outslay equ 39
+ObjID_gomander equ 40
 * Les segments d'outslay : la chaine en pose 22, le role voyageant par le
 * subtype. L'emetteur (ObjID_outslay) est ce que la wave spawne ; lui seul
 * apparait dans wave.asm.
@@ -25,17 +25,17 @@ ObjID_gomander equ 39
 * leur propre direntry (stage2.cast.imgHead) faute de tenir dans les 16 Ko du
 * cast. Le code est le meme des deux cotes (outslay.Segment) ; seule la page
 * d'images differe.
-ObjID_outslay_segment equ 40
-ObjID_outslay_head equ 41
+ObjID_outslay_segment equ 41
+ObjID_outslay_head equ 42
 * Le porteur du rendu groupe des segments : un seul objet moteur pour les 20
 * sprites du corps (schema du tailmgr du Dobkeratops).
-ObjID_outslay_render equ 42
+ObjID_outslay_render equ 43
 * Le projectile de la salve en etoile : art et boite DEDIES cote arcade
 * (tick 95f1, recipes 1000:417e, AABB 1000:4196), pas le bullet commun.
-ObjID_outslay_shot equ 43
+ObjID_outslay_shot equ 44
 * L'animation de decor comme objet : le boss en instancie une par ouverture
 * de tube, elle vit sa duree et se rend. Voir common/fx/tilemapanim/obj.asm.
-ObjID_tilemapanim equ 44
+ObjID_tilemapanim equ 45
 * Le gouger a HUIT identifiants : un par direction, et le double parce que
 * chaque pose est coupee en deux moities dessinees par DEUX objets.
 * Ce n'est pas un caprice. Img_Page_Index ne donne QU'UNE page d'images par
@@ -49,28 +49,28 @@ ObjID_tilemapanim equ 44
 * du tout. Coupe, seule la moitie enfouie est rejetee. Le parent porte la
 * moitie TOP, son enfant la BOTTOM ; ils partagent la meme position, l'ancre
 * de chaque demi-image faisant le reste.
-ObjID_gouger_tl equ 45
-ObjID_gouger_tr equ 46
-ObjID_gouger_bl equ 47
-ObjID_gouger_br equ 48
-ObjID_gouger_tl_bottom equ 49
-ObjID_gouger_tr_bottom equ 50
-ObjID_gouger_bl_bottom equ 51
-ObjID_gouger_br_bottom equ 52
+ObjID_gouger_tl equ 46
+ObjID_gouger_tr equ 47
+ObjID_gouger_bl equ 48
+ObjID_gouger_br equ 49
+ObjID_gouger_tl_bottom equ 50
+ObjID_gouger_tr_bottom equ 51
+ObjID_gouger_bl_bottom equ 52
+ObjID_gouger_br_bottom equ 53
 * Le wick visible. La ligne de wave spawne un EMETTEUR (ObjID_wick, 36) ; le
 * wick qu'on voit est son enfant et porte donc son propre identifiant — c'est
 * lui qui designe la page d'images, l'emetteur n'en ayant aucune.
-ObjID_wick_unit equ 53
+ObjID_wick_unit equ 54
 * Le parasite pondu par le brood. Enfant d'execution (jamais dans une wave) :
 * ses trois tables d'images vivent dans leur propre direntry, que
 * Img_Page_Index designe par cet identifiant.
-ObjID_zoid equ 54
+ObjID_zoid equ 55
 * Le flash de coup : meme code, autre PAGE d'images (Img_Page_Index ne donne
 * qu'une page par identifiant). L'objet bascule id,u le temps d'un eclat.
-ObjID_brood_hit equ 55
-ObjID_zoid_hit equ 56
+ObjID_brood_hit equ 56
+ObjID_zoid_hit equ 57
 
-objid.count equ 56
+objid.count equ 57
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

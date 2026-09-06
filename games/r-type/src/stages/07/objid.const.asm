@@ -7,12 +7,11 @@ OBJID_CONST_07 equ 1
 
         INCLUDE "src/common/objid-common.const.asm"
 
-ObjID_pow equ 32
-ObjID_checkpoint equ 33
-ObjID_bossmusic equ 34
+ObjID_pow equ 33
+ObjID_checkpoint equ 34
+ObjID_bossmusic equ 35
 * La bibliotheque d'ennemis que CE stage charge (ses lots — voir
 * src/common/cast.const.asm et l'analyse des lots).
-ObjID_patapata equ 35
 ObjID_bink equ 36
 ObjID_cancer equ 37
 ObjID_bug equ 38

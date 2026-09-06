@@ -169,6 +169,109 @@ La composition `stageN.ranking` liste `scenes.lot.patapata` (et la musique)
 | Bénéfice de jeu | aucun : les stages 2, 5, 6 et 8 n'ont pas de Pata-Pata, et les lots des quatre autres avaient la place |
 | Risque | la mémoire commune, dont chaque octet est disputé (les miettes ne s'additionnent pas) |
 
+### FAIT sur le banc (05/09/2026) : l'émetteur, à l'instruction
+
+Porté dans `ranking.unit.asm` (`ranking.emit`) depuis
+`run_score_screen_patapata_emitter` (0xFAE1), vérifié dans Ghidra : toutes
+les huit trames un tirage, décalé d'un cran, bit 5 = naissance (une chance
+sur deux), quatre bits bas = préréglage d'ordonnée ; le préréglage de tir est
+0 — la ligne vide de `fire_preset_table` (0x8E10) : **ils ne tirent pas**,
+question close. L'objet est celui du jeu (bord droit, script, phase de
+battement aléatoire) ; ils vivent jusqu'au tableau, tenue de 0x40 trames
+comprise, où la purge tient lieu de `game_tick_disable_flag`. Palette : les
+deux rouges de la saisie passent en 13 et 14 (l'art emploie 12).
+L'effacement des écrans à Pata-Pata se fait en TROIS blasts (0-8, 9-188,
+189-199), le blast ne couvrant que 180 lignes et les Pata-Pata les 200.
+
+Vérifié dans Ghidra le 06/09/2026, à la demande de l'auteur : (1) le rythme —
+`global_counter` (0x2EB6) n'a qu'un écrivain, l'`INC` de la boucle
+principale (0x0219), une fois par trame entre deux attentes de VBL ; le tick
+de l'émetteur teste ses trois bits bas, donc un tirage par tranche de huit
+trames, et `random_ax` (0x0EDE9, générateur à trois octets a := b + c) donne
+un bit 5 équiprobable : une naissance sur deux tranches, 3,4/s à 55 Hz, 3,1/s
+chez nous à 50 (comptes de trames gardés tels quels, règle du skill) ; (2) le
+mouvement — `run_pata_pata` est le tick du jeu, sans variante : script, puis
+`ADD pos_x, scroll_amount`. Mais `scroll_amount` (0x2ED0) est le delta que
+`auto_scroll` dérive de la vitesse [0x2EEC], et l'état de perte de vie /
+game over (0x11E2) **remet à zéro tout le bloc caméra et vitesses** avant
+l'écran de score, que 0x1515 ne touche pas : le delta vaut 0, les Pata-Pata
+ne dérivent pas, leur vol est le script seul. Notre objet, ancré au champ
+avec une caméra immobile, est équivalent.
+
+**Le générateur aussi est porté (06/09/2026)** : `ranking.rnd` est
+`random_ax` à l'identique (trois octets, a := b + c), réensemencé à (5, 1, 3)
+toutes les 512 trames de jeu comme la boucle principale de la borne, et
+chaque naissance consomme ses deux tirages (préréglage de tir, phase de
+battement). La séquence de naissances est donc celle de la borne, rafales
+et creux compris. Mesuré au banc : 9,3 Pata-Pata en moyenne, 14 au plus
+(12 et 17 avec un tirage équiprobable, que l'auteur trouvait trop peuplé ;
+4,7 et 9 avec un tirage sur quatre, essayé puis écarté au profit de la
+fidélité). Piège rencontré : un `stx` de deux octets pour poser le
+troisième octet du germe écrasait la variable suivante.
+
+**L'émetteur est armé par `ranking.em.on`, que seul le banc pose.** Dans le
+jeu il reste désarmé tant que le placement transverse n'est pas fait : le lot
+n'est chargé que par quatre stages et `ObjID_patapata` n'y vaut pas la même
+chose (32 au stage 1, 35 ailleurs). Ce qui reste : l'option A ci-dessous
+(composition de classement + identifiant commun), ou la mise en commun que
+l'auteur a évoquée le 05/09.
+
+### FAIT le 06/09/2026 : option B finalement — le Pata-Pata est COMMUN
+
+Décision auteur du 06/09, revenant sur celle du 04/09 : `lib.patapata` passe
+dans l'arène `objects` (page $0A) et sort des lots ; `scenes.lot.patapata`
+disparaît des quatre compositions. Pour lui faire de la place, **la frontière
+de la page $0C recule de $0B00 à $1C00** (l'arène `enemies` y garde 9 216
+octets) et les lots se sont repaquetés : bink + mid $0B, cancer $0C,
+bug $0D, pstaff + scantfire $0E, scant $0F — **les huit images de stage
+changent d'adresses de lots**, le banc r-type de l'auteur est à rejouer.
+L'arène `objects` finit à 2 998 octets libres (2 394 sur $17).
+
+Dans le même mouvement, **`ObjID_patapata` devient commun, 32**, la base des
+identifiants spécifiques passe à 33 (`objid.specific.base`, garde inclus)
+et les identifiants locaux des stages 2 à 8 ont glissé d'un cran par script
+(dans les stages 3, 4 et 7 l'ancien 35 disparaît et seuls les identifiants
+en dessous glissent, pas de trou) ; la ligne 32 est insérée dans les cinq
+tables d'index de chaque stage. L'émetteur est armé par défaut : le
+classement fait voler les Pata-Pata dans tous les stages.
+
+Et le blast n'a plus de fenêtre dynamique : deux entrées fixes
+(`playfield.clearBlast` lignes 11-190, `playfield.clearBlastFull` 0-199,
+889 poussées depuis $BF41), la timeline par stage, `clearLines`,
+`clearWindow`, les bandes du title et `gen_clear_timeline.py` sont retirés.
+
+Trouvé en vérifiant dans le jeu : **le semis de `globals.difficulty` comptait
+sur un A nul** que le cheat de score venait de charger à 3 — les parties au
+cheat se jouaient en difficulté 3, et au palier 3 les Pata-Pata de l'écran
+de score tiraient (la borne aussi : `fire_preset_table` est vide pour le
+préréglage 0 aux paliers 0 et 1, plus au-delà). `clr globals.difficulty`.
+
+### Et la musique qui tardait après le READY (06/09/2026, relevé de l'auteur)
+
+Quatre secondes de silence après le READY, à chaque mort et pas seulement
+au continue : `ymm.restart` (engine/sound/ymm.asm) lisait le décalage de
+bouclage et décompressait le flux zx0 de la boucle dans la page cartouche
+du moment — celle du dernier `paged.call`, le rechargement de checkpoint —
+et non celle du morceau. Des octets étrangers : un « attends 198 trames »
+puis une fin de flux, et c'est la boucle naturelle du lecteur, paginée elle,
+qui relançait la piste 198 trames plus tard. Le fichier était sain (intro et
+boucle sont deux flux zx0, l'offset est juste). Corrigé : `ymm.restart`
+monte `ymm.data.page` et rend la page de l'appelant. Vérifié par sonde
+(anneau au point de bouclage, `frame.waits` = 3) et à l'oreille sur la
+vidéo : la musique repart 1,5 s après le READY, le temps du rechargement.
+L'unité `engine.sound.ymm` fait 1 057 octets et touche désormais $7C00, le
+début de la région `stage` : plus aucune marge derrière le lecteur.
+
+### Les artefacts entre le GAME OVER et la saisie (06/09/2026, relevé de l'auteur)
+
+`ranking.screen` installait sa palette AVANT que la boucle n'ait peint ses
+deux trames de noir : l'ancien contenu des tampons (le stage et son HUD,
+que `Pal_black` cachait depuis la mort) apparaissait une trame avec la
+palette du classement. La palette est maintenant posée après
+`ranking.loop.init`. Vérifié trame par trame sous toje : depuis le noir qui
+suit le GAME OVER, sept trames entièrement noires puis la première trame
+de la révélation, aucune couleur étrangère.
+
 ### Décision (auteur, 04/09/2026) : option A, chargement dynamique
 
 B dépensait 3,9 Ko du résident le plus disputé du jeu pour un décor de dix

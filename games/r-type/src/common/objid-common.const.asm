@@ -46,14 +46,23 @@ ObjID_dobkeratops_explosion equ 29
 * coute pas d'identifiant.
 ObjID_forcepod_groundlaser equ 30
 ObjID_forcepod_counterairreflect equ 31
+; le Pata-Pata, commun depuis le 06/09/2026 : l'ecran de saisie du classement
+; le fait naitre dans tous les stages (unite residente, arene objects)
+ObjID_patapata equ 32
 
-objid.common.count equ 31
+objid.common.count equ 33
+objid.specific.base equ 33             ; le premier identifiant d'un stage
 
 * LE DECOUPAGE DE L'ESPACE D'IDENTIFIANTS (26/08/2026)
 *
-*    0..31   le prefixe COMMUN, celui de ce fichier
-*   32..127  le specifique de chaque ensemble co-chargeable
+*    0..32   le prefixe COMMUN, celui de ce fichier
+*   33..127  le specifique de chaque ensemble co-chargeable
 *            (stage/title objid.const.asm)
+*
+* La base etait 32 ; le Pata-Pata commun (06/09/2026) l'a poussee a 33, et
+* les identifiants specifiques des huit stages ont glisse d'un cran ce
+* jour-la (les waves sont symboliques, les tables d'index ont recu la
+* ligne 32 par script).
 *
 * Des bornes rondes, qui se retiennent. La base valait 30 et le commun etait
 * plein a l'octet pres : 30 et 31 s'y sont ouverts. Le 30 est alle a la tete
@@ -62,8 +71,8 @@ objid.common.count equ 31
 *
 * Le plafond de 127 tient a RunObjects, qui met l'identifiant en B et l'echelle
 * par aslb+abx : au-dela le bit de poids fort tombe dans le decalage.
- IFGE objid.common.count-32
-        ERROR common object ids overflow the specific base (32)
+ IFGT objid.common.count-objid.specific.base
+        ERROR common object ids overflow the specific base
  ENDC
 
  ENDC

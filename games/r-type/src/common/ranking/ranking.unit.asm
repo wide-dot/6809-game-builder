@@ -43,6 +43,7 @@ ranking.table      EXPORT
 ranking.stage      EXPORT
 ranking.rank       EXPORT
 ranking.screen     EXPORT
+ranking.em.on      EXPORT              ; l'emetteur de Pata-Pata (le banc l'arme)
 text.recolor       EXPORT              ; réemployables : voir leurs notices
 text.hiliteLine    EXPORT
 ranking.digits7    EXPORT
@@ -50,7 +51,9 @@ ranking.dig        EXPORT
 
 ; Le stage courant moins un, tenu par le moteur résident : il traverse le
 ; changement de scène, donc il est le seul à savoir dans quel stage on meurt.
-game.stage         EXTERNAL
+; L'INTERFACE DU MOTEUR (game.stage, paged.call, la palette, la manette, les
+; bruitages, le verrou graphique, les sprites) : api.asm, comme un stage.
+        INCLUDE "src/common/engine/api.asm"
 
 ; LA POLICE ET SES OUTILS vivent dans la page du HUD. L'ecran la monte le temps
 ; de peindre : son propre code est dans la demi-page video, toujours montee, il
@@ -61,22 +64,12 @@ numbers_addr       EXTERNAL
 DRAW_text_space    EXTERNAL
 ScoreToDigits      EXTERNAL
 hud.scoreWork      EXTERNAL
-; L'effacement des tampons, et le relais de page.
-checkpoint.clearData EXTERNAL
-paged.call         EXTERNAL
+; L'effacement du champ, celui du stage (clearblast.asm), et sa fenetre.
+playfield.clearBlastFull EXTERNAL     ; tout l'ecran : les Pata-Pata volent partout
 ; La palette : celle du stage. La police y prend les index 3 a 6, identiques
 ; sur les huit stages — le texte a donc le meme rendu partout.
 Pal_stage          EXTERNAL
-Pal_current        EXTERNAL
-PalRefresh         EXTERNAL
-PalUpdateNow       EXTERNAL
-; La manette et la boite aux lettres des bruitages : la saisie ne lit que le
-; port 0 et n'emploie que des sons deja portes.
-joypad.readKbd     EXTERNAL
-joypad.pressed.dpad EXTERNAL
-joypad.held.dpad   EXTERNAL
-joypad.pressed.fire EXTERNAL
-soundFX.newSound   EXTERNAL
+Pal_black          EXTERNAL
 
  SECTION code
 
@@ -86,10 +79,12 @@ soundFX.newSound   EXTERNAL
         INCLUDE "engine/macros.asm"
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/system/to8/ram/ram.macro.asm"
+        INCLUDE "engine/graphics/buffer/gfxlock.macro.asm"
         INCLUDE "gen/layout.asm"
         INCLUDE "engine/system/to8/controller/joypad.const.asm"
         INCLUDE "src/common/fx/soundfx/soundFX.const.asm"
         INCLUDE "src/common/state/variables.asm"
+        INCLUDE "src/common/objid-common.const.asm" ; ObjID_patapata, commun (32)
 
 ranking.ENTRY  equ 10                  ; 3 octets de score + 7 de nom
 ranking.SLOTS  equ 10                  ; les dix rangs
@@ -221,9 +216,10 @@ ranking.stageAdd
 ; trois lignes : la police écrit de U-120 à U+160, son point d'ancrage est au
 ; MILIEU du glyphe et non en haut.
 ;
-; LES DEUX TAMPONS SONT PEINTS À L'IDENTIQUE. Rien n'arme d'échange ici (pas de
-; `gfxlock.on`), donc le tampon affiché est celui que la séquence de mort a
-; laissé — on ne sait pas lequel, et on n'a pas à le savoir.
+; CES ÉCRANS TOURNENT DANS LA BOUCLE DE JEU (05/09/2026) : à chaque trame le
+; champ est effacé par le blast et l'écran REPEINT EN ENTIER dans le tampon de
+; travail, que l'IRQ échange ensuite — voir ranking.frame. Un peintre par
+; écran (ranking.painter), aucune peinture hors du verrou.
 ;-------------------------------------------------------------------------------
 ranking.SCR_TITLE equ $C000+37*40+10   ; « S T A G E   S C O R E », 21 cellules
 ranking.SCR_LEFT  equ $C000+55*40+3    ; premier emplacement, colonne gauche
@@ -240,7 +236,7 @@ ranking.screen
         pshs  b                        ; la page de l'appelant, rendue en sortie
         ; LA PALETTE DE TRAVAIL : celle du stage — ses index 0 à 11 sont les
         ; mêmes sur les huit stages, la police y prend le blanc (3) et trois
-        ; bleus (4 à 6) — plus DEUX ROUGES en 12 et 13, des entrées que rien
+        ; bleus (4 à 6) — plus DEUX ROUGES en 13 et 14, des entrées que rien
         ; de ces écrans n'emploie. Aucun rouge n'existe parmi les communs, et
         ; le curseur de saisie clignote blanc/rouge (décision auteur, 04/09).
         ldx   #Pal_stage
@@ -249,21 +245,37 @@ ranking.screen
         std   ,u++
         cmpu  #ranking.pal+32
         blo   @pal
-        ldd   #$0E00                   ; 12 : rouge vif   (250,0,0)
-        std   ranking.pal+24
-        ldd   #$0400                   ; 13 : rouge sombre (158,0,0)
+        ; EN 13 ET 14, PAS 12 (05/09/2026) : le Pata-Pata de l'ecran de saisie
+        ; emploie l'index 12 de la palette du stage, ses deux rouges se logent
+        ; au-dessus (l'art n'emploie ni 13 ni 14, seulement 15 au-dela).
+        ldd   #$0E00                   ; 13 : rouge vif   (250,0,0)
         std   ranking.pal+26
+        ldd   #$0400                   ; 14 : rouge sombre (158,0,0)
+        std   ranking.pal+28
+        ; LA PALETTE APRES LES TRAMES NOIRES (06/09/2026, releve de l'auteur) :
+        ; installee avant, elle rendait visible une trame de l'ancien contenu
+        ; des tampons (le stage et son HUD, que le noir de la mort cachait
+        ; sous Pal_black) — des artefacts entre le GAME OVER et la saisie.
+        ; loop.init purge et peint deux trames de noir d'abord.
+        jsr   ranking.loop.init
         ldd   #ranking.pal
         std   Pal_current
         clr   PalRefresh
         jsr   PalUpdateNow
-        _ram.data.set #2
-        jsr   ranking.scr.clear2
         lda   #map.RAM_OVER_CART+common.hud.page
         _SetCartPageA                  ; la police, pour toute la suite
+        jsr   ranking.glyphs.init      ; sa table, copiee chez nous
         jsr   ranking.scr.reveal       ; le texte apparaît, au rythme de la borne
         jsr   ranking.input
         jsr   ranking.tableScreen      ; puis le tableau des dix
+        ; LE NOIR EN SORTIE (06/09/2026) : l'ecran suivant (CONTINUE) peint ses
+        ; tampons avant de poser sa palette — sous la notre, ce qu'il peint se
+        ; voyait une trame, suivi d'une trame noire. Sous Pal_black, rien ne
+        ; se voit avant qu'il n'ait fini.
+        ldd   #Pal_black
+        std   Pal_current
+        clr   PalRefresh
+        jsr   PalUpdateNow
         puls  b
         _SetCartPageB
         rts
@@ -281,8 +293,9 @@ ranking.screen
 ; Ici, pas d'objets : un pilote de trame sans état par ligne. La case due se
 ; DÉDUIT du numéro de trame — la ligne i tient les trames 32+8i à 32+8i+15 —
 ; ce qui donne le chevauchement de la borne (deux lignes se remplissent en même
-; temps) sans table d'objets. Chaque case est peinte DANS LES DEUX TAMPONS,
-; comme le curseur de saisie : rien ne redessine derrière nous.
+; temps) sans table d'objets. Chaque trame repeint TOUT ce qui est dû jusqu'à
+; la trame courante (le tampon de travail vient d'être effacé) ; la trame
+; avance du frame-drop, donc le rythme de la borne tient à 25 images/s.
 ranking.TITLE_N   equ 21                ; « S T A G E   S C O R E »
 ranking.ENTER_N   equ 20                ; « ENTER YOUR INITIALS. »
 ranking.BOT_N     equ 32                ; 20 + « NO.n » 5 + 7 tirets
@@ -291,17 +304,91 @@ ranking.ROW_START equ 32                ; trames avant la première ligne
 ranking.ROW_STEP  equ 8                 ; une ligne de plus toutes les huit
 ranking.ROW_N     equ 16                ; cases d'une ligne, une par trame
 
-ranking.scr.clear2
-        ldu   #$0000                   ; les deux tampons au noir
-        lda   #map.RAM_OVER_CART+common.checkpoint.page
-        ldx   #checkpoint.clearData
-        jsr   paged.call
-        _SwitchScreenBuffer
+;-------------------------------------------------------------------------------
+; LA BOUCLE DE JEU DE CES ECRANS — le modele est celui du stage (stage.frame) :
+; le verrou s'ouvre, le champ est efface par le blast, l'ecran est REPEINT EN
+; ENTIER dans le tampon de travail, la passe de sprites tourne (le pool est
+; vide ici, elle ne coute rien), le verrou se ferme et l'IRQ echange les
+; tampons a la trame suivante. C'est l'usage ordinaire du double buffering :
+; chaque trame est complete, aucun tampon n'est « en retard ».
+;
+; Le temps est celui du jeu : `ranking.tick` rend les trames 50 Hz ecoulees
+; depuis la boucle precedente (frame-drop), les calendriers avancent de ce
+; pas — a 25 images par seconde le rythme de la borne est tenu quand meme.
+;
+; La logique d'un ecran (manette, compteurs) se fait ENTRE deux trames, pendant
+; que l'IRQ echange les tampons : `ranking.frame` ne fait que peindre.
+;-------------------------------------------------------------------------------
+ranking.loop.init
+        jsr   ranking.loop.purge       ; la purge du stage : le credit est fini,
+                                       ;   rien de la partie ne survit — le
+                                       ;   continue rechargera le checkpoint,
+                                       ;   qui repart lui aussi d'un pool vide
+        ; L'EFFACEMENT : tout l'ecran d'un blast (playfield.clearBlastFull —
+        ; les Pata-Pata volent sur les 200 lignes, le titre du tableau est en
+        ; ligne 6) ; le stage, lui, garde son entree champ 11-190, rien a
+        ; rendre en sortie. Deux trames de noir complet d'abord, pour ce que
+        ; le blast du stage n'effacait pas (son HUD, dans le tampon que la
+        ; mort n'a pas noirci).
+        ldx   #ranking.clear.window
+        stx   ranking.clearer
+        jsr   ranking.loop.black2
+        clr   gfxlock.frameDrop.count  ; le premier tick vaut une trame
+        rts
+;
+ranking.loop.black2
+        ldx   #ranking.loop.black
+        stx   ranking.painter
+        jsr   ranking.frame
+        jmp   ranking.frame
+;
+ranking.clear.window
+        lda   #map.RAM_OVER_CART+common.overlay.page
+        ldx   #playfield.clearBlastFull
+        jmp   paged.call
+;
+ranking.loop.black
         ldu   #$0000
         lda   #map.RAM_OVER_CART+common.checkpoint.page
         ldx   #checkpoint.clearData
-        jsr   paged.call
-        _SwitchScreenBuffer
+        jmp   paged.call
+;
+; le pool vide, ses boites de collision avec (un Pata-Pata s'y inscrit)
+ranking.loop.purge
+        jsr   ManagedObjects_ClearAll
+        jsr   Collision_ClearLists
+        jsr   DisplaySprite_ClearAll
+        jsr   EraseSprites_ClearAll
+        jmp   InitDrawSprites
+;
+;
+; une trame : ce que [ranking.painter] peint, sur un champ efface
+ranking.frame
+        _gfxlock.on
+        jsr   RunObjects
+        jsr   [ranking.clearer]
+        lda   #map.RAM_OVER_CART+common.hud.page
+        _SetCartPageA                  ; chaque objet monte SA page : la police
+        jsr   [ranking.painter]        ;   se remonte avant de peindre
+        jsr   BuildSprites
+        _gfxlock.off
+        _gfxlock.loop
+        rts
+;
+; B = trames 50 Hz ecoulees depuis la boucle precedente, une au moins
+ranking.tick
+        ldb   gfxlock.frameDrop.count
+        bne   >
+        incb
+!       rts
+;
+; ranking.dt <- B ; puis D = ranking.in.timer - dt, range (Z, N a jour)
+ranking.timer.sub
+        clra
+        std   ranking.dt
+        ldd   ranking.in.timer
+        subd  ranking.dt
+        std   ranking.in.timer
         rts
 
 ranking.scr.reveal
@@ -322,67 +409,74 @@ ranking.scr.reveal
         std   ranking.scr.end
         lda   ranking.rank             ; « NO.n », le rang de la partie
         jsr   ranking.tbl.rankLabel
+        jsr   ranking.scr.prepare      ; les lignes, une fois pour toutes
         ldd   #0
         std   ranking.scr.f
-@frame  _waitFrames #1
-        jsr   ranking.scr.stepTitle
-        jsr   ranking.scr.stepRows
-        jsr   ranking.scr.stepBottom
-        ldd   ranking.scr.f
-        addd  #1
+        ldx   #ranking.scr.paint
+        stx   ranking.painter
+@frame  jsr   ranking.frame
+        jsr   ranking.tick
+        clra
+        addd  ranking.scr.f
         std   ranking.scr.f
         cmpd  ranking.scr.end
         blo   @frame
         rts
+;
+; tout ce qui est du a la trame ranking.scr.f — repeint chaque trame
+ranking.scr.paint
+        jsr   ranking.scr.stepTitle
+        jsr   ranking.scr.stepRows
+        jmp   ranking.scr.stepBottom
 
+; D = trame relative (>= 0), ranking.e.cnt = le plafond
+; -> B = cases dues d'une chaine fixe : trois par trame, plafonnees
+ranking.scr.due
+        tsta
+        bne   @all
+        lda   #ranking.RATE
+        mul
+        tsta
+        bne   @all
+        addb  #ranking.RATE
+        bcs   @all
+        cmpb  ranking.e.cnt
+        blo   @out
+@all    ldb   ranking.e.cnt
+@out    rts
+;
 ranking.scr.stepTitle
-        lda   ranking.scr.f            ; le titre tient les sept premières
-        bne   @out                     ;   trames : le poids fort suffit
-        lda   ranking.scr.f+1
-        cmpa  #(ranking.TITLE_N+ranking.RATE-1)/ranking.RATE
-        bhs   @out
-        ldb   #ranking.RATE
-        mul                            ; B = la première case due
+        lda   #ranking.TITLE_N
+        sta   ranking.e.cnt
+        ldd   ranking.scr.f
+        bsr   ranking.scr.due
         ldx   #ranking.str.title
         ldu   #ranking.SCR_TITLE
-        lda   #ranking.TITLE_N
-        jmp   ranking.scr.emit3
-@out    rts
+        jmp   ranking.scr.emitN
 
-; X = chaîne, U = début écran, B = première case due, A = cases de la chaîne
-; -> jusqu'à trois cases peintes
-ranking.scr.emit3
-        sta   ranking.e.cnt
-        stb   ranking.e.idx
-        stx   ranking.e.src
-        stu   ranking.e.dst
-        ldb   #ranking.RATE
-@loop   lda   ranking.e.idx
-        cmpa  ranking.e.cnt
-        bhs   @out
-        pshs  b
-        ldx   ranking.e.src
-        lda   a,x                      ; le caractère
-        ldu   ranking.e.dst
-        ldb   ranking.e.idx
-        leau  b,u
-        jsr   ranking.scr.cell
-        inc   ranking.e.idx
-        puls  b
+; L'EMETTEUR, A PLAT (06/09/2026) : X = chaine, U = ancre ecran, B = cases.
+; Une espace n'est pas peinte — le blast vient de noircir le champ, et
+; DRAW_text_space coutait seize ecritures de zero. Le glyphe garde U (pshs/
+; puls), le dispatch ne touche que Y : rien a sauver dans la boucle.
+ranking.scr.emitN
+        tstb
+        beq   @out
+@loop   lda   ,x+
+        cmpa  #' '
+        beq   @skip
+        jsr   ranking.in.glyph
+@skip   leau  1,u
         decb
         bne   @loop
 @out    rts
 
-; A = caractère, U = adresse -> peint DANS LES DEUX TAMPONS
+; A = caractère, U = adresse -> peint dans le tampon de travail
 ranking.scr.cell
-        pshs  a,u
-        jsr   ranking.in.glyph
-        _SwitchScreenBuffer
-        puls  a,u
-        jsr   ranking.in.glyph
-        _SwitchScreenBuffer
-        rts
+        jmp   ranking.in.glyph
 
+; LES LIGNES DE SCORE, depuis les tables preparees a l'entree (scr.prepare) :
+; le texte de chaque ligne (libelle, espace, sept chiffres) et son ancre.
+; Par trame il ne reste que « combien de cases sont dues » et l'emetteur.
 ranking.scr.stepRows
         clr   ranking.scr.i
 @row    lda   ranking.scr.i
@@ -396,47 +490,49 @@ ranking.scr.stepRows
         subd  ,s++
         bmi   @next                    ; la ligne n'a pas commencé
         cmpd  #ranking.ROW_N
-        bhs   @next                    ; elle est finie
-        pshs  b                        ; LA CASE DUE, 0..15, TENUE SUR LA PILE :
-        tstb                           ;   rowLabel et rowDigits écrasent B
-        bne   >
-        jsr   ranking.scr.rowLabel     ; sa case zéro : le libellé
-!       ldb   ,s
-        cmpb  #9
-        bne   >
-        jsr   ranking.scr.rowDigits    ; sa première case de chiffre
-!       lda   ranking.scr.i
-        jsr   ranking.scr.slotU        ; U = l'emplacement de la ligne
+        blo   >
+        ldd   #ranking.ROW_N-1         ; finie : toutes ses cases
+!       incb                           ; B = les cases dues, 1..16
+        pshs  b
+        lda   ranking.scr.i
+        ldb   #ranking.ROW_N
+        mul
+        ldx   #ranking.rowText
+        leax  d,x                      ; X = le texte de la ligne
+        lda   ranking.scr.i
+        asla
+        ldy   #ranking.rowU
+        ldu   a,y                      ; U = son ancre
         puls  b
-        leau  b,u
-        jsr   ranking.scr.rowChar
-        jsr   ranking.scr.cell
+        jsr   ranking.scr.emitN
 @next   inc   ranking.scr.i
         bra   @row
 @out    rts
 
-; DEUX TAMPONS SUFFISENT, ET AUCUN N'EST À PART. Deux lignes se remplissent en
-; même temps, décalées de huit cases : quand l'une en est à ses CHIFFRES
-; (cases 9 à 15) l'autre en est à son LIBELLÉ (0 à 7). Le libellé de l'une ne
-; croise donc jamais celui de l'autre, ni les chiffres les chiffres — la chaîne
-; de libellé et le tampon de chiffres déjà en place se partagent sans conflit.
-; C'est le chevauchement de la borne, sans une ligne de RAM de plus. Le libellé
-; du TOTAL écrase « NN STAGE » : il est la DERNIÈRE ligne, aucune ligne de
-; stage ne le suit.
-ranking.scr.rowLabel
+; LA PREPARATION, une fois par sequence : les lignes de score sont figees
+; (le credit est fini), leurs textes et leurs ancres sont calcules ici —
+; plus aucune conversion de score ni de `mul` d'ancre par trame.
+ranking.scr.prepare
+        clr   ranking.scr.i
+@row    lda   ranking.scr.i
+        cmpa  ranking.scr.rows
+        bhs   @out
+        ldb   #ranking.ROW_N
+        mul
+        ldx   #ranking.rowText
+        leax  d,x                      ; X = le texte de la ligne, a ecrire
+        pshs  x
         lda   ranking.scr.i
         inca
         cmpa  ranking.scr.rows
         bne   @stage
-        ldy   #ranking.str.total
-        ldx   #ranking.str.stage
-        ldb   #8
-@c      lda   ,y+
-        sta   ,x+
-        decb
-        bne   @c
-        rts
-@stage  lda   ranking.firstStage
+        ldy   #ranking.str.total       ; la derniere ligne : « TOTAL SC »
+        bsr   ranking.scr.copy8
+        ldx   #globals.score
+        bra   @digits
+@stage  ldy   #ranking.str.stageT      ; « NN STAGE »
+        bsr   ranking.scr.copy8
+        lda   ranking.firstStage
         adda  ranking.scr.i
         inca                           ; le numéro affiché : 1..16
         ldb   #' '
@@ -444,86 +540,85 @@ ranking.scr.rowLabel
         blo   >
         ldb   #'1'
         suba  #10
-!       stb   ranking.str.stage
+!       ldx   ,s
+        stb   ,x
         adda  #'0'
-        sta   ranking.str.stage+1
-        rts
-
-ranking.scr.rowDigits
-        lda   ranking.scr.i
-        inca
-        cmpa  ranking.scr.rows
-        bne   @sc
-        ldx   #globals.score           ; la dernière ligne : le TOTAL
-        bra   @conv
-@sc     lda   ranking.firstStage
+        sta   1,x
+        lda   ranking.firstStage
         adda  ranking.scr.i
-        jsr   ranking.scr.stagePtr
-@conv   jmp   ranking.digits7
-
-; B = case 0..15 -> A = son caractère : libellé, espace, puis les chiffres
-ranking.scr.rowChar
-        cmpb  #8
-        blo   @label
-        beq   @space
-        subb  #9
-        ldx   #ranking.dig
-        lda   b,x
+        jsr   ranking.scr.stagePtr     ; X = les trois octets du stage
+@digits jsr   ranking.digits7          ; -> ranking.dig, $FF pour un zero de tete
+        puls  x
+        lda   #' '
+        sta   8,x                      ; la case 8 : l'espace
+        leax  9,x
+        ldy   #ranking.dig
+        ldb   #7
+@d      lda   ,y+
         cmpa  #$FF
         bne   >
         lda   #' '-'0'                 ; un zéro de tête : une espace
 !       adda  #'0'
-        rts
-@space  lda   #' '
-        rts
-@label  ldx   #ranking.str.stage
-        lda   b,x
+        sta   ,x+
+        decb
+        bne   @d
+        lda   ranking.scr.i            ; l'ancre de la ligne
+        jsr   ranking.scr.slotU
+        lda   ranking.scr.i
+        asla
+        ldx   #ranking.rowU
+        stu   a,x
+        inc   ranking.scr.i
+        lbra  @row
+@out    rts
+;
+; huit octets de Y vers le texte de ligne en 0,s (X preserve par l'appelant)
+ranking.scr.copy8
+        ldx   2,s                      ; (le retour est en 0,s)
+        ldb   #8
+@c      lda   ,y+
+        sta   ,x+
+        decb
+        bne   @c
         rts
 
+; LE BAS : l'invite, puis « NO.n », puis les sept tirets — trois chaines,
+; decoupees par le nombre de cases dues (0..32 dans la numerotation de la
+; borne : 20 + 5 + 7).
 ranking.scr.stepBottom
         ldd   ranking.scr.f
         subd  ranking.scr.bot
         bmi   @out                     ; le bas n'a pas commencé
-        tsta
-        bne   @out
-        lda   #ranking.RATE
-        mul                            ; B = la première case due
+        pshs  d
+        lda   #ranking.BOT_N
+        sta   ranking.e.cnt
+        puls  d
+        jsr   ranking.scr.due          ; B = les cases dues, 0..32
         stb   ranking.e.idx
-        ldb   #ranking.RATE
-@loop   lda   ranking.e.idx
-        cmpa  #ranking.BOT_N
-        bhs   @out
-        pshs  b
-        jsr   ranking.scr.botCell
-        inc   ranking.e.idx
-        puls  b
-        decb
-        bne   @loop
-@out    rts
-
-; A = case 0..31 du bas : l'invite, puis « NO.n », puis les sept tirets
-ranking.scr.botCell
-        cmpa  #ranking.ENTER_N
-        bhs   @no
-        ldx   #ranking.str.enter
+        cmpb  #ranking.ENTER_N
+        bls   >
+        ldb   #ranking.ENTER_N
+!       ldx   #ranking.str.enter
         ldu   #ranking.SCR_ENTER
-        leau  a,u
-        lda   a,x
-        jmp   ranking.scr.cell
-@no     suba  #ranking.ENTER_N
-        cmpa  #5
-        bhs   @dash
-        ldx   #ranking.str.no2
+        jsr   ranking.scr.emitN
+        ldb   ranking.e.idx
+        subb  #ranking.ENTER_N
+        bls   @out
+        cmpb  #5
+        bls   >
+        ldb   #5
+!       ldx   #ranking.str.no2
         ldu   #ranking.SCR_NO
-        leau  a,u
-        lda   a,x
-        jmp   ranking.scr.cell
-@dash   suba  #5
-        asla                           ; une cellule vide entre deux cases
+        jsr   ranking.scr.emitN
+        ldb   ranking.e.idx
+        subb  #ranking.ENTER_N+5
+        bls   @out
+        aslb                           ; n tirets = 2n-1 cases de « - - - »
+        decb
+        ldx   #ranking.str.dash
         ldu   #ranking.SCR_CELL
-        leau  a,u
-        lda   #'-'
-        jmp   ranking.scr.cell
+        jmp   ranking.scr.emitN
+@out    rts
 
 ; slot (A, 0..16) -> U. Les huit premiers à gauche, les neuf suivants à droite :
 ; le dix-septième est celui où le TOTAL tombe quand la partie a fait tout le
@@ -592,8 +687,8 @@ ranking.scr.digits7
 ; sont ceux du jeu, pas ceux de la borne : convertir les siens est un chantier à
 ; part.
 ;
-; LES DEUX TAMPONS SONT PEINTS À CHAQUE FOIS, comme le reste de l'écran : rien
-; n'arme d'échange, on ne sait pas lequel est affiché.
+; L'ÉCRAN EST REPEINT À CHAQUE TRAME depuis l'état (le nom dans la table, le
+; curseur, la lettre candidate) : la logique ne peint rien, elle change l'état.
 ;-------------------------------------------------------------------------------
 ranking.IN_LIMIT  equ 2048             ; trames — la limite de la borne ($800)
 ranking.IN_REPEAT equ 12               ; trames tenues avant que ça défile seul
@@ -608,19 +703,25 @@ ranking.input
         clr   ranking.in.alpha
         clr   ranking.in.hold
         clr   ranking.in.frame
+        clr   ranking.in.done
         ldd   #ranking.IN_LIMIT
         std   ranking.in.timer
+        ldx   #ranking.in.paint
+        stx   ranking.painter
 @loop
-        _waitFrames #1
-        inc   ranking.in.frame
-        ldd   ranking.in.timer
-        subd  #1
-        std   ranking.in.timer
-        lbeq  @finish                  ; le temps est écoulé
+        jsr   ranking.frame
+        jsr   ranking.tick
+        pshs  b
+        addb  ranking.in.frame         ; l'horloge du clignotement
+        stb   ranking.in.frame
+        ldb   ,s
+        jsr   ranking.emit             ; les Pata-Pata du decor
+        puls  b
+        jsr   ranking.timer.sub
+        lble  @finish                  ; le temps est écoulé
         lda   ranking.in.cursor
         cmpa  #7
         lbhs  @finish                  ; les sept lettres sont posées
-        jsr   ranking.in.blink
         jsr   joypad.readKbd
         lda   joypad.pressed.fire
         anda  #joypad.0.FIRE
@@ -631,8 +732,9 @@ ranking.input
         lda   joypad.held.dpad         ; tenue : ça défile après le seuil
         anda  #joypad.0.LEFT|joypad.0.RIGHT
         beq   @noHold
-        inc   ranking.in.hold
-        ldb   ranking.in.hold
+        ldb   ranking.dt+1             ; tenue : les trames, pas les boucles
+        addb  ranking.in.hold
+        stb   ranking.in.hold
         cmpb  #ranking.IN_REPEAT
         blo   @loop
         clr   ranking.in.hold
@@ -666,19 +768,14 @@ ranking.input
         cmpa  #ranking.ALPHA_RUB
         beq   @rub
         jsr   ranking.in.letter        ; A = le caractère choisi
-        pshs  a
-        jsr   ranking.in.store         ; il entre dans le nom
-        puls  a
-        jsr   ranking.in.paintCursor   ; et se fige dans sa case
-        inc   ranking.in.cursor
+        jsr   ranking.in.store         ; il entre dans le nom : la trame
+        inc   ranking.in.cursor        ;   suivante le peint depuis la table
         clr   ranking.in.alpha
         ldd   #(soundFX.BonusSound<<8)|1
         std   soundFX.newSound
         lbra  @loop
 @rub
-        lda   #'-'                     ; la case quittée redevient vide
-        jsr   ranking.in.paintCursor
-        clr   ranking.in.alpha
+        clr   ranking.in.alpha         ; la case quittée redevient un tiret
         lda   ranking.in.cursor
         beq   @rubStore
         deca
@@ -690,41 +787,136 @@ ranking.input
         std   soundFX.newSound
         lbra  @loop
 @finish
-        lda   ranking.in.cursor        ; la case clignotante ne reste pas
-        cmpa  #7                       ;   allumée sur un abandon
-        bhs   @done
-        lda   #'-'
-        jsr   ranking.in.paintCursor
-@done
-        ldd   #(soundFX.ExtraLifeSound<<8)|1
+        inc   ranking.in.done          ; la case clignotante ne reste pas
+        ldd   #(soundFX.ExtraLifeSound<<8)|1 ;   allumée sur un abandon
         std   soundFX.newSound
-        _waitFrames #ranking.IN_HOLD
+        ldd   #ranking.IN_HOLD         ; la tenue : l'écran fini, quelques trames
+        std   ranking.in.timer
+@hold   jsr   ranking.frame
+        jsr   ranking.tick
+        pshs  b
+        jsr   ranking.emit             ; ils volent encore pendant la tenue
+        puls  b
+        jsr   ranking.timer.sub
+        bgt   @hold
         rts
-;
-; le clignotement : la lettre candidate, BLANCHE une demi-période et ROUGE
-; l'autre (décision auteur, 04/09/2026 — l'alternance lettre/tiret d'avant
-; lisait mal). La lettre est peinte puis recoloriée par table, dans les deux
-; tampons : c'est `text.recolor`, écrit pour être réemployé ailleurs.
-ranking.in.blink
+
+; L'EMETTEUR DE PATA-PATA — arcade run_score_screen_patapata_emitter (0xFAE1),
+; a l'instruction pres : toutes les huit trames un tirage ; decale d'un cran,
+; son bit 5 dit s'il nait (une chance sur deux) et ses quatre bits bas donnent
+; le prereglage d'ordonnee (0..15) ; le prereglage de tir est 0, la ligne vide
+; de la table : ils ne tirent pas. L'objet est celui du jeu, il se pose seul au
+; bord droit et vole son script. Ils vivent jusqu'au tableau, tenue comprise —
+; la borne ne leve son drapeau qu'apres les 0x40 trames d'attente.
+; entree : [b] les trames du tick
+; ranking.em.on : arme par defaut depuis que le Pata-Pata est commun (06/09,
+; id 32 partout, unite residente) ; un banc peut le couper.
+ranking.emit
+        tst   ranking.em.on
+        beq   @out
+        ; LE GENERATEUR DE LA BORNE, A L'IDENTIQUE (06/09/2026) : random_ax
+        ; (0xEDE9) est un generateur a trois octets, a := b + c, que la boucle
+        ; principale reensemence a (5, 1, 3) toutes les 512 trames — et
+        ; l'emetteur, seul consommateur de cet ecran avec les deux tirages
+        ; d'une naissance, en tire une SEQUENCE FIXE : 24 a 29 naissances par
+        ; cycle, en rafales et creux, jamais dans les 80 premieres trames.
+        ; Un tirage equiprobable en faisait 32 regulieres : l'ecran paraissait
+        ; trop peuple (relevé de l'auteur).
+        pshs  b
+        clra
+        addd  ranking.em.cycle         ; la trame dans le cycle de 512
+        cmpd  #512
+        blo   >
+        subd  #512
+        ldx   #$0501                   ; le reensemencement : (5, 1, 3)…
+        stx   ranking.rng
+        pshs  b
+        ldb   #3                       ; (un seul octet : le suivant est deja
+        stb   ranking.rng+2            ;   une autre variable)
+        puls  b
+        pshs  b
+        ldb   #8                       ; …et la borne tire a cette trame meme
+        stb   ranking.em.acc
+        puls  b
+!       std   ranking.em.cycle
+        puls  b
+        addb  ranking.em.acc
+        stb   ranking.em.acc
+        cmpb  #8
+        blo   @out
+        subb  #8
+        stb   ranking.em.acc
+        bsr   ranking.rnd              ; D = AX de la borne
+        lsra
+        rorb                           ; SHR AX,1
+        bitb  #%00100000               ; TEST AL,0x20 : une chance sur deux
+        beq   @out
+        andb  #$0F                     ; AND AL,0xF : l'ordonnee
+        pshs  b
+        jsr   LoadObject_x             ; X = un emplacement libre, Z sinon
+        puls  b                        ; (puls ne touche pas Z)
+        beq   @out                     ; pool plein : la borne ne tire pas plus
+        lda   #ObjID_patapata
+        sta   id,x
+        clra
+        std   subtype_w,x              ; tir 0, ordonnee B
+        clr   wave_frame_drop,x        ; ne a cette trame, rien a rattraper
+        bsr   ranking.rnd              ; les deux tirages d'une naissance :
+        bsr   ranking.rnd              ;   load_fire_preset, puis la phase
+@out    rts                            ;   de battement (create_pata_pata)
+
+; random_ax (0xEDE9) : D = c : (b + c), puis (a, b, c) <- (b + c, a, b)
+ranking.rnd
+        ldb   ranking.rng+1
+        addb  ranking.rng+2            ; le nouvel a
+        lda   ranking.rng+2            ; l'ancien c, le AH de la borne
+        pshs  a
+        lda   ranking.rng+1
+        sta   ranking.rng+2            ; c <- b
+        lda   ranking.rng
+        sta   ranking.rng+1            ; b <- a
+        stb   ranking.rng              ; a <- b + c
+        puls  a
+        rts
+
+; L'ECRAN DE SAISIE, une trame : le STAGE SCORE au complet, puis les lettres
+; posées (relues dans la table), puis la candidate qui clignote — BLANCHE une
+; demi-période et ROUGE l'autre (décision auteur, 04/09/2026), peinte puis
+; recoloriée par `text.recolor`. Les cases après le curseur gardent le tiret
+; que le bas de l'écran vient de peindre.
+ranking.in.paint
+ IFDEF RANKING_TEXT_OFF
+        rts                            ; EXPERIENCE (banc) : l'ecran sans texte,
+ ENDC                                  ;   pour mesurer blasts + Pata-Pata seuls
+        jsr   ranking.scr.paint        ; f a dépassé la fin : tout est dû
+        clrb
+@n      cmpb  ranking.in.cursor
+        bhs   @cur
+        pshs  b
+        jsr   ranking.in.nameX         ; X = le nom dans la table
+        lda   b,x
+        jsr   ranking.in.cursorU
+        jsr   ranking.in.glyph
+        puls  b
+        incb
+        bra   @n
+@cur    cmpb  #7
+        bhs   @out                     ; les sept sont posées
+        tst   ranking.in.done
+        bne   @out                     ; abandon : le tiret reste
         lda   ranking.in.alpha
         jsr   ranking.in.letter
-        jsr   ranking.in.paintCursor
+        jsr   ranking.in.cursorU       ; U = la case (B = le curseur)
+        pshs  u
+        jsr   ranking.in.glyph
+        puls  u
         ldx   #text.map.white
         lda   ranking.in.frame
         anda  #ranking.IN_BLINK
         beq   >
         ldx   #text.map.red
-!       ldb   ranking.in.cursor
-        jsr   ranking.in.cursorU       ; U = la case
-        pshs  u,x
-        jsr   text.recolor
-        puls  u,x
-        _SwitchScreenBuffer
-        pshs  u,x
-        jsr   text.recolor
-        puls  u,x
-        _SwitchScreenBuffer
-        rts
+!       jmp   text.recolor
+@out    rts
 ;
 ; B = index de case (0..6) -> U = son adresse écran ; A préservé
 ranking.in.cursorU
@@ -739,61 +931,63 @@ ranking.in.letter
         lda   a,x
         rts
 ;
-; peindre le caractère A dans la case du curseur, DANS LES DEUX TAMPONS
-ranking.in.paintCursor
-        ldb   ranking.in.cursor
-        jsr   ranking.in.cursorU
-        pshs  a,u
-        jsr   ranking.in.glyph
-        puls  a,u
-        _SwitchScreenBuffer
-        pshs  u
-        jsr   ranking.in.glyph
-        puls  u
-        _SwitchScreenBuffer
-        rts
-;
 ; peindre le caractère A à l'adresse U. Les six signes que la police du HUD n'a
 ; pas sont dessinés par les glyphes générés plus bas ; tout le reste passe par
 ; sa table.
+; LE DISPATCH PAR TABLE (06/09/2026) : ranking.glyphs, copie locale des
+; entrees 32..90 de letter_addr faite a l'entree (ranking.glyphs.init), ou
+; les six signes que la police n'a pas remplacent leurs cases. Quatre
+; instructions, Y seul touche — l'ancienne cascade de six comparaisons en
+; coutait quarante-cinq.
 ranking.in.glyph
-        cmpa  #'<'
-        beq   @lt
-        cmpa  #':'
-        beq   @colon
-        cmpa  #'-'
-        beq   @dash
-        cmpa  #','
-        beq   @comma
-        cmpa  #'>'
-        beq   @gt
-        cmpa  #'?'
-        beq   @quest
         suba  #32
         asla
+        ldy   #ranking.glyphs
+        jmp   [a,y]
+;
+; a appeler la page de la police montee : la table, puis les six signes
+ranking.glyphs.init
         ldx   #letter_addr
-        jmp   [a,x]
-@lt     jmp   DRAW_text_lt
-@colon  jmp   DRAW_text_colon
-@dash   jmp   DRAW_text_dash
-@comma  jmp   DRAW_text_comma
-@gt     jmp   DRAW_text_gt
-@quest  jmp   DRAW_text_question
+        ldy   #ranking.glyphs
+        ldb   #ranking.GLYPHS_N
+@c      ldu   ,x++
+        stu   ,y++
+        decb
+        bne   @c
+        ldu   #DRAW_text_lt
+        stu   ranking.glyphs+('<'-32)*2
+        ldu   #DRAW_text_colon
+        stu   ranking.glyphs+(':'-32)*2
+        ldu   #DRAW_text_dash
+        stu   ranking.glyphs+('-'-32)*2
+        ldu   #DRAW_text_comma
+        stu   ranking.glyphs+(','-32)*2
+        ldu   #DRAW_text_gt
+        stu   ranking.glyphs+('>'-32)*2
+        ldu   #DRAW_text_question
+        stu   ranking.glyphs+('?'-32)*2
+        rts
 ;
 ; ranger le caractère A dans le nom de l'entrée qu'on vient de classer
 ranking.in.store
         pshs  a
+        jsr   ranking.in.nameX
+        ldb   ranking.in.cursor
+        abx
+        puls  a
+        sta   ,x
+        rts
+;
+; X = le nom de l'entrée qu'on vient de classer ; A, B préservés
+ranking.in.nameX
+        pshs  a,b
         lda   ranking.rank
         deca
         ldb   #ranking.ENTRY
         mul
         ldx   #ranking.table+3         ; +3 : le nom suit les trois octets du score
         leax  d,x
-        ldb   ranking.in.cursor
-        abx
-        puls  a
-        sta   ,x
-        rts
+        puls  a,b,pc
 
 ; L'ALPHABET, celui de la borne (ROM 0x1000:0B5C) : vingt-six lettres, six
 ; signes, puis RUB et END — deux commandes, pas des caractères.
@@ -806,6 +1000,14 @@ ranking.in.alpha  fcb 0
 ranking.in.hold   fcb 0
 ranking.in.frame  fcb 0
 ranking.in.timer  fdb 0
+ranking.in.done   fcb 0                ; 1 : la saisie est close, plus de curseur
+ranking.em.on     fcb 1                ; 1 : l'emetteur de Pata-Pata est arme
+ranking.em.acc    fcb 0                ; les trames vers le prochain tirage
+ranking.em.cycle  fdb 0                ; la trame dans le cycle de 512 de la borne
+ranking.rng       fcb 5,1,3            ; l'etat de random_ax : a, b, c
+ranking.painter   fdb 0                ; ce que ranking.frame peint
+ranking.clearer   fdb 0                ; et comment il efface avant
+ranking.dt        fdb 0                ; les trames du dernier tick
 
 
 ;-------------------------------------------------------------------------------
@@ -891,31 +1093,24 @@ ranking.TBL_PITCH equ 14*40
 ranking.TBL_HOLD  equ 256              ; trames de tenue, ou un bouton
 
 ranking.tableScreen
-        _ram.data.set #2
-        jsr   ranking.tbl.oneBuffer
-        _SwitchScreenBuffer
-        jsr   ranking.tbl.oneBuffer
-        _SwitchScreenBuffer
+        jsr   ranking.loop.purge       ; game_tick_disable_flag : les Pata-Pata
+                                       ;   s'en vont, le tableau n'en a pas
+        ldx   #ranking.tbl.paint
+        stx   ranking.painter
         ldd   #ranking.TBL_HOLD
         std   ranking.in.timer
-@hold   _waitFrames #1
+@hold   jsr   ranking.frame
+        jsr   ranking.tick
+        jsr   ranking.timer.sub
+        ble   @out
         jsr   joypad.readKbd
         lda   joypad.pressed.fire
         anda  #joypad.0.FIRE
-        bne   @out
-        ldd   ranking.in.timer
-        subd  #1
-        std   ranking.in.timer
-        bne   @hold
+        beq   @hold
 @out    rts
 ;
-ranking.tbl.oneBuffer
-        ldu   #$0000
-        lda   #map.RAM_OVER_CART+common.checkpoint.page
-        ldx   #checkpoint.clearData
-        jsr   paged.call
-        lda   #map.RAM_OVER_CART+common.hud.page
-        _SetCartPageA
+; le tableau, une trame : titre, dix lignes, la nouvelle entrée surlignée
+ranking.tbl.paint
         ldu   #ranking.TBL_TITLE
         ldy   #ranking.str.ranking
         jsr   hud.drawStr
@@ -1064,7 +1259,7 @@ text.recolor.byte
 ; stage : c'est la mise en valeur d'une ligne entière, où le relief se lit.
 ;                  0 1 2 3  4  5  6 7 8 9 10 11 12 13 14 15
 text.map.white fcb 0,1,2,3,3,3,3,7,8,9,10,11,12,13,14,15       ; blanc uni
-text.map.red   fcb 0,1,2,12,12,12,12,7,8,9,10,11,12,13,14,15    ; rouge uni
+text.map.red   fcb 0,1,2,13,13,13,13,7,8,9,10,11,12,13,14,15    ; rouge uni (13)
 text.map.hilite fcb 0,1,2,7,8,9,10,7,8,9,10,11,12,13,14,15      ; rouge dégradé
 
 ranking.str.ranking fcc 'R A N K I N G'
@@ -1079,6 +1274,10 @@ ranking.scr.bot     fdb 0              ; celle où les textes du bas commencent
 ranking.scr.end     fdb 0              ; celle où tout est peint
 ranking.scr.rows    fcb 0              ; lignes de stage + celle du TOTAL
 ranking.scr.i       fcb 0              ; la ligne examinée
+ranking.GLYPHS_N    equ 91-32          ; les codes 32..90, l'espace a Z
+ranking.glyphs      fill 0,ranking.GLYPHS_N*2
+ranking.rowText     fill 0,(ranking.STAGES+1)*ranking.ROW_N ; le texte des lignes
+ranking.rowU        fill 0,(ranking.STAGES+1)*2             ; et leurs ancres
 ranking.e.idx       fcb 0
 ranking.e.cnt       fcb 0
 ranking.e.src       fdb 0
@@ -1100,8 +1299,11 @@ ranking.str.total  fcc 'TOTAL SC'
 ranking.str.enter  fcc 'ENTER YOUR INITIALS.'
                    fcb 0
                    fcb 0
-ranking.str.stage  fcc ' 1 STAGE'      ; les deux premiers octets sont écrits
+ranking.str.stage  fcc ' 1 STAGE'      ; reconstruit à chaque ligne : le TOTAL
+                   fcb 0               ;   l'écrase, le gabarit le rétablit
+ranking.str.stageT fcc '   STAGE'
                    fcb 0
+ranking.str.dash   fcc '- - - - - - -'  ; les sept cases vides, espacees
 ranking.scr.dig    fcb 0,0,0,0,0,0,0
 
 ;-------------------------------------------------------------------------------

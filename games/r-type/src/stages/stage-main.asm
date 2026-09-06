@@ -115,7 +115,12 @@ stage.main
         ; de tir hors de ses donnees. Cote arcade (0x2F2E) elle est globale
         ; aussi, recalculee de second_loop + DIP + progression (cap 3) — la
         ; rampe progressive reste a porter le jour venu.
-        sta   globals.difficulty
+        ; EXPLICITE (06/09/2026) : `sta` comptait sur un A nul, mais le cheat de
+        ; score vient de charger D = 1000 — A valait 3, la partie se jouait en
+        ; difficulte 3 sans le savoir, et au palier 3 les Pata-Pata de l'ecran
+        ; de score tirent (preset de tir 0 non vide des le palier 2, comme sur
+        ; la borne). Zero, tant que la rampe n'est pas portee.
+        clr   globals.difficulty
         ; Les vies vivent dans le bloc `globals`, pas dans le moteur : c'est la
         ; variable de la v1 (main.asm:127), celle que le HUD dessine. Deux, comme
         ; elle — le compteur du banc en faisait trois sans raison.
@@ -266,12 +271,6 @@ statics.SIZE  equ nb_static_objects*object_size
         sta   scroll_vp_y_pos
         ldd   #stage.SCROLL_VEL
         std   scroll_vel
-
-        ; OVERLAY : la timeline d'effacement par defaut — fenetre pleine des
-        ; le premier tick. Un stage qui a SA timeline (generee depuis sa
-        ; carte) re-pointe dans son stage.setup, APRES cet init.
-        ldx   #clear.timeline.none
-        stx   clear.tl.ptr
 
         ; COLLISION TERRAIN : desactivee PAR DEFAUT. Un stage sans unite de
         ; collision laisserait les operandes de terrainCollision.do a zero, et
@@ -635,30 +634,9 @@ stage.state.running
                                        ; du module pour graver ce qui entre
 stage.frame.bgDone
  ELSE
-        ; OVERLAY : la timeline d'effacement — applique les CHANGEMENTS de
-        ; fenetre que la camera vient de franchir (plusieurs possibles en une
-        ; trame de frame-drop, d'ou la boucle ; le rejeu au checkpoint est le
-        ; meme mecanisme : stage.setup remet le pointeur au debut, la boucle
-        ; rattrape). Une entree = [camera, operande LDS, offset de saut],
-        ; precalculee par gen_clear_timeline.py. Cout hors changement : un
-        ; cmpd par trame.
-        ldx   clear.tl.ptr
-!       ldd   glb_camera_x_pos
-        cmpd  ,x
-        blo   >
-        ldy   2,x                      ; l'operande LDS du plan couleur
-        ldu   4,x                      ; l'offset de saut dans le deroule
-        leax  6,x
-        stx   clear.tl.ptr
-        pshs  x
-        lda   #map.RAM_OVER_CART+common.overlay.page
-        ldx   #playfield.clearWindow
-        jsr   paged.call
-        puls  x
-        bra   <
-!
         ; L'effacement du champ de jeu, en TETE de trame, avant tout le
-        ; reste — stack-blast maison a fenetre pilotee (cf. clearblast.asm).
+        ; reste — stack-blast maison, lignes 11-190 (cf. clearblast.asm ; la
+        ; fenetre par timeline est retiree le 06/09/2026, decision auteur).
         ; Il adresse les deux plans lui-meme : rien a poser avant l'appel.
         lda   #map.RAM_OVER_CART+common.overlay.page
         ldx   #playfield.clearBlast
@@ -1343,10 +1321,3 @@ gfxlock.off
 gfxlock.loop
         _gfxlock.loop
         rts
-
-; La timeline d'effacement : le pointeur de lecture, et la table par defaut
-; (fenetre pleine, posee au premier tick). APRES du code, jamais sur un
-; chemin d'execution — cf. loop-fallthrough.md.
-clear.tl.ptr        fdb   clear.timeline.none
-clear.timeline.none fdb   0,$BDD8,0    ; cam 0 : TOUT le champ (lignes 11-190) —
-                    fdb   $FFFF        ; le defaut ne presume rien du decor
