@@ -60,6 +60,18 @@ joypad.init
         stb   map.MC6821.PRA2      ; Peripherial Interface B (PIB) lines set as input
         ora   #$04                 ; set b2
         sta   map.MC6821.CRA2      ; select Peripherial Interface B (PIB) Register
+        ; PRIME THE EDGE DETECTOR (2026-09-05, same fix as the TO8 unit) : the
+        ; DAC lines of PRA2 read as 0 once inputs and look PRESSED complemented
+        ; (button B of joypad 0 included) ; seed `held` so the first read makes
+        ; no ghost press edge. Untested on MO6 (no emulator here).
+        ldd   map.MC6821.PRA1
+        coma
+        comb
+        std   joypad.state
+        std   joypad.held
+        clra
+        clrb
+        std   joypad.pressed
         rts
 
 joypad.read

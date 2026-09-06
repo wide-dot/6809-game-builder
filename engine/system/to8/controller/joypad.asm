@@ -62,6 +62,20 @@ joypad.init
         stb   map.MC6821.PRA2      ; Peripherial Interface B (PIB) lines set as input
         ora   #$04                 ; set b2
         sta   map.MC6821.CRA2      ; select Peripherial Interface B (PIB) Register
+        ; PRIME THE EDGE DETECTOR (2026-09-05). The six DAC lines of PRA2, now
+        ; inputs with no pull-up, read as 0 : complemented, they look PRESSED
+        ; (bit 2 = button B of joypad 0, which joypad.0.FIRE includes). With
+        ; `held` still zero, the first read would report a ghost press edge —
+        ; seen on the ranking bench, where it committed a letter before any
+        ; input. Seed `held` with the idle state so the first read is quiet.
+        ldd   map.MC6821.PRA1
+        coma
+        comb
+        std   joypad.state
+        std   joypad.held
+        clra
+        clrb
+        std   joypad.pressed
         rts
 
 joypad.read
