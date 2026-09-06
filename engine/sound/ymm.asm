@@ -162,7 +162,18 @@ ymm.playing
 ; octets des donnees portent ce decalage, et c'est le comportement de la v1 au
 ; rechargement de checkpoint.
 ; ------------------------------------------------------------------------------
+; LA PAGE DU MORCEAU EST MONTEE ICI (2026-09-06). Cette routine est appelee
+; depuis la boucle principale (le rechargement de checkpoint), avec en fenetre
+; cartouche la page du dernier paged.call : le decalage de bouclage et le flux
+; zx0 etaient lus dans une page etrangere — un « attends 198 trames » puis
+; une fin de flux, et la musique ne repartait qu'a la boucle naturelle du
+; lecteur, quatre secondes plus tard, a chaque mort. La page de l'appelant
+; est rendue en sortie, comme ymm.play le fait autour de ymm.obj.play.
 ymm.restart
+        _GetCartPageA
+        sta   @page
+        lda   ymm.data.page
+        _SetCartPageA
         lda   #1
         sta   ymm.status
         ldb   #1
@@ -174,7 +185,11 @@ ymm.restart
         stu   ymm.data.pos
         jsr   ymm.buffer.reset         ; meme table rase qu'au lancement
         jsr   ymm.decompress
-        jmp   ymm.frame.play
+        jsr   ymm.frame.play
+        lda   #0
+@page   equ   *-1
+        _SetCartPageA
+        rts
 
 ymm.frame.play
         lda   ymm.status
