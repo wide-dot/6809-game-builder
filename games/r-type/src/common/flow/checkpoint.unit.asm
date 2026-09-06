@@ -273,10 +273,14 @@ checkpoint.scroll
         sta   scroll_tile_pos              ; les tuiles de collision font 24 px
         asla                               ; les tuiles tracées en font 12
         sta   @a
+        tst   tilemap.mode
+        bne   @cols
         ldb   scroll_vp_v_tiles
         aslb
         addb  scroll_vp_v_tiles            ; position x hauteur x 3 o (page, adresse)
-        mul
+        bra   @pos
+@cols   ldb   #2                           ; colonnes creuses : 2 o par colonne
+@pos    mul
         std   scroll_map_pos
         lda   #0
 @a      equ   *-1
@@ -308,9 +312,9 @@ checkpoint.scroll
 @loop2
         lda   #1
         sta   glb_camera_move
-        jsr   DrawTiles
+        jsr   DrawTilesCols            ; le moteur dense n'est pas resident (TILEMAP_DENSE_OFF)
         _SwitchScreenBuffer
-        jsr   DrawTiles
+        jsr   DrawTilesCols            ; le moteur dense n'est pas resident (TILEMAP_DENSE_OFF)
         _SwitchScreenBuffer
         lda   scroll_vp_x_pos
         suba  #4

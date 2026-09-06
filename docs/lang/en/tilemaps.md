@@ -279,3 +279,59 @@ test map, both planes, bouncing forward and back. The pattern is built so both
 properties are readable : the four cells of a frame carry four *different*
 tiles, so a row/column mix-up shows as a transposition, and the four rotate by
 one per frame, so the sequence can be read from any single cell.
+
+## The sparse alternative : `<tilecols>` and `DrawTilesCols`
+
+The dense table above is walked whole : `DrawTiles` visits every cell of the
+screen rectangle, and on a level like r-type's stage 1 three cells out of
+four are empty (measured : ~4 300 of `DrawTiles`' 14 800 cycles a loop were
+spent skipping them). The **column map** is the same level in another
+shape, made for a horizontal scroll : one word per map column pointing at
+the list of that column's FULL cells, each cell carrying the tile's page and
+routine as the dense table does, plus the video offset of its row
+(`row × rowstep`, precomputed) ; a zero page byte ends the list.
+
+```
+label       fdb   col0, col1, ...
+col0        fcb   page             ; map.RAM_OVER_CART + the tile's page
+            fdb   routine          ; its compiled routine
+            fdb   offset           ; row × rowstep (480 for 12 px rows)
+            ...
+            fcb   0
+```
+
+Nothing empty is ever visited, and the cell envelope of `DrawTilesCols`
+(`engine/graphics/tilemap/horizontal-scroll/scroll-columns.asm`) stays under
+the dense one's : on the 24 × 8 all-full map of `examples/tilescroll` the two
+engines cost the same to the cycle, so every empty cell is a net gain. The
+tables are also smaller as soon as a map is less than 60 % full (r-type's
+16 maps : 69 300 bytes dense, 27 700 in columns).
+
+Both engines share their private variables, parameters and `InitScroll`, and
+are assembled in the same unit ; the game mode calls `ScrollCols` and
+`DrawTilesCols` instead of `Scroll` and `DrawTiles`, and tells the patch
+routines which shape the map has (`tilemap.mode` : 0 dense, 1 columns).
+
+```xml
+<tilecols map="src/assets/maps/map.bin" label="map.cols.even"
+          tiles="assets.tiles" variant="ND0" maprows="8"
+          dense="4-5" gensource="gen/assets/maps/cols_even.asm"/>
+```
+
+`map`, `label`, `tiles`, `variant`, `maprows` and `gensource` mean what they
+mean for `<tilemap>` ; `rowstep` (default 480) is the video step of one row.
+
+**Animations need dense columns.** `tilemap.patch` writes a rectangle in
+place, and a sparse list has no place for a cell that was empty. The
+columns an animation touches are declared with `dense="a-b,c"` : they carry
+all `maprows` cells, the empty ones pointing at `tilemap.null` (an `rts`
+resident with the engine, `nulltile` to override), so that every cell of
+such a column has a fixed address — `colptr + row × 5` — and the sparse
+patch (`tilemap.patch.sparse`) copies the three dense bytes of each cell and
+skips the offset. The rectangle of a `<tilepatch>` or `<tilereset>` must
+therefore fall entirely inside dense columns.
+
+Validation : `examples/tilescroll/to8-cols.config.xml` builds the same
+example over the column engine (`TILES_COLS` defined) ; the whole initial
+scroll, both planes and the patch animation included, renders pixel for
+pixel what `to8.config.xml` renders (101 captures compared under toje).

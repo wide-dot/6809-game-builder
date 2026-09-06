@@ -311,6 +311,7 @@ public final class Handlers {
 		// output must stay continuous (5d)
 		PARTS.put("unit", com.widedot.m6809.gamebuilder.plugin.unit.UnitPlugin::getParts);
 		FILES.put("tilemap", com.widedot.m6809.gamebuilder.plugin.tilemap.TilemapPlugin::getFile);
+		FILES.put("tilecols", com.widedot.m6809.gamebuilder.plugin.tilemap.TilecolsPlugin::getFile);
 		FILES.put("tilepatch", com.widedot.m6809.gamebuilder.plugin.tilemap.TilepatchPlugin::getFile);
 		FILES.put("tilereset", com.widedot.m6809.gamebuilder.plugin.tilemap.TileresetPlugin::getFile);
 		FILES.put("imageset", com.widedot.toolbox.graphics.gfxcomp.ImagesetPlugin::getFile);
@@ -331,6 +332,18 @@ public final class Handlers {
 			.req("tiles", STRING, "the file hosting the tiles : entries reference adr_<host>_<id>_<variant>")
 			.req("variant", STRING, "compiled tile variant, ND0 for unshifted, ND1 for pre-shifted")
 			.req("gensource", STRING, "generated source file of the table")
+			.opt("section", STRING, "section of the table, map if omitted")
+			.opt("bitdepth", INT, "bits per tile index in the map, 16 if omitted"));
+		spec(element("tilecols").doc("generate the SPARSE COLUMN table of a tile index map for the column scroll engine (scroll-columns.asm) : one word per column, then per column its full cells only (page, address, video offset), baked in a .static section")
+			.req("map", STRING, "tile index .bin (leanscroll output), big endian, column major")
+			.req("label", STRING, "label of the generated table")
+			.req("tiles", STRING, "the file hosting the tiles : entries reference adr_<host>_<id>_<variant>")
+			.req("variant", STRING, "compiled tile variant, ND0 for unshifted, ND1 for pre-shifted")
+			.req("maprows", INT, "rows per column in the map")
+			.req("gensource", STRING, "generated source file of the table")
+			.opt("rowstep", INT, "video bytes between two rows of cells (tile height x 40), 480 if omitted")
+			.opt("dense", STRING, "columns emitted with ALL their rows (empty ones pointing the null tile), so a rectangle patch finds a fixed address : ranges like 4-5,10")
+			.opt("nulltile", STRING, "the routine an empty cell of a dense column calls, tilemap.null if omitted")
 			.opt("section", STRING, "section of the table, map if omitted")
 			.opt("bitdepth", INT, "bits per tile index in the map, 16 if omitted"));
 		spec(element("tilepatch").doc("generate the animation blocks tilemap.patch writes into a scroll map, and the descriptor its sequencer reads, baked in a .static section")

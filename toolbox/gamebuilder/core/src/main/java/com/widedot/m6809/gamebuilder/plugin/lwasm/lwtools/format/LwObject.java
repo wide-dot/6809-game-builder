@@ -567,11 +567,14 @@ public class LwObject implements ObjectDataInterface{
 					// An internal reference is the same problem as an external
 					// one, one step closer : the value is relative to where
 					// this unit lands, and a scene-placed file lands
-					// somewhere the builder knows.
+					// somewhere the builder knows. evalReloc already folded
+					// the TARGET section's base into r.value : adding the
+					// referencing section's base here counted it twice for
+					// a reference staying inside a section other than the
+					// first (a table pointing at its own rows in "map").
 					int value;
 					try {
-						value = staticLink.addressOf(file) + base
-								+ sectionBase(section) + r.value;
+						value = staticLink.addressOf(file) + base + r.value;
 					} catch (Exception e) {
 						if (!strict) {
 							continue;    // auto : this unit moves, stay linked

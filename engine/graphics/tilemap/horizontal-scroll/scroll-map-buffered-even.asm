@@ -85,6 +85,11 @@ InitScroll
 * Drive scroll with 8.8 velocity
 * ---------------------------------------------------------------------------
 
+; V2-DEVIATION: the two rendering routines can be left out of a unit that
+; only needs the variables and InitScroll shared with scroll-columns.asm
+; (define TILEMAP_DENSE_OFF) ; the r-type resident does so, its memory map
+; being full — see games/r-type/doc/plan-tilemap-colonnes-2026-09.md.
+ IFNDEF TILEMAP_DENSE_OFF
 Scroll
         ldd   glb_camera_x_pos
         std   glb_camera_x_pos_old
@@ -300,3 +305,11 @@ scroll_ml_step2 equ *-2
         sta   scroll_lcnt              ; else render tile
         stx   <glb_screen_location_1
         bra   scroll_lloop
+ ELSE
+; InitScroll still writes the four self-modified steps of the routines left
+; out ; they land here, and scroll-columns.asm reads scroll_mc_step.
+scroll_ml_step1 fdb   0
+scroll_ml_step2 fdb   0
+scroll_ml_step3 fdb   0
+scroll_mc_step  fcb   0
+ ENDC

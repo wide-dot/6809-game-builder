@@ -14,6 +14,9 @@
 STAGE_ID equ 5
 ; La scène de CE stage — voir stage 1 : le sortant décharge, jamais l'entrant.
 STAGE_SCENE equ scenes.stage5
+; La carte de ce stage est en colonnes creuses (<tilecols> dans le config) :
+; stage-main.asm appelle ScrollCols/DrawTilesCols et pose tilemap.mode.
+stage.TILES_COLS equ 1
 
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT

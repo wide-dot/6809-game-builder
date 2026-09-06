@@ -3307,7 +3307,10 @@
                     </gfxcomp>
                 </file>
 
-                <!-- Les deux tables de carte, cuites contre le placement des tuiles -->
+                <!-- Les deux tables de carte, cuites contre le placement des tuiles.
+                     En COLONNES CREUSES depuis le 06/09 (plan-tilemap-colonnes) :
+                     le stage definit stage.TILES_COLS et le moteur ne visite
+                     plus une case vide. -->
                 <!-- OVERLAY : les deux tables de carte etaient UN direntry de
                      11 880 o d'un tenant. Les tuiles pleines (+5 140 o au total)
                      ont mange le trou qui le logeait ; en deux direntries de
@@ -3316,17 +3319,17 @@
                 <file name="stage1.maps.even" linkdata="LINK" bake="all" arena="stage1.gfx">
                     <lwasm gensource="gen/stages/01/stage1-maps-even.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
-                        <tilemap map="gen/stages/01/map/even.bin" label="map.even"
-                                 tiles="stage1.tiles.even" variant="ND0"
-                                 gensource="gen/stages/01/map-even.asm"/>
+                        <tilecols map="gen/stages/01/map/even.bin" label="map.even"
+                                  tiles="stage1.tiles.even" variant="ND0" maprows="15"
+                                  gensource="gen/stages/01/map-even.asm"/>
                     </lwasm>
                 </file>
                 <file name="stage1.maps.odd" linkdata="LINK" bake="all" arena="stage1.gfx">
                     <lwasm gensource="gen/stages/01/stage1-maps-odd.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
-                        <tilemap map="gen/stages/01/map/odd.bin" label="map.odd"
-                                 tiles="stage1.tiles.odd" variant="ND0"
-                                 gensource="gen/stages/01/map-odd.asm"/>
+                        <tilecols map="gen/stages/01/map/odd.bin" label="map.odd"
+                                  tiles="stage1.tiles.odd" variant="ND0" maprows="15"
+                                  gensource="gen/stages/01/map-odd.asm"/>
                     </lwasm>
                 </file>
 
@@ -3551,12 +3554,12 @@
                 <file name="stage2.maps" linkdata="LINK" bake="all" arena="stage2.gfx">
                     <lwasm gensource="gen/stages/02/stage2-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
-                        <tilemap map="gen/stages/02/map/even.bin" label="map.even"
-                                 tiles="stage2.tiles.even" variant="ND0"
-                                 gensource="gen/stages/02/map-even.asm"/>
-                        <tilemap map="gen/stages/02/map/odd.bin" label="map.odd"
-                                 tiles="stage2.tiles.odd" variant="ND0"
-                                 gensource="gen/stages/02/map-odd.asm"/>
+                        <tilecols map="gen/stages/02/map/even.bin" label="map.even"
+                                  tiles="stage2.tiles.even" variant="ND0" maprows="15" dense="83-92"
+                                  gensource="gen/stages/02/map-even.asm"/>
+                        <tilecols map="gen/stages/02/map/odd.bin" label="map.odd"
+                                  tiles="stage2.tiles.odd" variant="ND0" maprows="15" dense="83-92"
+                                  gensource="gen/stages/02/map-odd.asm"/>
                         <!-- L'animation du tube : UN descripteur pour les    -->
                         <!-- deux plans, et les equates de geometrie pour le   -->
                         <!-- code du boss, qui fait tourner l'horloge sans     -->
@@ -4228,12 +4231,12 @@
                 <file name="stage3.maps" linkdata="LINK" bake="all" arena="stage3.gfx">
                     <lwasm gensource="gen/stages/03/stage3-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
-                        <tilemap map="gen/stages/03/map/even.bin" label="map.even"
-                                 tiles="stage3.tiles.even" variant="ND0"
-                                 gensource="gen/stages/03/map-even.asm"/>
-                        <tilemap map="gen/stages/03/map/odd.bin" label="map.odd"
-                                 tiles="stage3.tiles.odd" variant="ND0"
-                                 gensource="gen/stages/03/map-odd.asm"/>
+                        <tilecols map="gen/stages/03/map/even.bin" label="map.even"
+                                  tiles="stage3.tiles.even" variant="ND0" maprows="15"
+                                  gensource="gen/stages/03/map-even.asm"/>
+                        <tilecols map="gen/stages/03/map/odd.bin" label="map.odd"
+                                  tiles="stage3.tiles.odd" variant="ND0" maprows="15"
+                                  gensource="gen/stages/03/map-odd.asm"/>
                     </lwasm>
                 </file>
 
@@ -4340,12 +4343,12 @@
                 <file name="stage4.maps" linkdata="LINK" bake="all" arena="stage4.gfx">
                     <lwasm gensource="gen/stages/04/stage4-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
-                        <tilemap map="gen/stages/04/map/even.bin" label="map.even"
-                                 tiles="stage4.tiles.even" variant="ND0"
-                                 gensource="gen/stages/04/map-even.asm"/>
-                        <tilemap map="gen/stages/04/map/odd.bin" label="map.odd"
-                                 tiles="stage4.tiles.odd" variant="ND0"
-                                 gensource="gen/stages/04/map-odd.asm"/>
+                        <tilecols map="gen/stages/04/map/even.bin" label="map.even"
+                                  tiles="stage4.tiles.even" variant="ND0" maprows="15"
+                                  gensource="gen/stages/04/map-even.asm"/>
+                        <tilecols map="gen/stages/04/map/odd.bin" label="map.odd"
+                                  tiles="stage4.tiles.odd" variant="ND0" maprows="15"
+                                  gensource="gen/stages/04/map-odd.asm"/>
                     </lwasm>
                 </file>
 
@@ -4498,12 +4501,12 @@
                 <file name="stage5.maps" linkdata="LINK" bake="all" arena="stage5.gfx">
                     <lwasm gensource="gen/stages/05/stage5-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
-                        <tilemap map="gen/stages/05/map/even.bin" label="map.even"
-                                 tiles="stage5.tiles.even" variant="ND0"
-                                 gensource="gen/stages/05/map-even.asm"/>
-                        <tilemap map="gen/stages/05/map/odd.bin" label="map.odd"
-                                 tiles="stage5.tiles.odd" variant="ND0"
-                                 gensource="gen/stages/05/map-odd.asm"/>
+                        <tilecols map="gen/stages/05/map/even.bin" label="map.even"
+                                  tiles="stage5.tiles.even" variant="ND0" maprows="15"
+                                  gensource="gen/stages/05/map-even.asm"/>
+                        <tilecols map="gen/stages/05/map/odd.bin" label="map.odd"
+                                  tiles="stage5.tiles.odd" variant="ND0" maprows="15"
+                                  gensource="gen/stages/05/map-odd.asm"/>
                     </lwasm>
                 </file>
 
@@ -4696,12 +4699,12 @@
                 <file name="stage6.maps" linkdata="LINK" bake="all" arena="stage6.gfx">
                     <lwasm gensource="gen/stages/06/stage6-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
-                        <tilemap map="gen/stages/06/map/even.bin" label="map.even"
-                                 tiles="stage6.tiles.even" variant="ND0"
-                                 gensource="gen/stages/06/map-even.asm"/>
-                        <tilemap map="gen/stages/06/map/odd.bin" label="map.odd"
-                                 tiles="stage6.tiles.odd" variant="ND0"
-                                 gensource="gen/stages/06/map-odd.asm"/>
+                        <tilecols map="gen/stages/06/map/even.bin" label="map.even"
+                                  tiles="stage6.tiles.even" variant="ND0" maprows="15"
+                                  gensource="gen/stages/06/map-even.asm"/>
+                        <tilecols map="gen/stages/06/map/odd.bin" label="map.odd"
+                                  tiles="stage6.tiles.odd" variant="ND0" maprows="15"
+                                  gensource="gen/stages/06/map-odd.asm"/>
                     </lwasm>
                 </file>
 
@@ -4794,12 +4797,12 @@
                 <file name="stage7.maps" linkdata="LINK" bake="all" arena="stage7.gfx">
                     <lwasm gensource="gen/stages/07/stage7-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
-                        <tilemap map="gen/stages/07/map/even.bin" label="map.even"
-                                 tiles="stage7.tiles.even" variant="ND0"
-                                 gensource="gen/stages/07/map-even.asm"/>
-                        <tilemap map="gen/stages/07/map/odd.bin" label="map.odd"
-                                 tiles="stage7.tiles.odd" variant="ND0"
-                                 gensource="gen/stages/07/map-odd.asm"/>
+                        <tilecols map="gen/stages/07/map/even.bin" label="map.even"
+                                  tiles="stage7.tiles.even" variant="ND0" maprows="15"
+                                  gensource="gen/stages/07/map-even.asm"/>
+                        <tilecols map="gen/stages/07/map/odd.bin" label="map.odd"
+                                  tiles="stage7.tiles.odd" variant="ND0" maprows="15"
+                                  gensource="gen/stages/07/map-odd.asm"/>
                     </lwasm>
                 </file>
 
@@ -4900,12 +4903,12 @@
                 <file name="stage8.maps" linkdata="LINK" bake="all" arena="stage8.gfx">
                     <lwasm gensource="gen/stages/08/stage8-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
-                        <tilemap map="gen/stages/08/map/even.bin" label="map.even"
-                                 tiles="stage8.tiles.even" variant="ND0"
-                                 gensource="gen/stages/08/map-even.asm"/>
-                        <tilemap map="gen/stages/08/map/odd.bin" label="map.odd"
-                                 tiles="stage8.tiles.odd" variant="ND0"
-                                 gensource="gen/stages/08/map-odd.asm"/>
+                        <tilecols map="gen/stages/08/map/even.bin" label="map.even"
+                                  tiles="stage8.tiles.even" variant="ND0" maprows="15"
+                                  gensource="gen/stages/08/map-even.asm"/>
+                        <tilecols map="gen/stages/08/map/odd.bin" label="map.odd"
+                                  tiles="stage8.tiles.odd" variant="ND0" maprows="15"
+                                  gensource="gen/stages/08/map-odd.asm"/>
                     </lwasm>
                 </file>
 

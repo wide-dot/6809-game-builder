@@ -336,6 +336,14 @@ statics.SIZE  equ nb_static_objects*object_size
         jsr   gfxlock.bufferSwap.do
         jsr   RunObjects
 
+        ; La forme de la carte de CE stage, pour le patch et le checkpoint
+        ; (le resident sert tous les stages, chacun pose la sienne).
+ IFDEF stage.TILES_COLS
+        lda   #1
+ ELSE
+        clra
+ ENDC
+        sta   tilemap.mode
         jsr   InitScroll
 
         ; InitScroll cale le plafond caméra sur le map_width figé à l'assemblage
@@ -527,7 +535,11 @@ stage.state.running
         clr   joypad.pressed.fire
         clr   joypad.held.fire
 !
+ IFDEF stage.TILES_COLS
+        jsr   ScrollCols
+ ELSE
         jsr   Scroll
+ ENDC
 
         ; LE DRAIN DES DEMANDES DE DECOR. Le code objet n'ecrit jamais dans la
         ; carte : il empile un descripteur et un numero d'image. Ici, une fois
@@ -717,7 +729,11 @@ stage.frame.drawn
         bne   stage.frame.noTiles
         lda   #1
         sta   glb_camera_move
+ IFDEF stage.TILES_COLS
+        jsr   DrawTilesCols
+ ELSE
         jsr   DrawTiles
+ ENDC
 stage.frame.noTiles
 
         ; Les surimpressions, selon la phase de fin de niveau que CE stage
