@@ -205,3 +205,41 @@ Remarque : sont présentés en vert les cas particuliers pour lesquels une index
 
 ![](image/head-matrix.png)
 ![](image/index.png)
+
+## `tlsf.realloc` : le déplacement et sa garde (07/09/2026)
+
+Trois stratégies, dans cet ordre : réduction sur place (`tlsf.realloc.shrink`),
+extension sur place si le bloc physique suivant est libre et suffisant
+(`tlsf.realloc.growth`), sinon déplacement (`tlsf.realloc.do`).
+
+Le déplacement libère **d'abord**, puis alloue, puis copie. Cet ordre est
+voulu : quand plus rien ne convient, le bloc revient fusionné avec ses
+voisins libres, et la pointe mémoire ne dépasse jamais la plus grande des
+deux tailles. Son prix : l'allocateur peut écrire dans les anciennes données
+avant qu'elles soient copiées. Ces écritures sont connues, et toutes
+sauvegardées :
+
+- `free` chaîne le bloc libéré dans une liste : 4 octets au début du bloc,
+  sauf s'il a fusionné avec le bloc libre qui le précède, auquel cas ils
+  tombent dans ce trou ;
+- `malloc` peut rendre ce bloc fusionné et le **découper**, à
+  `données + taille demandée` (`tlsf.rsize` est la demande brute, l'arrondi
+  ne sert qu'à choisir la classe) : l'en-tête du reste et ses liens de liste,
+  8 octets, écrits là où les anciennes données sont encore quand le bloc
+  descend. Vu sur r-type (l'index de lien du loader, 16 → 24 slots, descendu
+  de 108 octets, un slot rendu comme en-tête de bloc). Dormant depuis
+  l'origine : il faut un trou libre juste avant le bloc au moment où il
+  grandit.
+
+La garde : après le `free`, si le bloc fusionné commence avant les anciennes
+données et que le point de coupe tombe dedans, les 8 octets qui s'y trouvent
+sont sauvés ; ils sont remis en place après la copie, à la même position
+dans le bloc déplacé, quoi que `malloc` ait décidé (un autre bloc, ou pas de
+découpage : les octets remis sont ceux déjà là). Rien d'autre n'atteint les
+anciennes données : les opérations de liste touchent d'autres blocs et
+l'index, le découpage met à jour l'en-tête du bloc *suivant*.
+
+Coût : une comparaison quand le bloc n'a pas fusionné par l'avant (le cas
+courant) ; 8 octets sauvés et remis, une quarantaine de cycles, quand il l'a
+fait. Aucune allocation, aucun appel de plus. Tests : `tlsf.ut.realloc.merge`
+(coupe dans les données, coupe dans le trou, bloc de 4 octets).

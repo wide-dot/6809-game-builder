@@ -100,6 +100,7 @@ fileid   rmb types.WORD   ; [0000 000] [0000 000]    - [file id]
         jmp   >loader.file.linkData.count  ; OK
         jmp   >loader.scene.unload         ; OK
         jmp   >loader.composition.load     ; OK
+        jmp   >loader.composition.set      ; OK
 
 ; callbacks that can be modified by user at runtime
 error   jmp   >dskerr     ; Called if a read error is detected
@@ -108,11 +109,24 @@ pulse   jmp   >return     ; Called after each sector read (ex. for progress bar)
 ; temporary space
 ; ---------------
 ptsec  fill  0,256 ; Temporary space for partial sector loading
+ptsec.key fdb $ffff ; [track/face] [sector index] of the sector ptsec holds,
+                   ; $ffff when it holds nothing usable. The builder packs
+                   ; files back to back : the last partial sector of a file
+                   ; IS the first partial sector of the next one, and every
+                   ; link data file of a scene shares its sector with its
+                   ; neighbours. Reading the same sector twice in a row costs
+                   ; a full disk revolution (200 ms, eight sectors' worth) —
+                   ; measured on r-type, 07/09/2026 : about 78 re-reads and
+                   ; 15 s per boot, 40 % of the disk time. ldsec answers a
+                   ; request for the sector already in ptsec without touching
+                   ; the drive ; loader.dir.load, which reads its first sector
+                   ; into ptsec on its own, drops the key (it may also be
+                   ; another disk by then).
 diskId fcb   0     ; Directory id being requested/loaded
 dirSector fcb 0    ; First sector of that directory (from its table entry) :
                    ; the multi-sector read loop reloads B from here, the
                    ; monitor routines behind the insert prompt clobber B
-dirSkew   fcb 0    ; Interleave skew of that directory's track ((track*2)&6,
+dirSkew   fcb 0    ; Interleave skew of that directory's track (skewtab,
                    ; same rule as ldsec) : the media rotates the soft
                    ; interleave map every track, so the sclist index is
                    ; (skew+sector)&15 - forgetting the skew only shows on a
@@ -411,6 +425,27 @@ loader.composition.load
 @done   puls  d,x,y,u,pc
 
 ;-----------------------------------------------------------------
+; loader.composition.set
+;
+; input  REG : [X] table de composition, 0 = rien de resident
+;-----------------------------------------------------------------
+; Declare l'etat resident SANS rien charger. Pour qui a amene un etat en
+; RAM par scene.load et non par composition.load — l'amorcage : la scene
+; par defaut, puis un relais (fondu, splash) qui charge le moteur — et
+; veut que la convergence suivante parte de la. Sans cette declaration,
+; composition.load voit un etat courant nul, « rien de resident », et
+; recharge tout ce que la cible nomme : r-type, 07/09/2026, scenes.boot
+; chargee deux fois, 13 s sur les 34 du boot au title.
+;
+; Ce n'est pas un raccourci pour eviter un chargement : la table nommee
+; DOIT decrire ce qui est en RAM, c'est sur elle que la convergence
+; suivante decide ce qu'elle lache.
+;-----------------------------------------------------------------
+loader.composition.set
+        stx   >composition.current
+        rts
+
+;-----------------------------------------------------------------
 ; loader.composition.holds
 ;
 ; input  REG : [X] id de scene, [U] table de composition
@@ -638,6 +673,8 @@ loader.dir.load.do
 !
         ldd   #ptsec
         std   >loader.dir
+        ldd   #$ffff
+        std   >ptsec.key          ; ptsec is about to hold a directory sector
 ; set the dir location from the builder's table : entry = [physical disk]
 ; [face] [track] [sector]. The physical disk byte is informational — reading
 ; the right location on the wrong physical disk fails the IDX tag/id check
@@ -662,8 +699,9 @@ loader.dir.load.do
         stb   <map.DK.DRV         ; Set directory location
         tfr   x,d                 ; on floppy disk
         sta   <map.DK.TRK+1       ; B is loaded with sector id
-        asla                      ; interleave skew of this track ((track*2)&6,
-        anda  #$06                ; same rule as ldsec) : the sclist index is
+        anda  #loader.interleave.SKEW_MASK
+        ldx   #skewtab            ; interleave skew of this track (same rule
+        lda   a,x                 ; as ldsec) : the sclist index is
         sta   >dirSkew            ; (skew+sector)&15
         addb  >dirSkew
         andb  #$0f
@@ -829,12 +867,23 @@ return  rts
 * Load a sector
 ldsec   equ   *
         pshs  x,y,u
-        lda   >track              ; [0000 000] track [0] drive
+        ldx   <map.DK.BUF
+        cmpx  #ptsec
+        bne   @read               ; not a partial sector : straight to RAM
+        ldd   >track              ; [track/face] [sector index]
+        cmpd  >ptsec.key
+        beq   ldsec1              ; ptsec already holds it : no disk access,
+                                  ; but the bookkeeping and the pulse as usual
+        std   >ptsec.key          ; it will, once read (a read error is fatal)
+@read   lda   >track              ; [0000 000] track [0] drive
         lsr   <map.DK.DRV         ; make room to drive id
         lsra                      ; set cc with bit0 (drive) of track variable
         rol   <map.DK.DRV         ; set bit0 of drive id with cc
         ldb   >track
-        andb  #$06                ; get skew based on track nb : 0, 2, 4, 6, 0, 2, 4, 6, ...
+        lsrb                      ; the track number
+        andb  #loader.interleave.SKEW_MASK
+        ldx   #skewtab            ; sclist index of that track's first logical
+        ldb   b,x                 ;   sector (the media's skew, builder-generated)
         addb  >sector             ; add sector to skew
         andb  #$0f                ; loop the index
         ldx   #sclist             ; interleave table
@@ -867,11 +916,14 @@ ldsec1  ldd   >track              ; read track/sect
 * Default exit if disk error
 dskerr  jmp   [$fffe]
 
-* Interleave 2 with a default disk format (interleave 7)
-sclist  fcb   $01,$0f,$0d,$0b
-        fcb   $09,$07,$05,$03
-        fcb   $08,$06,$04,$02
-        fcb   $10,$0e,$0c,$0a
+* The media's interleave, generated by the builder into
+* gen/directories/locations.asm from the storage's <interleave> (overridable
+* on <floppydisk> : softskip, softskew, hardskip) — the same tables drive
+* the boot sector, the loader and the image, they cannot drift.
+* sclist  : the physical sector numbers in reading order
+* skewtab : sclist index of a track's first logical sector, by track number
+sclist  _loader.interleave.sclist
+skewtab _loader.interleave.skew
 
 ; --------------------------------------
 

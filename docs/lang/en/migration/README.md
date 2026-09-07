@@ -95,6 +95,9 @@ practice; this is a reading order, not a schedule.
 18. [A tile is anchored top-left — gfxcomp defaults to center](tileset-anchor.md)
 19. [Every v1 sprite variant becomes an `<encoder>` — losing one is silent](sprite-variants.md)
 20. [A palette comes from the game mode, not from the artwork](game-mode-palette.md)
+20b. [The v1 boot fade becomes a routine](boot-palette-fade.md) — the
+    boot sector had no room and the loader owns the boot ; `palette.fade`
+    takes any palette and a target colour, IRQ off or on.
 20b. [Generated code pasted into a v1 file goes back through the
     pipeline](pasted-generated-code.md) — and the measurement that says whether
     the PNGs or the pasted code are the stale ones.

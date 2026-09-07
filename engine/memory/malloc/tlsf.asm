@@ -279,7 +279,8 @@ tlsf.malloc
             ; smaller blocks: one allocated,
             ; one free
             leax  $1234,u                    ; Compute address of new instancied free block into x
-tlsf.rsize  equ *-2                          ; requested memory size
+tlsf.rsize  equ *-2                          ; requested memory size (raw : tlsf.realloc.do
+                                             ; relies on the cut being at data + this value)
             leax  tlsf.BHDR_OVERHEAD,x       ; X is a ptr to new free block
             subd  #tlsf.BHDR_OVERHEAD
             std   tlsf.blockHdr.size,x       ; Set allocated size for new free Block

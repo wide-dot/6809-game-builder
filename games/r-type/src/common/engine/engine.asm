@@ -76,6 +76,13 @@ map_width       equ 24*tile_size
 ; sur le main du title.
 ;*******************************************************************************
 boot.entry
+        ; La scene de boot vient d'arriver par scene.load (le splash), qui ne
+        ; declare rien au loader : dire que l'etat resident est « boot ».
+        ; Sinon la convergence vers le title croit la RAM vide et recharge
+        ; scenes.boot en entier — 13 s de plus au boot (mesure du 07/09/2026).
+        _ram.data.set #loader.PAGE         ; le loader vit dans la fenetre DATA
+        ldx   #compositions.boot
+        jsr   loader.ADDRESS+loader.composition.set.IDX
         clrb                               ; 0 : le title
         jmp   game.stage.switch
 

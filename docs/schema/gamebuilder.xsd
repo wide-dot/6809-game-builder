@@ -1017,6 +1017,15 @@
       <xs:attribute name="storage" type="xs:string" use="required">
         <xs:annotation><xs:documentation>path of the storage geometry file</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="softskip" type="int6809">
+        <xs:annotation><xs:documentation>override the storage's soft interleave : physical sectors skipped between two logical sectors (1 = none, 2 = one sector time between reads)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="softskew" type="int6809">
+        <xs:annotation><xs:documentation>override the storage's skew : physical positions the sector order rotates by, per track</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="hardskip" type="int6809">
+        <xs:annotation><xs:documentation>override the storage's hard interleave : how the format numbers the physical sectors</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 

@@ -76,7 +76,10 @@ public final class Handlers {
 			.req("name", STRING, "target name"));
 		spec(element("floppydisk").doc("build a floppy disk image")
 			.req("model", STRING, "disk model declared in the storage file (fd640, fd320, fd158)")
-			.req("storage", STRING, "path of the storage geometry file"));
+			.req("storage", STRING, "path of the storage geometry file")
+			.opt("softskip", INT, "override the storage's soft interleave : physical sectors skipped between two logical sectors (1 = none, 2 = one sector time between reads)")
+			.opt("softskew", INT, "override the storage's skew : physical positions the sector order rotates by, per track")
+			.opt("hardskip", INT, "override the storage's hard interleave : how the format numbers the physical sectors"));
 		spec(element("section").doc("named area of the media")
 			.req("name", STRING, "section name, referenced by file/data")
 			.req("track", INT, "first track")

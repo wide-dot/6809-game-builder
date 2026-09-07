@@ -12,15 +12,46 @@ public class Interleave {
 	public int[] hardMap;
 	public int[] softMap;
 	
+	public int sectors;
+
 	public Interleave(ImmutableNode node, SourceMap sources, int sectors) throws Exception {
-		hardskip = NodeAttr.getInteger(node, sources, "hardskip", 1);
-		softskip = NodeAttr.getInteger(node, sources, "softskip", 1);
-		softskew = NodeAttr.getInteger(node, sources, "softskew", 1);
-		
+		this(NodeAttr.getInteger(node, sources, "hardskip", 1),
+		     NodeAttr.getInteger(node, sources, "softskip", 1),
+		     NodeAttr.getInteger(node, sources, "softskew", 1),
+		     sectors);
+	}
+
+	/** The same maps from bare values : a target overriding its storage's interleave. */
+	public Interleave(int hardskip, int softskip, int softskew, int sectors) {
+		this.hardskip = hardskip;
+		this.softskip = softskip;
+		this.softskew = softskew;
+		this.sectors = sectors;
 		// get interleaved map (as formatted on floppy disk)
 		int[] uninterleavedMap = getUninterleavedMap(sectors);
 		hardMap = getMap(hardskip, uninterleavedMap);
 		softMap = getMap(softskip, hardMap);
+	}
+
+	/**
+	 * Index in {@link #softMap} of the first logical sector of a track : the
+	 * media rotates the soft map by {@code softskew} physical positions per
+	 * track (FdUtil.interleave), and the loader has to start reading there.
+	 */
+	public int skewIndex(int track) {
+		return getSoftIndex(softMap, hardMap[(track * softskew) % sectors]);
+	}
+
+	/** After how many tracks the skew pattern repeats. */
+	public int skewPeriod() {
+		int k = softskew % sectors;
+		if (k == 0) return 1;
+		return sectors / gcd(sectors, k);
+	}
+
+	private static int gcd(int a, int b) {
+		while (b != 0) { int t = a % b; a = b; b = t; }
+		return a;
 	}
 	
 	public static int getSoftIndex(int[] map, int val) {

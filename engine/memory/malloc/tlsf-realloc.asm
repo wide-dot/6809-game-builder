@@ -70,6 +70,31 @@ tlsf.realloc
 ; Make a realloc by doing a free/malloc
 ; Data is copied
 ;
+; Free FIRST : when nothing else fits, the block comes back merged with
+; its free neighbours, and the memory peak never exceeds the bigger of
+; the two sizes. The price of that order is that the allocator can write
+; inside the old data before it is copied. Every such write is known,
+; and saved here :
+;
+; - tlsf.free links the freed block into a free list : 4 bytes at the
+;   start of the block (@data12/@data34) — unless it merged with the
+;   free block BEFORE it, in which case they land in that hole ;
+; - tlsf.malloc may give that merged block back and SPLIT it, at
+;   [merged data + requested size] (tlsf.rsize is the raw request, the
+;   rounding only picks the class) : the remainder's header and its list
+;   links, 8 bytes, written where the old data still sits when the block
+;   moves down. r-type, 07/09/2026 : the loader's link index grew from
+;   16 to 24 slots, moved down 108 bytes, and one slot came back as a
+;   block header. Those 8 bytes are saved before malloc and put back
+;   after the copy, whatever malloc decided — another block, or no
+;   split, and the bytes put back are the bytes already there.
+;
+; Nothing else reaches the old data : list operations touch other blocks
+; and the index, a split updates the NEXT block's header.
+; Cost of the guard : a compare when the block did not merge backwards,
+; 8 bytes saved and put back when it did. tlsf.ut.realloc.merge covers
+; both the split inside the data and the split inside the hole.
+;
 ; When a realloc error is raised (out of memory) :
 ; Data may have been moved as best effort to provide more space,
 ; freed memory block may have been merged with prev or prev/next
@@ -89,6 +114,31 @@ tlsf.realloc.do
         ; reallocate memory
         jsr   tlsf.free
         stx   @freeBlock                              ; Free block can be ahead of current deallocated block when merging
+;
+        ; the split guard : where malloc would cut the merged block
+        ldb   #$20                                    ; bra : nothing to put back
+        stb   @guard
+        leay  tlsf.BHDR_OVERHEAD,x                    ; [y] data start of the merged block
+        cmpy  @start
+        beq   @noGuard                                ; no hole before : a split lands past the old data
+        ldd   ,s                                      ; requested size : malloc splits right after it
+        leay  d,y                                     ; [y] the split point (sizes < $8000 : d is signed)
+        cmpy  @start
+        blo   @noGuard                                ; inside the hole : nothing of ours there
+        tfr   y,d
+        subd  @start
+        std   @offset                                 ; the same bytes, once the block has moved
+        ldd   ,y
+        std   @bytes01
+        ldd   2,y
+        std   @bytes23
+        ldd   4,y
+        std   @bytes45
+        ldd   6,y
+        std   @bytes67
+        ldb   #$21                                    ; brn : put them back after the copy
+        stb   @guard
+@noGuard
         ldd   tlsf.err.callback                       ; Backup routine to call when tlsf raise an error
         std   @callback
         ldd   #tlsf.err.return
@@ -129,13 +179,13 @@ tlsf.realloc.do
         leau  4,u
         ldd   #0                                      ; [d] remaining size to copy
 @size   equ   *-2
-        beq   @rts
+        beq   @skipMemcpy                             ; a 4-byte block : nothing but the saved bytes
         jsr   memcpy.uyd
 ;
         ; restore 4 erased bytes by free routine
+@skipMemcpy
         ldu   #0                                      ; Restore new allocated addr in u
 @u      equ   *-2
-@skipMemcpy
         leay  ,u                                      ; [y] destination
         ldd   #0                                      ; First 4 bytes are special case
 @data12 equ   *-2
@@ -144,6 +194,24 @@ tlsf.realloc.do
 @data34 equ   *-2
         std   ,y++
 ;
+        ; put back the 8 bytes a split may have taken (opcode patched above)
+@guard  bra   @restored                               ; bra : nothing saved / brn : put back
+        ldd   #0
+@offset equ   *-2
+        leay  d,u
+        ldd   #0
+@bytes01 equ  *-2
+        std   ,y
+        ldd   #0
+@bytes23 equ  *-2
+        std   2,y
+        ldd   #0
+@bytes45 equ  *-2
+        std   4,y
+        ldd   #0
+@bytes67 equ  *-2
+        std   6,y
+@restored
         ldd   #0
 @callback equ *-2
         std   tlsf.err.callback                       ; setup return callback

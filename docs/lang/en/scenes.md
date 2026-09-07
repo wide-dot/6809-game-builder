@@ -380,6 +380,23 @@ The table is written by the placement scan, after every directory has reserved
 its ids and before anything assembles — the same moment, and for the same
 reason, as those directories' equate files.
 
+### Declaring a state the loader did not load
+
+`loader.composition.load` converges from `composition.current`, and it is the
+only routine that sets it. A state brought in by `scene.load` — the boot : the
+default scene, a relay or two (a palette fade, a splash), then the engine —
+leaves the current state at zero, and the first convergence takes the RAM for
+empty : it loads every scene its target names, including those already
+there. Measured on r-type : `scenes.boot` loaded twice, thirteen seconds of
+the thirty-four between the boot key and the title.
+
+`loader.composition.set` (jump table index 39, `X` = the table, 0 = nothing
+resident) declares the state without loading anything. Whoever brings a
+state in by `scene.load` calls it before the first convergence — in r-type,
+`boot.entry` names `compositions.boot` before asking for the title. It is a
+declaration, not a shortcut : the table named has to describe what is in
+RAM, since the next convergence decides what to drop from it.
+
 ## The occupancy map
 
 Destinations are placed by hand, against budgets worked out once. What nothing
