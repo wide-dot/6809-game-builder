@@ -247,7 +247,8 @@ tlsf.ut.realloc
         jsr   tlsf.ut.realloc.doOneTest
         ldd   #$1106
         std   tlsf.ut.realloc.var
-        jmp   tlsf.ut.realloc.doOneTest
+        jsr   tlsf.ut.realloc.doOneTest
+        jmp   tlsf.ut.realloc.merge
 
 tlsf.ut.realloc.doOneTest
         ; init allocator
@@ -325,8 +326,10 @@ tlsf.ut.realloc.doOneTest
         lda   tlsf.err
         beq   >
         bra   * ; error trap
-!
-        rts
+!       cmpu  @u1
+        bne   >
+        bra   * ; error trap : the data moved, [u] must say where (07/09/2026 :
+!       rts                            ; the malloc-first path returned the freed block)
 @errorCase
         lda   tlsf.err
         bne   >
@@ -340,6 +343,168 @@ tlsf.ut.realloc.doOneTest
         bra   * ; error trap
 !
         rts
+;
+;-----------------------------------------------------------------
+; tlsf.ut.realloc.merge
+;-----------------------------------------------------------------
+; The move-down case of tlsf.realloc.do : no free block fits the request,
+; the only room is the block itself merged with the free hole BEFORE it,
+; and that merged block is big enough to be split. The data must survive
+; the move and the split — the remainder's header is carved out of bytes
+; the old block still owns until they are copied (r-type, 07/09/2026 :
+; the loader's link index grew 16 -> 24 slots, moved down 108 bytes, and
+; slot 11 came back as a free block header).
+;
+; Layout : [a : 100][b : 128, pattern][c : the rest] ; free a ;
+; realloc b to 180 -> lands on a, pattern intact, tail given back.
+;-----------------------------------------------------------------
+tlsf.ut.realloc.merge
+        ldd   #$4000
+        ldx   #$0000+tlsf.ut.MEMORY_POOL
+        jsr   tlsf.init
+        clr   tlsf.err
+        ldd   #100
+        jsr   tlsf.malloc              ; a
+        stu   @a
+        ldd   #128
+        jsr   tlsf.malloc              ; b
+        stu   @b
+        ldx   #128                     ; fill b with a pattern : byte i = i
+        clra
+!       sta   ,u+
+        inca
+        leax  -1,x
+        bne   <
+        ldd   #$3000
+        jsr   tlsf.malloc              ; c : the bulk of what is left,
+        lda   tlsf.err
+        beq   >
+        bra   * ; error trap
+!       ldd   #16                      ;   then 16-byte blocks until the pool is
+        jsr   tlsf.malloc              ;   full : no free block can take the
+        lda   tlsf.err                 ;   180-byte request below
+        beq   <
+        clr   tlsf.err
+        ldu   @a
+        jsr   tlsf.free                ; the hole before b
+        ldu   @b
+        ldd   #180
+        jsr   tlsf.realloc             ; malloc ko, merge with the hole, split
+        lda   tlsf.err
+        beq   >
+        bra   * ; error trap
+!       cmpu  @a
+        beq   >
+        bra   * ; error trap : the merged block starts where a was
+!       ldx   #128
+        clra
+@check  cmpa  ,u+
+        beq   >
+        bra   * ; error trap : the pattern did not survive the move
+!       inca
+        leax  -1,x
+        bne   @check
+        ldd   #40
+        jsr   tlsf.malloc              ; the tail the split gave back
+        lda   tlsf.err
+        beq   >
+        bra   * ; error trap
+!
+        ; --- same hole, but the split lands INSIDE the hole : the guard must
+        ; not save (nor put back) anything there. [a : 100][b : 8, pattern]
+        ; [rest] ; free a ; realloc b to 20 -> cut at a+20, before b's data.
+        ldd   #$4000
+        ldx   #$0000+tlsf.ut.MEMORY_POOL
+        jsr   tlsf.init
+        clr   tlsf.err
+        ldd   #100
+        jsr   tlsf.malloc              ; a
+        stu   @a
+        ldd   #8
+        jsr   tlsf.malloc              ; b
+        stu   @b
+        ldd   #$A55A
+        std   ,u
+        std   2,u
+        ldd   #$C33C
+        std   4,u
+        std   6,u
+        ldd   #$3000
+        jsr   tlsf.malloc              ; c
+!       ldd   #16
+        jsr   tlsf.malloc              ; fill the pool
+        lda   tlsf.err
+        beq   <
+        clr   tlsf.err
+        ldu   @a
+        jsr   tlsf.free
+        ldu   @b
+        ldd   #20
+        jsr   tlsf.realloc
+        lda   tlsf.err
+        beq   >
+        bra   * ; error trap
+!       cmpu  @a
+        beq   >
+        bra   * ; error trap : the merged block starts where a was
+!       ldd   ,u
+        cmpd  #$A55A
+        beq   >
+        bra   * ; error trap
+!       ldd   2,u
+        cmpd  #$A55A
+        beq   >
+        bra   * ; error trap
+!       ldd   4,u
+        cmpd  #$C33C
+        beq   >
+        bra   * ; error trap
+!       ldd   6,u
+        cmpd  #$C33C
+        beq   >
+        bra   * ; error trap
+!       ldd   #60
+        jsr   tlsf.malloc              ; the remainder (112 - 20 - 4 = 88) is a sane free block
+        lda   tlsf.err
+        beq   >
+        bra   * ; error trap
+!
+        ; --- the smallest block : 4 bytes, nothing to memcpy, only the 4
+        ; saved bytes. [a : 4, pattern][b : 100] ; realloc a to 100 : it
+        ; cannot grow in place, it moves, the 4 bytes must follow.
+        ldd   #$4000
+        ldx   #$0000+tlsf.ut.MEMORY_POOL
+        jsr   tlsf.init
+        clr   tlsf.err
+        ldd   #4
+        jsr   tlsf.malloc              ; a
+        stu   @a
+        ldd   #$1234
+        std   ,u
+        ldd   #$5678
+        std   2,u
+        ldd   #100
+        jsr   tlsf.malloc              ; b, right after a
+        ldu   @a
+        ldd   #100
+        jsr   tlsf.realloc
+        lda   tlsf.err
+        beq   >
+        bra   * ; error trap
+!       cmpu  @a
+        bne   >
+        bra   * ; error trap : it had to move
+!       ldd   ,u
+        cmpd  #$1234
+        beq   >
+        bra   * ; error trap : the 4 bytes were lost (the old code skipped their restore)
+!       ldd   2,u
+        cmpd  #$5678
+        beq   >
+        bra   * ; error trap
+!       rts
+@a      fdb   0
+@b      fdb   0
 ;
 tlsf.ut.realloc.var fdb 0
 @u0     fdb   0

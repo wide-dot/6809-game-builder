@@ -547,8 +547,17 @@
             <reserved name="loader" page="$04" address="$C000" size="$2000"/>
             <reserved name="framebuffer.2.form"  page="$02" address="$C000" size="$1F40"/>
             <reserved name="framebuffer.2.color" page="$02" address="$A000" size="$1F40"/>
-            <reserved name="framebuffer.3.form"  page="$03" address="$C000" size="$1F40"/>
-            <reserved name="framebuffer.3.color" page="$03" address="$A000" size="$1F40"/>
+            <!-- La page 3 est LA PAGE MONTEE A L'ECRAN PENDANT LES CHARGEMENTS
+                 (plan-ecran-loading-2026-09.md §8) : ses deux bancs sont des
+                 regions, pour que l'ecran d'attente puisse s'y CHARGER (le loader
+                 y ecrit par la fenetre cartouche, d'ou les adresses en VUE
+                 CARTOUCHE : position $0000 = le banc forme que le jeu voit en
+                 $C000, position $2000 = le banc couleur qu'il voit en $A000 ;
+                 declarees en $C000/$A000 elles designeraient la fenetre DATA, celle
+                 du loader, et le build refuse). Le jeu y dessine comme avant ; la
+                 page 2 garde ses <reserved> en vue DATA, rien ne s'y charge. -->
+            <region name="framebuffer.3.form"  page="$03" address="$0000" size="$1F40"/>
+            <region name="framebuffer.3.color" page="$03" address="$2000" size="$1F40"/>
             <!-- L'ARENE DU TITLE : le title ne coexiste jamais avec un stage,
                  il se relaie avec eux sur la page $18 (scene.unload a la
                  bascule, comme entre stages). -->
@@ -576,6 +585,14 @@
                  c'est pour cela que le title en est sorti pour devenir une scene
                  a lui (relais de boot, region `boot`). Un etat decrit donc toute
                  la RAM, pages $04-$0C comprises. -->
+            <!-- Le fondu du boot est SEUL en RAM : premier code charge, recouvert par
+                 scenes.boot. Voir doc/plan-ecran-loading-2026-09.md §10. -->
+            <composition name="fade">
+                <scene name="scenes.fade"/>
+            </composition>
+            <composition name="splash">
+                <scene name="scenes.splash"/>
+            </composition>
             <composition name="boot">
                 <scene name="scenes.boot"/>
             </composition>
@@ -659,6 +676,7 @@
                  face 1 de la piste 0 : dir1 en 9-13, dir2 en 14-15. Emplacements
                  publies au loader par gen/directories/locations.asm. -->
             <section name="INDEX1" track="0" face="1" sector="10"/>
+            <section name="INDEX9" track="0" face="1" sector="14"/> <!-- l amorcage : fondu + splash, un secteur -->
             <!-- Les repertoires des stages 3-8 : une piste en fin de disque,
                  2 secteurs chacun (mesure stage 2). -->
             <!-- Les repertoires se suivent sur la piste 79 et valent DEUX
@@ -714,6 +732,62 @@
                  (object_rsvd_size 59 -> 5) — voir glb.const.asm/constants.asm. -->
             <define symbol="OverlayMode"/>
             <define symbol="LOG_INFO"/>
+
+            <!-- LE REPERTOIRE DE L'AMORCAGE (07/09/2026) : le fondu et le splash y
+                 vivent seuls, un secteur en piste 0. Les mettre dans le repertoire 0
+                 l'avait fait passer de six a sept secteurs, et le tampon de repertoire
+                 du loader — taille du plus gros repertoire — mangeait 256 octets de
+                 plus a son tas : la convergence title -> stage 1 n'allouait plus
+                 tout son lien (slot d'index corrompu, stage.main resolu a zero).
+                 Voir doc/plan-ecran-loading-2026-09.md §10. -->
+            <directory id="9" section="INDEX9" gensymbols="gen/directories/dir9/entries.asm">
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
+                <default name="lwasm.format"     value="obj"/>
+                <!-- LA PREMIERE SCENE : le fondu du menu TO8 vers le noir, avant tout
+                     chargement en page 0 (scenes.boot y loge le classement). Scene
+                     par defaut du loader, dans la REGION DU MOTEUR : premier code
+                     charge et execute, recouvert entierement par scenes.boot — elle
+                     SAUTE dans scene.load avec boot.entry empile en retour. Cuite,
+                     sans link data, dans aucune composition. Voir
+                     doc/plan-ecran-loading-2026-09.md §10. -->
+                <file name="boot.fade" bake="all" region="engine">
+                    <lwasm gensource="gen/boot/bootfade.asm">
+                        <asm filename="gen/directories/dir9/entries.asm"/>
+                        <asm filename="gen/layout.asm"/>
+                        <asm filename="src/common/flow/bootfade.unit.asm"/>
+                    </lwasm>
+                </file>
+                <scene name="scenes.fade" section="SCENE" gensource="gen/scenes/fade-scene.asm">
+                    <load name="boot.fade"/>
+                </scene>
+                <!-- « WIDE DOT presents » : l'image en page 3 (les deux plans bm16, vue
+                     cartouche), son code a la place du fondu, qui l'a chargee ; elle
+                     chargera le moteur a son tour. Placeholder genere par
+                     tools/gen_splash_placeholder.py, a remplacer au meme chemin. -->
+                <file name="boot.splash.a" bake="all" region="framebuffer.3.form">
+                    <png2bin filename="src/common/flow/splash/images/00.png" gendir="gen/boot/splash"
+                             videomode="bm16" plane="0"/>
+                </file>
+                <file name="boot.splash.b" bake="all" region="framebuffer.3.color">
+                    <png2bin filename="src/common/flow/splash/images/00.png" gendir="gen/boot/splash"
+                             videomode="bm16" plane="1"/>
+                </file>
+                <file name="boot.splash" bake="all" region="engine">
+                    <lwasm gensource="gen/boot/bootsplash.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/layout.asm"/>
+                        <asm filename="src/common/flow/splash.unit.asm"/>
+                        <png2pal section="palette" symbol="Pal_splash" filename="src/common/flow/splash/images/00.png"/>
+                    </lwasm>
+                </file>
+                <scene name="scenes.splash" section="SCENE" gensource="gen/scenes/splash.asm">
+                    <load name="boot.splash.a"/>
+                    <load name="boot.splash.b"/>
+                    <load name="boot.splash"/>
+                </scene>
+
+            </directory>
 
             <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
                 <default name="file.section" value="DATA"/>
@@ -4972,15 +5046,16 @@
                   ram-pool="fill-to:$2000">
                 <lwasm format="raw" gensource="gen/bootloader/loader.asm">
                     <asm filename="gen/directories/disk0/entries.asm"/>
+                    <asm filename="gen/directories/dir9/entries.asm"/> <!-- la scene par defaut, scenes.fade, y vit -->
                     <asm filename="gen/directories/locations.asm"/>
-                    <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 9</asm>
                     <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
                     <!-- Le boot entre dans le RELAIS resident (region `boot`), qui
                          demande la scene du title comme un changement d'ecran
                          ordinaire. L'adresse vient du layout genere. -->
                     <asm filename="gen/layout.asm"/>
                     <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ engine.address</asm>
-                    <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.boot</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.fade</asm>
                     <asm filename="engine/system/to8/bootloader/loader.asm"/>
                 </lwasm>
             </data>

@@ -86,3 +86,4 @@ engine/graphics/sprite/overlay-mode/DeleteObject.asm,engine/graphics/sprite/over
 engine/graphics/tilemap/vscroll/vscroll.asm,engine/graphics/tilemap/vscroll/vscroll.asm,00ae193f7fc24caadcb17f762fb3221aa9bd5bc7,2026-08-20,
 engine/graphics/tilemap/vscroll/vscroll.macro.asm,engine/graphics/tilemap/vscroll/vscroll.macro.asm,ba17ca0e1262da334f7f01cbe9231dc925205eda,2026-08-20,
 engine/graphics/tilemap/vscroll/vscroll.md,engine/graphics/tilemap/vscroll/vscroll.md,1ae62b2907f828fc7f429bca7575f9780ba7aacb,2026-08-20,
+engine/palette/palette-fade.asm,engine/boot/boot-fd.asm,10b1d58ce93b60afbaf30e5b5ecba3debc778ed6,2026-09-07,KEPT-V2: extracted from the v1 boot sector (PalFade/PalRun) as a standalone routine — 16 entries in place + target in registers + stack only ; watch v1 boot-fd.asm - manual resync ; see migration/boot-palette-fade.md
