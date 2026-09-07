@@ -9,6 +9,7 @@ import java.util.List;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import com.widedot.m6809.gamebuilder.Handlers;
+import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Interleave;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Section;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Storage;
 import com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Storages;
@@ -56,7 +57,8 @@ public final class DirectoryLocations {
 
 	public static void generate(ImmutableNode targetNode, BuildContext ctx) throws Exception {
 		List<Row> rows = new ArrayList<Row>();
-		walk(targetNode, ctx.child(), rows, new int[] { 0 });
+		List<Interleave> interleaves = new ArrayList<Interleave>();
+		walk(targetNode, ctx.child(), rows, new int[] { 0 }, interleaves);
 		if (rows.isEmpty()) {
 			return; // no <directory> in this target : nothing consumes the table
 		}
@@ -122,6 +124,51 @@ public final class DirectoryLocations {
 		out.append("loader.dir.buffer.SECTORS equ ").append(maxSectors)
 		   .append(System.lineSeparator());
 
+		// the media's interleave, for the boot sector and the loader : the
+		// reading order (sclist) and the per-track skew, from the SAME
+		// Interleave the image is written with — three hand-kept copies of
+		// the table used to drift (07/09/2026). Every floppy disk of the
+		// target is read by the one loader, so they have to agree.
+		Interleave il = interleaves.get(0);
+		for (int d = 1; d < interleaves.size(); d++) {
+			if (!java.util.Arrays.equals(interleaves.get(d).softMap, il.softMap)
+					|| interleaves.get(d).softskew != il.softskew) {
+				throw new Exception("floppy disk " + d + " declares another interleave than disk 0 ; "
+						+ "the loader reads every disk of a target with one table");
+			}
+		}
+		int period = il.skewPeriod();
+		int mask = (16 % period == 0) ? 15 : 127;
+		out.append("* The media's interleave : hardskip ").append(il.hardskip)
+		   .append(", softskip ").append(il.softskip).append(", softskew ").append(il.softskew)
+		   .append(System.lineSeparator());
+		out.append("loader.interleave.HARDSKIP equ ").append(il.hardskip).append(System.lineSeparator());
+		out.append("loader.interleave.SOFTSKIP equ ").append(il.softskip).append(System.lineSeparator());
+		out.append("loader.interleave.SOFTSKEW equ ").append(il.softskew).append(System.lineSeparator());
+		out.append("loader.interleave.SKEW_MASK equ ").append(mask).append(System.lineSeparator());
+		out.append("* the physical sector numbers in reading order (logical sector 0, 1, 2 ...)")
+		   .append(System.lineSeparator());
+		out.append("_loader.interleave.sclist MACRO").append(System.lineSeparator());
+		for (int i = 0; i < il.softMap.length; i += 4) {
+			out.append("        fcb   ");
+			for (int j = i; j < Math.min(i + 4, il.softMap.length); j++) {
+				out.append(j > i ? "," : "").append(String.format("$%02x", il.softMap[j]));
+			}
+			out.append(System.lineSeparator());
+		}
+		out.append("        ENDM").append(System.lineSeparator());
+		out.append("* sclist index of a track's first logical sector, indexed by track & SKEW_MASK")
+		   .append(System.lineSeparator());
+		out.append("_loader.interleave.skew MACRO").append(System.lineSeparator());
+		for (int i = 0; i <= mask; i += 8) {
+			out.append("        fcb   ");
+			for (int j = i; j < Math.min(i + 8, mask + 1); j++) {
+				out.append(j > i ? "," : "").append(il.skewIndex(j));
+			}
+			out.append(System.lineSeparator());
+		}
+		out.append("        ENDM").append(System.lineSeparator());
+
 		String path = ctx.path + File.separator + "gen" + File.separator
 				+ "directories" + File.separator + "locations.asm";
 		Files.createDirectories(Paths.get(FileUtil.getDir(path)));
@@ -131,7 +178,7 @@ public final class DirectoryLocations {
 
 	/** Walks the tree, replaying defaults/defines like the real pass nests them. */
 	private static void walk(ImmutableNode node, BuildContext scope, List<Row> rows,
-			int[] diskIndex) throws Exception {
+			int[] diskIndex, List<Interleave> interleaves) throws Exception {
 		for (ImmutableNode child : node.getChildren()) {
 			String kind = child.getNodeName();
 			if ("default".equals(kind) || "define".equals(kind)) {
@@ -139,18 +186,22 @@ public final class DirectoryLocations {
 				continue;
 			}
 			if ("floppydisk".equals(kind)) {
-				disk(child, scope.child(), rows, diskIndex[0]++);
+				disk(child, scope.child(), rows, diskIndex[0]++, interleaves);
 				continue;
 			}
-			walk(child, scope, rows, diskIndex);
+			walk(child, scope, rows, diskIndex, interleaves);
 		}
 	}
 
 	private static void disk(ImmutableNode node, BuildContext scope, List<Row> rows,
-			int diskIndex) throws Exception {
+			int diskIndex, List<Interleave> interleaves) throws Exception {
 		String model = Attribute.getString(node, scope, "model");
 		String storageFilename = scope.path + Attribute.getString(node, scope, "storage");
 		Storage storage = new Storages(storageFilename).get(model);
+		storage.overrideInterleave(Attribute.getIntegerOpt(node, scope, "hardskip"),
+				Attribute.getIntegerOpt(node, scope, "softskip"),
+				Attribute.getIntegerOpt(node, scope, "softskew"));
+		interleaves.add(storage.interleave);
 
 		for (ImmutableNode child : node.getChildren()) {
 			String kind = child.getNodeName();

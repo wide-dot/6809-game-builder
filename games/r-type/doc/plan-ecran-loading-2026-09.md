@@ -586,8 +586,8 @@ jusqu'à la trame 2880** → le title se révèle. Plus aucun bruit de page 0.
 
 **FAIT le 07/09/2026 — « WIDE DOT presents », la scène entre le fondu et le
 moteur.** `src/common/flow/splash.unit.asm` + `boot.splash.a/.b` (les deux
-plans BM16 par `<png2bin>`, placeholder généré par
-`tools/gen_splash_placeholder.py`) + `boot.splash` (le code, `Pal_splash` par
+plans BM16 par `<png2bin>`, image générée par `tools/gen_splash_logo.py`,
+voir plus bas) + `boot.splash` (le code, `Pal_splash` par
 `<png2pal>`), scène `scenes.splash`, composition `splash` (seule). Chaîne :
 `scenes.fade` (à `$6100`) saute dans `scene.load(scenes.splash)` avec
 `engine.address` empilé → le splash prend la même place, monte la page 3 à
@@ -673,3 +673,47 @@ précède l'index au moment où il grandit, ce que l'ordre des chargements de
 r-type n'avait jamais produit avant le splash. Un garde-fou au build (tas
 − tampon − lien de l'état le plus gourmand − index) vaudrait toujours la
 peine.
+
+**FAIT le 07/09/2026 — l'image du splash : le logo WIDE DOT.** Source
+versionnée dans `src/common/flow/splash/source/wide-dot-logo.jpg`, posée sur
+la grille par `tools/gen_splash_logo.py`. Mesures dans la source : capitales
+de 183 px, l'anneau du O en 4 × 7 cellules de 46,75 × 25,4 px — un pixel
+LARGE, 1,84:1, c'est le motif du nom. Une cellule devient 7 pixels × 6
+lignes (1,94:1 à l'écran), l'échelle en découle (×5/3 en hauteur pour
+compenser le pixel large) : logo de 153 × 46. Les lettres sont
+rééchantillonnées puis seuillées (sans anticrénelage, décision auteur),
+l'anneau est redessiné en blocs entiers, jamais rééchantillonné.
+
+Couleurs : **le gris ardoise du logo n'existe pas sur TO8** — la sortie du
+TEA5114 n'est pas linéaire (niveaux 0, 100, 127, 147… sur 255 : le premier
+cran après le noir est déjà à 100), il n'y a aucun gris sombre, et
+`png2pal` (CIEDE2000 vers les 4 096 couleurs, profil `to`) rend l'ardoise
+en bleu canard R0 G1 B3. Décision auteur : fond noir et **la palette du
+title** — lettres en chrome R-Type par bandes (blanc, periwinkle clair,
+teal, teal moyen), anneau teal / teal sombre, « presents » periwinkle —
+rangées aux **mêmes index que `Pal_title`** (entrées 0, 1, 8, 9, 10, 11,
+12), pour que les deux écrans partagent leurs entrées. Les RGB du PNG sont
+ceux du profil `png2pal`, qui retombent exactement sur les niveaux voulus
+(vérifié dans `gen/boot/bootsplash.asm`). `rtype_bench` 7/7, vidéo
+d'amorçage refaite. Les maquettes intermédiaires (dix pistes, deux fonds,
+avec et sans anticrénelage, quatre teintes du title) ont été montrées à
+l'auteur en aperçu « tel que la machine l'affiche » (png2pal + gamma) — la
+première planche, sans le gamma, montrait des couleurs impossibles.
+
+**FAIT le 07/09/2026 — le cache de secteur du loader, avant la barre.**
+En préparant la barre de chargement (étude
+`docs/lang/fr/etude-chargement-2026-09.md`), la mesure secteur par secteur
+a montré qu'un secteur sur six perdait un tour de disque : les fichiers
+sont écrits bout à bout et le loader relisait dans `ptsec` le secteur
+partagé entre deux fichiers, et entre les link data. `ptsec.key` dans
+`ldsec` : amorçage → title de la trame 3100 à la trame 1700, title →
+stage 1 de 44 à 31 s. Le « presents » est retiré du splash, la place est
+réservée à la barre.
+
+**FAIT le 07/09/2026 — `loader.composition.set`, la scène de boot n'est
+plus chargée deux fois.** Le profil complet du boot (touche B → title,
+`tools/loading/`) montrait deux fois la paire disque 8-10 s + ZX0 5,4 s :
+le splash charge `scenes.boot` par `scene.load`, qui ne déclare rien, et la
+convergence vers le title (composition boot + title) partait d'un état
+courant nul. Entrée de table de saut 39 dans le loader (`stx
+composition.current`), appelée par `boot.entry` avec `compositions.boot`.

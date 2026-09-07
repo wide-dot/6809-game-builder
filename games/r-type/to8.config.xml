@@ -763,8 +763,9 @@
                 </scene>
                 <!-- « WIDE DOT presents » : l'image en page 3 (les deux plans bm16, vue
                      cartouche), son code a la place du fondu, qui l'a chargee ; elle
-                     chargera le moteur a son tour. Placeholder genere par
-                     tools/gen_splash_placeholder.py, a remplacer au meme chemin. -->
+                     chargera le moteur a son tour. Image generee par
+                     tools/gen_splash_logo.py depuis le logo source (splash/source),
+                     couleurs aux memes index que Pal_title. -->
                 <file name="boot.splash.a" bake="all" region="framebuffer.3.form">
                     <png2bin filename="src/common/flow/splash/images/00.png" gendir="gen/boot/splash"
                              videomode="bm16" plane="0"/>

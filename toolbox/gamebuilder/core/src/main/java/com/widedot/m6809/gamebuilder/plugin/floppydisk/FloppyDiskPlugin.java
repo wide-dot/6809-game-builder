@@ -30,6 +30,9 @@ public class FloppyDiskPlugin {
 		// load storage definitions from external file
 		Storages storages = new Storages(storageFilename);
 		Storage storage = storages.get(model);
+		storage.overrideInterleave(Attribute.getIntegerOpt(node, ctx, "hardskip"),
+				Attribute.getIntegerOpt(node, ctx, "softskip"),
+				Attribute.getIntegerOpt(node, ctx, "softskew"));
     	
 		// Instanciate the floppy disk image
 		FdUtil mediaData = new FdUtil(storage);

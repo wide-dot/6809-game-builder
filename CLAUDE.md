@@ -674,6 +674,61 @@ Ordre de migration suggéré (dépendances croissantes) :
 Non requis pour R-Type minimal : MUCOM88/YM2608, MPLUS, MEA8000, SMPS/PCM/DAC,
 fonts engine, Exomizer (ZX0 suffit), parallaxe tilemap (le starfield est un objet projet).
 
+## Le loader relit ses secteurs partagés : corrigé (07/09/2026)
+
+Le builder écrit les fichiers bout à bout : le dernier secteur partiel d'un
+fichier est le premier du suivant, et les link data d'une scène se serrent
+sur deux ou trois secteurs. Le loader relisait chaque fois le même secteur
+dans `ptsec`, et une relecture immédiate coûte **un tour de disque entier**
+(200 ms, huit secteurs). Mesuré sous toje sur r-type : un secteur sur six
+perdait un tour, 27 s sur les 37 de l'amorçage, 12 s sur les 44 du passage
+au stage 1. Corrigé par `ptsec.key` dans `ldsec` (12 cycles par secteur
+plein) ; `loader.dir.load` invalide la clé. Amorçage → title : 37,7 s →
+10,5 s ; loader-ut : 25 s → 7 s de banc. L'étude complète — géométrie,
+entrelacement, budget par créneau, où passe le temps, et le hook de barre
+de chargement à venir — est dans
+[`etude-chargement-2026-09.md`](docs/lang/fr/etude-chargement-2026-09.md),
+avec ses sondes dans `games/r-type/tools/loading/`.
+
+## DKCONT coupe le moteur à chaque appel ; l'inertie de toje (07/09/2026)
+
+L'épilogue de DKCONT (`$E080–$E091`) coupe le moteur (`$E0B9`, CMD2 = $40)
+à la fin de CHAQUE lecture de secteur, et l'appel suivant le rallume dans
+sa boucle READY (`$E45A`). Vrai sur machine. Le trou de 0,4 s toutes les
+2 s vu sous toje vient de son modèle d'inertie (teo-wd) : la remise en
+marche rejoue 0,38 s d'inertie quand la dernière mise en marche date de
+plus de 2 s — comparée à la mise en marche, pas à l'arrêt. **Les temps
+disque mesurés sous toje portent ~20 % d'artefact probable**, et le pas
+de tête n'y est pas modélisé (STEP instantané) : le skew ne s'y règle
+pas. Étude §8–§9 ; à trancher sur machine avec deux images (entrelacement
+2 et 1).
+
+## L'entrelacement est généré, et surchargeable par cible (07/09/2026)
+
+Les tables de lecture du loader (`sclist`) et des secteurs de boot
+(`blist`), et le décalage de skew par piste, sont **générés** dans
+`gen/directories/locations.asm` depuis l'`Interleave` du storage
+(`_loader.interleave.sclist`, `_loader.interleave.skew`,
+`loader.interleave.SKEW_MASK`) : une seule source, celle qui écrit
+l'image. `<floppydisk softskip="1">` (ou `softskew`, `hardskip`) surcharge
+le storage pour une cible — c'est ainsi que se fabriquent les deux images
+de l'essai machine (entrelacement 2 et 1). Tous les disques d'une cible
+doivent partager le même entrelacement, le builder refuse sinon.
+
+## L'état résident se déclare : `loader.composition.set` (07/09/2026)
+
+`composition.load` converge la RAM depuis `composition.current`, et seule
+`composition.load` le pose. Un état amené par `scene.load` — l'amorçage :
+scène par défaut, fondu, splash, puis le moteur — laisse l'état courant
+nul, et la première convergence croit la RAM vide : elle recharge tout ce
+que la cible nomme. Sur r-type, `scenes.boot` était chargée DEUX fois
+(13 s sur les 34 du boot au title), depuis la séparation boot/title du
+01/09, sans rapport avec le splash. Nouvelle entrée de la table de saut,
+index 39, `loader.composition.set` (X = la table, 0 = rien) : elle ne
+charge rien, elle déclare. `boot.entry` de r-type l'appelle avec
+`compositions.boot` avant de demander le title. Règle : **qui amène un état
+par `scene.load` le déclare avant la première convergence.**
+
 ## Page directe : contrat DP (01/08/2026)
 
 Deux pages en jeu — `$60` (moniteur, registres disque) et `$9F` (globales

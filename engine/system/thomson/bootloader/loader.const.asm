@@ -15,3 +15,4 @@ loader.file.linkData.count.IDX  equ   30 ; Get the number of files in the link d
 ; le jeu compile en dur, ils ne bougent jamais.
 loader.scene.unload.IDX         equ   33 ; Remove from the index every file a scene loaded
 loader.composition.load.IDX     equ   36 ; Converge RAM to a declared state (X = its table)
+loader.composition.set.IDX      equ   39 ; Declare the resident state without loading (X = its table, 0 = nothing)
