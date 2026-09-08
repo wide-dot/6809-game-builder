@@ -636,8 +636,8 @@ title.launchGame
 
         jsr   IrqOff
         _ym2413.init                   ; lecteur resident
-        jsr   game.loadbar.show        ; la barre du loader sous LOADING, dans
-                                       ;   la page a l'ecran, jusqu'au stage
+        ; (la barre du loader sous LOADING : game.stage.switch la pose pour
+        ;  tout stage cible, dans la page a l'ecran)
 
         ; l'unite paginee rend la scene du title (game.stage.unload), choisit
         ; la cible du depart — stage 1, ou celle que le cheat a comptee —,

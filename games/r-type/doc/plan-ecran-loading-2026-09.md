@@ -778,3 +778,27 @@ pixels orange pour 186, 378 et 672 unités sur 1 072 (5,6 / 11,3 / 20,1
 attendus), 41 pixels teal au splash pour 203 sur 584 (41,7). Loader
 4 134 octets.
 
+
+**FAIT le 08/09/2026 — la barre sur les passations stage → stage.** C'est
+`game.stage.switch` qui pose la barre, pour tout stage cible (`B ≠ 0`),
+avant `composition.load` ; `title.launchGame` n'a plus d'appel à lui.
+L'écran qu'un stage laisse en finissant est son dernier tampon fondu au
+noir sous une palette noire : pour que la barre s'y voie, `loader.loadbar.set`
+écrit lui-même la première teinte de sa table dans l'entrée de palette
+qu'il anime (quand la période n'est pas nulle) — l'orange apparaît sur
+le noir, même position et mêmes dimensions que sous LOADING. Le title
+(cible 0) reste sans barre : le splash a la sienne au boot, et le retour
+du game over est court. Vérifié sous toje sur la passation 1 → 2 : 866
+unités, la barre orange pulse sur l'écran noir de la ligne 114 et finit à
+858/866 sur 32 pixels, stage 2 lancé. Loader 4 157 octets (+23).
+
+**FAIT le 08/09/2026 — la barre au retour du game over.** `game.stage.switch`
+pose la barre pour TOUT écran cible, title compris : l'écran CONTINUE
+refusé (ou quota épuisé) laisse les deux tampons effacés sous `Pal_black`,
+la barre y vient comme à la fin d'un stage. Seul le boot entre après elle,
+par `game.stage.switch.load` : le splash a la sienne. Vérifié sous toje
+(vies à 0, quota consommé, mort au stage 1) : 93 unités pour le title, la
+barre orange sur le noir, le title arrive. Décision en attente (auteur) :
+généraliser l'image LOADING du title à toutes les transitions, boot
+compris, ou passer à la barre seule ; en attendant, chaque écran garde ce
+qu'il a.
