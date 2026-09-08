@@ -361,6 +361,9 @@ Collision_Run EXTERNAL
         ; game.stage.unload a disparu le 01/09/2026 : la convergence vers un
         ; etat declare lache elle-meme ce que la cible ne tient pas.
         _api game.stage.switch
+        ; La barre de chargement du loader sur l'ecran affiche : qui a dessine
+        ; son ecran de chargement l'appelle juste avant game.stage.switch
+        _api game.loadbar.show
         ; La convergence vers l'état de CLASSEMENT du stage courant (game over) :
         ; la musique de saisie prend la place de celle du stage. Voir engine.asm.
         _api game.ranking.run

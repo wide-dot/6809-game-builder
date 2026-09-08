@@ -38,7 +38,7 @@ splash
         ; loader compte ses secteurs et ses détentes contre le total que le
         ; répertoire annonce, et sa barre (engine/graphics/loadbar, assemblée
         ; dans le loader depuis le 08/09/2026) dessine une colonne par
-        ; trentième. 30 colonnes de 4 pixels, 3 lignes, dans le teal du logo
+        ; cent-vingtième. 120 pixels, 3 lignes, dans le teal du logo
         ; (entrée 1 de Pal_splash).
         ldx   #splash.loadbar
         jsr   loader.ADDRESS+loader.loadbar.set.IDX
@@ -54,12 +54,14 @@ splash
         ldx   #scenes.boot
         jmp   loader.ADDRESS+loader.scene.load.IDX
 
-splash.loadbar                         ; les sept parametres de loader.loadbar.set
+splash.loadbar                         ; les parametres de loader.loadbar.set
         fcb   3                        ; page video affichee
         fdb   140*40+5                 ; ligne 140, a partir du pixel 20
-        fcb   30                       ; colonnes de 4 pixels
+        fcb   120                      ; pixels
         fcb   3                        ; lignes
-        fcb   $11                      ; couleur 1
+        fcb   $11                      ; couleur 1, le teal du logo
+        fcb   0,0,0                    ; pas de pulsation : l'entree 1 est celle
+        fdb   0                        ;   du logo, elle respirerait avec
 
 splash.work
         fill  0,32                     ; la palette de travail : noire au départ

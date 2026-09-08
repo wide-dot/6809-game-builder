@@ -3,20 +3,21 @@
 *           hook (loader.progress.hook.set, contract in loader.const.asm)
 * ---------------------------------------------------------------------------
 *
-* The loader counts units (sectors read, 512-byte slices expanded) against a
-* total it measures from the directory ; this hook turns them into columns.
+* The loader counts units (sectors read, 512-byte slices expanded) against
+* the total the directory announces ; this hook turns them into PIXELS.
 * No division : an accumulator gains units x width at each call, and every
-* time it exceeds the total one column is drawn — additions and one 8x8
+* time it exceeds the total one more pixel is drawn — additions and one 8x8
 * multiply, so the bar costs a few dozen cycles between two sectors, plus a
-* column when one is due. It never draws past its width and never moves
-* back : a total that grows (a scene measured after another started) only
-* slows it down.
+* pixel when one is due. It never draws past its width and never moves
+* back.
 *
-* A column is one byte of each bank, four pixels of one colour, over
-* `height` lines. BM16 : 40 bytes per line per bank, the form bank at
-* position 0 of the page, the colour bank at position $2000 ; the page is
-* reached through the cartridge window, mounted for the time of the column
-* and put back as it was — the loader's own destination lives there.
+* A pixel is a nibble of one byte, over `height` lines. BM16 : 40 bytes per
+* line per bank, four pixels per byte position — pixels 0 and 1 in the form
+* bank byte (high nibble first), pixels 2 and 3 in the colour bank byte at
+* +$2000 (the png2bin t3 layout : linear 4, planar 8) ; the page is reached
+* through the cartridge window, mounted for the time of the pixel and put
+* back as it was — the loader's own destination lives there. Pixel by pixel
+* since 08/09/2026 : it advanced by four (a byte of each bank) before.
 *
 * THE HOOK RUNS WHILE THE LOAD OVERWRITES THE UNIT THAT BROUGHT IT : the
 * splash lives in the engine's region, and the engine is the first file of
@@ -32,20 +33,39 @@
 *
 *   loadbar.page     the video page shown while loading (2 or 3)
 *   loadbar.address  x + 40*y : first byte column, top line
-*   loadbar.width    columns, 1 to 40 (four pixels each)
+*   loadbar.width    pixels, 1 to 160
 *   loadbar.height   lines
 *   loadbar.pixels   the byte written : colour c gives c*$11
-* map.CF74021.CART comes from the machine's map.const.asm, included first.
+*   loadbar.pulse.*  the PULSE (08/09/2026) : every `period` units the palette
+*                    entry `index` takes the next colour of `table`, `count`
+*                    words in the GR0B form of a Pal_ table, cyclic — a ramp
+*                    there and back is a breathing bar. Period 0 : no pulse.
+*                    One palette write per step, not per unit. Pick an entry
+*                    the picture on screen does not use, or it breathes too.
+* loadbar.PARAMS bytes from `loadbar` are the parameters a caller sets, the
+* state follows and is cleared by loader.loadbar.set.
+* map.CF74021.CART and map.EF9369.* come from the machine's map.const.asm,
+* included first.
 * ---------------------------------------------------------------------------
 loadbar
-loadbar.page    fcb   3
-loadbar.address fdb   0
-loadbar.width   fcb   40
-loadbar.height  fcb   4
-loadbar.pixels  fcb   $11
-loadbar.acc     fdb   0
-loadbar.next    fcb   0
-loadbar.total   fdb   0
+loadbar.page         fcb   3
+loadbar.address      fdb   0
+loadbar.width        fcb   40
+loadbar.height       fcb   4
+loadbar.pixels       fcb   $11
+loadbar.pulse.index  fcb   0
+loadbar.pulse.period fcb   0
+loadbar.pulse.count  fcb   0
+loadbar.pulse.table  fdb   0
+loadbar.PARAMS       equ   *-loadbar
+loadbar.acc          fdb   0
+loadbar.next         fcb   0
+loadbar.total        fdb   0
+loadbar.pulse.tick   fcb   0
+loadbar.pulse.step   fcb   0
+loadbar.keep         fcb   0 ; the mask of the neighbour pixel in the byte
+loadbar.ours         fcb   0 ; our pixel's nibble
+loadbar.STATE        equ   *-loadbar-loadbar.PARAMS
 
 * entry : B = units just added, X = the loader's counters (done, total)
 loadbar.hook
@@ -67,24 +87,71 @@ loadbar.hook
         bhs   @done                    ; the bar is full
         incb
         stb   loadbar.next,pcr
-        decb
+        decb                           ; B = the pixel, 0 to width-1
+        ldx   loadbar.address,pcr
+        pshs  b
+        lsrb
+        lsrb
+        abx                            ; the byte position of that pixel
+        puls  b
+        andb  #%11                     ; its rank in the four
+        cmpb  #2
+        blo   >
+        leax  $2000,x                  ; 2 and 3 : the colour bank
+        subb  #2
+!       lda   #$0F                     ; even : the high nibble, keep the low
+        tstb
+        beq   >
+        lda   #$F0                     ; odd : the low nibble, keep the high
+!       sta   loadbar.keep,pcr
+        coma
+        anda  loadbar.pixels,pcr       ; c*$11 masked : our nibble
+        sta   loadbar.ours,pcr
         lda   map.CF74021.CART         ; the loader's own mapping, kept
         pshs  a
         lda   #$60                     ; RAM over the cartridge, writable
         ora   loadbar.page,pcr
         sta   map.CF74021.CART
-        ldx   loadbar.address,pcr
-        abx                            ; the column
-        lda   loadbar.pixels,pcr
         ldb   loadbar.height,pcr
-@col    sta   ,x                       ; form bank
-        sta   $2000,x                  ; colour bank
+@col    lda   ,x
+        anda  loadbar.keep,pcr
+        ora   loadbar.ours,pcr
+        sta   ,x
         leax  40,x
         decb
         bne   @col
         puls  a
         sta   map.CF74021.CART
         bra   @loop
-@done   puls  b,pc
+@done
+        ; the pulse : `period` units per step, one palette write per step
+        lda   loadbar.pulse.period,pcr
+        beq   @rts
+        ldb   ,s                       ; the units
+        addb  loadbar.pulse.tick,pcr
+        cmpb  loadbar.pulse.period,pcr
+        blo   @tick
+        subb  loadbar.pulse.period,pcr
+        stb   loadbar.pulse.tick,pcr
+        lda   loadbar.pulse.step,pcr
+        inca
+        cmpa  loadbar.pulse.count,pcr
+        blo   >
+        clra
+!       sta   loadbar.pulse.step,pcr
+        asla                           ; a word per colour
+        ldx   loadbar.pulse.table,pcr
+        ldd   a,x                      ; %GGGGRRRR %0000BBBB
+        pshs  d
+        lda   loadbar.pulse.index,pcr
+        asla                           ; the EF9369 address counts bytes
+        sta   map.EF9369.A
+        puls  a
+        sta   map.EF9369.D             ; green and red
+        puls  a
+        sta   map.EF9369.D             ; blue
+        bra   @rts
+@tick   stb   loadbar.pulse.tick,pcr
+@rts    puls  b,pc
 loadbar.SIZE        equ   *-loadbar
 loadbar.hook.OFFSET equ   loadbar.hook-loadbar
