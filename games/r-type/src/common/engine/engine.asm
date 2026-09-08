@@ -85,8 +85,9 @@ boot.entry
         jsr   loader.ADDRESS+loader.composition.set.IDX
         ldx   #0                           ; la barre du splash a fini son travail :
         jsr   loader.ADDRESS+loader.progress.hook.set.IDX ; plus de hook
-        clrb                               ; 0 : le title
-        jmp   game.stage.switch
+        jsr   IrqOff
+        clr   game.stage.target            ; 0 : le title — SANS la barre du jeu :
+        jmp   game.stage.switch.load       ;   le splash vient de montrer la sienne
 
 ;*******************************************************************************
 ; State that outlives a stage
@@ -344,6 +345,14 @@ game.stage.switch
         ldb   game.stage                   ; 0-base, deja pose par le title :
         jsr   ranking.reset                ;   le premier stage du credit
 !       jsr   IrqOff                       ; le chargement parle au contrôleur disque
+        ; La barre de chargement, pour tout ecran qui arrive : sur l'ecran
+        ; LOADING que le title vient de dessiner, ou sur le noir que laissent
+        ; la fin d'un stage et le game over (la barre pose sa couleur
+        ; elle-meme). Seul le boot entre plus bas, sans elle : le splash a la
+        ; sienne. Ce que l'ecran de chargement doit etre — l'image LOADING
+        ; partout, ou la barre seule — reste a decider (08/09/2026).
+        jsr   game.loadbar.show
+game.stage.switch.load
         ; Le loader vit dans une page commutée de la fenêtre DATA : il faut la
         ; monter pour l'atteindre. L'écran sortant vient d'y effacer ses tampons
         ; d'écran, donc c'est une autre page qui est en place. La macro détruit
@@ -362,9 +371,10 @@ game.stage.switch
 ;*******************************************************************************
 ; game.loadbar.show — la barre de chargement du loader sur l'ecran affiche
 ;
-; L'appelant vient de dessiner son ecran de chargement dans les deux tampons
-; et de poser sa palette ; il appelle ceci juste avant game.stage.switch, qui
-; retire la barre quand la convergence est finie. La page visible se deduit
+; Appele par game.stage.switch pour tout ecran cible, apres que l'ecran
+; sortant a laisse ce qu'il voulait montrer (l'image LOADING du title, le
+; noir de la fin d'un stage ou du game over) ; le hook est retire quand la convergence est
+; finie. La page visible se deduit
 ; du double tampon : gfxlock.backBuffer.status dit lequel est en cours de
 ; dessin, l'autre est a l'ecran. Les six autres parametres sont ceux de
 ; l'ecran de chargement du jeu (l'image LOADING, 34x22 centree en 80,100 :

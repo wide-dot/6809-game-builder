@@ -614,11 +614,23 @@ loader.loadbar.set
         decb
         bne   @copy
         ldb   #loadbar.STATE              ; a fresh start : accumulator, next
-        clra                              ; column, total seen, pulse tick and step
+        clra                              ; pixel, total seen, pulse tick and step
 @clear  sta   ,u+
         decb
         bne   @clear
-        ldx   #loadbar.hook
+        ; a pulsing bar starts on the first colour of its table, whatever
+        ; the palette holds : a screen faded to black shows it from the
+        ; first pixel (the stage hand-over draws it on the faded frame)
+        tst   loadbar.pulse.period
+        beq   @hook
+        lda   loadbar.pulse.index
+        asla                              ; the EF9369 address counts bytes
+        sta   map.EF9369.A
+        ldx   loadbar.pulse.table
+        ldd   ,x
+        sta   map.EF9369.D
+        stb   map.EF9369.D
+@hook   ldx   #loadbar.hook
         jmp   loader.progress.hook.set
 
 
