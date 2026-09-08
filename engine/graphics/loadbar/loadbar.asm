@@ -37,13 +37,18 @@
 *   loadbar.height   lines
 *   loadbar.pixels   the byte written : colour c gives c*$11
 *   loadbar.pulse.*  the PULSE (08/09/2026) : every `period` units the palette
-*                    entry `index` takes the next colour of `table`, `count`
-*                    words in the GR0B form of a Pal_ table, cyclic — a ramp
-*                    there and back is a breathing bar. Period 0 : no pulse.
-*                    One palette write per step, not per unit. Pick an entry
-*                    the picture on screen does not use, or it breathes too.
+*                    entry `index` takes the next colour of the table, `count`
+*                    words (at most loadbar.PULSE_MAX) in the GR0B form of a
+*                    Pal_ table, cyclic — a ramp there and back is a breathing
+*                    bar. Period 0 : no pulse. One palette write per step, not
+*                    per unit. Pick an entry the picture on screen does not
+*                    use, or it breathes too.
 * loadbar.PARAMS bytes from `loadbar` are the parameters a caller sets, the
-* state follows and is cleared by loader.loadbar.set.
+* colour table follows them IN THE CALLER'S RECORD (`count` words) and is
+* copied here too : the splash's own bytes are overwritten by the load its
+* bar shows (seen 08/09/2026 : a pointer to the table gave the bar the colour
+* of whatever the engine's code left there). The state comes last, cleared
+* by loader.loadbar.set.
 * map.CF74021.CART and map.EF9369.* come from the machine's map.const.asm,
 * included first.
 * ---------------------------------------------------------------------------
@@ -56,8 +61,9 @@ loadbar.pixels       fcb   $11
 loadbar.pulse.index  fcb   0
 loadbar.pulse.period fcb   0
 loadbar.pulse.count  fcb   0
-loadbar.pulse.table  fdb   0
 loadbar.PARAMS       equ   *-loadbar
+loadbar.PULSE_MAX    equ   8
+loadbar.pulse.table  fill  0,loadbar.PULSE_MAX*2
 loadbar.acc          fdb   0
 loadbar.next         fcb   0
 loadbar.total        fdb   0
@@ -65,7 +71,7 @@ loadbar.pulse.tick   fcb   0
 loadbar.pulse.step   fcb   0
 loadbar.keep         fcb   0 ; the mask of the neighbour pixel in the byte
 loadbar.ours         fcb   0 ; our pixel's nibble
-loadbar.STATE        equ   *-loadbar-loadbar.PARAMS
+loadbar.STATE        equ   *-loadbar.acc
 
 * entry : B = units just added, X = the loader's counters (done, total)
 loadbar.hook
@@ -140,7 +146,7 @@ loadbar.hook
         clra
 !       sta   loadbar.pulse.step,pcr
         asla                           ; a word per colour
-        ldx   loadbar.pulse.table,pcr
+        leax  loadbar.pulse.table,pcr
         ldd   a,x                      ; %GGGGRRRR %0000BBBB
         pshs  d
         lda   loadbar.pulse.index,pcr

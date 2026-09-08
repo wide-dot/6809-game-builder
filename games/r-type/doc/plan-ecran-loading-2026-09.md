@@ -802,3 +802,22 @@ barre orange sur le noir, le title arrive. Décision en attente (auteur) :
 généraliser l'image LOADING du title à toutes les transitions, boot
 compris, ou passer à la barre seule ; en attendant, chaque écran garde ce
 qu'il a.
+
+**FAIT le 08/09/2026 — le même écran de chargement partout : le boot montre
+LOADING.** Le logo WIDE DOT est retiré (décision auteur : uniformiser).
+`tools/gen_splash_loading.py` compose l'écran du boot depuis l'image
+LOADING du title (`flow/loading/images/00.png`, piste grise comprise),
+seule sur le noir, au pixel 64 et à la ligne 90 — la place mesurée sous
+toje où le title la pose (`x_pos` 80, `y_pos` 102, image 34×26) ; sa
+palette est celle de l'image, donc `Pal_splash` = `Pal_loading`. Le splash
+pose la même barre que `game.loadbar` : orange pulsé sur l'entrée 12, sur
+la piste grise. `gen_splash_logo.py` et le logo source sont supprimés
+(l'historique git les garde). **Défaut trouvé au premier essai : barre
+verte au boot.** La table de teintes était pointée dans l'unité du splash,
+que le chargement du moteur recouvre pendant que le hook la lit — le même
+piège que l'effet lui-même avant qu'il n'entre dans le loader. Corrigé :
+`loader.loadbar.set` copie la table avec les paramètres (`count` mots,
+8 au plus, `loadbar.PULSE_MAX`), les deux appelants l'écrivent en ligne.
+Loader 4 157 → 4 186 octets. Vérifié sous toje : l'écran du boot est
+identique ligne à ligne à l'écran LOADING du title, la barre parcourt la
+rampe orange-jaune, 585 unités, title à la trame 920.

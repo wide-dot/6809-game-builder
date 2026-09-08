@@ -738,11 +738,12 @@
                 <scene name="scenes.fade" section="DATA" gensource="gen/scenes/fade-scene.asm">
                     <load name="boot.fade"/>
                 </scene>
-                <!-- « WIDE DOT presents » : l'image en page 3 (les deux plans bm16, vue
-                     cartouche), son code a la place du fondu, qui l'a chargee ; elle
-                     chargera le moteur a son tour. Image generee par
-                     tools/gen_splash_logo.py depuis le logo source (splash/source),
-                     couleurs aux memes index que Pal_title. -->
+                <!-- L'ecran LOADING du boot : l'image en page 3 (les deux plans bm16,
+                     vue cartouche), son code a la place du fondu, qui l'a chargee ;
+                     elle chargera le moteur a son tour. Image generee par
+                     tools/gen_splash_loading.py depuis l'image LOADING du title
+                     (flow/loading/images), a la place ou le title la montre — le
+                     meme ecran de chargement partout (08/09/2026). -->
                 <file name="boot.splash.a" bake="all" region="framebuffer.3.form">
                     <png2bin filename="src/common/flow/splash/images/00.png" gendir="gen/boot/splash"
                              videomode="bm16" plane="0"/>

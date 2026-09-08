@@ -595,7 +595,8 @@ loader.progress.rts
 ;                  address (x + 40*y of the first byte, top line), width in
 ;                  pixels, height in lines, pixel byte (colour c = c*$11),
 ;                  then the pulse — palette entry, period in units (0 : no
-;                  pulse), colour count, table address (GR0B words)
+;                  pulse), colour count, then the colours themselves (GR0B
+;                  words, at most loadbar.PULSE_MAX) — copied too
 ;-----------------------------------------------------------------
 ; The loader's own loading bar (engine/graphics/loadbar/loadbar.asm,
 ; assembled after the loader's code, 08/09/2026) : copy the parameters,
@@ -613,8 +614,19 @@ loader.loadbar.set
         sta   ,u+
         decb
         bne   @copy
-        ldb   #loadbar.STATE              ; a fresh start : accumulator, next
-        clra                              ; pixel, total seen, pulse tick and step
+        ; the pulse colours come right after, `count` words : copied too —
+        ; the caller's bytes may be what the load is about to overwrite
+        ldb   loadbar.pulse.count
+        aslb
+        beq   @clear.from
+@table  lda   ,x+
+        sta   ,u+
+        decb
+        bne   @table
+@clear.from
+        ldu   #loadbar.acc                ; a fresh start : accumulator, next
+        ldb   #loadbar.STATE              ;   pixel, total seen, pulse tick and
+        clra                              ;   step
 @clear  sta   ,u+
         decb
         bne   @clear
@@ -626,8 +638,7 @@ loader.loadbar.set
         lda   loadbar.pulse.index
         asla                              ; the EF9369 address counts bytes
         sta   map.EF9369.A
-        ldx   loadbar.pulse.table
-        ldd   ,x
+        ldd   loadbar.pulse.table
         sta   map.EF9369.D
         stb   map.EF9369.D
 @hook   ldx   #loadbar.hook

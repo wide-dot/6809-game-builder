@@ -431,7 +431,8 @@ Ce qui est en place, sur l'entrelacement 2 nominal :
   recopiait dans `loading.fx`, un `<reserved>` de 242 octets en page 1, et
   installait la copie. *Depuis le 08/09 (bilan §13) l'effet est assemblé
   dans le loader, après son code, et s'installe par `loader.loadbar.set`
-  (X = ses sept paramètres) : plus de bloc réservé dans le layout.*
+  (X = ses paramètres, table de teintes comprise, tout est copié) : plus
+  de bloc réservé dans le layout.*
 - **Le résultat** : sur le splash, la barre part à la première lecture et
   finit à 573 unités sur 584 (l'arrondi des tranches ZX0), sans à-coup
   entre la passe disque et la passe ZX0. Histogramme des écarts secteur

@@ -401,10 +401,9 @@ game.loadbar.page fcb 3                    ; la page visible, posee a chaque app
         ; huit teintes, une de plus toutes les 4 unites (~9 pas par seconde)
         fcb   12                           ; l'entree de palette animee
         fcb   4                            ; la periode, en unites de chargement
-        fcb   8                            ; huit teintes
-        fdb   game.loadbar.pulse
-game.loadbar.pulse                         ; GR0B, de $5D00 (orange) a $DE01 (jaune)
-        fdb   $5D00,$7D00,$9E00,$BE01,$DE01,$BE01,$9E00,$7D00
+        fcb   8                            ; huit teintes, qui suivent : GR0B, de
+        fdb   $5D00,$7D00,$9E00,$BE01      ;   $5D00 (orange) a $DE01 (jaune) et
+        fdb   $DE01,$BE01,$9E00,$7D00      ;   retour (copiees dans le loader)
 
 ; Les ÉTATS DE RAM eux-mêmes, générés depuis les <composition> du config.
 ; ICI et pas en tête du fichier : ce sont des DONNÉES, et les premiers octets

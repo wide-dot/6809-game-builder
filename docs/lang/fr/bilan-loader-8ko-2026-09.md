@@ -243,10 +243,13 @@ Loader r-type 3 885 octets, pool 4 307.
 
 Décision auteur : l'effet `loadbar` (100 octets, relogeable) est assemblé
 dans le loader après son code, en bloc fixe, et s'installe par une entrée
-de la table de saut, `loader.loadbar.set` (48), qui copie sept paramètres
-et pose le hook — le splash de r-type n'a plus qu'un enregistrement de
-sept octets et un `jsr`, et le layout perd son `<reserved loading.fx>` de
-242 octets en page 1. Ce que le loader reprend : les 100 octets de
+de la table de saut, `loader.loadbar.set` (48), qui copie les paramètres
+(et, depuis la pulsation, la table de teintes elle-même — 16 octets de
+plus dans le loader : un pointeur vers l'unité du splash lisait le code
+du moteur qui venait de la recouvrir, barre verte au boot le 08/09) et
+pose le hook — le splash de r-type n'a plus qu'un enregistrement et un
+`jsr`, et le layout perd son `<reserved loading.fx>` de 242 octets en
+page 1. Ce que le loader reprend : les 100 octets de
 l'effet, l'entrée et la routine d'installation (~25) ; la page 1 en rend
 242 au jeu.
 
