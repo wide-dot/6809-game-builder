@@ -591,9 +591,11 @@ loader.progress.rts
 ;-----------------------------------------------------------------
 ; loader.loadbar.set
 ;
-; input  REG : [X] the bar's parameters, 7 bytes : video page, address
-;                  (x + 40*y of the first column, top line), width in
-;                  columns, height in lines, pixel byte (colour c = c*$11)
+; input  REG : [X] the bar's parameters, loadbar.PARAMS bytes : video page,
+;                  address (x + 40*y of the first byte, top line), width in
+;                  pixels, height in lines, pixel byte (colour c = c*$11),
+;                  then the pulse — palette entry, period in units (0 : no
+;                  pulse), colour count, table address (GR0B words)
 ;-----------------------------------------------------------------
 ; The loader's own loading bar (engine/graphics/loadbar/loadbar.asm,
 ; assembled after the loader's code, 08/09/2026) : copy the parameters,
@@ -605,17 +607,17 @@ loader.progress.rts
 ; survive the load overwriting the unit that brought it.
 ;-----------------------------------------------------------------
 loader.loadbar.set
-        ldu   #loadbar.page
-        ldb   #7
+        ldu   #loadbar
+        ldb   #loadbar.PARAMS
 @copy   lda   ,x+
         sta   ,u+
         decb
         bne   @copy
-        clra
-        clrb
-        std   loadbar.acc                 ; a fresh start : accumulator,
-        sta   loadbar.next                ; next column, total seen
-        std   loadbar.total
+        ldb   #loadbar.STATE              ; a fresh start : accumulator, next
+        clra                              ; column, total seen, pulse tick and step
+@clear  sta   ,u+
+        decb
+        bne   @clear
         ldx   #loadbar.hook
         jmp   loader.progress.hook.set
 

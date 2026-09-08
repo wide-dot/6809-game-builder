@@ -355,7 +355,46 @@ game.stage.switch
         abx
         ldx   ,x
         jsr   loader.ADDRESS+loader.composition.load.IDX
+        ldx   #0                           ; la barre de cet ecran de chargement,
+        jsr   loader.ADDRESS+loader.progress.hook.set.IDX ; s'il y en avait une, a fini
         jmp   stage.main
+
+;*******************************************************************************
+; game.loadbar.show — la barre de chargement du loader sur l'ecran affiche
+;
+; L'appelant vient de dessiner son ecran de chargement dans les deux tampons
+; et de poser sa palette ; il appelle ceci juste avant game.stage.switch, qui
+; retire la barre quand la convergence est finie. La page visible se deduit
+; du double tampon : gfxlock.backBuffer.status dit lequel est en cours de
+; dessin, l'autre est a l'ecran. Les six autres parametres sont ceux de
+; l'ecran de chargement du jeu (l'image LOADING, 34x22 centree en 80,100 :
+; la barre sous elle). Monte la page du loader dans la fenetre DATA et l'y
+; laisse : game.stage.switch la remonte de toute facon.
+;*******************************************************************************
+game.loadbar.show
+        ldb   gfxlock.backBuffer.status    ; 0 ou -1 : le tampon en cours de dessin
+        andb  #1
+        eorb  #1
+        addb  #2                           ; l'autre est a l'ecran : page 2 ou 3
+        stb   game.loadbar.page
+        _ram.data.set #loader.PAGE
+        ldx   #game.loadbar
+        jmp   loader.ADDRESS+loader.loadbar.set.IDX
+game.loadbar                               ; les parametres de loader.loadbar.set
+game.loadbar.page fcb 3                    ; la page visible, posee a chaque appel
+        fdb   114*40+16                    ; ligne 114, a partir du pixel 64 : la
+        fcb   32                           ;   piste grise dessinee dans l'image
+        fcb   2                            ;   LOADING, 32 pixels, 2 lignes
+        fcb   $CC                          ; couleur 12 : orange dans Pal_loading,
+                                           ;   une entree que l'image n'emploie pas
+        ; la pulsation : l'entree 12 respire de l'orange au jaune et retour,
+        ; huit teintes, une de plus toutes les 4 unites (~9 pas par seconde)
+        fcb   12                           ; l'entree de palette animee
+        fcb   4                            ; la periode, en unites de chargement
+        fcb   8                            ; huit teintes
+        fdb   game.loadbar.pulse
+game.loadbar.pulse                         ; GR0B, de $5D00 (orange) a $DE01 (jaune)
+        fdb   $5D00,$7D00,$9E00,$BE01,$DE01,$BE01,$9E00,$7D00
 
 ; Les ÉTATS DE RAM eux-mêmes, générés depuis les <composition> du config.
 ; ICI et pas en tête du fichier : ce sont des DONNÉES, et les premiers octets

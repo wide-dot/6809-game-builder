@@ -624,8 +624,8 @@ title.launchGame
         sta   id,x
         ldd   #80
         std   x_pos,x
-        ldd   #100
-        std   y_pos,x
+        ldd   #102                     ; l'image a grandi de 4 lignes (la piste
+        std   y_pos,x                  ;   de la barre) : le texte reste ligne 90
         jsr   title.frame
         jsr   title.frame
 
@@ -636,6 +636,8 @@ title.launchGame
 
         jsr   IrqOff
         _ym2413.init                   ; lecteur resident
+        jsr   game.loadbar.show        ; la barre du loader sous LOADING, dans
+                                       ;   la page a l'ecran, jusqu'au stage
 
         ; l'unite paginee rend la scene du title (game.stage.unload), choisit
         ; la cible du depart — stage 1, ou celle que le cheat a comptee —,

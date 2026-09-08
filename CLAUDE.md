@@ -755,8 +755,10 @@ bit 5 de `bitfld`) où le builder écrit ce que son chargement comptera,
 lu avant la première lecture (depuis le 08/09 ; la mesure par le loader,
 `file.measure`/`scene.measure`, est retirée). L'effet de référence,
 `engine/graphics/loadbar/loadbar.asm`, est assemblé DANS le loader après
-son code et s'installe par `loader.loadbar.set` (table de saut 48, X = 7
-octets : page vidéo, adresse x+40·y, largeur, hauteur, octet de pixels) —
+son code et s'installe par `loader.loadbar.set` (table de saut 48, X =
+`loadbar.PARAMS` octets : page vidéo, adresse x+40·y, largeur en pixels, hauteur,
+octet de pixels, puis la pulsation — entrée de palette, période en unités
+ou 0, nombre de teintes, table GR0B ; une écriture de palette par pas) —
 depuis le 08/09 ; il fallait avant le recopier dans un `<reserved>` du
 layout, parce qu'il tourne pendant que le chargement recouvre l'unité qui
 l'apportait. Budget d'un hook : 2 000 cycles, un tour de disque au-delà.

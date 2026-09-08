@@ -746,3 +746,35 @@ splash n'a plus de copie ni de `loading.fx`. Avec le total écrit par le
 builder dans l'entrée de chaque scène, la barre finit exactement au bout
 (585 = 585). Bilan de place : `docs/lang/fr/bilan-loader-8ko-2026-09.md`.
 
+
+**FAIT le 08/09/2026 — la barre sur l'écran LOADING du title.** `game.loadbar.show`
+(résident, dans `api.asm`) lit la page visible dans le double tampon,
+pose les sept paramètres (ligne 116 sous l'image LOADING, 30 colonnes,
+2 lignes, cyan) et appelle `loader.loadbar.set` ; `title.launchGame`
+l'appelle après la palette, `game.stage.switch` retire le hook après la
+convergence — pour tout changement d'écran. Vérifié sous toje : 1 073
+unités pour le stage 1, la barre avance sous LOADING, hook à zéro et
+compteurs remis au démarrage du stage. Reste : les passations stage →
+stage (l'écran de fin de stage) et le game over.
+
+**FAIT le 08/09/2026 — la barre de l'écran LOADING, réglée.** À la largeur
+du mot : 8 colonnes de 4 px à partir du pixel 64, 2 lignes, ligne 114,
+sur une piste grise dessinée dans l'image `00.png` (34×22 → 34×26,
+`y_pos` 100 → 102 pour garder le texte en place). Orange sur l'entrée de
+palette 12, libérée dans l'image (ses six pixels bleu sombre remappés sur
+l'entrée 6, la même couleur). **Pulsation** : l'effet `loadbar` anime une
+entrée de palette entre les teintes d'une table, une de plus toutes les
+`period` unités — r-type : orange → jaune → orange en huit teintes, période
+4 unités (~9 pas par seconde, un souffle par seconde). Le splash ne pulse
+pas (son entrée 1 est celle du logo). Vérifié sous toje : la couleur de la
+barre parcourt bien la rampe.
+
+**FAIT le 08/09/2026 — la barre avance au pixel.** L'effet `loadbar` écrit
+des quartets (BM16 : pixels 0-1 dans l'octet du plan forme, 2-3 dans celui
+du plan couleur à +$2000, quartet haut d'abord — la disposition t3 de
+png2bin) au lieu d'un octet par plan : la largeur se déclare en pixels
+(r-type 32 sous LOADING, le splash 120). Vérifié sous toje : 5, 11 et 20
+pixels orange pour 186, 378 et 672 unités sur 1 072 (5,6 / 11,3 / 20,1
+attendus), 41 pixels teal au splash pour 203 sur 584 (41,7). Loader
+4 134 octets.
+
