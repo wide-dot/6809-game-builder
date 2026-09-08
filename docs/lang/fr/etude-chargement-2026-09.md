@@ -428,9 +428,10 @@ Ce qui est en place, sur l'entrelacement 2 nominal :
   lignes × 2 plans. Le bloc est **relogeable** (adressage relatif au PC),
   parce que le hook tourne pendant que la scène de boot recouvre l'unité
   qui l'a apporté (le moteur en est le premier fichier) : le splash le
-  recopie dans `loading.fx`, un `<reserved>` de 242 octets en page 1
-  (`$8700`, entre la plus grosse unité de stage et le témoin du banc), et
-  installe la copie.
+  recopiait dans `loading.fx`, un `<reserved>` de 242 octets en page 1, et
+  installait la copie. *Depuis le 08/09 (bilan §13) l'effet est assemblé
+  dans le loader, après son code, et s'installe par `loader.loadbar.set`
+  (X = ses sept paramètres) : plus de bloc réservé dans le layout.*
 - **Le résultat** : sur le splash, la barre part à la première lecture et
   finit à 573 unités sur 584 (l'arrondi des tranches ZX0), sans à-coup
   entre la passe disque et la passe ZX0. Histogramme des écarts secteur

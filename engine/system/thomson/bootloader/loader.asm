@@ -116,6 +116,7 @@ fileid   rmb types.WORD   ; [0000 000] [0000 000]    - [file id]
         jmp   >loader.composition.set      ; OK
         jmp   >loader.progress.hook.set    ; OK
         jmp   >loader.dir.unload           ; OK
+        jmp   >loader.loadbar.set          ; OK
 
 ; callbacks that can be modified by user at runtime
 error   jmp   >dskerr     ; Called if a read error is detected
@@ -586,6 +587,37 @@ loader.progress.add
 @rts    puls  d,x,y,u,pc
 loader.progress.rts
         rts
+
+;-----------------------------------------------------------------
+; loader.loadbar.set
+;
+; input  REG : [X] the bar's parameters, 7 bytes : video page, address
+;                  (x + 40*y of the first column, top line), width in
+;                  columns, height in lines, pixel byte (colour c = c*$11)
+;-----------------------------------------------------------------
+; The loader's own loading bar (engine/graphics/loadbar/loadbar.asm,
+; assembled after the loader's code, 08/09/2026) : copy the parameters,
+; start afresh, install its hook. A game that draws its bar otherwise
+; installs its own hook with loader.progress.hook.set ; this one is a
+; BM16 bar in the page on screen, which is what a loading screen wants
+; nine times out of ten, and it lives where no scene ever loads — the
+; effect once had to be copied into a reserved block of the layout to
+; survive the load overwriting the unit that brought it.
+;-----------------------------------------------------------------
+loader.loadbar.set
+        ldu   #loadbar.page
+        ldb   #7
+@copy   lda   ,x+
+        sta   ,u+
+        decb
+        bne   @copy
+        clra
+        clrb
+        std   loadbar.acc                 ; a fresh start : accumulator,
+        sta   loadbar.next                ; next column, total seen
+        std   loadbar.total
+        ldx   #loadbar.hook
+        jmp   loader.progress.hook.set
 
 
 composition.current fdb   0 ; table de l'etat resident, 0 = rien
@@ -1932,3 +1964,7 @@ linkData.symbol.search
  ELSE
         bra   *                                  ; unresolved symbol
  ENDC
+
+* The loader's loading bar : the effect the progress hook drives, kept in
+* the loader's half page after its code (loader.loadbar.set installs it).
+        INCLUDE "engine/graphics/loadbar/loadbar.asm"

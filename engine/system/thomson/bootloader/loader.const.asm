@@ -18,6 +18,7 @@ loader.composition.load.IDX     equ   36 ; Converge RAM to a declared state (X =
 loader.composition.set.IDX      equ   39 ; Declare the resident state without loading (X = its table, 0 = nothing)
 loader.progress.hook.set.IDX    equ   42 ; Install a progress hook (X = routine, 0 = none) and reset the counters
 loader.dir.unload.IDX           equ   45 ; Give the current directory's buffer back to the pool (no-op if none)
+loader.loadbar.set.IDX          equ   48 ; Install the loader's own loading bar (X = 7 bytes : video page, address x+40*y, width in columns, height, pixel byte) and reset the counters
 ; The progress hook : called by the loader after every addition to its
 ; progress counter — one unit per sector read (a re-read served from the
 ; cache counts too, the directory counts it), one per 512 bytes a compressed

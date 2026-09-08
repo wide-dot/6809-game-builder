@@ -21,12 +21,14 @@
 * THE HOOK RUNS WHILE THE LOAD OVERWRITES THE UNIT THAT BROUGHT IT : the
 * splash lives in the engine's region, and the engine is the first file of
 * the boot scene (measured : the bar froze at 40 %, the rest of the load
-* executing the engine's bytes as a hook). So the block is written to be
-* COPIED somewhere no scene ever loads — a <reserved> block of the layout —
-* and runs there : parameters, state and code together, every reference
+* executing the engine's bytes as a hook). So the block lives where no
+* scene ever loads : since 08/09/2026 it is assembled INSIDE THE LOADER,
+* after its code, and a game installs it with loader.loadbar.set (jump
+* table, X = the seven parameters below). It is still written to be
+* copied anywhere — parameters, state and code together, every reference
 * relative to the PC, `loadbar.SIZE` bytes from `loadbar`, the entry point
-* at `loadbar.hook.OFFSET` from the copy. Set the parameters in the unit's
-* copy, copy the block, install copy + offset. A fresh copy is a reset.
+* at `loadbar.hook.OFFSET` from the copy — for a build that wants it
+* elsewhere. A fresh copy, or loader.loadbar.set, is a reset.
 *
 *   loadbar.page     the video page shown while loading (2 or 3)
 *   loadbar.address  x + 40*y : first byte column, top line
