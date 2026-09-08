@@ -23,6 +23,25 @@ endstage.STATUS_DONE   equ 2         ; status: the level is over, main hands ove
 ; la chronologie de la sequence (memes valeurs que le stage 1)
 endstage.DURATION equ $C0            ; arcade: run_dobkeratops arms +0x22 = $C0 frames
 endstage.JINGLE   equ $10            ; jingle + autopilote a T-$10 du compte a rebours
+; LA DUREE, PUBLIEE PAR LE STAGE (main.endstage.duration) : $C0 est le compte
+; du Dobkeratops ; un boss qui leve lui-meme le drapeau de fin (gomander
+; a545, a440) arme $10 — jingle et autopilote a l'instant, comme la borne
+; (08/09/2026 : le jingle du stage 2 partait 176 trames trop tard).
+endstage.DURATION_LATCHED equ $10
+; LA VOIE DU FONDU (main.endstage.fadeMode) : par tramage des pixels, ou par
+; la palette comme la borne — fondu au noir lance par le boss a sa mort, deux
+; trames d'effacement, puis le releve sous une palette qui remonte. Etude :
+; doc/analyse-explosions-boss-stage2-2026-09.md §9.
+endstage.FADE_PIXEL   equ 0
+endstage.FADE_PALETTE equ 1
+endstage.READIN_WAIT  equ 8          ; fondu d'entree du releve : 16 pas x 8 =
+                                     ; 128 trames (borne : 31 x 4 = 124, f01b)
+endstage.READOUT_WAIT equ 170        ; du noir au releve : sur la borne, apres
+                                     ; la decharge du boss (t0+384) l'autoscroll
+                                     ; repart a 0,5 px/trame sur un plan noir, la
+                                     ; carte a ~64 px a defiler jusqu'a son bout
+                                     ; (~130 trames), puis la passation lance le
+                                     ; releve : ~t0+540, le noir tombant a t0+368
 ; ---------------------------------------------------------------------------
 ; LE POINT DE RALLIEMENT DE L'AUTOPILOTE — releve arcade (21/08/2026)
 ;

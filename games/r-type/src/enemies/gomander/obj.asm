@@ -91,8 +91,9 @@ gomander.delay    equ ext_variables+14   ; 14,15 compte a rebours du prochain
                                          ;       serpent (arcade [+0x22])
 gomander.hp       equ ext_variables+16   ; 16    PV restants — miroir de AABB.p,
                                          ;       qui passe a -128 hors fenetre
-                                         ; 17    libre (ex-d2nd : la 2e
-                                         ;       deflagration n'est plus jouee)
+gomander.faded    equ ext_variables+17   ; 17    le fondu de mort est lance
+                                         ;       (a56c : au jalon 0x100 ; ou au
+                                         ;       timeout)
 
 ; L'ANIMATION DU TUBE. L'arcade repeint un rectangle de sa tilemap de fond
 ; (gomander_helper_blit_recipe, 0x40:A578) : le corps du boss est du DECOR, ce
@@ -111,6 +112,9 @@ blink             EXTERNAL
 ; loader resout l'adresse, l'index d'objets donne la page (ObjID_collision).
 collision.orbGate.open  EXTERNAL
 collision.orbGate.close EXTERNAL
+; Le fondu de mort, dans le main du stage (stage-main.asm) : la palette vers
+; le noir au rythme de la borne. La sequence de fin (endlevel) l'attend.
+stage.deathFadeOut      EXTERNAL
 tube0             EXTERNAL
 tube1             EXTERNAL
 tube2             EXTERNAL
@@ -141,6 +145,9 @@ gomander.WAVE_FIRST  equ $0164           ; a260 : 356, le premier serpent
 gomander.LATCH       equ $1740           ; a424 : le niveau enchaine
 gomander.TIMEOUT     equ $1780           ; a465 : delai depasse, aucun score
 gomander.DEATH       equ $0180           ; a518 : 384 trames de mort
+gomander.DEATH_SINK  equ $0100           ; a52b : sous ce compteur, le decor
+                                         ; coule (la 2e deflagration, non jouee,
+                                         ; tombe au meme jalon)
 gomander.VP_Y        equ 11              ; scroll_vp_y_pos au repos (stage.asm,
                                          ; stage-main.asm : « commun aux deux
                                          ; niveaux ») — la base de la descente
@@ -570,33 +577,44 @@ gomander.ArmDeath
 gomander.Death
         jsr   gomander.Countdown
         lble  gomander.Finish          ; a528 : compte a rebours fini
+        cmpd  #gomander.DEATH_SINK
+        bhs   @ret                     ; a532 : au-dessus de 0x100, attendre.
+                                       ; a56c, la 2e deflagration (son + fondu
+                                       ; de palette) n'est pas jouee — seule
+                                       ; la cascade explose (decision auteur)
         cmpd  #gomander.DEATH_LATCH
-        bhi   @ret                     ; a52b/a56c : la 2e deflagration (son
-                                       ; + fondu de palette) n'est pas jouee —
-                                       ; seule la cascade explose (decision
-                                       ; auteur, 08/09/2026)
-@finale
+        bhi   @sink
         lda   #1                       ; a545 : le niveau enchaine (fondu,
         sta   globals.bossDefeated     ; autopilote et releve par obj_endlevel)
+@sink
+        ; a56c : au passage sous 0x100 la borne lance le fondu au noir de la
+        ; palette des tuiles (palette_blackout_15_bg(7)) — chez nous global
+        ; (decision auteur, 08/09/2026), une fois
+        jsr   gomander.FadeOut
         ; LA DESCENTE ET LA SECOUSSE (a54a..a569, analyse doc/analyse-
-        ; explosions-boss-stage2-2026-09.md §8) : sur les 128 dernieres trames
-        ; la vitesse Y du plan AVANT alterne +0,75 px (deux trames) et -1,00 px
-        ; (deux trames) : -0,5 px net par cycle de quatre, le decor COULE de
-        ; 16 px en tremblant de 2 px. Chez nous le plan est la tilemap et sa
-        ; hauteur est scroll_vp_y_pos, lue a chaque trame : on la calcule
-        ; depuis le compteur (pas d'accumulateur : sur au frame drop), a
-        ; l'echelle 0,75 — 12 lignes en 128 trames, une ligne de secousse.
-        ;   e = 128 - compteur (0..127), k = e/4 : tendance = 3k/8 (0..11)
+        ; explosions-boss-stage2-2026-09.md §8). LE CODE, pas le plate comment :
+        ; apres le `== 0x100` et le `JNC >= 0x100`, le `== 0x80` ne garde que le
+        ; son et le latch, et le bloc a54a tourne pour TOUT compteur de 0xFF a
+        ; 1 — 255 trames, de la 2e deflagration a la decharge. La vitesse Y du
+        ; plan AVANT y alterne +0,75 px (deux trames) et -1,00 px (deux
+        ; trames) : -0,5 px net par cycle de quatre, le decor COULE de 32 px
+        ; en tremblant de 2 px. Chez nous le plan est la tilemap et sa hauteur
+        ; est scroll_vp_y_pos, lue a chaque trame : on la calcule depuis le
+        ; compteur (pas d'accumulateur : sur au frame drop), a l'echelle 0,75 —
+        ; 24 lignes en 256 trames, une ligne de secousse.
+        ;   e = 256 - compteur (1..255), k = e/4 : tendance = 3k/8 (0..23)
         ;   r = e & 3 : 1 et 2 = les deux trames « vers le haut » du cycle
-        ; Le blackout de palette (a56c) n'est pas reproduit (decision auteur).
-        ldb   gomander.timer+1,u       ; 1..128 (D <= DEATH_LATCH : A = 0)
-        negb
-        addb  #gomander.DEATH_LATCH    ; e = 128 - compteur
+        ; La derniere rangee de la carte descend jusqu'a la ligne 214 : les 15
+        ; lignes de trop passent dans les 192 octets libres derriere le plan,
+        ; puis dans les lignes 0-10 de l'autre plan (le masque les repeint
+        ; chaque trame) ou dans la ROM moniteur (ecriture ignoree) — voir §8.
+        ldb   gomander.timer+1,u       ; 1..255 (D < DEATH_SINK : A = 0)
+        negb                           ; e = 256 - compteur
         pshs  b
         lsrb
-        lsrb                           ; k = e / 4
+        lsrb                           ; k = e / 4 (0..63)
         lda   #3
-        mul                            ; D = 3k (<= 93, tient dans B)
+        mul                            ; D = 3k (<= 189, tient dans B)
         lsrb
         lsrb
         lsrb                           ; B = 3k / 8, la tendance en lignes
@@ -612,6 +630,18 @@ gomander.Death
 @ret    rts
 
 ; --- la sortie, commune aux deux chemins (40:a473) ---------------------------
+; Le fondu de mort, UNE fois (la mort passe par le jalon 0x100, le timeout
+; arrive ici directement — a44c : sa palette s'eteint aussi). U est l'OST du
+; boss ; le fondu du stage clobbe U.
+gomander.FadeOut
+        tst   gomander.faded,u
+        bne   @rts
+        inc   gomander.faded,u
+        pshs  u
+        jsr   stage.deathFadeOut
+        puls  u
+@rts    rts
+
 gomander.Finish
         ; a484 relance l'autoscroll — mais l'ecran arcade est alors DEJA fondu
         ; au noir : aucun scroll n'est jamais visible sur ce niveau. La fin se
@@ -620,6 +650,7 @@ gomander.Finish
         ; glissement d'obj_endlevel est vraie immediatement, et la sequence
         ; commune s'arme sans un pixel de defilement. scroll_vel reste a zero.
         jsr   gomander.GateClose
+        jsr   gomander.FadeOut         ; le timeout eteint aussi (0x1720..)
         lda   #1                       ; a44c : le jalon 0x1760 du timeout fait
         sta   globals.tilesBehind      ; le meme geste que la mort (a4ff)
         ldd   glb_camera_x_pos

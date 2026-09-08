@@ -28,10 +28,17 @@ main.endstage.scoreArmed       EXTERNAL
 main.endstage.scoreDone        EXTERNAL
 main.endstage.rallyX           EXTERNAL
 main.endstage.rallyY           EXTERNAL
+main.endstage.duration         EXTERNAL   ; la duree armee par bossDefeated
+main.endstage.fadeMode         EXTERNAL   ; pixel ou palette (08/09/2026)
 
 ; La palette de noir, dans le main du stage avec celle du jeu : la sequence
 ; l'installe avant de rendre la main, pour que la coupure ne se voie pas.
 Pal_black                      EXTERNAL
+Pal_stage                      EXTERNAL   ; la cible du fondu d'entree du releve
+; La voie palette efface les deux tampons par le blast plein ecran de la page
+; overlay ; paged.call est reentrant (sa page d'origine vit sur la pile).
+paged.call                     EXTERNAL
+playfield.clearBlastFull       EXTERNAL
 
  SECTION code
 
@@ -46,6 +53,8 @@ Pal_black                      EXTERNAL
         INCLUDE "engine/collision/struct_AABB.equ"
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "src/common/flow/endlevel/endlevel.const.asm"
+        INCLUDE "engine/objects/palette/fade/fade.equ"        ; l'OST palettefade
+        INCLUDE "gen/layout.asm"                              ; common.overlay.page
         INCLUDE "src/common/state/variables.asm"
         ; Les pas de deplacement en 8.8 : l'autopilote s'en sert.
         INCLUDE "src/common/lib/scale.asm"

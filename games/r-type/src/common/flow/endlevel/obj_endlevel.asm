@@ -43,10 +43,15 @@ InitSequence
         std   bossHold.timer
         lda   #SCORE_HOLD_FRAMES            ; arme la pause ecran noir post fade-out
         sta   scoreHold.timer
+        clr   blackClear.pages
+        ldd   #0
+        std   readoutWait.timer
         rts
 
 bossHold.timer  fdb 0  ; frames left in the stand-in boss battle hold
 scoreHold.timer fcb 0  ; phase 4->5: ~0.5 s black-screen hold before the readout
+blackClear.pages fcb 0 ; voie palette : tampons restant a effacer au noir
+readoutWait.timer fdb 0 ; voie palette : trames entre le noir et le releve
 prefade.timer   fcb 0  ; phase 3 : rendus restants du pre-fondu
 
 * ---------------------------------------------------------------------------
@@ -90,7 +95,7 @@ Tick
         ; routes the same way) — arm the countdown and the invulnerability
         lda   #1
         sta   globals.bossDefeated
-        ldd   #endstage.DURATION
+        ldd   main.endstage.duration        ; publiee par le stage (endlevel.const.asm)
         std   main.endstage.counter
         lda   #endstage.SHIP_INVINCIBLE
         sta   player1+ext_variables+AABB.p
@@ -160,20 +165,38 @@ Tick
         bne   >
         ldd   player1+y_vel
         bne   >
+        lda   main.endstage.fadeMode
+        lbne  @paletteBlack
         inc   main.endstage.phase           ; -> 3 : le PRE-FONDU, deux rendus sans
         lda   #2                            ; sprites ni managers, champ repeint,
         sta   prefade.timer                 ; vaisseau seul (cf. stage-main.asm)
 !       lbra  @none2
+@paletteBlack
+        ; VOIE PALETTE (08/09/2026, decision auteur) : le boss a lance le fondu
+        ; au noir a sa mort (gomander.FadeOut, t0+128, 240 trames) ; on attend
+        ; qu'il soit fini — le jeu peint tout jusque-la, sous une palette qui
+        ; s'eteint, comme la borne. Puis la phase 4 est LE NOIR : les deux
+        ; tampons effaces (Blit, deux trames) et la palette remonte AUSSITOT
+        ; (ReadoutFadeIn, depuis Blit) — le vaisseau reparait ; sur la borne
+        ; il n'a jamais disparu. Le releve, lui, attend SON heure arcade :
+        ; endstage.READOUT_WAIT trames apres le noir (decision auteur,
+        ; 08/09/2026 : la reapparition tout de suite, le decompte a l'heure).
+        lda   palettefade+routine
+        cmpa  #o_fade_routine_idle
+        lbne  @none2                        ; le fondu de mort n'est pas fini
+        lda   #4
+        sta   main.endstage.phase
+        lda   #2
+        sta   blackClear.pages
+        ldd   #endstage.READOUT_WAIT
+        std   readoutWait.timer
+        lbra  @none2
 @phase34
         ; phase 4: the dissolve runs in Blit ; phase 5: the HUD readout runs
         lda   main.endstage.phase
         cmpa  #3
         lbne  @notPrefade
-        ; phase 3, PRE-FONDU (02/09/2026, decision auteur) : la boucle ne dessine
-        ; que le vaisseau, le champ est toujours repeint ; au bout de deux
-        ; RENDUS (un Tick par rendu) les deux pages sont identiques, fond et
-        ; vaisseau, et la dissolution peut alterner les pages sans faire
-        ; clignoter des sprites figes a deux positions.
+        ; phase 3, PRE-FONDU (voie pixel) : deux rendus, puis le fondu
         dec   prefade.timer
         lbne  @none2
         inc   main.endstage.phase           ; -> 4 : le fondu
@@ -181,7 +204,24 @@ Tick
         lbra  @none2
 @notPrefade
         cmpa  #5
-        lblo  @none2                         ; phase 4 : still dissolving -> wait
+        lbhs  @scoreWait
+        ; phase 4
+        lda   main.endstage.fadeMode
+        lbeq  @none2                         ; voie pixel : Blit dissout, attendre
+        ; voie palette : la palette remonte depuis Blit ; le releve attend son
+        ; heure arcade (READOUT_WAIT trames apres le noir)
+        ldd   readoutWait.timer
+        subd  gfxlock.frameDrop.count_w
+        lbgt  @readoutWait
+        lda   #1
+        sta   main.endstage.scoreArmed      ; HUD : semer le releve
+        lda   #5
+        sta   main.endstage.phase
+        lbra  @none2
+@readoutWait
+        std   readoutWait.timer
+        lbra  @none2
+@scoreWait
         lda   main.endstage.scoreDone
         lbeq  @none2
         ; readout + hold done : black the palette before the cut, silence the
@@ -302,8 +342,47 @@ ResetYM
 Blit
         lda   main.endstage.phase
         cmpa  #4                            ; phase 4 : le fondu (le nom garde son histoire)
-        beq   BlitPhase3
+        beq   BlitBlack
         rts
+
+BlitBlack
+        lda   main.endstage.fadeMode
+        beq   BlitPhase3                    ; voie pixel : la dissolution
+        ; VOIE PALETTE : la palette est noire, l'ecran ne l'est pas — les deux
+        ; tampons sont effaces une fois chacun (le tampon alterne a chaque
+        ; trame), puis plus rien : le vaisseau seul est repeint par la boucle.
+        lda   blackClear.pages
+        beq   @rts
+        dec   blackClear.pages
+        bne   @clear
+        jsr   ReadoutFadeIn                 ; le second tampon est noir : la
+                                            ; palette remonte des maintenant
+@clear  lda   #map.RAM_OVER_CART+common.overlay.page
+        ldx   #playfield.clearBlastFull
+        jmp   paged.call
+@rts    rts
+
+* ---------------------------------------------------------------------------
+* ReadoutFadeIn — la palette remonte vers celle du stage pendant le releve
+* (voie palette). Le geste de stage.paletteFadeCommon, sans rappel de fin ;
+* l'objet palettefade tourne a chaque trame dans la boucle du stage.
+* ---------------------------------------------------------------------------
+ReadoutFadeIn
+        pshs  u
+        ldu   #palettefade
+        clr   routine,u
+        lda   #1                            ; chronometre : par trame VIDEO
+        sta   o_fade_drop,u
+        ldx   #Pal_stage
+        stx   o_fade_dst,u
+        lda   #endstage.READIN_WAIT
+        sta   o_fade_wait,u
+        ldd   Pal_current
+        std   o_fade_src,u
+        ldd   #0
+        std   o_fade_sleep,u
+        std   o_fade_callback,u
+        puls  u,pc
 
 BlitPhase3
         lda   FadeCnt

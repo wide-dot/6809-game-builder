@@ -35,6 +35,7 @@ _occ = open(os.path.join(_dist, "occupancy-fd.html")).read()
 _base = int(re.search(r'"name":"common\.engine","container":"[^"]*","page":\d+,"address":(\d+)', _occ).group(1))
 INV = None
 VPY = None
+PALCUR = None
 for _l in open(os.path.join(_dist, os.pardir, "gen", "common", "build", "engine.lwmap")):
     _mm = re.match(r"Symbol: cheat\.invincible \(.*\) = ([0-9A-Fa-f]+)", _l)
     if _mm:
@@ -42,6 +43,18 @@ for _l in open(os.path.join(_dist, os.pardir, "gen", "common", "build", "engine.
     _mm = re.match(r"Symbol: scroll_vp_y_pos \(.*\) = ([0-9A-Fa-f]+)", _l)
     if _mm:
         VPY = _base + int(_mm.group(1), 16)
+    _mm = re.match(r"Symbol: Pal_current \(.*\) = ([0-9A-Fa-f]+)", _l)
+    if _mm:
+        PALCUR = _base + int(_mm.group(1), 16)
+
+
+def palette():
+    """la palette courante (16 mots), l'etat de l'objet de fondu"""
+    cur = t.read("%04X" % PALCUR, 2)
+    cur = (cur[0] << 8) | cur[1]
+    pal = t.read("%04X" % cur, 32)
+    fr = t.read("%04X" % (POOL + NOBJ * OSZ + ROUTINE), 1)[0]   # palettefade, l'OST statique
+    return cur, ' '.join('%02X%02X' % (pal[2*i], pal[2*i+1]) for i in range(16)), fr
 
 POOL, NOBJ, OSZ = 0x4000, 60, 63
 ID_EXPL, ID_CASC, ID_OUTSLAY, ID_GOM = 2, 29, 39, 40
@@ -166,8 +179,18 @@ for k in range(1, 26):
     log.append((k * 20, c["expl"], c["casc"], c["outslay"], bd, rt))
     print(f"+{k*20:3d} expl={c['expl']:2d} casc={c['casc']} outslay={c['outslay']} "
           f"bossDefeated={bd} gom.rt={rt} vp_y={vp} drop={dr:+d} total={c['total']}", flush=True)
+    if k % 4 == 0:
+        cur, pal, fr = palette()
+        print(f"      palette @{cur:04X} fade.rt={fr} : {pal}", flush=True)
     if k in (3, 8, 14, 16, 18, 19):
         print("shot", shot(f"cascade-{k*20}.png"), flush=True)
+# la suite de la sequence : le noir, puis le releve sous le fondu d'entree
+for k in range(4):
+    run(100)
+    w = witnesses()
+    cur, pal, fr = palette()
+    print(f"+{500+(k+1)*100} stage={w['stage']:02X} fade.rt={fr} palette @{cur:04X} : {pal}", flush=True)
+    print("      shot", shot(f"after-{500+(k+1)*100}.png"), flush=True)
 # la fin du stage
 for _ in range(60):
     run(500)
