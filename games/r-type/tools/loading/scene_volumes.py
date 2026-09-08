@@ -16,6 +16,8 @@ def read_dir(face,track,idx):
         tr,sec,sizea,offa,nsec,sizez=data[p+2:p+8]
         if sizeu==0 and tr==0 and sec==0 and nsec==0 and sizea==0: break
         comp=bool(sizeu&0x8000); link=bool(sizeu&0x4000)
+        # une scene : ni codec ni lien, et un second bloc signe $FFFF en piste/secteur (ses unites de progression)
+        scene=(not comp and not link and p+16<=len(data) and data[p+10:p+12]==b"\xff\xff")
         # nsec compte TOUS les secteurs touches, partiels compris (FdUtil.cwrite : file[4]++ par secteur ecrit)
         full=nsec-(1 if sizea else 0)-(1 if sizez else 0)
         e={"usize":(sizeu&0x3fff)+1,"comp":comp,"link":link,"track":tr>>1,"face":tr&1,
@@ -28,7 +30,10 @@ def read_dir(face,track,idx):
             lfull=lnsec-(1 if la else 0)-(1 if lz else 0)
             e["lsectors"]=lnsec; e["lbytes"]=la+lfull*256+lz; e["lshared"]=(1 if la else 0)+(1 if lz else 0)
             p+=8
-        entries[fid]=e; fid+=1+comp+link
+        if scene:
+            e["units"]=struct.unpack(">H",data[p:p+2])[0]   # ce que la scene ajoute au compteur de progression (builder)
+            p+=8
+        entries[fid]=e; fid+=1+comp+link+scene
     return base,entries
 # les emplacements des repertoires, tels que le builder les a ecrits pour le loader
 locs=[]

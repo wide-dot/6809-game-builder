@@ -623,6 +623,11 @@ réordonnancement d'écriture n'y change rien).
 
 ## 13. Le realloc sort du loader (08/09)
 
+*(Voir aussi le bilan de place, `bilan-loader-8ko-2026-09.md`, dont les
+mesures 1, 6 et 7 sont faites : TLSF à 4 classes, tampons dimensionnés
+par le builder, et le total de la barre écrit par le builder dans
+l'entrée de répertoire de chaque scène — la mesure du §10 est remplacée.)*
+
 Le bilan de place de la demi-page (`bilan-loader-8ko-2026-09.md`) a
 montré ce que le tampon dynamique du §11 coûtait : 522 octets de
 `realloc` et `memcpy` pour rendre 512 octets de pool dans les seuls états

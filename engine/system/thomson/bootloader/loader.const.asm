@@ -22,8 +22,9 @@ loader.dir.unload.IDX           equ   45 ; Give the current directory's buffer b
 ; progress counter — one unit per sector read (a re-read served from the
 ; cache counts too, the directory counts it), one per 512 bytes a compressed
 ; file expands to. On entry B = the units just added, X = the counters
-; (word done, word total — total is measured from the directory before a
-; scene loads, and before a composition's first read). Registers are free,
+; (word done, word total — total is what the directory says the arriving
+; scenes cost, counted by the builder, added before a scene loads and before
+; a composition's first read). Registers are free,
 ; DP is the loader's ($60 inside disk reads, $9F elsewhere : extended
 ; addressing only), the stack is the loader's. Budget : a hook runs between
 ; two sectors, in the one sector time the interleave leaves ; spend more

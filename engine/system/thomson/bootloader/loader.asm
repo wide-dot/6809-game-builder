@@ -61,6 +61,19 @@ lnsector rmb types.BYTE   ; [0000 0000]             - [full sectors to read]
 lsizez   rmb types.BYTE   ; [0000 0000]             - [bytes in last sector (0: no sector)]
         ENDSTRUCT
 
+; dir.entry scene structure
+; -------------------------
+; A scene table's entry carries no codec and no link data ; its SECOND block
+; says what loading the scene will add to the progress counter — its table,
+; its files' data and link data sectors (partials and cache hits included),
+; one unit per 512 bytes a compressed file expands to. Counted by the
+; builder once every payload is on the media : the loader reads a word where
+; it used to walk the table and every entry to measure. No flag bit marks
+; it (bits 7-6 are taken, the rest is the 14 bit size) : the loader only
+; reaches it through a scene id ; for whoever walks a directory blindly its
+; bytes 2-3 are $FFFF, a track and sector no file descriptor can carry.
+dir.entry.units  equ   sizeof{dir.entry}-16 ; offset 8 : the block after the file block
+
 ; scene structure
 ; ---------------
 scene.header STRUCT
@@ -170,18 +183,15 @@ loader.file.linkDataIdx fdb   0 ; link data index of loaded files
 loader.scene.routine    fdb   0
 ; --- progress : what a loading screen counts on --------------------------
 ; One unit per sector read (cache hits included : the directory counts them
-; too), one per 512 bytes a compressed file expands to. `total` is measured
-; from the directory before the reads that it covers, `done` follows them ;
-; the hook, if any, is called after each addition (contract : loader.const).
+; too), one per 512 bytes a compressed file expands to. `total` is what the
+; directory says a scene costs (dir.entry.units, counted by the builder),
+; added before the first read it covers ; `done` follows the reads ; the
+; hook, if any, is called after each addition (contract : loader.const).
 loader.progress.done    fdb   0
 loader.progress.total   fdb   0
 loader.progress.hook    fdb   0 ; 0 = nobody listens
-loader.progress.measure fcb   1 ; scene.load.noLink measures its own scene ;
-                                ; composition.load measures first, then clears it
-loader.progress.mute    fcb   0 ; > 0 : sectors read are not counted (a scene
-                                ; table, read before its scene is measured — a
-                                ; unit counted against a total not yet known
-                                ; would fill a bar in one pulse)
+loader.progress.measure fcb   1 ; scene.load.noLink adds its own scene's units ;
+                                ; composition.load adds them all first, then clears it
 loader.scene.fileCount  fdb   0
 ; La table de la scene chargee SURVIT a son application : c'est la liste de
 ; ce que cette scene a mis en RAM, et donc la liste de ce qu'il faudra
@@ -284,13 +294,14 @@ loader.scene.load.noLink
         cmpu  #0
         beq   >
 
-        inc   >loader.progress.mute        ; the table itself is not counted :
-        ldb   #loader.PAGE                 ; it is read before the scene is measured
-        jsr   loader.file.load
-        dec   >loader.progress.mute
         tst   >loader.progress.measure
-        beq   >
-        jsr   loader.scene.measure         ; everything the scene loads
+        beq   @load
+        jsr   loader.dir.getFile           ; the scene's cost, from its entry :
+        ldd   dir.entry.units,y            ; the table below counts against it
+        addd  >loader.progress.total
+        std   >loader.progress.total
+@load   ldb   #loader.PAGE
+        jsr   loader.file.load
 !
 
         ; batch load files from disk, before decompression
@@ -436,10 +447,10 @@ loader.composition.load
         dec   >composition.count
         bne   @drop
 ;
-        ; --- les arrivantes : d'abord les MESURER, si quelqu'un ecoute, pour
+        ; --- les arrivantes : d'abord leur COUT, si quelqu'un ecoute, pour
         ; que le total soit connu avant la premiere lecture qu'il couvre —
-        ; une lecture de table par scene arrivante, relue ensuite par le
-        ; chargement (la barre ne recule jamais)
+        ; un mot dans l'entree de chaque scene arrivante (dir.entry.units,
+        ; compte par le builder), le repertoire etant monte de toute facon
 @arrivals
         ldx   >loader.progress.hook
         beq   @arrivals.load
@@ -459,22 +470,16 @@ loader.composition.load
         jsr   loader.dir.load
         ldy   ,s
         ldx   ,y
-        jsr   loader.file.malloc
-        cmpu  #0
-        beq   @measure.done
-        inc   >loader.progress.mute        ; the table is not counted (see mute)
-        ldb   #loader.PAGE
-        jsr   loader.file.load
-        dec   >loader.progress.mute
-        jsr   loader.scene.measure         ; the scene's files
-        jsr   tlsf.free
-@measure.done
+        jsr   loader.dir.getFile
+        ldd   dir.entry.units,y
+        addd  >loader.progress.total
+        std   >loader.progress.total
         puls  y
 @measure.next
         leay  3,y
         dec   >composition.count
         bne   @measure
-        clr   >loader.progress.measure     ; measured : the loading pass must not count twice
+        clr   >loader.progress.measure     ; counted : the loading pass must not add twice
 @arrivals.load
         ldy   >composition.target
         lda   ,y+
@@ -567,8 +572,6 @@ loader.progress.hook.set
 ; loader.progress.add   — [B] units done
 ;-----------------------------------------------------------------
 loader.progress.pulse
-        tst   >loader.progress.mute
-        bne   loader.progress.rts
         ldb   #1
 loader.progress.add
         pshs  d,x,y,u
@@ -584,60 +587,6 @@ loader.progress.add
 loader.progress.rts
         rts
 
-;-----------------------------------------------------------------
-; loader.file.measure
-;
-; input  REG : [X] file id
-;-----------------------------------------------------------------
-; Add to progress.total what loading this file will cost : its sectors,
-; its link data sectors, one unit per 512 bytes it expands to.
-;-----------------------------------------------------------------
-loader.file.measure
-        pshs  d,x,y,u
-        jsr   loader.dir.getFile
-        ldd   dir.entry.sizea,y
-        cmpd  #$ff00
-        beq   @rts                        ; empty file : nothing is read
-        clra
-        ldb   dir.entry.nsector,y         ; partial sectors included
-        tfr   d,u                         ; [U] units
-        ldb   dir.entry.bitfld,y
-        bpl   @link                       ; not compressed
-        pshs  b
-        jsr   loader.dir.fileSize         ; expanded size
-        addd  #511
-        lsra                              ; (size+511)/512 : the high byte, halved
-        tfr   a,b
-        clra
-        leau  d,u
-        puls  b
-@link   bitb  #%01000000
-        beq   @done                       ; no link data
-        leay  8,y                         ; the link block follows the file block
-        bitb  #%10000000
-        beq   >
-        leay  8,y                         ;   and the compression block if any
-!       clra
-        ldb   dir.entry.nsector,y         ; same layout as a file block
-        leau  d,u
-@done   tfr   u,d
-        addd  >loader.progress.total
-        std   >loader.progress.total
-@rts    puls  d,x,y,u,pc
-
-;-----------------------------------------------------------------
-; loader.scene.measure
-;
-; input  REG : [U] scene table
-;-----------------------------------------------------------------
-; The same walk as loading the scene, measuring instead of reading.
-;-----------------------------------------------------------------
-loader.scene.measure
-        pshs  x,u
-        ldx   #loader.file.measure
-        stx   loader.scene.routine
-        jsr   loader.scene.apply
-        puls  x,u,pc
 
 composition.current fdb   0 ; table de l'etat resident, 0 = rien
 composition.target  fdb   0 ; celle vers laquelle on converge
@@ -695,11 +644,10 @@ loader.scene.apply
         bne   >
         jsr   loader.scene.apply.type01
         bra   @nextblock
-!       cmpa  #%10000000
-        bne   >
-        jsr   loader.scene.apply.type10
-        bra   @nextblock
-!       jsr   loader.scene.apply.type11
+!       cmpa  #%11000000
+        beq   >
+        _log.error log.scene.BLOCK_TYPE   ; %10, the id list the builder no
+!       jsr   loader.scene.apply.type11   ; longer emits (08/09/2026) : a stale image
         bra   @nextblock
 
 ;-----------------------------------------------------------------
@@ -729,46 +677,6 @@ loader.scene.apply.type01
         rts
 
 ;-----------------------------------------------------------------
-; loader.scene.apply.type10
-;-----------------------------------------------------------------
-; type %10 | nb files (0-16383)
-; dest page
-; dest addr
-; file id - n times (for each file)
-;-----------------------------------------------------------------
-; A sequential block carries ONE destination for all its files. The
-; builder only emits sequential blocks for export-only files — files
-; that write no byte (SceneChecks refuses data without a place) — so
-; there is nothing to place here : the block's destination is handed
-; to the routine as-is. The loader used to stack the files by reading
-; each size and crossing page boundaries ; that placement arithmetic
-; is the builder's job now, at build time.
-loader.scene.apply.type10
-        ldd   scene.header.nbfiles,y
-        leay  sizeof{scene.header},y
-        anda  #%00111111
-        std   loader.scene.fileCount
-        ldb   scene.page,y
-        stb   @page
-        ldd   scene.address,y
-        std   @addr
-        leay  scene.fileid,y
-@loop
-        ldx   ,y++               ; Read file id
-        pshs  y                  ; the routine owns b, u and y
-        ldb   #0                 ; the block's destination, every file
-@page   equ   *-1
-        ldu   #0
-@addr   equ   *-2
-        jsr   [loader.scene.routine]
-        puls  y
-        ldd   loader.scene.fileCount
-        subd  #1
-        std   loader.scene.fileCount
-        bne   @loop
-        rts
-
-;-----------------------------------------------------------------
 ; loader.scene.apply.type11
 ;-----------------------------------------------------------------
 ; type %11 | nb files (0-16383)
@@ -776,7 +684,7 @@ loader.scene.apply.type10
 ; dest addr
 ; start file id
 ;-----------------------------------------------------------------
-; Same single destination as %10 (export-only files, nothing written).
+; One destination for the block (export-only files, nothing is written).
 ; Only the START id is stored : the id of the next file is derived
 ; from the current file's directory flags (+1, +1 if compressed, +1 if
 ; dynamically linked) — that derivation is what the directory lookup
@@ -1117,8 +1025,11 @@ ldsec1  ldd   >track              ; read track/sect
         jsr   >pulse              ; send sector pulse
         puls  x,y,u,pc
 
-* Default exit if disk error
-dskerr  jmp   [$fffe]
+* Default exit on a read error the retry did not cure (the `error` slot of
+* the jump table, a game may point it elsewhere) : the readable message,
+* not the reset it used to be — a reset on the real machine told nothing.
+dskerr  ldx   #messIO
+        jmp   err
 
 * The media's interleave, generated by the builder into
 * gen/directories/locations.asm from the storage's <interleave> (overridable
@@ -1131,7 +1042,7 @@ skewtab _loader.interleave.skew
 
 ; --------------------------------------
 
-messIO         fcs   "     I/O|Error"
+messIO         fcs   "     I/O Error"
 messinsertdisk fcs   "   Insert disk 0"
 messdiskId     equ *-1
 
@@ -1205,7 +1116,31 @@ log.tlsf.trap
         _log.error log.tlsf.ERROR
 
 * Display error message
-err     ldu   #messloc           ; Location
+* Terminal error : the message MUST be readable, whatever the game left
+* behind — a palette faded to black, a BM16 mode, page 2 or 3 on screen,
+* an IRQ still swapping pages or pushing a palette (r-type on the real
+* TO8, 07/09/2026 : "I/O Error" was written, black on black, the machine
+* looked merely frozen). So : interrupts off, 40 column mode, video page 0
+* on screen, and the two palette entries messloc writes with — ink 7,
+* paper 1 — forced to white on red before a single character goes out.
+* EF9369 : the address register counts BYTES (0-31, two per colour : an
+* entry n is at 2n), then two data bytes, %GGGGRRRR and %0000BBBB.
+err     orcc  #$50               ; no IRQ will undo what follows
+        clr   >map.CF74021.LGAMOD ; 40 columns, 16 colours
+        clr   >map.CF74021.SYS2  ; video page 0 on screen, black border
+        lda   #1*2
+        sta   >map.EF9369.A      ; paper (colour 1) : red
+        ldd   #$0F00
+        sta   >map.EF9369.D
+        stb   >map.EF9369.D
+        lda   #7*2
+        sta   >map.EF9369.A      ; ink (colour 7) : white
+        ldd   #$FF0F
+        sta   >map.EF9369.D
+        stb   >map.EF9369.D
+        ldu   #messclr           ; the whole screen, red
+        bsr   err2
+        ldu   #messloc           ; Location
         bsr   err2               ; Display location
         leau  ,x                 ; Message pointer
         bsr   err2               ; Display message
@@ -1228,6 +1163,12 @@ info    ldu   #messloc           ; Location
         rts
 
 * Location message
+* the terminal error clears the WHOLE screen first (what page 0 held is not
+* for the eyes : a menu, a frame) ; the insert-disk prompt does not, it
+* gives the screen back to the game
+messclr fcb   $1b,$47            ; font : white
+        fcb   $1b,$51            ; background : red
+        fcb   $0c+$80            ; cls
 messloc fcb   $1f,$21,$21
         fcb   $1f,$11,$13        ; 3 lines (11-13)
         fcb   $1b,$47            ; font : white

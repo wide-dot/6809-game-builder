@@ -234,6 +234,29 @@ public class DirectoryPlugin {
 			flush(media, entry, true, true);
 		}
 
+		// every payload is on the media : the descriptors say how many sectors
+		// each entry costs, so each scene entry can now carry what loading it
+		// will add to the loader's progress counter (DirEntryPlugin.SCENE_FLAG)
+		java.util.Map<String, DirEntry> byName = new java.util.HashMap<String, DirEntry>();
+		for (DirEntry entry : media.getDirEntries()) {
+			byName.put(entry.name, entry);
+		}
+		for (SceneCheck scene : pendingScenes) {
+			DirEntry table = byName.get(scene.sceneName);
+			if (table == null) {
+				continue;
+			}
+			int units = DirEntryPlugin.progressUnits(table);
+			for (SceneCheck.Load load : scene.loads) {
+				DirEntry e = byName.get(load.name);
+				if (e != null) {
+					units += DirEntryPlugin.progressUnits(e);
+				}
+			}
+			DirEntryPlugin.setSceneUnits(table, units);
+			log.debug("scene {} : {} progress units", scene.sceneName, units);
+		}
+
 		// the directory's block count against the ids handed out
 		int emittedBlocks = 0;
 		for (DirEntry entry : media.getDirEntries()) {
@@ -454,8 +477,9 @@ public class DirectoryPlugin {
 					String linkSection = Attribute.getStringOpt(child, resCtx, "linkdata");
 					blocks = DirEntryPlugin.blockCount(codec, linkSection);
 				} else {
-					// a scene table is raw, uncompressed and carries no link data
-					blocks = 1;
+					// a scene table is raw, uncompressed and carries no link
+					// data ; its second block holds its progress units
+					blocks = DirEntryPlugin.blockCount(null, null, true);
 				}
 				idBlocks.put(name, new int[] { fileId, blocks });
 				fileId += blocks;

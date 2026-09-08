@@ -180,3 +180,62 @@ longue stabilisation de `boot_floppy` (séquence DKCONT identique à l'image
 qui passe, absent avec une stabilisation d'une trame) ; le harnais amorce
 désormais avec `settle=1`.
 
+## 9. Décision auteur sur les mesures 2 à 5 (08/09)
+
+Le loader reste **générique** : pas de `define` par capacité de la cible
+(genres de relocation, multi-disquette, diagnostics). L'espace se gagne
+sur ce qui est superflu pour tous, pas sur ce que r-type n'emploie pas.
+Et l'affichage « I/O Error » n'est pas retiré mais **rendu lisible** :
+erreur terminale, on y met quelques octets. Avant d'écrire, `err` masque
+les interruptions, repasse en 40 colonnes, remet la page 0 à l'écran, et
+force les deux entrées de palette du message (encre 7, papier 1) en blanc
+sur rouge — le registre d'adresse du EF9369 compte des OCTETS, l'entrée n
+est à 2n — puis efface tout l'écran avant la fenêtre du message. L'erreur
+de lecture d'un fichier (`dskerr`, qui faisait un reset) y passe aussi ;
+l'invite « Insert disk » garde son effacement local. Vérifié sous toje en
+forçant la retenue après les deux appels DKCONT de `ldsec` pendant le
+splash (BM16, page 3, palette du logo) : écran rouge, message blanc.
+Loader 3 996 → 4 044 octets.
+
+## 10. Fait (08/09, mesure 7)
+
+Le total de la barre n'est plus mesuré par le loader : l'entrée de
+répertoire d'une scène porte un **second bloc** (bit 5 de `bitfld`,
+`dir.entry.units`) où le builder écrit, une fois tous les fichiers sur le
+média, ce que le chargement de la scène ajoutera au compteur — secteurs
+de la table, des données et des liens de ses fichiers (partiels compris),
+une unité par 512 octets décompressés. `scene.load` lit ce mot dans
+l'entrée avant sa première lecture (pas de bit de drapeau : les bits 7-6
+sont pris et le reste est la taille sur 14 bits ; le loader n'y accède
+que par un id de scène, les décodeurs reconnaissent le bloc à sa
+signature $FFFF en piste/secteur), `composition.load` l'additionne pour
+les scènes qui arrivent sans lire un secteur (le répertoire est monté de
+toute façon). `file.measure`, `scene.measure` et le `mute` disparaissent,
+les tables ne sont plus relues pour être mesurées, et elles comptent
+désormais dans le total. Prix : 8 octets par scène dans son répertoire
+(`loader.dir.buffer.SECTORS` reste à 4 sur r-type). Loader 4 044 → 3 947
+octets, pool 4 245. Vérifié sous toje : `done` = total = 44 à la pose du
+hook par le splash, 585 = 585 quand `boot.entry` le retire.
+
+## 11. Fait (08/09, mesure 8, première moitié)
+
+Le bloc `%10` disparaît : le générateur émet un bloc `%11` par suite d'ids
+consécutifs (7 octets chacun) et signale au build une scène qui en a
+plus d'un — les ids sont l'œuvre du builder, l'incertitude que le `%10`
+absorbait n'existe pas. Le loader perd `type10` et sa branche ; un bloc
+`%10` d'une image périmée tombe sur `log.scene.BLOCK_TYPE`. Les deux
+autres marcheurs restent tels quels (décision auteur). r-type n'avait
+aucune table en `%10` : images inchangées hors loader.
+
+## 12. Fait (08/09, mesure 9, la part qui gagne des cycles)
+
+`tlsf.bsr` et `tlsf.ctz` prennent leur valeur dans D (elle y est toujours
+au moment de l'appel) au lieu d'une variable ; `ctz` répond dans A et
+balaie l'octet bas là où il est, dans B. Trois `std` de moins, deux
+remplacés par `subd #0` (Z sur le mot, 4 cycles contre 6), deux `lda`
+étendus par un `tst` ou un `tfr`. Par `malloc` : −11 à −24 cycles selon le
+chemin, par `free` −2 ou −3, aucun chemin ne perd un cycle ; −14 octets.
+Les balayages restent déroulés (décision auteur : pas un cycle contre des
+octets). Validé : tlsf-ut aux deux finesses, rtype_bench 7/7, loader-ut.
+Loader r-type 3 885 octets, pool 4 307.
+

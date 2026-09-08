@@ -30,6 +30,9 @@ public class DirEntryDecoder {
         // Main structure
         public boolean compressed;
         public boolean loadTimeLinker;
+        /** a scene table : its second block carries the progress units of its load */
+        public boolean scene;
+        public int progressUnits;
         public int uncompressedSize;
         public boolean isEmpty;
         
@@ -86,6 +89,7 @@ public class DirEntryDecoder {
         // Decode main structure (8 bytes)
         decoded.compressed = (data[idx] & 0x80) != 0;
         decoded.loadTimeLinker = (data[idx] & 0x40) != 0;
+        decoded.scene = com.widedot.m6809.gamebuilder.plugin.direntry.DirEntryPlugin.isScene(data);
         // mask the flag bits off first, then undo the size-1 encoding : masking
         // after the increment reports 0 for a full size entry
         decoded.uncompressedSize = ((((data[idx] & 0xFF) << 8) | (data[idx + 1] & 0xFF)) & 0x3fff) + 1;
@@ -116,6 +120,12 @@ public class DirEntryDecoder {
         decoded.expectedSize = 8;
         if (decoded.compressed) decoded.expectedSize += 8;
         if (decoded.loadTimeLinker) decoded.expectedSize += 8;
+        if (decoded.scene) {
+            decoded.expectedSize += 8;
+            if (data.length >= 10) {
+                decoded.progressUnits = ((data[8] & 0xFF) << 8) | (data[9] & 0xFF);
+            }
+        }
         
         // Validate expected vs actual size
         if (decoded.dataLength != decoded.expectedSize) {
@@ -191,6 +201,9 @@ public class DirEntryDecoder {
             sb.append("--- Main Structure ---").append(lineSep);
             sb.append("Compression: ").append(decoded.compressed ? "zx0" : "none").append(lineSep);
             sb.append("Load Time Linker: ").append(decoded.loadTimeLinker ? "enabled" : "disabled").append(lineSep);
+            if (decoded.scene) {
+                sb.append("Scene table: progress units ").append(decoded.progressUnits).append(lineSep);
+            }
             sb.append("File content size (uncompressed): ").append(decoded.uncompressedSize).append(" bytes").append(lineSep);
             sb.append("File Status: ").append(decoded.isEmpty ? "EMPTY" : "CONTAINS DATA").append(lineSep);
             

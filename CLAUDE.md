@@ -740,13 +740,20 @@ classes de taille par puissance de deux, matrice 378 → ~116 octets) ;
 3 996 octets, pool 4 196. Piège toje rencontré : la stabilisation de 1 200
 trames de `boot_floppy` pouvait figer un transfert de secteur plus tard
 (loader-ut, artefact d'émulation) — `loader_ut.py` amorce avec `settle=1`.
+Décision auteur : le loader reste générique, pas de `define` par capacité
+de la cible ; l'erreur « I/O Error » est rendue LISIBLE (mode 40 colonnes,
+page 0, palette 1/7 forcée blanc sur rouge, écran effacé — le registre
+d'adresse du EF9369 compte des octets, entrée n à 2n) et l'erreur de
+lecture d'un fichier y passe au lieu d'un reset (bilan §9). Loader 4 044.
 
 ## La barre de chargement : le loader compte, l'engine dessine (07/09/2026)
 
 `loader.progress.hook.set` (table de saut 42) installe un hook appelé à
-chaque unité : un secteur lu, 512 octets décompressés. Le total est mesuré
-au répertoire avant les lectures (`file.measure`, `scene.measure`, la
-passe de mesure de `composition.load`). L'effet de référence,
+chaque unité : un secteur lu, 512 octets décompressés. Le total vient du
+répertoire : l'entrée d'une scène porte un second bloc (`dir.entry.units`,
+bit 5 de `bitfld`) où le builder écrit ce que son chargement comptera,
+lu avant la première lecture (depuis le 08/09 ; la mesure par le loader,
+`file.measure`/`scene.measure`, est retirée). L'effet de référence,
 `engine/graphics/loadbar/loadbar.asm`, est relogeable et DOIT être copié
 dans une place que rien ne charge (`<reserved name="loading.fx">` en
 r-type) : il tourne pendant que le chargement recouvre l'unité qui l'a
