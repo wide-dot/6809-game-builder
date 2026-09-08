@@ -42,4 +42,43 @@ public interface MediaDataInterface {
 	default void writeContiguous(String location, byte[] srcData, String name) throws Exception {
 		write(location, srcData, name);
 	}
+
+	/**
+	 * A colocated directory : the sectors it will occupy are RESERVED at the
+	 * section's cursor before its content is written, and written last, once
+	 * the entries carry the locations of that content. The reservation obeys
+	 * the loader's contiguity contract (one track, one face) : a partially
+	 * used sector at the cursor and a track tail too short for the count are
+	 * skipped, and the skipped sectors are lost to the section. Returns an
+	 * opaque handle for {@link #writeReserved}, plus the reserved spot for
+	 * the location table. Media without a geometry cannot colocate.
+	 */
+	default Reservation reserveContiguous(String location, int sectors, String name)
+			throws Exception {
+		throw new Exception("this media cannot reserve sectors : colocate=\"true\" needs a"
+				+ " floppy disk");
+	}
+
+	default void writeReserved(Reservation reservation, byte[] srcData, String name)
+			throws Exception {
+		throw new Exception("this media cannot write reserved sectors");
+	}
+
+	/** a reserved run of sectors : where it starts, and the media's own handle */
+	final class Reservation {
+		public final int face;
+		public final int track;
+		/** 1-based, as sections declare it */
+		public final int sector;
+		public final int sectors;
+		public final Object handle;
+
+		public Reservation(int face, int track, int sector, int sectors, Object handle) {
+			this.face = face;
+			this.track = track;
+			this.sector = sector;
+			this.sectors = sectors;
+			this.handle = handle;
+		}
+	}
 }

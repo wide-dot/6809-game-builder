@@ -41,6 +41,13 @@ public class RamMap {
 	}
 
 	private final Map<String, List<Load>> scenes = new LinkedHashMap<String, List<Load>>();
+	/**
+	 * Every load of a scene's table in TABLE order, export-only files
+	 * included — what the loader walks, where {@link #scenes} keeps only what
+	 * lands in RAM. The head-path model needs the walk : an export-only file
+	 * has link data to read even though it occupies no byte of RAM.
+	 */
+	private final Map<String, List<String>> tableOrder = new LinkedHashMap<String, List<String>>();
 
 	/**
 	 * Forget a scene before re-recording it. The build runs several passes
@@ -50,6 +57,15 @@ public class RamMap {
 	 */
 	public void forget(String scene) {
 		scenes.remove(scene);
+		tableOrder.remove(scene);
+	}
+
+	public void recordOrder(String scene, List<String> names) {
+		tableOrder.put(scene, new ArrayList<String>(names));
+	}
+
+	public Map<String, List<String>> tableOrder() {
+		return Collections.unmodifiableMap(tableOrder);
 	}
 
 	/**
@@ -127,5 +143,6 @@ public class RamMap {
 
 	public void clear() {
 		scenes.clear();
+		tableOrder.clear();
 	}
 }

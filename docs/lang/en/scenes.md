@@ -114,12 +114,16 @@ lives at `$6100` and stays, so its stage enters at its own place
 (`equ stage1.address`) without wiping anything.
 
 The scenes also decide the **disk order** : entry payloads land on the
-media in first-use order — the first scene's table, then its files in
-table order, then the next scene's — so loading a scene reads the disk
-monotonically instead of paying the declaration order in head returns.
-`seek-report-<target>.txt` prints the travel per scene ; a scene sharing
-no file with another scene reads zero returns. Files no scene names keep
-the declaration order, after the ranked ones.
+media in first-use order — the first scene's table, then the data of its
+files in table order, then their link data, then the next scene's — so
+loading a scene reads the disk monotonically instead of paying the
+declaration order in head returns. Files no scene names keep the
+declaration order, after the ranked ones. What still sends the head away
+is the directory, the tables and the link data living in sections of their
+own : `<directory colocate="true">`, with tables and link data in the data
+section, puts them on the walk (see `config.md`, *Colocated directories*).
+`seek-report-<target>.txt` and the *Parcours* view of the occupancy page
+show every read of every state change, with a costed head path.
 
 ## The attributed place
 

@@ -53,6 +53,7 @@ public class DirectoryPlugin {
 		String section = Attribute.getString(node, ctx, "section");
 		String genbinary = Attribute.getStringOpt(node, ctx, "genbinary");
 	    String gensymbols = Attribute.getString(node, ctx, "gensymbols");
+		boolean colocate = Attribute.getBoolean(node, ctx, "colocate", false);
 
 		// the reservation — ids, names, gensymbols — was computed for every
 		// directory by the placement scan, BEFORE anything assembled : the id
@@ -163,6 +164,11 @@ public class DirectoryPlugin {
 				ctx.ramMap.ensure(scene.sceneName);
 			}
 			for (SceneCheck scene : pendingScenes) {
+				java.util.List<String> order = new java.util.ArrayList<String>();
+				for (SceneCheck.Load load : scene.loads) {
+					order.add(load.name);
+				}
+				ctx.ramMap.recordOrder(scene.sceneName, order);
 				for (SceneCheck.Load load : scene.loads) {
 					if (load.kind == SceneCheck.Kind.EXPORT_ONLY) {
 						continue;
@@ -181,42 +187,56 @@ public class DirectoryPlugin {
 		// scenes, walked in declaration order, say which entry a game reads
 		// first — its table, then its files in table order — so a scene's
 		// sectors follow each other and its load never sends the head back
-		// (the seek report prints that criterion). Entries no scene names
-		// keep the declaration order, after the ranked ones. The 6 byte
-		// location descriptors are patched into the entry blocks here, the
-		// only part of an entry that depends on where the bytes land.
-		java.util.LinkedHashSet<String> firstUse = new java.util.LinkedHashSet<String>();
-		for (SceneCheck scene : pendingScenes) {
-			firstUse.add(scene.sceneName);
-			for (SceneCheck.Load load : scene.loads) {
-				firstUse.add(load.name);
-			}
-		}
+		// (the seek report prints that criterion). Within a scene the DATA
+		// of every file goes before the LINK DATA of any : that is the order
+		// the loader reads them (load pass, then link pass), so when data and
+		// link data share a section the walk stays forward. Sections apart,
+		// nothing changes : each section still receives its bytes in first-use
+		// order. Entries no scene names keep the declaration order, after the
+		// ranked ones. The 6 byte location descriptors are patched into the
+		// entry blocks here, the only part of an entry that depends on where
+		// the bytes land.
 		java.util.Map<String, DirEntry> unranked = new java.util.LinkedHashMap<String, DirEntry>();
 		for (DirEntry entry : media.getDirEntries()) {
 			unranked.put(entry.name, entry);
 		}
-		java.util.List<DirEntry> flushOrder = new java.util.ArrayList<DirEntry>();
-		for (String name : firstUse) {
-			DirEntry ranked = unranked.remove(name);
-			if (ranked != null) {
-				flushOrder.add(ranked);
-			}
-		}
-		flushOrder.addAll(unranked.values());
-		for (DirEntry entry : flushOrder) {
-			for (DirEntry.Pending pending : entry.pending) {
-				byte[] location = media.cwrite(pending.section, pending.bytes, pending.name);
-				System.arraycopy(location, 0, entry.data, pending.patchOffset, 6);
-			}
-			entry.pending.clear();
-		}
 
-		// compute directory size
+		// a colocated directory takes its sectors NOW, ahead of everything it
+		// lists : its size is settled (the entries are built, only their
+		// location bytes are patched below), its bytes are written last
 		int size = 7;
-		int emittedBlocks = 0;
 		for (DirEntry entry : media.getDirEntries()) {
 			size += entry.data.length;
+		}
+		int nsector = (int) Math.ceil(size/256.0);
+		MediaDataInterface.Reservation reserved = null;
+		if (colocate) {
+			reserved = media.reserveContiguous(section, nsector, "directory " + id);
+			// the loader's table learns the spot ; the loader assembles later
+			com.widedot.m6809.gamebuilder.config.DirectoryLocations.resolve(ctx, id,
+					reserved.face, reserved.track, reserved.sector - 1);
+			log.info("directory {} colocated at track {} face {} sector {} ({} sector{})",
+					id, reserved.track, reserved.face, reserved.sector, nsector,
+					nsector > 1 ? "s" : "");
+		}
+
+		for (SceneCheck scene : pendingScenes) {
+			// the table first, then every file's data, then their link data
+			flush(media, unranked.remove(scene.sceneName), true, true);
+			for (SceneCheck.Load load : scene.loads) {
+				flush(media, unranked.get(load.name), true, false);
+			}
+			for (SceneCheck.Load load : scene.loads) {
+				flush(media, unranked.remove(load.name), false, true);
+			}
+		}
+		for (DirEntry entry : unranked.values()) {
+			flush(media, entry, true, true);
+		}
+
+		// the directory's block count against the ids handed out
+		int emittedBlocks = 0;
+		for (DirEntry entry : media.getDirEntries()) {
 			emittedBlocks += entry.data.length / DirEntryPlugin.BLOCK_SIZE;
 		}
 
@@ -230,7 +250,6 @@ public class DirectoryPlugin {
 		}
 		
 		// the header stores the directory length as a sector count on one byte
-		int nsector = (int) Math.ceil(size/256.0);
 		if (nsector > 255) {
 			throw new Exception("Directory holds " + nsector + " sectors, only 255 can be described");
 		}
@@ -256,7 +275,11 @@ public class DirectoryPlugin {
 		// a directory is read back by the loader as contiguous sectors of one
 		// track/face : the contiguity-checked write turns an overflow into a
 		// BUILD error instead of a run-time freeze on a garbage size
-		media.writeContiguous(section, bin, "directory " + id);
+		if (reserved != null) {
+			media.writeReserved(reserved, bin, "directory " + id);
+		} else {
+			media.writeContiguous(section, bin, "directory " + id);
+		}
 		
 		// write whole directory to debug file
 		if (genbinary != null) {
@@ -297,6 +320,29 @@ public class DirectoryPlugin {
 		log.debug("End of processing directory");
 	}
 
+
+	/**
+	 * Writes an entry's pending payloads — its data, its link data, or both —
+	 * and patches their locations into the entry. Null entry (already
+	 * flushed, or named by a scene but built elsewhere) : nothing.
+	 */
+	private static void flush(MediaDataInterface media, DirEntry entry, boolean data,
+			boolean link) throws Exception {
+		if (entry == null || entry.pending.isEmpty()) {
+			return;
+		}
+		java.util.Iterator<DirEntry.Pending> it = entry.pending.iterator();
+		while (it.hasNext()) {
+			DirEntry.Pending pending = it.next();
+			boolean isLink = pending.name.endsWith(DirEntryPlugin.LINKDATA_SUFFIX);
+			if (isLink ? !link : !data) {
+				continue;
+			}
+			byte[] location = media.cwrite(pending.section, pending.bytes, pending.name);
+			System.arraycopy(location, 0, entry.data, pending.patchOffset, 6);
+			it.remove();
+		}
+	}
 
 	/**
 	 * Reserves this directory's file ids and writes its gensymbols file.

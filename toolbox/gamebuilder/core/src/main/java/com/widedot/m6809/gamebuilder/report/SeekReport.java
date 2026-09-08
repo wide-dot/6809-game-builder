@@ -1,32 +1,26 @@
 package com.widedot.m6809.gamebuilder.report;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
-import com.widedot.m6809.gamebuilder.spi.globals.Occupancy;
-import com.widedot.m6809.gamebuilder.spi.globals.RamMap;
+import com.widedot.m6809.gamebuilder.spi.globals.Compositions;
 
 /**
- * What loading each scene costs the drive's head : the tracks it visits, in
- * the order the loader reads them, and every time it has to come back.
+ * What loading each declared state costs the drive, as text : the chain of
+ * states in declaration order, each converged from the previous one, with
+ * every read the loader makes — directory, scene table, file data, link
+ * data — where it is on the disk, and what the mechanical model of
+ * {@link HeadPath} charges for it. The occupancy page draws the same walk
+ * and lets the reader change the model's parameters ; this file is the
+ * diffable version, at the defaults.
  *
- * The loader reads a scene's files in table order, and the media writes them
- * in declaration order — two orders nothing reconciles today. The difference
- * is paid in head seeks, the slowest thing a floppy does. This report makes
- * that cost visible per scene, from facts the build already holds : the
- * media journal (where every byte landed) and the RAM map (what each scene
- * loads, in order).
- *
- * The reading to aim for : a scene whose files are shared with no other
- * scene should show ZERO head returns — its files can always be written in
- * its own reading order. Returns on such a scene are the media's declaration
- * order costing real time, and the target model derives the write order from
- * the scenes to make them vanish (phase 6 of the migration plan). Shared
- * files (two scenes reading one file) are where returns are structural ;
- * they are the residue the report leaves visible.
+ * The reading to aim for : a state whose scenes are shared with no other
+ * state should read as ONE forward walk — its directory, then its tables
+ * and files in reading order. A return to a lower track is the media's
+ * declaration order, or a directory/table/link section sitting away from
+ * the data, costing real time ; {@code <directory colocate="true">} with
+ * tables and link data in the data section is what removes it.
  *
  * A read-only consumer : nothing here changes an image.
  */
@@ -35,90 +29,67 @@ public final class SeekReport {
 	private SeekReport() {
 	}
 
-	/** one file's place on the media, reduced to the cylinders it spans */
-	private static class Span {
-		final int first;
-		final int last;
-
-		Span(int first, int last) {
-			this.first = first;
-			this.last = last;
-		}
-	}
-
 	public static String render(String targetName, BuildContext ctx) {
 		StringBuilder out = new StringBuilder();
+		HeadPath.Model model = HeadPath.build(ctx);
+		HeadPath.Params p = new HeadPath.Params();
 		out.append("seek report — target ").append(targetName).append('\n');
-		out.append("what the head travels to load each scene, in table order.\n");
-		out.append("a scene sharing no file with another scene should read ZERO returns ;\n");
-		out.append("a return there is the media's declaration order costing real time.\n");
+		out.append("every read the loader makes to converge from one declared state to the next,\n");
+		out.append("in declaration order ; a state alone is read from nothing. Times are a model :\n");
+		out.append(String.format("seek = tracks x %.0f ms + %.0f ms settle, %d rpm, a sector busy for %.0f %% of its slot, %.0f ms between sectors,\n",
+				p.stepMs, p.settleMs, p.rpm, p.sectorFrac * 100, p.overheadMs));
+		out.append("the disk keeps spinning and a sector is read when its slot comes by.\n");
+		out.append("'<< back' marks a read on a lower track than the previous one.\n");
 
-		for (Occupancy.Instance media : ctx.occupancy.instances().values()) {
-			int trackSize = media.sectors * media.sectorSize;
-			int faceSize = media.tracks * trackSize;
-
-			// where each named write landed, in cylinders, write order kept
-			Map<String, List<Span>> spans = new LinkedHashMap<String, List<Span>>();
-			Integer directoryTrack = null;
-			for (Occupancy.MediaWrite w : ctx.occupancy.writes()) {
-				if (!w.instance.equals(media.name) || w.length <= 0) {
+		for (HeadPath.Disk disk : model.disks) {
+			out.append('\n').append("== ").append(disk.instance.name)
+			   .append(" (").append(disk.instance.tracks).append(" tracks x ")
+			   .append(disk.instance.faces).append(" faces, interleave ")
+			   .append(disk.instance.softskip).append(", skew ").append(disk.instance.softskew)
+			   .append(")\n");
+			HeadPath.State st = new HeadPath.State();
+			List<String> from = new ArrayList<String>();
+			double chainMs = 0;
+			for (Compositions.Composition c : model.chain) {
+				HeadPath.Result r = HeadPath.simulate(model, disk, from, c.scenes, st, p);
+				if (r.steps.isEmpty()) {
+					from = c.scenes;
 					continue;
 				}
-				int first = (w.start % faceSize) / trackSize;
-				int last = ((w.start + w.length - 1) % faceSize) / trackSize;
-				spans.computeIfAbsent(w.name, n -> new ArrayList<Span>())
-						.add(new Span(first, last));
-				if (directoryTrack == null && w.name.startsWith("directory")) {
-					directoryTrack = first;
-				}
-			}
-			if (spans.isEmpty()) {
-				continue;
-			}
-			int start = directoryTrack == null ? 0 : directoryTrack;
-
-			out.append('\n').append("== ").append(media.name)
-			   .append(" (").append(media.tracks).append(" tracks x ")
-			   .append(media.faces).append(" faces, directory at track ").append(start)
-			   .append(")\n");
-
-			for (Map.Entry<String, List<RamMap.Load>> scene : ctx.ramMap.scenes().entrySet()) {
-				List<String> lines = new ArrayList<String>();
-				int head = start;
-				int returns = 0;
-				int travelled = 0;
-				int elsewhere = 0;
-				for (RamMap.Load load : scene.getValue()) {
-					List<Span> pieces = spans.get(load.name);
-					if (pieces == null) {
-						elsewhere++;    // another disk, or nothing written for it
+				chainMs += r.totalMs();
+				out.append(String.format("%n%s -> %s : %.2f s (seek %.2f s over %d seek%s, %d tracks ; %d sectors, %d cached, %d lost turn%s)%s%n",
+						from.isEmpty() ? "(nothing)" : previousName(model, from), c.name,
+						r.totalMs() / 1000, r.seekMs / 1000, r.seeks, r.seeks == 1 ? "" : "s",
+						r.tracksTravelled, r.sectors, r.cached, r.lostTurns,
+						r.lostTurns == 1 ? "" : "s",
+						r.elsewhere > 0 ? " — " + r.elsewhere + " read(s) not on this disk" : ""));
+				int prevTrack = -1;
+				for (HeadPath.Step s : r.steps) {
+					if (s.elsewhere) {
+						out.append(String.format("    %-6s %-28s (not on this disk)%n", s.kind, s.name));
 						continue;
 					}
-					int first = pieces.get(0).first;
-					int last = first;
-					for (Span s : pieces) {
-						last = Math.max(last, s.last);
-					}
-					String mark = "";
-					if (first < head) {
-						returns++;
-						mark = String.format("  << back from t%d", head);
-					}
-					travelled += Math.abs(first - head) + (last - first);
-					head = last;
-					lines.add(String.format("    %-28s t%d..t%d%s", load.name, first, last, mark));
+					String mark = prevTrack >= 0 && s.track < prevTrack
+							? String.format("  << back from t%d", prevTrack) : "";
+					out.append(String.format("    %-6s %-28s f%d t%d..t%d s%-2d %3d sect%s %6.0f ms%s%n",
+							s.kind, s.name, s.face, s.track, s.lastTrack, s.sector, s.sectors,
+							s.cached > 0 ? " +" + s.cached + "c" : "   ",
+							s.totalMs(), mark));
+					prevTrack = s.lastTrack;
 				}
-				if (lines.isEmpty()) {
-					continue;
-				}
-				out.append(String.format("%s : %d return%s, %d tracks travelled%s%n",
-						scene.getKey(), returns, returns == 1 ? "" : "s", travelled,
-						elsewhere > 0 ? ", " + elsewhere + " load(s) not on this media" : ""));
-				for (String line : lines) {
-					out.append(line).append('\n');
-				}
+				from = c.scenes;
 			}
+			out.append(String.format("%nwhole chain : %.2f s%n", chainMs / 1000));
 		}
 		return out.toString();
+	}
+
+	private static String previousName(HeadPath.Model model, List<String> scenes) {
+		for (Compositions.Composition c : model.chain) {
+			if (c.scenes.equals(scenes)) {
+				return c.name;
+			}
+		}
+		return "(state)";
 	}
 }

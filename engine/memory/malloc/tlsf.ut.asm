@@ -502,9 +502,54 @@ tlsf.ut.realloc.merge
         cmpd  #$5678
         beq   >
         bra   * ; error trap
+!
+        ; --- growth in place that eats the free neighbour to the byte : no room
+        ; left for a free block, the block simply gets longer. Its size field
+        ; was written whole instead of size-1 (07/09/2026) : the next block's
+        ; header was read one byte off, and the pool chain with it.
+        ; [a : 100][b : 100][c : 100] ; free b ; realloc a to 100+4+100 = 204 :
+        ; b's whole span, header included, joins a. Then c must still free
+        ; cleanly and a 300-byte request must find the reunited room.
+        ldd   #$4000
+        ldx   #$0000+tlsf.ut.MEMORY_POOL
+        jsr   tlsf.init
+        clr   tlsf.err
+        ldd   #100
+        jsr   tlsf.malloc              ; a
+        stu   @a
+        ldd   #100
+        jsr   tlsf.malloc              ; b
+        stu   @b
+        ldd   #100
+        jsr   tlsf.malloc              ; c
+        stu   @c
+        ldu   @b
+        jsr   tlsf.free                ; the hole after a, 104 bytes with its header
+        ldu   @a
+        ldd   #204
+        jsr   tlsf.realloc             ; growth in place, nothing left to split
+        lda   tlsf.err
+        beq   >
+        bra   * ; error trap
+!       cmpu  @a
+        beq   >
+        bra   * ; error trap : it had to stay in place
+!       ldu   @c
+        jsr   tlsf.free                ; c's header must still be where the chain says
+        ldu   @a
+        jsr   tlsf.free
+        ldd   #300
+        jsr   tlsf.malloc              ; a, b and c reunited : 100+4+100+4+100 = 308 >= 300
+        lda   tlsf.err
+        beq   >
+        bra   * ; error trap : the chain lost a byte somewhere
+!       cmpu  @a
+        beq   >
+        bra   * ; error trap : the reunited block starts where a was
 !       rts
 @a      fdb   0
 @b      fdb   0
+@c      fdb   0
 ;
 tlsf.ut.realloc.var fdb 0
 @u0     fdb   0

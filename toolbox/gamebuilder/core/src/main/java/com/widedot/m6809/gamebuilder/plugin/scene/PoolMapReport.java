@@ -91,8 +91,8 @@ public final class PoolMapReport {
 		out.append("  served = the block TLSF really reserves : ")
 		   .append(BLOCK_HEADER).append(" bytes of header, rounded up to the size class.").append(nl);
 		out.append("  NOT counted : the scene table in flight and the loader's slot table, which").append(nl);
-		out.append("  share this pool. (The directory lives in its own static buffer, carved off").append(nl);
-		out.append("  the pool head since 15/08.)").append(nl);
+		out.append("  share this pool — and so does the current directory, a block allocated at").append(nl);
+		out.append("  its own size by dir.load and freed when a convergence ends (since 07/09).").append(nl);
 		boolean stated = compositions != null && !compositions.isEmpty();
 		if (stated) {
 			out.append("  A STATE's total is the peak : the loader holds one link block per indexed").append(nl);

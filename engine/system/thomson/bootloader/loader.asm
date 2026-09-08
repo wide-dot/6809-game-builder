@@ -101,10 +101,12 @@ fileid   rmb types.WORD   ; [0000 000] [0000 000]    - [file id]
         jmp   >loader.scene.unload         ; OK
         jmp   >loader.composition.load     ; OK
         jmp   >loader.composition.set      ; OK
+        jmp   >loader.progress.hook.set    ; OK
+        jmp   >loader.dir.unload           ; OK
 
 ; callbacks that can be modified by user at runtime
 error   jmp   >dskerr     ; Called if a read error is detected
-pulse   jmp   >return     ; Called after each sector read (ex. for progress bar)
+pulse   jmp   >loader.progress.pulse   ; Called after each sector read : the progress counter
 
 ; temporary space
 ; ---------------
@@ -138,23 +140,46 @@ dirSkew   fcb 0    ; Interleave skew of that directory's track (skewtab,
 loader.dir.locations
         _loader.dir.locations.table
 
-; The static directory buffer : carved from the HEAD of the memory pool at
-; init (see loader.scene.loadDefault), sized by the builder to the biggest
-; directory of the target (loader.dir.buffer.SECTORS, generated in
-; gen/directories/locations.asm). Reading a directory never allocates :
-; the swap used to need up to (sectors*256)+4 CONTIGUOUS pool bytes and
-; froze on fragmentation (r-type game over, 14/08/2026).
-loader.dir.buffer      equ loader.memoryPool
-loader.dir.buffer.SIZE equ loader.dir.buffer.SECTORS*256
+; The directory buffer is ALLOCATED, at the exact size of the directory
+; being read, and RESIZED in place when another directory replaces it
+; (loader.dir.unload gives it back for good ; nobody does by default — a
+; caller who assumes the directory is still there after a load must be
+; right, and it was not when composition.load freed it : loader-ut T18
+; read entries at address zero) : the biggest directory of a game
+; is the resident's, alive at boot when the link data are small, while
+; the stage directories are half its size and alive when the link data
+; peak — a static buffer sized to the biggest kept both maxima at once.
+; It was static from 15/08 to 07/09/2026 after a game-over freeze blamed
+; on fragmentation ; that freeze had every sign of the realloc bug fixed
+; on 07/09 (tlsf-realloc.asm), which left dead pointers in the link index
+; that the departures then freed. An allocation that fails now trips the
+; tlsf error callback into the log block — a diagnosis, not a freeze.
+; loader.dir.buffer.SECTORS (generated) remains the sanity cap : a bigger
+; directory can only be a foreign or corrupt disk.
 nsect  fcb   0     ; Sector counter
 track  fcb   0     ; Track number
 sector fcb   0     ; Sector number
 
 ; globals
 ; --------------
-loader.dir              fdb   0 ; file directory
+loader.dir              fdb   0 ; file directory (its buffer, 0 = none loaded)
+loader.dir.prev         fdb   0 ; the buffer dir.load resizes for the next one
 loader.file.linkDataIdx fdb   0 ; link data index of loaded files
 loader.scene.routine    fdb   0
+; --- progress : what a loading screen counts on --------------------------
+; One unit per sector read (cache hits included : the directory counts them
+; too), one per 512 bytes a compressed file expands to. `total` is measured
+; from the directory before the reads that it covers, `done` follows them ;
+; the hook, if any, is called after each addition (contract : loader.const).
+loader.progress.done    fdb   0
+loader.progress.total   fdb   0
+loader.progress.hook    fdb   0 ; 0 = nobody listens
+loader.progress.measure fcb   1 ; scene.load.noLink measures its own scene ;
+                                ; composition.load measures first, then clears it
+loader.progress.mute    fcb   0 ; > 0 : sectors read are not counted (a scene
+                                ; table, read before its scene is measured — a
+                                ; unit counted against a total not yet known
+                                ; would fill a bar in one pulse)
 loader.scene.fileCount  fdb   0
 ; La table de la scene chargee SURVIT a son application : c'est la liste de
 ; ce que cette scene a mis en RAM, et donc la liste de ce qu'il faudra
@@ -183,10 +208,10 @@ linkData.currentSymbol  fdb   0
 ;-----------------------------------------------------------------
 loader.scene.loadDefault
 
-        ; init allocator - the pool starts AFTER the static directory
-        ; buffer, which owns the head of the memory area
-        ldd   #loader.DEFAULT_DYNAMIC_MEMORY_SIZE-loader.dir.buffer.SIZE
-        ldx   #loader.memoryPool+loader.dir.buffer.SIZE
+        ; init allocator : the whole memory area is the pool, the
+        ; directory buffer is allocated in it like everything else
+        ldd   #loader.DEFAULT_DYNAMIC_MEMORY_SIZE
+        ldx   #loader.memoryPool
         jsr   tlsf.init
         ; route tlsf errors through the log block instead of the anonymous
         ; tlsf.err.loop : A carries the legacy code at callback time
@@ -248,8 +273,14 @@ loader.scene.load.noLink
         cmpu  #0
         beq   >
 
-        ldb   #loader.PAGE
+        inc   >loader.progress.mute        ; the table itself is not counted :
+        ldb   #loader.PAGE                 ; it is read before the scene is measured
         jsr   loader.file.load
+        dec   >loader.progress.mute
+        tst   >loader.progress.measure
+        beq   >
+        jsr   loader.scene.measure         ; everything the scene loads
+!
 
         ; batch load files from disk, before decompression
         ; to benefit from sector interlacing
@@ -369,7 +400,7 @@ loader.scene.unload.file
 loader.composition.load
         pshs  d,x,y,u
         cmpx  >composition.current
-        beq   @done                       ; deja cet etat : rien a faire
+        lbeq  @done                       ; deja cet etat : rien a faire
         stx   >composition.target
 ;
         ; --- les partantes : residentes, absentes de la cible
@@ -380,7 +411,7 @@ loader.composition.load
         sta   >composition.count
 @drop   ldx   ,y
         ldu   >composition.target
-        bsr   loader.composition.holds
+        jsr   loader.composition.holds
         beq   @dropNext                   ; la cible la tient : on la garde
         pshs  y                           ; ni dir.load ni scene.apply ne gardent
         lda   2,y                         ; Y, et dir.load ecrase X en plus :
@@ -394,8 +425,46 @@ loader.composition.load
         dec   >composition.count
         bne   @drop
 ;
-        ; --- les arrivantes : de la cible, absentes du courant
+        ; --- les arrivantes : d'abord les MESURER, si quelqu'un ecoute, pour
+        ; que le total soit connu avant la premiere lecture qu'il couvre —
+        ; une lecture de table par scene arrivante, relue ensuite par le
+        ; chargement (la barre ne recule jamais)
 @arrivals
+        ldx   >loader.progress.hook
+        beq   @arrivals.load
+        ldy   >composition.target
+        lda   ,y+
+        beq   @relink
+        sta   >composition.count
+@measure
+        ldx   ,y
+        ldu   >composition.current
+        beq   @measure.do
+        jsr   loader.composition.holds
+        beq   @measure.next
+@measure.do
+        pshs  y
+        lda   2,y
+        jsr   loader.dir.load
+        ldy   ,s
+        ldx   ,y
+        jsr   loader.file.malloc
+        cmpu  #0
+        beq   @measure.done
+        inc   >loader.progress.mute        ; the table is not counted (see mute)
+        ldb   #loader.PAGE
+        jsr   loader.file.load
+        dec   >loader.progress.mute
+        jsr   loader.scene.measure         ; the scene's files
+        jsr   tlsf.free
+@measure.done
+        puls  y
+@measure.next
+        leay  3,y
+        dec   >composition.count
+        bne   @measure
+        clr   >loader.progress.measure     ; measured : the loading pass must not count twice
+@arrivals.load
         ldy   >composition.target
         lda   ,y+
         beq   @relink
@@ -403,7 +472,7 @@ loader.composition.load
 @add    ldx   ,y
         ldu   >composition.current
         beq   @addLoad                    ; rien de resident : tout arrive
-        bsr   loader.composition.holds
+        jsr   loader.composition.holds
         beq   @addNext                    ; deja la : on ne la relit pas
 @addLoad
         pshs  y
@@ -419,7 +488,9 @@ loader.composition.load
         bne   @add
 ;
         ; --- un seul lien pour tout l'etat
-@relink jsr   loader.file.link
+@relink lda   #1
+        sta   >loader.progress.measure
+        jsr   loader.file.link
         ldx   >composition.target
         stx   >composition.current
 @done   puls  d,x,y,u,pc
@@ -465,6 +536,98 @@ loader.composition.holds
 @yes    orcc  #%00000100                  ; Z a un : presente
         puls  a,u,pc
 ;
+;-----------------------------------------------------------------
+; loader.progress.hook.set
+;
+; input  REG : [X] hook routine, 0 = none
+;-----------------------------------------------------------------
+; Install a progress hook and reset the counters. Contract : loader.const.
+;-----------------------------------------------------------------
+loader.progress.hook.set
+        stx   >loader.progress.hook
+        clra
+        clrb
+        std   >loader.progress.done
+        std   >loader.progress.total
+        rts
+
+;-----------------------------------------------------------------
+; loader.progress.pulse — one sector read (from ldsec)
+; loader.progress.add   — [B] units done
+;-----------------------------------------------------------------
+loader.progress.pulse
+        tst   >loader.progress.mute
+        bne   loader.progress.rts
+        ldb   #1
+loader.progress.add
+        pshs  d,x,y,u
+        clra
+        addd  >loader.progress.done
+        std   >loader.progress.done
+        ldy   >loader.progress.hook
+        beq   @rts
+        ldb   1,s                         ; the units, for the hook
+        ldx   #loader.progress.done       ; the counters : done, total
+        jsr   ,y
+@rts    puls  d,x,y,u,pc
+loader.progress.rts
+        rts
+
+;-----------------------------------------------------------------
+; loader.file.measure
+;
+; input  REG : [X] file id
+;-----------------------------------------------------------------
+; Add to progress.total what loading this file will cost : its sectors,
+; its link data sectors, one unit per 512 bytes it expands to.
+;-----------------------------------------------------------------
+loader.file.measure
+        pshs  d,x,y,u
+        jsr   loader.dir.getFile
+        ldd   dir.entry.sizea,y
+        cmpd  #$ff00
+        beq   @rts                        ; empty file : nothing is read
+        clra
+        ldb   dir.entry.nsector,y         ; partial sectors included
+        tfr   d,u                         ; [U] units
+        ldb   dir.entry.bitfld,y
+        bpl   @link                       ; not compressed
+        pshs  b
+        jsr   loader.dir.fileSize         ; expanded size
+        addd  #511
+        lsra                              ; (size+511)/512 : the high byte, halved
+        tfr   a,b
+        clra
+        leau  d,u
+        puls  b
+@link   bitb  #%01000000
+        beq   @done                       ; no link data
+        leay  8,y                         ; the link block follows the file block
+        bitb  #%10000000
+        beq   >
+        leay  8,y                         ;   and the compression block if any
+!       clra
+        ldb   dir.entry.nsector,y         ; same layout as a file block
+        leau  d,u
+@done   tfr   u,d
+        addd  >loader.progress.total
+        std   >loader.progress.total
+@rts    puls  d,x,y,u,pc
+
+;-----------------------------------------------------------------
+; loader.scene.measure
+;
+; input  REG : [U] scene table
+;-----------------------------------------------------------------
+; The same walk as loading the scene, measuring instead of reading.
+;-----------------------------------------------------------------
+loader.scene.measure
+        pshs  x,u
+        ldx   #loader.file.measure
+        stx   loader.scene.routine
+        jsr   loader.scene.apply
+        puls  x,u,pc
+
 composition.current fdb   0 ; table de l'etat resident, 0 = rien
 composition.target  fdb   0 ; celle vers laquelle on converge
 composition.count   fcb   0 ; scenes restant a parcourir dans la passe
@@ -667,12 +830,17 @@ loader.dir.load.do
         ldu   >loader.dir
         beq   >
         cmpa  dir.header.diskId,u
-        bne   >                   ; Requested diskId is different : reload into
-                                  ; the static buffer, nothing to free
-        rts                       ; Requested diskId is already loaded, return
-!
+        lbeq  loader.dir.unload.rts ; Requested diskId is already loaded, return
+!       stu   >loader.dir.prev    ; another one (or none) : the buffer in place is
+                                  ; RESIZED for the newcomer, not freed and
+                                  ; reallocated — a shrink keeps its place and a
+                                  ; growth into the tail it left does too, so the
+                                  ; directory does not wander about the pool and
+                                  ; split its free space (loader-ut T18 ran out of
+                                  ; memory when it did)
         ldd   #ptsec
-        std   >loader.dir
+        std   >loader.dir         ; the first sector lands in ptsec : the header
+                                  ; is checked before anything is allocated
         ldd   #$ffff
         std   >ptsec.key          ; ptsec is about to hold a directory sector
 ; set the dir location from the builder's table : entry = [physical disk]
@@ -742,7 +910,14 @@ loader.dir.load.do
 ; failed id check (A still holds dir.header.nsector here)
         cmpa  #loader.dir.buffer.SECTORS
         bhi   @info
-        ldu   #loader.dir.buffer
+        clrb                      ; [D] = sectors * 256 : the buffer, exact size
+        pshs  x,y
+        ldu   >loader.dir.prev
+        beq   @new
+        jsr   tlsf.realloc        ; [U] the previous buffer, resized in place when
+        bra   @got                ;   it can (a failure trips the tlsf callback :
+@new    jsr   tlsf.malloc         ;   logged, not a silent freeze)
+@got    puls  x,y
         stu   >loader.dir
         stu   <map.DK.BUF         ; Next sectors will be read into the new
                                   ; buffer (BUF MSB is pre-incremented by the
@@ -767,7 +942,7 @@ loader.dir.load.do
         andb  #$0f                ; wrap the sclist index like ldsec does
         dec   >nsect              ; Next
         bne   @load               ; sector
-; copy first sector into the static buffer
+; copy first sector into the buffer
         lda   #128
         ldx   #ptsec
         ldy   loader.dir
@@ -775,6 +950,32 @@ loader.dir.load.do
         stu   ,y++               ; Write data
         deca                     ; Until last
         bne   <                  ; data reached
+        rts
+
+;---------------------------------------
+; loader.dir.unload
+;---------------------------------------
+; Give the current directory's buffer
+; back to the pool, for good : the next
+; dir.load allocates afresh. Nobody
+; calls it by default (dir.load resizes
+; the buffer in place instead) ; it is
+; for a game that wants the room between
+; two loads and will call dir.load again
+; before any file access. A no-op with
+; no directory loaded.
+;---------------------------------------
+loader.dir.unload
+        pshs  d,x,u
+        ldu   >loader.dir
+        beq   >
+        cmpu  #ptsec             ; a directory being read : nothing allocated yet
+        beq   >
+        jsr   tlsf.free
+!       clr   >loader.dir
+        clr   >loader.dir+1
+        puls  d,x,u,pc
+loader.dir.unload.rts
         rts
 
 
@@ -964,6 +1165,11 @@ loader.file.decompress
         lda   #6                  ; copy last 6 bytes
         leax  dir.entry.cdataz,y  ; set read ptr
         jsr   tfrxua
+        jsr   loader.dir.fileSize ; progress : one unit per 512 bytes expanded
+        addd  #511
+        lsra
+        tfr   a,b
+        jsr   loader.progress.add
 @rts    puls  d,x,y,u,pc
 
 ; Four bytes of the monitor page, taken from the seven the monitor's music

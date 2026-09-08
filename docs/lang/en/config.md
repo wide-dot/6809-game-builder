@@ -48,3 +48,57 @@ one loader reads them all — the builder refuses otherwise. This is how two
 images of the same game, sector interleave 2 and 1, are produced for a
 side-by-side timing on the real machine (see
 `docs/lang/fr/etude-chargement-2026-09.md` §9).
+### Colocated directories, and the head path (08/09/2026)
+
+A directory is read by the loader every time a scene of another directory
+arrives or leaves ; its scene tables and its files' link data are read
+with every scene. Declared in sections of their own — `INDEX` on track 0,
+`SCENE` on track 1, `LINK` on track 2, stage directories on track 79 — they
+send the head across the whole disk for a few sectors, several times per
+load : r-type paid up to eight hundred tracks of travel per stage.
+
+`colocate="true"` on a `<directory>` writes the directory **in its section,
+right before the content it lists** : its sectors are reserved at the
+section's cursor when the directory's entries are complete, the content is
+flushed after them (a scene's table, then the data of its files, then their
+link data — the loader's own reading order), and the directory is written
+last, once the entries know where their bytes landed. With the scene tables
+(`<scene section="…">`) and the link data (`<file linkdata="…">`) sent to
+the same section, loading a scene is **one forward walk** of the head.
+
+```xml
+<floppydisk model="fd640">
+    <section name="DATA" track="1" face="0" sector="1"/>
+    <directory id="1" section="DATA" colocate="true" gensymbols="gen/directories/dir1/entries.asm">
+        <file name="stage1.init" linkdata="DATA" region="stageinit">…</file>
+        …
+        <scene name="scenes.stage1" section="DATA">…</scene>
+    </directory>
+    …
+    <data section="LOADER">…</data>   <!-- AFTER the directories -->
+</floppydisk>
+```
+
+What it costs : a reservation obeys the loader's contiguity contract (one
+track, one face), so a partially used sector at the cursor and a track tail
+too short for the directory are skipped and lost — a few sectors per
+directory at most. And the directory's location is only known when it is
+emitted : the table the loader embeds (`gen/directories/locations.asm`) is
+rewritten at every emission, and a `<data>` assembling the loader BEFORE a
+colocated directory is written fails with an assembly error naming the
+directory. Declare the loader's `<data>` after the directories, as every
+configuration of the corpus already does.
+
+**The head path.** The occupancy page (`occupancy-<target>.html`) has a
+third view, *Parcours* : for every declared state, converged from the
+previous one in declaration order, every read the loader makes — directory,
+table, file data, link data — drawn on the disk in reading order and costed
+by a small mechanical model : a seek is `tracks × step + settle`, a face
+change is free, the disk keeps spinning and a sector is read when its slot
+comes by, so a seek longer than the skew loses a turn ; the loader's
+partial-sector cache is modelled. The parameters (step, settle, overhead
+between two sectors, rpm, the share of a slot a sector occupies) are
+editable on the page — their defaults are guesses to calibrate on the real
+drive, and the totals follow. `seek-report-<target>.txt` is the same walk as
+text, at the defaults, for diffs. The model is
+`report/HeadPath.java` ; the page's script mirrors it.

@@ -721,6 +721,9 @@
       <xs:attribute name="genbinary" type="xs:string">
         <xs:annotation><xs:documentation>debug copy of the directory binary</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="colocate" type="xs:boolean">
+        <xs:annotation><xs:documentation>true : the directory is written in its section right BEFORE the content it lists, reserved at the cursor and filled once the entries know where their bytes landed — with the scene tables and link data sent to the same section, a scene's whole load is one forward walk of the head. Its location is only known at emission : the loader's &lt;data&gt; must come after the directories. Default false : written at its section's cursor after its content</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 
