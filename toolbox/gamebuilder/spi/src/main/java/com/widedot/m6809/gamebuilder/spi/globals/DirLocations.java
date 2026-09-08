@@ -48,6 +48,9 @@ public class DirLocations {
 	 */
 	public String trailer;
 
+	/** how many directories the emission has completed : the index size is only final after the last */
+	public int emitted;
+
 	public void declare(int id, Row row) {
 		byId.put(id, row);
 	}
@@ -77,5 +80,6 @@ public class DirLocations {
 	public void clear() {
 		byId.clear();
 		trailer = null;
+		emitted = 0;
 	}
 }

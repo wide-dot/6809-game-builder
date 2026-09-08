@@ -717,17 +717,29 @@ le storage pour une cible — c'est ainsi que se fabriquent les deux images
 de l'essai machine (entrelacement 2 et 1). Tous les disques d'une cible
 doivent partager le même entrelacement, le builder refuse sinon.
 
-## Le tampon de répertoire est un bloc du tas, et le répertoire 0 est scindé (07/09/2026)
+## Le tampon de répertoire et l'index de lien : deux blocs du tas, dimensionnés par le builder (08/09/2026)
 
-`dir.load` alloue le tampon à la taille exacte du répertoire et le
-redimensionne sur place (`tlsf.realloc`) quand un autre le remplace ;
-`loader.dir.unload` (table de saut 45) le rend pour de bon, personne ne
-le fait par défaut. Plus de tampon statique : le gel
-du 14/08 qui l'avait imposé était, selon toute vraisemblance, le bug de
-`realloc`. Contrainte de taille : un répertoire monté en pleine
-convergence doit tenir dans le trou de celui qu'il remplace — d'où le
-**répertoire 10** (title + bibliothèque d'ennemis, 2 secteurs, piste 79
-face 1), le 0 ne gardant que le résident (4 secteurs). Étude §11.
+Le tampon de répertoire est alloué UNE fois dans le pool, à la taille du
+plus gros répertoire de la cible (`loader.dir.buffer.SECTORS`, généré) ;
+`loader.dir.unload` (table de saut 45) le rend, personne ne le fait par
+défaut. L'index de lien est alloué une fois à `loader.file.linkData.SLOTS`
+entrées : le plus grand nombre de fichiers porteurs de link data qu'un
+état déclaré indexe à la fois, compté par le builder sur les compositions
+à l'émission des répertoires (macro `_loader.file.linkData.SLOTS` de
+`gen/directories/locations.asm`, un `<define>` du même nom l'emporte —
+loader-ut charge à la main et déclare 32). Un slot de plus qu'annoncé =
+piège `log.scene.INDEX_FULL`. Le loader n'inclut plus `tlsf-realloc.asm`
+ni `memcpy.asm` : 4 817 → 4 264 octets, pool 3 375 → 3 928 ; r-type
+indexe 24 fichiers à la pointe (stage 1). L'étape intermédiaire du 07/09
+(tampon à la taille exacte, redimensionné sur place, répertoire 0 scindé
+en 0 + 10) reste dans l'étude §11 ; la scission du répertoire 0 est
+conservée. Bilan de place complet : `docs/lang/fr/bilan-loader-8ko-2026-09.md`.
+Même jour : `tlsf.SL_BITS` sous `IFNDEF` (défaut 4), le loader à 2 (quatre
+classes de taille par puissance de deux, matrice 378 → ~116 octets) ;
+`examples/tlsf-ut` joue les deux finesses (`fd`, `fd-sl2`). Loader r-type
+3 996 octets, pool 4 196. Piège toje rencontré : la stabilisation de 1 200
+trames de `boot_floppy` pouvait figer un transfert de secteur plus tard
+(loader-ut, artefact d'émulation) — `loader_ut.py` amorce avec `settle=1`.
 
 ## La barre de chargement : le loader compte, l'engine dessine (07/09/2026)
 

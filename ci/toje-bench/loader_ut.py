@@ -17,7 +17,10 @@ from mcp import Toje
 
 disk0, disk1 = sys.argv[1], sys.argv[2]
 t = Toje()
-t.boot_floppy(disk0)
+# settle 1 : the poll below reads the bench's own witnesses ; the 1200 frame
+# settle of the default left toje's drive in a state where a later sector
+# transfer froze mid-way with the 2 class TLSF loader (08/09/2026, see mcp.py)
+t.boot_floppy(disk0, settle=1)
 
 t0 = time.time()
 mounted = 0

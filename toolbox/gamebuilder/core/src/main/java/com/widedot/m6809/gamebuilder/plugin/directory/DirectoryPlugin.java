@@ -317,6 +317,10 @@ public class DirectoryPlugin {
 		// consumes that one
 		media.getDirEntries().clear();
 
+		// the loader's table learns what this directory settled : the link
+		// data index is sized from the entries emitted so far
+		com.widedot.m6809.gamebuilder.config.DirectoryLocations.emitted(ctx);
+
 		log.debug("End of processing directory");
 	}
 

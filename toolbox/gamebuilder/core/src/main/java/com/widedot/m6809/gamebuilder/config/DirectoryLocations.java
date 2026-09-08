@@ -97,6 +97,63 @@ public final class DirectoryLocations {
 	}
 
 	/**
+	 * A directory has been emitted : its entries say which files really
+	 * carry link data, so the index size is recounted and the table rewritten.
+	 */
+	public static void emitted(BuildContext ctx) throws Exception {
+		ctx.dirLocations.emitted++;
+		if (ctx.dirLocations.trailer == null) {
+			return;    // no location table for this target (no floppy disk)
+		}
+		write(ctx);
+	}
+
+	/**
+	 * The most files carrying link data one declared state indexes at once :
+	 * per composition, the union of its scenes' tables (export-only files
+	 * included, they carry link data too), kept to those whose emitted link
+	 * data is not empty. Without compositions, every scene alone.
+	 */
+	static int indexSlots(BuildContext ctx) {
+		java.util.Set<String> carrying = new java.util.HashSet<String>();
+		for (com.widedot.m6809.gamebuilder.spi.globals.LinkReport.Entry e : ctx.linkReport.entries()) {
+			if (e.bytes > 0) {
+				carrying.add(e.name);
+			}
+		}
+		java.util.Map<String, List<String>> tables = ctx.ramMap.tableOrder();
+		int peak = 0;
+		if (ctx.compositions.isEmpty()) {
+			for (List<String> files : tables.values()) {
+				peak = Math.max(peak, count(files, carrying));
+			}
+		} else {
+			for (com.widedot.m6809.gamebuilder.spi.globals.Compositions.Composition c
+					: ctx.compositions.all()) {
+				java.util.Set<String> files = new java.util.LinkedHashSet<String>();
+				for (String scene : c.scenes) {
+					List<String> table = tables.get(scene);
+					if (table != null) {
+						files.addAll(table);
+					}
+				}
+				peak = Math.max(peak, count(files, carrying));
+			}
+		}
+		return peak;
+	}
+
+	private static int count(java.util.Collection<String> files, java.util.Set<String> carrying) {
+		int n = 0;
+		for (String f : files) {
+			if (carrying.contains(f)) {
+				n++;
+			}
+		}
+		return n;
+	}
+
+	/**
 	 * A colocated directory has just taken its sectors : record where, and
 	 * rewrite the table for whoever assembles it from here on — the loader's
 	 * {@code <data>}, declared after the directories, includes the resolved
@@ -182,6 +239,29 @@ public final class DirectoryLocations {
 		   .append(System.lineSeparator());
 
 		out.append(ctx.dirLocations.trailer);
+		// the link data index, sized at build time : the most files carrying
+		// link data one declared state indexes at once. Counted from what has
+		// been EMITTED (a file's link data can be empty once pruned, and an
+		// empty one is not indexed), so the figure is only complete once every
+		// directory is written — the loader's <data> comes after them, as
+		// colocation already requires. A <define> of the same name wins : a
+		// bench that loads by hand says its own peak. A macro, like the
+		// location table, so that only the loader expands it.
+		int slots = indexSlots(ctx);
+		out.append("* the link data index : entries = the most files carrying link data one")
+		   .append(System.lineSeparator());
+		out.append("* declared state indexes at once (a <define> of the same name wins)")
+		   .append(System.lineSeparator());
+		out.append("_loader.file.linkData.SLOTS MACRO").append(System.lineSeparator());
+		out.append(" IFNDEF loader.file.linkData.SLOTS").append(System.lineSeparator());
+		if (ctx.dirLocations.emitted == 0) {
+			out.append("        ERROR the link data index is sized from the emitted directories :")
+			   .append(" declare the loader's <data> after them").append(System.lineSeparator());
+		} else {
+			out.append("loader.file.linkData.SLOTS equ ").append(slots).append(System.lineSeparator());
+		}
+		out.append(" ENDC").append(System.lineSeparator());
+		out.append("        ENDM").append(System.lineSeparator());
 
 		String path = ctx.path + File.separator + "gen" + File.separator
 				+ "directories" + File.separator + "locations.asm";
