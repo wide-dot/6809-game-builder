@@ -116,10 +116,30 @@ PaletteFade_Wait
 !       inc   routine,u                                                                                                               
                                                  
 PaletteFade_Main
+; V2-DEVIATION (08/09/2026) : LE MODE COMPENSE, en option. La v1 decompte
+; l'attente par trame RENDUE : a 8 images par seconde, une attente de 15 en
+; fait 90 de video, et un fondu de 16 pas prend 1 400 trames au lieu de 240.
+; Les fondus chronometres (la mort d'un boss au rythme de la borne) posent
+; o_fade_drop != 0 : chaque appel consomme gfxlock.frameDrop.count trames et
+; fait autant de pas que l'attente en contient. o_fade_drop = 0 : strictement
+; la v1 (l'OST statique nait a zero, les fondus d'entree et de reprise le
+; remettent a zero).
+; Cas de migration : docs/lang/en/migration/palette-fade-frame-drop.md
+        ldb   #1
+        tst   o_fade_drop,u
+        beq   >
+        ldb   gfxlock.frameDrop.count
+        bne   >
+        incb                           ; count == 0 (1re boucle) : une trame
+!       stb   PaletteFade_frames
+PaletteFade_tick
         dec   o_fade_curwait,u
-        bmi   >
+        bmi   PaletteFade_step
+        dec   PaletteFade_frames
+        bne   PaletteFade_tick
         rts
-!       lda   o_fade_wait,u
+PaletteFade_step
+        lda   o_fade_wait,u
         sta   o_fade_curwait,u
         ldx   o_fade_dst,u
         ldy   #Pal_buffer
@@ -177,7 +197,10 @@ PFA_SetPalNext
         ldd   #Pal_buffer
         std   Pal_current
         clr   PalRefresh               ; will call refresh palette in IRQ
-        rts               
+        dec   PaletteFade_frames       ; mode compense : les trames restantes
+        lbne  PaletteFade_tick         ; de cet appel font leurs pas
+        rts
+PaletteFade_frames fcb 0               ; trames video a consommer dans cet appel
 
 PaletteFade_Idle
         ldb o_fade_unload,u   ; ? est-ce qu'on doit supprimer l'objet automatiquement ?

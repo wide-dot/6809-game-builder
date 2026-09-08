@@ -229,6 +229,8 @@ main.endstage.scoreArmed EXPORT
 main.endstage.scoreDone  EXPORT
 main.endstage.rallyX     EXPORT
 main.endstage.rallyY     EXPORT
+main.endstage.duration   EXPORT
+main.endstage.fadeMode   EXPORT
 main.endstage.counter    fdb 0  ; compte a rebours de fin (0 : pas arme)
 main.endstage.phase      fcb 0  ; 0 jeu, 1 jingle+autopilote, 2 glissee, 3 pre-fondu (2 rendus), 4 fondu, 5 releve
 main.endstage.scoreArmed fcb 0  ; 1 : le HUD (re)seme le releve du score du stage
@@ -240,6 +242,11 @@ main.endstage.scoreDone  fcb 0  ; 1 : releve fini -> la sequence quitte le nivea
 ; non rallie au centre pour un releve de score (drapeau 0x0F en 0x40:C21C). Table arcade complete : endlevel.const.asm.
 main.endstage.rallyX     fdb endstage.RALLY_X_ENDING
 main.endstage.rallyY     fdb endstage.RALLY_Y_ENDING
+; La duree armee par bossDefeated et la voie du fondu, publiees par LE
+; STAGE (endlevel.const.asm) : le compte du Dobkeratops, le fondu par
+; tramage — les valeurs d'avant le 08/09/2026.
+main.endstage.duration   fdb endstage.DURATION
+main.endstage.fadeMode   fcb endstage.FADE_PIXEL
 
 stage.endTick
         ; La sequence de fin decide, pas la camera — voir le commentaire des

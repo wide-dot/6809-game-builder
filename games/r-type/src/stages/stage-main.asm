@@ -569,7 +569,19 @@ stage.state.running
         _Obj_RunU ObjID_forcepod,#forcepodOST
         _Obj_RunU ObjID_bitdevice,#bitdevTopOST
         _Obj_RunU ObjID_bitdevice,#bitdevBotOST
-        jsr   RunObjects
+        ; LES OBJETS DU POOL GELENT quand le champ est parti (phase >= FADE) :
+        ; c'est la passation de la borne (game_tick_disable_flag, 0x1125), ou
+        ; chaque tick se decharge lui-meme. Ici ils ne tournent plus — ni
+        ; bruitage, ni ponte, ni tir sous le releve (retour auteur, 08/09/2026 :
+        ; les gougers de la salle du boss jouaient leurs sons pendant le stage
+        ; cleared). RunFrozenObjects est le gel de la mort du vaisseau.
+        lda   stage.overlayPhase
+        cmpa  #endstage.PHASE_FADE
+        blo   >
+        jsr   RunFrozenObjects
+        bra   stage.objectsRan
+!       jsr   RunObjects
+stage.objectsRan
         jsr   gfxlock.on
 
         ; LA SEQUENCE DE FIN POSSEDE L'ECRAN (21/08/2026, tous stages).
@@ -1273,6 +1285,7 @@ stage.checkpointReset
 stage.paletteFadeIn EXPORT   ; l'unite checkpoint l'appelle apres rechargement
 stage.paletteFadeIn
         ldu   #palettefade
+        clr   o_fade_drop,u            ; la v1 : par trame rendue
         ldx   #Pal_stage
         lda   #4
 stage.paletteFadeCommon
@@ -1295,8 +1308,24 @@ stage.paletteFadeDone
 
 stage.paletteFadeOut
         ldu   #palettefade
+        clr   o_fade_drop,u            ; la v1 : par trame rendue
         ldx   #Pal_black
         lda   #1
+        bra   stage.paletteFadeCommon
+
+; LE FONDU DE MORT D'UN BOSS (08/09/2026) : la borne eteint la palette des
+; tuiles en 31 pas de 5 bits toutes les 8 trames (palette_blackout_15_bg(7),
+; 248 trames) ; nos 16 pas de 4 bits toutes les 15 trames en font 240. En
+; global — une seule palette : vaisseau, cascade et HUD s'eteignent aussi
+; (ecart assume). Le boss l'appelle depuis sa page ; endlevel attend l'Idle.
+stage.DEATH_FADE_WAIT equ 15
+stage.deathFadeOut EXPORT
+stage.deathFadeOut
+        ldu   #palettefade
+        lda   #1                       ; chronometre : par trame VIDEO
+        sta   o_fade_drop,u
+        ldx   #Pal_black
+        lda   #stage.DEATH_FADE_WAIT
         bra   stage.paletteFadeCommon
 
 ;*******************************************************************************

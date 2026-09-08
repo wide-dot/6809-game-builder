@@ -14,6 +14,16 @@ entrees pour les 352 trames. Le marcheur v2 (src/common/fx/bosscascade/
 obj.asm) pose une entree toutes les bosscascade.PERIOD trames video, ce qui
 garde la duree arcade.
 
+LEQUEL des quatre ? Pas le premier de chaque fenetre (mesure le 08/09) : la
+liste arcade repete ses groupes de quatre pointeurs tous les 32, toujours a
+l'index 1 modulo 4, et un pas fixe de 4 tombe chaque fois sur la meme
+cellule des groupes — 37 explosions sur 44 a droite du centre, la ou la
+borne en met une sur deux. On choisit donc, dans chaque fenetre de quatre
+(les quatre spawns arcade des 8 trames), le candidat dont le quadrant du
+corps est le plus en retard sur sa part arcade (bas 61 %, haut 39 %), puis
+la cellule la moins servie ; l'ordre arcade est conserve (chaque entree
+reste dans sa fenetre de temps).
+
 Le « une chance sur quatre de grosse explosion » de la borne (random & 6 ==
 0 -> big_explosion_with_grey_brown_flash_disk, 0x40:E817) est PRE-TIRE ici,
 graine fixe : la variete est deterministe, comme le compiler.
@@ -57,6 +67,39 @@ def couple(rom, ptr):
     return struct.unpack_from('<hh', rom, SEG + ptr)
 
 
+def quadrant(x, y):
+    """Le quart du corps : gauche/droite du centre, bas/haut (y arcade monte)."""
+    return (x >= 0, y >= -48)
+
+
+def choisir(rom, ptrs, pas):
+    """Un pointeur par fenetre de `pas` spawns arcade, l'ordre garde.
+
+    Dans la fenetre, le candidat de moindre (quadrant deja servi, cellule
+    deja servie, rang) — deterministe, sans hasard."""
+    # la densite arcade par quadrant (sur les 176 joues) est la cible : le
+    # candidat retenu est celui dont le quadrant est le plus en retard sur
+    # sa part, puis la cellule la moins servie, puis le premier venu
+    cible = {}
+    for p in ptrs:
+        q = quadrant(*couple(rom, p))
+        cible[q] = cible.get(q, 0) + 1
+    quads = {}
+    cellules = {}
+    out = []
+    for debut in range(0, len(ptrs), pas):
+        fenetre = ptrs[debut:debut + pas]
+        cle = lambda ip: (quads.get(quadrant(*couple(rom, ip[1])), 0)
+                          / cible[quadrant(*couple(rom, ip[1]))],
+                          cellules.get(ip[1], 0), ip[0])
+        _, p = min(enumerate(fenetre), key=cle)
+        q = quadrant(*couple(rom, p))
+        quads[q] = quads.get(q, 0) + 1
+        cellules[p] = cellules.get(p, 0) + 1
+        out.append(p)
+    return out
+
+
 def borne(v, quoi):
     if not -128 <= v <= 127:
         raise SystemExit('offset %s hors d\'un octet signe : %d' % (quoi, v))
@@ -71,7 +114,7 @@ def main():
         raise SystemExit('la borne bouclerait (%d > %d) — pas prevu'
                          % (consommes, len(ptrs)))
     pas = PERIODE // PAS_ARCADE             # un spawn arcade sur quatre
-    choisis = [ptrs[i] for i in range(0, consommes, pas)]
+    choisis = choisir(rom, ptrs[:consommes], pas)
     tirage = random.Random(GRAINE)
     out = [
         '; ---------------------------------------------------------------------------',
@@ -105,8 +148,12 @@ def main():
     dst = 'src/enemies/gomander/explosions.asm'
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     open(dst, 'w').write('\n'.join(out) + '\n')
-    print('ecrit %s : %d entrees (%d grosses) sur %d pointeurs, %d consommes'
-          % (dst, len(choisis), grosses, len(ptrs), consommes))
+    import collections
+    q = collections.Counter(quadrant(*couple(rom, p)) for p in choisis)
+    print('ecrit %s : %d entrees (%d grosses) sur %d pointeurs, %d consommes ;'
+          ' cellules distinctes %d ; quadrants (droite, haut) -> n : %s'
+          % (dst, len(choisis), grosses, len(ptrs), consommes,
+             len(set(choisis)), dict(sorted(q.items()))))
 
 
 if __name__ == '__main__':

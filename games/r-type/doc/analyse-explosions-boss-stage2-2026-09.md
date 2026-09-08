@@ -289,18 +289,23 @@ du plan avant (MAME : `m_scrolly[0]`, le fg). Le delta par trame est écrit
 en 0x2ED2 — c'est celui que l'acteur de cascade ajoute à son Y : les
 explosions naissent sur le plan qui bouge, elles le suivent.
 
-**Le mouvement**, pendant les 128 dernières trames (compteur < 0x80) :
+**Le mouvement**, pendant les 255 dernières trames (compteur de 0xFF à 1 —
+le plate comment de Ghidra dit « < 0x80 », le code non : après le `== 0x100`
+et le `JNC` sur `>= 0x100`, le `== 0x80` ne garde que le son et le latch,
+et le bloc a54a tourne pour tout le reste — corrigé le 08/09 après la
+première vidéo) :
 
 | parité de (compteur & 2) | vitesse Y (8.8) | par trame |
 |---|---|---|
 | bit levé (2 trames) | 0x00C0 | +0,75 px |
 | bit baissé (2 trames) | 0xFF00 | −1,00 px |
 
-Par cycle de 4 trames : +1,5 − 2 = **−0,5 px net**, donc **−16 px sur les
-128 trames** ; un scroll Y qui baisse fait descendre le contenu : **le plan
-avant coule de 16 px** (12 lignes TO8) avec une **secousse d'environ 2 px
-à 15 Hz**. `_silent_unload` remet la vitesse à zéro : le plan reste
-descendu, le flux de fin de stage recharge le suivant.
+Par cycle de 4 trames : +1,5 − 2 = **−0,5 px net**, donc **−32 px sur les
+255 trames** ; un scroll Y qui baisse fait descendre le contenu : **le plan
+avant coule de 32 px** (24 lignes TO8), de la seconde déflagration (t+128)
+à la décharge, avec une **secousse d'environ 2 px à 15 Hz**.
+`_silent_unload` remet la vitesse à zéro : le plan reste descendu, le flux
+de fin de stage recharge le suivant.
 
 **La disparition** n'est pas le mouvement, c'est la palette. À t+128
 (`_death_second_blast`), `palette_blackout_15_bg(7)` arme 15 entrées de
@@ -309,6 +314,7 @@ plans (les sprites ont l'autre) — vers le noir, un pas toutes les 8 trames,
 0x1F pas : **noir complet à t+376**, juste avant la décharge à t+384. Le
 tremblement (t+256..384) se joue donc sur un décor déjà à moitié éteint,
 qui finit noir pendant qu'il coule : c'est le « disparaît vers le bas ».
+Descente et fondu commencent ensemble, à t+128.
 Les sprites (la cascade) gardent leurs couleurs.
 
 ### Ce que la v2 sait faire
@@ -397,3 +403,160 @@ normale.
   `drop` 0 → −1 → +2 → +4 → +6 → +8 → +10 → +11 sur les 128 dernières
   trames, `scroll_vp_y_pos` 11 → 22, cascade et fin de stage inchangées,
   stage 3 atteint ; captures `sink/cascade-320/360/380.png`.
+
+### Correction du 08/09/2026, après la première vidéo (retour auteur)
+
+- **Descente** : elle partait à t+256 et faisait 12 lignes — le plate
+  comment de Ghidra ; le code fait 255 trames depuis t+128, 24 lignes.
+  `gomander.DEATH_SINK` (0x100) déclenche, `e = 256 − compteur`, tendance
+  3·(e/4)/8 de 0 à 23. La dernière rangée descend jusqu'à la ligne 214 :
+  les 15 lignes de trop vont dans les 192 octets libres derrière le plan,
+  puis dans les lignes 0-10 de l'autre plan (repeintes chaque trame par le
+  masque) ou dans la ROM moniteur (écriture ignorée). Budget mesuré, pas de
+  clip.
+- **Répartition des explosions** : la liste arcade répète ses groupes de
+  quatre pointeurs tous les 32, toujours à l'index 1 mod 4 ; le pas fixe de
+  4 tombait chaque fois sur la même cellule des groupes — 37 des 44
+  explosions à droite du centre (la borne : 88/88). Le générateur choisit
+  maintenant, par fenêtre de quatre spawns arcade, le candidat dont le
+  quadrant du corps est le plus en retard sur sa part arcade (bas 61 %,
+  haut 39 %), puis la cellule la moins servie ; ordre arcade conservé.
+  Résultat : 36 cellules distinctes au lieu de 26, quadrants à la
+  proportion arcade.
+
+## 9. Le fondu au noir de la mort, par la palette (étude du 08/09/2026, rien de modifié)
+
+Question de l'auteur : reproduire le fondu de palette de la borne — en
+global chez nous, une seule palette —, au même moment et au même rythme,
+puis un fondu d'entrée pour l'écran « stage cleared » ; ce qui en fait une
+alternative au fondu pixel de la fin de stage.
+
+### Ce que fait la borne, de la mort au stage suivant (trames à 60 Hz, t0 = le coup fatal)
+
+| instant | événement | source |
+|---|---|---|
+| t0 | cascade d'explosions (352 trames), compteur de mort 384 | a4cd |
+| t0+128 | **fondu au noir de la palette des tuiles** : `palette_blackout_15_bg(7)`, 15 banques sur 16, **un pas toutes les 8 trames, 31 pas** (composantes 5 bits, ±1 par pas) → **noir à t0+376** ; descente du décor jusqu'à la décharge | a56c, 5579, 5360 |
+| t0+256 | SFX 0x1A + 0x1C (la fanfare et le jingle), `end_level_sequence_flag` : autopilote du vaisseau | a53b..a545 |
+| t0+384 | décharge : `stage_unload_request`, autoscroll relancé | a473 |
+| +0..15 | le dispatcher de stage attend `global_counter & 15 == 0`, pose les libellés, coupe le tick, arme 0x5F | 1125 |
+| +95 | attente ; puis 0x3F | 11bb |
+| +15 | `palette_blackout_15_bg(0)` : re-noircit ce qui resterait, un pas par trame | 11cc |
+| +48 | reconstruction : palette sprites rechargée, musique coupée, tuiles avant effacées HUD préservé, plan arrière réinitialisé | 11e2 |
+| ensuite | le relevé de score du stage (« STAGE n CLEARED », chiffres) sur fond noir, puis `handle_stage_init_event` du stage suivant : **palette rechargée en fondu, un pas toutes les 4 trames, 31 pas = 124 trames** | 1258, f01b, 5541 |
+
+Trois détails qui comptent pour la transposition :
+- le fondu ne touche que **la palette des tuiles** (15 banques sur 16) : le
+  vaisseau, la cascade, le HUD et les textes (16e banque, épargnée) restent
+  à pleine couleur sur un décor qui s'éteint ;
+- le vaisseau reste donc **visible** pendant son autopilote, sur noir ;
+- l'écran « stage cleared » arrive **~173 trames après la décharge**, soit
+  t0+557 environ, texte à pleine couleur sur noir, sans fondu d'entrée : le
+  seul fondu d'entrée de la borne est celui du stage suivant (124 trames).
+
+### Ce que la v2 a déjà
+
+- **L'objet de fondu de palette** (`engine/objects/palette/fade/fade.asm`,
+  OST statique `palettefade`, tourné à chaque trame par la boucle) : 16
+  cycles, chaque cycle rapproche chaque composante 4 bits de sa cible d'une
+  unité toutes les `o_fade_wait` trames. `stage.paletteFadeCommon` (stage-
+  main.asm) l'arme avec une cible et une attente : sortie vers `Pal_black`
+  en attente 1, entrée vers `Pal_stage` en attente 4.
+- **La séquence de fin** (`obj_endlevel`) : `bossDefeated` arme un compte à
+  rebours de $C0 ; jingle + autopilote à T−16, glissée, pré-fondu de deux
+  rendus, **fondu pixel** (160 pas, un par trame, les deux pages), pause 50,
+  relevé (224 trames de chiffres + 150 de maintien), sortie. La boucle
+  cesse de peindre tuiles et sprites dès `PHASE_FADE` (`stage.frame.faded`).
+- Le relevé se dessine avec `Pal_stage` (hud.asm : « le texte doit se voir »).
+
+### La transposition proposée
+
+**Le rythme.** 15 pas de 4 bits contre 31 pas de 5 bits : `o_fade_wait` = 15
+donne 16 × 15 = **240 trames** (borne 248, l'écart est d'un pas). Pour le
+fondu d'entrée du relevé, l'attente 8 donne 128 trames (le 124 de la borne
+pour son stage suivant).
+
+**Le déclenchement.** Au jalon `DEATH_SINK` (compteur 0x100, t0+128), là où
+la descente part, le boss lance le fondu vers `Pal_black`, attente 15. Le
+gomander est dans la page du cast, la routine dans le main du stage :
+`stage.paletteFadeOut` prend l'attente en A, il suffit de l'exporter (ou
+d'un octet `globals` « fondu de mort demandé » lu par la boucle, un tst).
+Le jeu continue de tout peindre — tuiles derrière, cascade, vaisseau — sous
+une palette qui s'éteint : c'est la borne.
+
+**Après le noir** (t0+368). Une nouvelle voie dans `endlevel`, choisie par
+le stage (comme `rallyX`) : « fondu de palette » au lieu de « fondu
+pixel ». Quand la palette est noire (l'objet est `Idle`), la boucle passe
+en `faded` (plus de tuiles ni de sprites) et les deux tampons sont effacés
+(deux `clearBlastFull`, ou `checkpoint.clearData`) ; puis le maintien sur
+noir, ~170 trames comme la borne ; puis le relevé avec le texte déjà posé
+et la palette qui remonte vers `Pal_stage` en attente 8. Les phases 3-4
+(pré-fondu, fondu pixel) sont sautées sur cette voie, le reste (relevé,
+sortie, silence des puces) est inchangé.
+
+**Le jingle** — trouvé en chemin : sur la borne il part à t0+256, avec
+l'autopilote. Chez nous `bossDefeated` à t0+256 arme $C0 et le jingle ne
+part qu'à T−16 = **t0+432, 176 trames trop tard**. Ce $C0 est le compte du
+Dobkeratops (stage 1) ; pour le Gomander le drapeau est levé directement.
+Sur cette voie, armer le compte à $10 au lieu de $C0 (le stage publie sa
+durée, comme son point de ralliement) remet jingle et autopilote à
+l'heure. Cette correction vaut indépendamment du fondu.
+
+**Le coût.** Rien par trame : l'objet de fondu tourne déjà, la boucle
+teste déjà la phase. Deux effacements plein écran (889 poussées chacun)
+une fois. Le fondu pixel reste disponible pour les stages qui le gardent.
+
+### Les écarts qu'on accepte en passant en global
+
+- **Le vaisseau s'éteint avec le décor** : l'autopilote (t0+256 → t0+448)
+  se joue dans le noir à partir de t0+368. Sur la borne il reste visible.
+- **La fin de la cascade s'éteint** : ses 100 dernières trames tombent sous
+  une palette déjà aux deux tiers noire.
+- **Le HUD s'éteint** aussi, puis revient avec le fondu d'entrée du relevé.
+- **Le fondu d'entrée du relevé n'existe pas sur la borne** (texte à pleine
+  couleur d'emblée) : c'est le prix de la palette unique, et c'est ce que
+  l'auteur propose.
+
+Une variante qui sauve le vaisseau et le HUD : ne fondre que les entrées
+propres au décor. Les quatre entrées de stage (5, 7, 15, 16) sont les
+teintes du corps du boss ; les douze communes servent aussi aux sprites.
+Fondre ces quatre-là seulement éteint le boss mais pas les parois, qui
+utilisent les communes — un demi-effet, pas la borne non plus.
+
+### Réalisation de la voie complète (08/09/2026, « voie complète avec écarts »)
+
+- **`stage.deathFadeOut`** (stage-main.asm, exporté) : la palette vers le
+  noir, attente 15, lancée par le Gomander au jalon 0x100 (`gomander.FadeOut`,
+  une fois ; le timeout la lance à `Finish`).
+- **Le mode compensé de l'objet de fondu** — découvert en route : la v1
+  décompte l'attente **par trame rendue** ; à 8 images par seconde une
+  attente de 15 en fait 90 de vidéo et le fondu prenait 1 400 trames. Un
+  octet d'OST `o_fade_drop` (V2-DEVIATION dans `engine/objects/palette/fade/
+  fade.asm`) : levé, chaque appel consomme `gfxlock.frameDrop.count` trames
+  et fait autant de pas que l'attente en contient. Les fondus d'entrée et
+  de reprise le laissent à zéro (strictement la v1).
+- **Le stage publie deux réglages de plus** à `endlevel` :
+  `main.endstage.duration` ($10 pour le Gomander, qui lève lui-même le
+  drapeau de fin — jingle et autopilote à t0+256 comme la borne, ils
+  partaient 176 trames trop tard ; $C0 ailleurs) et `main.endstage.fadeMode`
+  (palette au stage 2, pixel ailleurs).
+- **`endlevel`, voie palette** : à la glissée finie, attendre l'Idle du
+  fondu ; phase 4 = le noir — les deux tampons effacés par
+  `playfield.clearBlastFull` (un par trame, `paged.call` réentrant) ; la
+  palette remonte **aussitôt** le second effacé (`ReadoutFadeIn`, attente 8,
+  128 trames, vers `Pal_stage`) — le vaisseau réapparaît, sur la borne il
+  n'a jamais disparu ; le relevé, lui, attend `READOUT_WAIT` = 170 trames
+  après le noir. Sur la borne, à la décharge (t0+384) l'autoscroll repart à
+  0,5 px/trame sur un plan noir, la carte a ~64 px à défiler jusqu'à son
+  bout (~130 trames), puis la passation lance le relevé : ~t0+540, le noir
+  tombant à t0+368. Le fondu pixel reste aux stages qui le déclarent.
+- Mesuré à la sonde (dumps de `Pal_current`) : fondu lancé à +128, palette
+  noire et objet Idle à +368, deux trames d'effacement, remontée aussitôt, relevé à +540,
+  « STAGE 2 CLEARED » puis stage 3. rtype_bench 7/7 (le timeout du stage 2
+  prend la même voie ; le stage 3 garde le pixel).
+- **Les objets du pool gèlent dès que le champ est parti** (phase ≥ 4, la
+  boucle appelle `RunFrozenObjects` au lieu de `RunObjects`) : c'est la
+  passation de la borne, où `game_tick_disable_flag` fait décharger chaque
+  tick. Retour auteur : les gougers de la salle du boss jouaient leurs sons
+  sous le relevé. Vaut pour toutes les voies ; le joueur, l'armement, le
+  fondu et la séquence sont hors pool et continuent.
