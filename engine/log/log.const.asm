@@ -57,6 +57,11 @@ log.ram.SET_RANGE   equ $0701  ; B=requested page, U=destination address
 log.scene.LOAD_OVERLAP equ $0301  ; B=destination page, X=file id loaded,
                                   ; Y=destination address, U=occupant file id
 
+* The link data index is full : it is sized at build time at the most files
+* one declared state indexes (loader.file.linkData.SLOTS), so this is a load
+* the layout does not describe — or a bench that must say its own peak.
+log.scene.INDEX_FULL   equ $0302  ; X=file id being indexed
+
 
 * Cross-check: whoever also computes the block or the stack top must agree
 * with the address above. Two anchors that drift silently is exactly how the

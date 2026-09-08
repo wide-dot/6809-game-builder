@@ -620,3 +620,21 @@ Le banc du classement (`bench/ranking/gen-config.py`) suit : une section,
 répertoires colocalisés copiés avec leurs lignes. Le corpus des autres
 configs est identique à l'octet (aucune n'utilise `colocate`, et le
 réordonnancement d'écriture n'y change rien).
+
+## 13. Le realloc sort du loader (08/09)
+
+Le bilan de place de la demi-page (`bilan-loader-8ko-2026-09.md`) a
+montré ce que le tampon dynamique du §11 coûtait : 522 octets de
+`realloc` et `memcpy` pour rendre 512 octets de pool dans les seuls états
+dont le répertoire est petit. Décision auteur : les deux blocs que le
+loader garde — le tampon de répertoire et l'index de lien — sont alloués
+une fois, à des tailles que le builder calcule (le plus gros répertoire
+de la cible ; le plus grand nombre de fichiers porteurs de link data
+qu'un état déclaré indexe, 24 pour r-type, `<define>` pour un banc qui
+charge à la main). Rien ne change au runtime : mêmes lectures, mêmes
+répertoires montés aux mêmes moments ; ce qui disparaît, c'est la copie
+et le découpage de blocs, et la contrainte « un répertoire monté en
+pleine convergence doit tenir dans le trou du précédent ». Loader 4 817
+→ 4 264 octets, pool 3 375 → 3 928, marge à l'état stage 1 ~1 000 →
+~1 560 octets. Validé : loader-ut 17/17 + T18, rtype_bench 7/7.
+

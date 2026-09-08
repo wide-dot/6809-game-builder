@@ -25,12 +25,33 @@ next      rmb types.WORD ; (FREE)      [0000 0000 0000 0000]    - [next block in
 ; tlsf configuration
 ; -----------------------
 tlsf.PAD_BITS         equ   0  ; non significant rightmost bits
-tlsf.SL_BITS          equ   4  ; significant bits for second level index
+; tlsf.SL_BITS : significant bits for the second level index, 2^SL_BITS size
+; classes per power of two. The includer may set it before this file (or a
+; build <define>) : 4 is the finest (16 classes, a 378 byte head matrix for a
+; 16 bit pool), 2 is what a small pool with a few dozen blocks needs (4
+; classes, ~116 bytes) — the loader uses 2 (08/09/2026). The round up to the
+; next class grows with the class width (docs/lang/fr/bilan-loader-8ko-2026-09.md).
+ IFNDEF tlsf.SL_BITS
+tlsf.SL_BITS          equ   4
+ ENDC
 
 ; tlsf constants
 ; -----------------------
 tlsf.FL_BITS            equ   types.WORD_BITS-tlsf.PAD_BITS-tlsf.SL_BITS ; significant bits for first level index
-tlsf.SL_SIZE            equ   16 ; 2^tlsf.SL_BITS
+; tlsf.SL_SIZE = 2^tlsf.SL_BITS, the number of second level classes per
+; power of two (the assembler has no power operator : one line per value)
+ IFEQ tlsf.SL_BITS-4
+tlsf.SL_SIZE            equ   16
+ ENDC
+ IFEQ tlsf.SL_BITS-3
+tlsf.SL_SIZE            equ   8
+ ENDC
+ IFEQ tlsf.SL_BITS-2
+tlsf.SL_SIZE            equ   4
+ ENDC
+ IFEQ tlsf.SL_BITS-1
+tlsf.SL_SIZE            equ   2
+ ENDC
 tlsf.MIN_BLOCK_SIZE     equ   types.WORD*2 ; a memory block in use should be able to return to free state, so a min block size is mandatory (prev and next)
 tlsf.BHDR_OVERHEAD      equ   types.WORD*2 ; overhead when a block is in use (size and prev.phys)
 tlsf.mask.FREE_BLOCK    equ   %10000000
@@ -58,12 +79,19 @@ tlsf.memoryPool.size  fdb   0 ; memory pool size
 
 tlsf.bitmap.start
 tlsf.fl.bitmap        fdb   0 ; each bit is a boolean, does a free list exists for a fl index ?
-tlsf.sl.bitmap.size   equ   (tlsf.SL_SIZE+types.BYTE_BITS-1)/types.BYTE_BITS
+tlsf.sl.bitmap.size   equ   types.WORD ; one WORD per fl index whatever tlsf.SL_SIZE : the code reads and writes the sl bitmaps as words (ldd/std, index fl*2)
 tlsf.sl.bitmaps       equ   *-(types.WORD_BITS-(tlsf.FL_BITS+1))*tlsf.sl.bitmap.size ; Translate to get rid of useless space (fl values < min fl)
                       fill  0,(tlsf.FL_BITS+1)*tlsf.sl.bitmap.size ; each bit is a boolean, does a free list exists for a sl index ?
 tlsf.bitmap.end
-tlsf.headMatrix       equ   *-4*2-(types.WORD_BITS-(tlsf.FL_BITS+1))*tlsf.SL_SIZE*2 ; fl=0 sl=0 to sl=3 is useless (minimum bloc size)
-tlsf.headMatrix.start fill  0,(tlsf.FL_BITS+1)*tlsf.SL_SIZE*2-(4+15)*2 ; head ptr to each free list by fl/sl. First fl index hold only 12 sl levels (sl=4-15). Last fl index hold only one sl level (sl=0).
+; The head matrix : (fl, sl) -> head of the free list, WORD sized, row stride
+; tlsf.SL_SIZE*2. Two corners never hold a block and are not stored : the
+; cells of the sizes below tlsf.MIN_BLOCK_SIZE (the first MIN_BLOCK_SIZE cells,
+; sizes 0..3 each map to a cell of their own in the first row(s), whatever
+; tlsf.SL_BITS), and the last row (fl=15) past sl=0 (the pool tops at $8000,
+; the only size of that row). tlsf.headMatrix is the virtual origin the
+; code indexes from, tlsf.headMatrix.start the first stored cell.
+tlsf.headMatrix       equ   *-tlsf.MIN_BLOCK_SIZE*2-(types.WORD_BITS-(tlsf.FL_BITS+1))*tlsf.SL_SIZE*2
+tlsf.headMatrix.start fill  0,(tlsf.FL_BITS+1)*tlsf.SL_SIZE*2-(tlsf.MIN_BLOCK_SIZE+tlsf.SL_SIZE-1)*2
 tlsf.headMatrix.end
 
 ;-----------------------------------------------------------------

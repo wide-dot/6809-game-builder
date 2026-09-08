@@ -206,7 +206,26 @@ Remarque : sont présentés en vert les cas particuliers pour lesquels une index
 ![](image/head-matrix.png)
 ![](image/index.png)
 
+## `tlsf.SL_BITS` : la finesse des classes (08/09/2026)
+
+`tlsf.SL_BITS` (sous `IFNDEF`, défaut 4) fixe le nombre de classes de
+taille par puissance de deux, `2^SL_BITS`. Seize classes valent pour un
+gros pool ; le loader, avec quelques dizaines de blocs dans 4 Ko, en prend
+quatre : la matrice des têtes de listes passe de 378 à ~116 octets, le
+code ne change pas. Le prix : l'arrondi d'une demande à la classe
+supérieure grandit avec la largeur de classe (jusqu'à `largeur − 1`
+octets de candidats ignorés par demande), donc un faux « plus de mémoire »
+devient possible un peu plus tôt quand le pool est presque plein.
+`examples/tlsf-ut` joue les deux finesses (`fd`, `fd-sl2`). L'includeur
+pose la valeur avant `INCLUDE`, ou un `<define>` du build.
+
 ## `tlsf.realloc` : le déplacement et sa garde (07/09/2026)
+
+`tlsf-realloc.asm` (et `memcpy.asm`, qu'il appelle) est un fichier
+séparé, à inclure seulement par qui redimensionne des blocs : le loader ne
+l'inclut plus depuis le 08/09/2026, ses deux tampons sont dimensionnés au
+build (`docs/lang/fr/bilan-loader-8ko-2026-09.md`). `examples/tlsf-ut`
+l'exerce.
 
 Trois stratégies, dans cet ordre : réduction sur place (`tlsf.realloc.shrink`),
 extension sur place si le bloc physique suivant est libre et suffisant

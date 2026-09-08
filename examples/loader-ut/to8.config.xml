@@ -448,11 +448,15 @@
             <!-- Boot loader -->
             <!-- *********************************************************** -->
             <!-- A deliberately tight pool : T14 churns 22 files through the -->
-            <!-- index realloc chain in it. The figure is the size that puts  -->
+            <!-- 32-slot index in it. The figure is the size that puts        -->
             <!-- the top of the pool at $BE50, where it has always been ; it  -->
             <!-- moves when the loader's size does, since the pool follows the -->
             <!-- loader in memory. -->
             <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$0EF1"/> <!-- +$10 le 07/09 : le tampon de repertoire est alloue dans le pool (768 o + 4 d en-tete), il en etait retranche -->
+            <!-- The link data index is sized by the builder at the most files one
+                 declared state indexes ; this bench loads by hand, far past what
+                 its scenes say (T14 peaks at 32), so it declares its own size. -->
+            <define symbol="loader.file.linkData.SLOTS" value="32"/>
 
             <define symbol="boot.CHECK_MEMORY_EXT"/>
 

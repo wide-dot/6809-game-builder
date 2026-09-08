@@ -20,12 +20,12 @@
 ;   +11 : T11 stress : 128 unload/load/relink cycles of dd/ee variants over
 ;         the same destination, hub extern refs flip checked each cycle,
 ;         pool/index stability ($01 pass, $F1..$F5 first failing check)
-;   +12 : T12 index growth : +6 export-only files (realloc beyond 8 slots),
+;   +12 : T12 index growth : +6 export-only files (past the 8 the old index started with),
 ;         symbol values resolved, mass unload ($01 pass, $F6..$F9)
 ;   +13 : T13 multi-sector directory : marker zz is the last INDEX entry,
 ;         its dir entry lives in the 3rd directory sector ($FA/$FB)
-;   +14 : T14 index churn : 16 cycles of +22 export-only files (realloc
-;         8->16->24->32 on first pass) then mass unload ($FC..$FE)
+;   +14 : T14 index churn : 16 cycles of +22 export-only files (32 slots
+;         at the peak, the index is sized by a define) then mass unload ($FC..$FE)
 ;   +15 : T15 multi-disk : switch to disk 1, load from it, cross-disk link
 ;         both ways, disk 0 files still linked, switch back ($EA..$EE)
 ;   +17 : T17 scene unload : loader.scene.unload deindexes every file the
@@ -391,7 +391,8 @@ init
 @res11  equ   *-1
         jsr   test.next
 
-        ; T12 : index growth beyond the initial 8 slots (realloc path) :
+        ; T12 : index growth beyond 8 entries (the growth used to realloc ;
+        ; the index is one block sized by loader.file.linkData.SLOTS since 08/09/2026) :
         ; +6 export-only files, check resolved values, then mass unload
         ;   $F6 count did not grow by 6
         ;   $F7 iface symbol values not resolved
@@ -479,8 +480,8 @@ init
         jsr   test.next
 
         ; T14 : index churn - 16 cycles of loading 22 export-only files
-        ; (iface + pad scenes ; first pass walks the realloc steps
-        ; 8->16->24->32) then mass-unloading them all
+        ; (iface + pad scenes ; the index peaks at 32 slots, the size
+        ; the config declares) then mass-unloading them all
         ;   $FC peak count wrong, $FD a pad value not resolved,
         ;   $FE an unload failed or floor count wrong
         lda   #$01

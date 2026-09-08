@@ -92,8 +92,15 @@ class Toje:
         self.call("run_frames", {"n": hold})
         self.call("press_key", {"scancode": scancode, "down": False})
 
-    def boot_floppy(self, image):
+    def boot_floppy(self, image, settle=1200):
         """Amorce une disquette par l'outil boot_disk du plugin.
+
+        `settle` : trames laissees a l'outil apres la touche B. Un banc qui lit
+        ses propres temoins n'en a pas besoin et peut passer 1 : la longue
+        stabilisation laisse parfois l'emulation du lecteur dans un etat ou un
+        transfert de secteur ulterieur se fige en plein milieu (loader-ut,
+        08/09/2026 : image identique hors le loader, blocage reproductible a
+        1200 et absent a 1 — un artefact de toje, pas du loader).
 
         Ce fut longtemps une sequence ecrite a la main ici : reset, 90 trames,
         touche B, 300 trames, trois essais. Elle rate par moments — le 24/08
@@ -106,7 +113,7 @@ class Toje:
         Le scancode de la touche B est $0F (voir la description de l'outil) :
         on laisse le defaut plutot que de le reecrire.
         """
-        r = self.call("boot_disk", {"path": image, "settle_frames": 1200})
+        r = self.call("boot_disk", {"path": image, "settle_frames": settle})
         if not r.get("booted"):
             # pas un echec en soi : certains jeux n'ont pas rendu la main au
             # bout de settle_frames. L'appelant a ses propres temoins.
