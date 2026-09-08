@@ -174,7 +174,7 @@ public class ScenePlugin {
 				.addChild(equates).addChild(table).create();
 		ImmutableNode file = new ImmutableNode.Builder()
 				.name("file").addAttribute("name", name).addAttribute("section", section)
-				.addAttribute("codec", "none")
+				.addAttribute("codec", "none").addAttribute("scene", "true")
 				.addChild(lwasm).create();
 
 		DirEntryPlugin.run(file, ctx, media);

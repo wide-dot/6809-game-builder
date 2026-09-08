@@ -211,7 +211,7 @@ _tlsf.findSuitableBlock MACRO
         ldd   ,x                       ; load selected sl bitmap value
         anda  ,y                       ; apply mask to keep only selected sl and upper values
         andb  1,y                      ; apply mask to keep only selected sl and upper values
-        std   tlsf.ctz.in
+        subd  #0                       ; Z on the whole word, D kept for tlsf.ctz
         bne   @flmatch                 ; branch if free list exists at current fl
         ldx   #tlsf.map.mask           ; search for free list at upper fl
         ldb   tlsf.fl
@@ -221,7 +221,7 @@ _tlsf.findSuitableBlock MACRO
         ldd   tlsf.fl.bitmap
         anda  ,x                       ; apply mask to keep only upper fl values
         andb  1,x                      ; apply mask to keep only upper fl values
-        std   tlsf.ctz.in
+        subd  #0                       ; Z on the whole word, D kept for tlsf.ctz
         bne   >
             lda   #tlsf.err.malloc.OUT_OF_MEMORY
             sta   tlsf.err
@@ -229,14 +229,13 @@ _tlsf.findSuitableBlock MACRO
             leas  2,s                  ; WARNING ! dependency on calling tree, when using as a macro in malloc, should be 2
             jmp   ,x
 !       jsr   tlsf.ctz                 ; search first non empty fl index
-        stb   tlsf.fl
-        aslb                           ; mul by tlsf.sl.bitmap.size
+        sta   tlsf.fl
+        asla                           ; mul by tlsf.sl.bitmap.size
         ldx   #tlsf.sl.bitmaps
-        ldd   b,x                      ; load suitable sl bitmap value
-        std   tlsf.ctz.in              ; zero is not expected here, no test required
+        ldd   a,x                      ; load suitable sl bitmap value (never zero here)
 @flmatch
         jsr   tlsf.ctz                 ; search first non empty sl index
-        stb   tlsf.sl
+        sta   tlsf.sl
         ;rts
  ENDM
 
@@ -425,7 +424,6 @@ tlsf.free
 tlsf.mappingSearch
         std   tlsf.rsize
         ; round up requested size to next list
-        std   tlsf.bsr.in
         jsr   tlsf.bsr                          ; Split memory size in power of two
         cmpb  #tlsf.PAD_BITS+tlsf.SL_BITS
         bhi   >                                 ; Branch to round up if fl is not at minimum value
@@ -439,11 +437,12 @@ tlsf.mappingSearch
         comb
         addd  tlsf.rsize                        ; requested size is rounded up
         bra   tlsf.mapping
+tlsf.mapping.size fdb 0 ; the size being mapped, across tlsf.bsr
 tlsf.mappingFreeBlock
         anda  #^tlsf.mask.FREE_BLOCK
         addd  #1
 tlsf.mapping
-        std   tlsf.bsr.in
+        std   tlsf.mapping.size                 ; kept : tlsf.bsr destroys D, the shifts below want it
         jsr   tlsf.bsr                          ; Split memory size in power of two
         stb   tlsf.fl                           ; (..., 32>msize>=16 -> fl=5, 16>msize>=8 -> fl=4, ...)
         cmpb  #tlsf.PAD_BITS+tlsf.SL_BITS-1     ; Test if there is a fl bit
@@ -456,7 +455,7 @@ tlsf.mapping
         aslb                                    ; 2 bytes of instructions for each element of @rshift table
         ldx   #@rshift-4                        ; Saves 4 useless bytes (max 14 shift with slbits=1)
         abx                                     ; Cannot use indexed jump, so move x
-        ldd   tlsf.bsr.in                       ; Get rounded requested size to rescale sl based on fl
+        ldd   tlsf.mapping.size                 ; Get rounded requested size to rescale sl based on fl
         jmp   ,x
 @rshift
         lsra
@@ -631,24 +630,27 @@ tlsf.removeBlockHead
 
 ;-----------------------------------------------------------------
 ; tlsf.bsr
-; input  VAR : [tlsf.bsr.in] 16bit integer (1-xFFFF)
+; input  REG : [D] 16bit integer (1-xFFFF)
 ; output REG : [B] number of leading 0-bits
+; trash      : [A]
 ;-----------------------------------------------------------------
 ; Bit Scan Reverse (bsr) in a 16 bit integer,
 ; searches for the most significant set bit (1 bit).
 ; Output number is bit position from 0 to 15.
 ; A zero input value will result in an unexpected behaviour,
 ; value 0 will be returned.
+; The value comes in D (08/09/2026) : it used to come through a variable,
+; a std at every site and two extended loads here — the register costs
+; nothing to test and one tfr to move.
 ;-----------------------------------------------------------------
-tlsf.bsr.in fdb 0 ; input parameter
 tlsf.bsr
-        lda   tlsf.bsr.in
+        tsta
         beq   @lsb
 @msb
         ldb   #types.WORD_BITS-1
         bra   >
 @lsb
-            lda   tlsf.bsr.in+1
+            tfr   b,a
             ldb   #types.BYTE_BITS-1
 !       bita  #$f0
         bne   >
@@ -668,39 +670,41 @@ tlsf.bsr
 
 ;-----------------------------------------------------------------
 ; tlsf.ctz
-; input  VAR : [tlsf.ctz.in] 16bit integer
-; output REG : [B] number of trailing 0-bits
+; input  REG : [D] 16bit integer
+; output REG : [A] number of trailing 0-bits
+; trash      : [B]
 ;-----------------------------------------------------------------
 ; Count trailing zeros in a 16 bit integer,
 ; also known as Number of trailing zeros (ntz)
 ; Output number is from 0 to 15
 ; A zero input value will result in an unexpected behaviour,
 ; value 15 will be returned.
+; The value comes in D and the count goes out in A (08/09/2026) : the low
+; byte is scanned where it already is, B, so the common case moves nothing.
 ;-----------------------------------------------------------------
-tlsf.ctz.in fdb 0 ; input parameter
 tlsf.ctz
-        lda   tlsf.ctz.in+1
+        tstb
         beq   @msb
 @lsb
-        clrb
+        clra
         bra   >
 @msb
-            lda   tlsf.ctz.in
-            ldb   #types.BYTE_BITS
-!       bita  #$0f
+            tfr   a,b
+            lda   #types.BYTE_BITS
+!       bitb  #$0f
         bne   >
-            addb  #4
-            lsra
-            lsra
-            lsra
-            lsra
-!       bita  #$03
+            adda  #4
+            lsrb
+            lsrb
+            lsrb
+            lsrb
+!       bitb  #$03
         bne   >
-            addb  #2
-            lsra
-            lsra
-!       bita  #$01
+            adda  #2
+            lsrb
+            lsrb
+!       bitb  #$01
         bne   >
-            incb
+            inca
 !       rts
 

@@ -18,12 +18,14 @@ loader.composition.load.IDX     equ   36 ; Converge RAM to a declared state (X =
 loader.composition.set.IDX      equ   39 ; Declare the resident state without loading (X = its table, 0 = nothing)
 loader.progress.hook.set.IDX    equ   42 ; Install a progress hook (X = routine, 0 = none) and reset the counters
 loader.dir.unload.IDX           equ   45 ; Give the current directory's buffer back to the pool (no-op if none)
+loader.loadbar.set.IDX          equ   48 ; Install the loader's own loading bar (X = 7 bytes : video page, address x+40*y, width in columns, height, pixel byte) and reset the counters
 ; The progress hook : called by the loader after every addition to its
 ; progress counter — one unit per sector read (a re-read served from the
 ; cache counts too, the directory counts it), one per 512 bytes a compressed
 ; file expands to. On entry B = the units just added, X = the counters
-; (word done, word total — total is measured from the directory before a
-; scene loads, and before a composition's first read). Registers are free,
+; (word done, word total — total is what the directory says the arriving
+; scenes cost, counted by the builder, added before a scene loads and before
+; a composition's first read). Registers are free,
 ; DP is the loader's ($60 inside disk reads, $9F elsewhere : extended
 ; addressing only), the stack is the loader's. Budget : a hook runs between
 ; two sectors, in the one sector time the interleave leaves ; spend more

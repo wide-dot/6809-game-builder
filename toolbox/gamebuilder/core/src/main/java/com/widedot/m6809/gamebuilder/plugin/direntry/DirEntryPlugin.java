@@ -49,6 +49,77 @@ public class DirEntryPlugin {
 	}
 
 	/**
+	 * A scene table's entry carries a SECOND block : the units the loader's
+	 * progress counter will add when the scene loads — its table's sectors,
+	 * its files' data and link data sectors (partial ones included, the cache
+	 * counts them too), and one per 512 bytes a compressed file expands to.
+	 * Written by the directory once every payload is on the media (the
+	 * sector counts depend on where the bytes landed), read by the loader
+	 * before the first sector of the scene is read : the total is known in
+	 * advance without a single measuring read.
+	 *
+	 * No flag bit says so — the two free bits of the first byte are taken
+	 * (codec, link data) and the rest is the 14 bit size. The loader needs
+	 * none : it only reaches this block through a SCENE id, and a scene
+	 * table has no codec and no link data, so the block is always the second
+	 * one. Readers that walk a directory blindly (the decoder, the probes)
+	 * recognise it by its signature : bytes 2-3 are $FFFF, a track/face and
+	 * sector no file descriptor can carry, the rest zero.
+	 */
+	public static final int SCENE_UNITS_OFFSET = BLOCK_SIZE;
+	public static final byte[] SCENE_MARK = { (byte) 0xff, (byte) 0xff };
+
+	public static int blockCount(String codec, String linkSection, boolean scene) {
+		return blockCount(codec, linkSection) + (scene ? 1 : 0);
+	}
+
+	/** what the loader will count for this entry when a scene loads it (see {@link #SCENE_FLAG}) */
+	public static int progressUnits(DirEntry entry) {
+		byte[] d = entry.data;
+		int flags = d[0] & 0xff;
+		int units = 0;
+		// the data descriptor : bytes 2..7 of the file block, nsector at +6
+		boolean empty = (d[4] & 0xff) == 0xff && d[5] == 0;
+		if (!empty) {
+			units += d[6] & 0xff;
+		}
+		int block = BLOCK_SIZE;
+		if ((flags & 0b10000000) != 0) {
+			// compression block : the loader expands only when the offset is
+			// not zero (zero = stored raw, the codec did not pay off)
+			int coffset = ((d[block] & 0xff) << 8) | (d[block + 1] & 0xff);
+			if (coffset != 0) {
+				units += (entry.length + 511) / 512;
+			}
+			block += BLOCK_SIZE;
+		}
+		if ((flags & 0b01000000) != 0) {
+			// link block : same descriptor layout, nsector at +6 (zero when
+			// the declared link data turned out empty)
+			units += d[block + 6] & 0xff;
+		}
+		return units;
+	}
+
+	/** true when the entry's second block is a scene's units block */
+	public static boolean isScene(byte[] data) {
+		return data.length == 2 * BLOCK_SIZE && (data[0] & 0b11000000) == 0
+				&& data[SCENE_UNITS_OFFSET + 2] == SCENE_MARK[0]
+				&& data[SCENE_UNITS_OFFSET + 3] == SCENE_MARK[1];
+	}
+
+	public static void setSceneUnits(DirEntry entry, int units) throws Exception {
+		if (!isScene(entry.data)) {
+			throw new Exception(entry.name + " is not a scene entry : no block to hold its units");
+		}
+		if (units > 0xffff) {
+			throw new Exception(entry.name + " : " + units + " progress units do not fit a word");
+		}
+		entry.data[SCENE_UNITS_OFFSET] = (byte) ((units >> 8) & 0xff);
+		entry.data[SCENE_UNITS_OFFSET + 1] = (byte) (units & 0xff);
+	}
+
+	/**
 	 * The codec a file actually gets : compression is the default, the word
 	 * is the exception (phase 6 of the target-model migration). An absent
 	 * attribute means zx0 — the raw fallback already stores what does not
@@ -181,6 +252,7 @@ public class DirEntryPlugin {
 		String codec = effectiveCodec(Attribute.getStringOpt(node, ctx, "codec"));
 		String linkSection = Attribute.getStringOpt(node, ctx, "linkdata");
 		boolean linkDeclared = (linkSection!=null?true:false);
+		boolean scene = Attribute.getBoolean(node, ctx, "scene", false);
 		// how this file's references are resolved — see BakeMode. Declared
 		// here, in the configuration that places everything, never in the
 		// source : the same unit can be fully linked in one project and fully
@@ -455,7 +527,18 @@ public class DirEntryPlugin {
 			i += 8;
 		}
 			
-		int expected = blockCount(codec, linkSection) * BLOCK_SIZE;
+		if (scene) {
+			if (codec != null || linkDeclared) {
+				throw new Exception(name + ": a scene table carries neither a codec nor link data");
+			}
+			// the units block, filled by the directory after the flush ; its
+			// signature now
+			file[i + 2] = SCENE_MARK[0];
+			file[i + 3] = SCENE_MARK[1];
+			i += BLOCK_SIZE;
+		}
+
+		int expected = blockCount(codec, linkSection, scene) * BLOCK_SIZE;
 		if (i != expected) {
 			throw new Exception(name + ": emitted a " + i + " byte directory entry while "
 					+ expected + " bytes were reserved for it. File ids are indexes into"

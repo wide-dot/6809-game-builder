@@ -516,21 +516,24 @@ still link it — and the answers are independent.
 
 ## Block encoding is automatic
 
-The loader's three scene block types exist for table compactness (the table
-is malloc'ed from the TLSF pool at load time). They are never authored — the
+The loader's scene block types exist for table compactness (the table is
+malloc'ed from the TLSF pool at load time). They are never authored — the
 generator selects them :
 
 | shape | encoding | bytes |
 |---|---|---|
 | loads with their own destination | `%01` explicit triplets | 2 + 5n |
-| export-only lot | `%10` shared destination + ids | 5 + 2n |
-| same, when the ids chain (next id = id + blocks) | `%11` shared destination + start id | **7 flat** |
+| export-only lot, one per run of consecutive ids (next id = id + blocks) | `%11` shared destination + start id + count | **7 flat** |
 
-The id chain is re-checked at every build ; reordering the configuration
-silently falls back to `%10`. Declaring the files of a lot consecutively
-and listing them in the same order is what makes `%11` kick in.
+Ids are the builder's own doing (declaration order), so a lot declared
+consecutively in the directory, in the scene's order, is one block ; a lot
+scattered across the directory is several 7 byte blocks, and the build
+prints a line saying so. The `%10` encoding — a shared destination and a
+LIST of ids — was retired on 08/09/2026 : it tolerated an uncertainty the
+builder never has, and cost the loader a third walker. A stale image
+carrying one trips `log.scene.BLOCK_TYPE`.
 
-A sequential block (`%10`/`%11`) only ever carries **export-only files** —
+A sequential block (`%11`) only ever carries **export-only files** —
 files that write no byte, whose shared destination is the (0,0)
 pseudo-destination. The build enforces it (a data-carrying load without a
 place is an error), and the loader relies on it : it hands the block's

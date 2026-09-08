@@ -740,18 +740,27 @@ classes de taille par puissance de deux, matrice 378 → ~116 octets) ;
 3 996 octets, pool 4 196. Piège toje rencontré : la stabilisation de 1 200
 trames de `boot_floppy` pouvait figer un transfert de secteur plus tard
 (loader-ut, artefact d'émulation) — `loader_ut.py` amorce avec `settle=1`.
+Décision auteur : le loader reste générique, pas de `define` par capacité
+de la cible ; l'erreur « I/O Error » est rendue LISIBLE (mode 40 colonnes,
+page 0, palette 1/7 forcée blanc sur rouge, écran effacé — le registre
+d'adresse du EF9369 compte des octets, entrée n à 2n) et l'erreur de
+lecture d'un fichier y passe au lieu d'un reset (bilan §9). Loader 4 044.
 
 ## La barre de chargement : le loader compte, l'engine dessine (07/09/2026)
 
 `loader.progress.hook.set` (table de saut 42) installe un hook appelé à
-chaque unité : un secteur lu, 512 octets décompressés. Le total est mesuré
-au répertoire avant les lectures (`file.measure`, `scene.measure`, la
-passe de mesure de `composition.load`). L'effet de référence,
-`engine/graphics/loadbar/loadbar.asm`, est relogeable et DOIT être copié
-dans une place que rien ne charge (`<reserved name="loading.fx">` en
-r-type) : il tourne pendant que le chargement recouvre l'unité qui l'a
-apporté. Budget d'un hook : 2 000 cycles, un tour de disque au-delà.
-Étude §10. Le loader fait 4 744 octets : `INDEX` est passé au secteur 5.
+chaque unité : un secteur lu, 512 octets décompressés. Le total vient du
+répertoire : l'entrée d'une scène porte un second bloc (`dir.entry.units`,
+bit 5 de `bitfld`) où le builder écrit ce que son chargement comptera,
+lu avant la première lecture (depuis le 08/09 ; la mesure par le loader,
+`file.measure`/`scene.measure`, est retirée). L'effet de référence,
+`engine/graphics/loadbar/loadbar.asm`, est assemblé DANS le loader après
+son code et s'installe par `loader.loadbar.set` (table de saut 48, X = 7
+octets : page vidéo, adresse x+40·y, largeur, hauteur, octet de pixels) —
+depuis le 08/09 ; il fallait avant le recopier dans un `<reserved>` du
+layout, parce qu'il tourne pendant que le chargement recouvre l'unité qui
+l'apportait. Budget d'un hook : 2 000 cycles, un tour de disque au-delà.
+Étude §10. `INDEX` est passé au secteur 5 le 07/09 (loader > 18 secteurs).
 
 ## L'état résident se déclare : `loader.composition.set` (07/09/2026)
 

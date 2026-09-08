@@ -482,11 +482,10 @@
                  chaque etat, donc un moteur qui mordrait la frontiere refuse le
                  build au lieu de se faire ecraser en silence. -->
             <region name="stage" page="$01" address="$7C00"/>
-            <!-- L'effet de chargement (la barre du splash, engine/graphics/loadbar)
-                 tourne pendant que la scene de boot recouvre le moteur : il est
-                 recopie ici, un bloc que rien ne charge jamais, entre la plus
-                 grosse unite de stage ($7C00 + 2 238) et le temoin du banc. -->
-            <reserved name="loading.fx"   page="$01" address="$8700" size="$00F2"/>
+            <!-- L'effet de chargement (la barre du splash) vit dans le loader
+                 depuis le 08/09/2026 (loader.loadbar.set) : plus de bloc reserve
+                 ici — il en fallait un, l'effet tournant pendant que la scene de
+                 boot recouvre le moteur qui l'apportait. -->
             <reserved name="bench"        page="$01" address="$87F2" size="$0009"/>
             <!-- Les variables inter-main et les temoins du banc, en equates dans le
                  meme bloc (variables.asm, bench.const.asm). $94 et pas $90 :

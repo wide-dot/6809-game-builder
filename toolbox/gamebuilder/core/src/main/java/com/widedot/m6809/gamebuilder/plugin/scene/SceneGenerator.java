@@ -12,12 +12,17 @@ import java.util.Map;
  * [page][address][file id] triplets ; export-only loads (link data only) are
  * grouped into one sequential block at (0,0), where nothing is ever written.
  *
- * A sequential list whose ids follow the exact chain the loader walks
- * (next id = id + blocks of the entry) is emitted as one %11 block : 7 bytes
- * flat instead of 5+2n. The table lives in the TLSF pool at load time, so
- * every byte saved is RAM handed back to the game. The chain is re-checked at
- * every build ; reordering the configuration silently falls back to %10.
+ * A sequential list is emitted as %11 blocks — a shared destination, a start
+ * id and a count, 7 bytes flat — one per run of ids that follow the exact
+ * chain the loader walks (next id = id + blocks of the entry). The table lives
+ * in the TLSF pool at load time, so every byte saved is RAM handed back to
+ * the game. Ids are the builder's own doing (declaration order), so a lot
+ * declared consecutively is one block ; a lot scattered across the directory
+ * is several, and the build says so. The %10 encoding (a shared destination
+ * and a LIST of ids) is gone with it (08/09/2026) : it tolerated an
+ * uncertainty its emitter never had, and cost the loader a third walker.
  */
+@lombok.extern.slf4j.Slf4j
 public final class SceneGenerator {
 
 	/** a load with a resolved destination of its own */
@@ -67,7 +72,13 @@ public final class SceneGenerator {
 
 		if (!exportOnly.isEmpty()) {
 			out.append("        ; link data only (export-only files)\n");
-			sequentialBlock(out, 0, 0, exportOnly, idBlocks);
+			int blocks = sequentialBlocks(out, 0, 0, exportOnly, idBlocks);
+			if (blocks > 1) {
+				log.info("scene {} : its {} export-only files are {} runs of consecutive ids,"
+						+ " {} sequential blocks ({} bytes) — declaring them consecutively in the"
+						+ " directory, in the scene's order, would make one",
+						sceneName, exportOnly.size(), blocks, blocks, 7 * blocks);
+			}
 		}
 
 		out.append("        fdb   0                        ; end marker\n");
@@ -75,46 +86,43 @@ public final class SceneGenerator {
 	}
 
 	/**
-	 * One sequential block : %11 when the ids chain (7 bytes flat), %10
-	 * otherwise (5 + 2n bytes).
+	 * The sequential blocks of a lot : one %11 block (7 bytes) per run of
+	 * consecutive ids. Returns how many were emitted.
 	 */
-	private static void sequentialBlock(StringBuilder out, int page, int address,
+	private static int sequentialBlocks(StringBuilder out, int page, int address,
 			List<String> symbols, Map<String, int[]> idBlocks) {
-		if (chained(symbols, idBlocks)) {
-			out.append("        ; consecutive ids : one %11 block, 7 bytes flat\n");
-			out.append("        fdb   $C000+").append(symbols.size())
-			   .append("                  ; [type | nb files]\n\n");
-			out.append(String.format("        fcb   $%02X                      ; [destination - page id]%n", page));
-			out.append(String.format("        fdb   $%04X                    ; [destination - address]%n", address));
-			out.append("        fdb   ").append(symbols.get(0))
-			   .append("                    ; [start file id]\n");
-		} else {
-			out.append("        fdb   $8000+").append(symbols.size())
-			   .append("                  ; [type | nb files]\n\n");
-			out.append(String.format("        fcb   $%02X                      ; [destination - page id]%n", page));
-			out.append(String.format("        fdb   $%04X                    ; [destination - address]%n", address));
-			for (String symbol : symbols) {
-				out.append("        fdb   ").append(symbol).append('\n');
+		int blocks = 0;
+		int start = 0;
+		while (start < symbols.size()) {
+			int end = start + 1;
+			while (end < symbols.size() && chained(symbols.get(end - 1), symbols.get(end), idBlocks)) {
+				end++;
 			}
+			int count = end - start;
+			out.append("        ; ").append(count).append(" consecutive id")
+			   .append(count > 1 ? "s" : "").append(" : one %11 block, 7 bytes flat\n");
+			out.append("        fdb   $C000+").append(count)
+			   .append("                  ; [type | nb files]\n\n");
+			out.append(String.format("        fcb   $%02X                      ; [destination - page id]%n", page));
+			out.append(String.format("        fdb   $%04X                    ; [destination - address]%n", address));
+			out.append("        fdb   ").append(symbols.get(start))
+			   .append("                    ; [start file id]\n\n");
+			blocks++;
+			start = end;
 		}
-		out.append('\n');
+		return blocks;
 	}
 
 	/**
 	 * The %11 walk of the loader : next id = id + 1 + compressed + linked,
 	 * which is exactly the block count of the entry.
 	 */
-	private static boolean chained(List<String> symbols, Map<String, int[]> idBlocks) {
-		if (symbols.size() < 2 || idBlocks == null) {
+	private static boolean chained(String a, String b, Map<String, int[]> idBlocks) {
+		if (idBlocks == null) {
 			return false;
 		}
-		for (int k = 0; k + 1 < symbols.size(); k++) {
-			int[] a = idBlocks.get(symbols.get(k));
-			int[] b = idBlocks.get(symbols.get(k + 1));
-			if (a == null || b == null || b[0] != a[0] + a[1]) {
-				return false;
-			}
-		}
-		return true;
+		int[] ia = idBlocks.get(a);
+		int[] ib = idBlocks.get(b);
+		return ia != null && ib != null && ib[0] == ia[0] + ia[1];
 	}
 }

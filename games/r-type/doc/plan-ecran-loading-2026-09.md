@@ -739,3 +739,10 @@ avant son contenu, tables et liens dans `DATA` : une seule section en
 piste 1, onze répertoires colocalisés. Modèle : 90 → 64 s de disque sur la
 chaîne, ~3 s → ~0,7 s de déplacements par stage ; toje : title à la trame
 952 contre 1100.
+
+**FAIT le 08/09/2026 — la barre dans le loader.** L'effet est assemblé
+dans le loader (`loader.loadbar.set`, table 48, sept paramètres) ; le
+splash n'a plus de copie ni de `loading.fx`. Avec le total écrit par le
+builder dans l'entrée de chaque scène, la barre finit exactement au bout
+(585 = 585). Bilan de place : `docs/lang/fr/bilan-loader-8ko-2026-09.md`.
+

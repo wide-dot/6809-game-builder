@@ -62,6 +62,11 @@ log.scene.LOAD_OVERLAP equ $0301  ; B=destination page, X=file id loaded,
 * the layout does not describe — or a bench that must say its own peak.
 log.scene.INDEX_FULL   equ $0302  ; X=file id being indexed
 
+* A scene table block of a type the loader no longer walks : %10, the id list
+* the builder stopped emitting on 08/09/2026 (one %11 block per run of
+* consecutive ids since). Only a stale image can carry one.
+log.scene.BLOCK_TYPE   equ $0303  ; Y=the block
+
 
 * Cross-check: whoever also computes the block or the stack top must agree
 * with the address above. Two anchors that drift silently is exactly how the
