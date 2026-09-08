@@ -492,8 +492,12 @@
                  missileTgtTop/Bot vont a +147 — le layout dit ce que les equates font.
                  25/08/2026 : +5 octets pour l'ARMEMENT PERSISTANT (pod, bits,
                  vitesse), qui quitte la page directe parce qu'elle est balayee a
-                 chaque entree de stage — voir variables.asm. Pris a la pile. -->
-            <reserved name="globals"      page="$01" address="$9DCB" size="$009B"/>
+                 chaque entree de stage — voir variables.asm. Pris a la pile.
+                 08/09/2026 : $A3 = 163 octets, jusqu'a +162 (globals.tilesDrop).
+                 Les six globales +155..+160 (foeBgSolid .. cplWavePair) avaient
+                 ete ajoutees SANS agrandir le bloc : elles vivaient dans le
+                 plancher de la pile, que le pic mesure (84) n'atteignait pas. -->
+            <reserved name="globals"      page="$01" address="$9DCB" size="$00A3"/>
             <!-- La pile S plonge depuis $9EF0 (glb_system_stack = dp-16). 143 octets ;
                  profondeur mesuree au pic : 84 (2026-08-15, cf. ram.const.asm). Les
                  trois ancres (layout, GLOBALS_BASE, GLOBAL_VARIABLES) bougent ENSEMBLE.
@@ -501,8 +505,11 @@
                  le crochet de couche destructible (stage.gum.hook).
                  25/08/2026 : le plancher monte de cinq octets de plus, `globals`
                  ayant pris l'armement persistant. 138 octets, il reste 54 de marge
-                 sur le pic mesure — a re-mesurer avec les casts d'ennemis reels. -->
-            <reserved name="stack"        page="$01" address="$9E66" size="$008A"/>
+                 sur le pic mesure — a re-mesurer avec les casts d'ennemis reels.
+                 08/09/2026 : le plancher monte de huit octets ($9E6E), `globals`
+                 ayant repris ses six debordements plus tilesBehind et tilesDrop.
+                 130 octets. -->
+            <reserved name="stack"        page="$01" address="$9E6E" size="$0082"/>
             <!-- Le bloc log : contrat de sondes de engine/log/, lu sur watchpoint. -->
             <reserved name="log.block"    page="$01" address="$9EF0" size="$0010"/>
             <reserved name="dp"           page="$01" address="$9F00" size="$0100"/>
@@ -4049,6 +4056,16 @@
                     </lwasm>
                 </file>
 
+                <!-- La cascade de mort du gomander (08/09/2026) : le marcheur
+                     commun bosscascade et la table de CE boss, dans leur propre
+                     direntry — la page du cast est pleine a 38 octets pres.
+                     L'index y pointe le slot commun 29 (ObjID_bosscascade). -->
+                <file name="stage2.cascade" linkdata="DATA" arena="stage2.foes">
+                    <lwasm gensource="gen/stages/02/stage02-cascade.asm">
+                        <asm filename="src/enemies/gomander/cascade.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <!-- Brood + wick, sortis du cast plein a l'octet (31/08/2026,
                      campagne gomander) : zero couplage de label, un seul
                      direntry pour les deux — le repertoire est la denree
@@ -4152,6 +4169,7 @@
                     <load name="stage2.cast.imgWick"/>
                     <load name="stage2.cast.imgZoid"/>
                     <load name="stage2.cast.zoid"/>
+                    <load name="stage2.cascade"/>
                     <load name="stage2.cast.broodwick"/>
                     <load name="stage2.cast.imgBroodHit"/>
                     <load name="stage2.cast.imgZoidHit"/>

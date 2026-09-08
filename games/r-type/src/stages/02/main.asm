@@ -47,6 +47,7 @@ wick.Object       EXTERNAL
 wick.Unit         EXTERNAL
 brood.Object      EXTERNAL
 zoid.Object       EXTERNAL
+bosscascade.Object EXTERNAL       ; la cascade de mort du gomander (slot 29)
 outslay.Object    EXTERNAL
 ; Le segment de la chaine d'outslay : spawne par l'emetteur et non par la
 ; wave. Il porte DEUX identifiants (le corps et la tete/finalizer, dont les

@@ -58,10 +58,14 @@
 ; bit 2 du token (91af) : $C0 s'il est mis (la traversee), $50 sinon — les
 ; serpents du boss tirent plus souvent. Premiere echeance base+$28 (91a6).
 ;
+; LA MORT DU BOSS (40:954b / 9569, depuis le 08/09/2026) : chaque segment
+; arcade compare le tick du Gomander a 0xa523 (sa mort) et se decharge en
+; silence — pas de son, pas de score, pas d'explosion. Ici le boss leve
+; gomander.dying (meme unite, meme page) : la marche retire alors chaque
+; record comme le drain le fait a la fin du script (boite, slot, etat 3),
+; le maitre se rend dans la foulee, tete, finalizer et tirs bydo aussi.
+;
 ; CE QUI EST ABANDONNE (et pourquoi) :
-; - la mort chainee (40:954b) ne se declenche que sous Gomander (tick ==
-;   0xa523) ; nos serpents meurent par la fin du script. Au boss de la
-;   declencher le jour ou son corps existera.
 ; - le swap de palette du 2e loop (40:957c) : palette TO8 globale.
 ; - le bruitage 0x5d de la salve : le tir ennemi est muet en v2.
 ;
@@ -409,6 +413,8 @@ outslay.MasterLive
 
 ; --- 8) la fin de vie du maitre (retour de la marche) ------------------------
 outslay.MasterEnd
+        tst   gomander.dying           ; 9569 sous a523 : les records viennent
+        bne   @unload                  ; d'etre retires, le maitre suit
         lda   outslay.mState,u
         beq   @ret
         ldd   outslay.mFrames,u
@@ -416,7 +422,7 @@ outslay.MasterEnd
         cmpd  outslay.mEndF,u
         blt   @ret
         ; le dernier suiveur est passe : tout est eteint, on rend le slot
-        lda   #2
+@unload lda   #2
         sta   routine,u
         jmp   UnloadObject_u           ; jamais dessine : pas de DeleteObject
 @ret    rts
@@ -447,6 +453,9 @@ outslay.Walk
         ldd   ,x                       ; A = retard, B = role
         sta   outslay.wDelay
         stb   outslay.wRole
+        ; -- la mort du boss (954b) : tout s'eteint, le geste du drain -------
+        tst   gomander.dying
+        bne   @retire
         ; -- le drain : le record s'eteint quand sa lecture atteint la fin --
         ldb   outslay.mState,u
         lbeq  @pos
@@ -457,6 +466,7 @@ outslay.Walk
         subd  ,s++
         cmpd  outslay.mEndF,u
         lblt  @pos
+@retire
         ; retirer la boite de la liste — les operandes de Remove se patchent
         ; par appel, comme le fait le macro
         ldx   #AABB_list_ennemy
@@ -832,6 +842,8 @@ outslay.FolLive
         lda   routine,x
         cmpa  #1
         lbne  outslay.FolUnload
+        tst   gomander.dying           ; 9569 sous a523, la meme boucle que
+        lbne  outslay.FolUnload        ; les records
         ; ou en est MA lecture ? (horloge du maitre - mon retard)
         ldb   outslay.fDelay,u
         clra

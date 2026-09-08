@@ -12,13 +12,23 @@
 ;   40:a5a4 outslay_wavescript_tick . les 8 serpents du combat
 ;   1000:4d62 outslay_wavescript_table (token, delai) x 8
 ;   40:a4cd _arm_death_sequence ..... PV epuises : score, cascade, 384 trames
+;   40:a6a5 tick_gomander_death_explosion_cascade — l'enfant qui explose :
+;                                     352 trames, une explosion par trame
+;                                     paire aux cellules du corps (1000:5602)
 ;   40:a523 _tick_death_sequence .... la mort, jalon a 128
 ;   40:a473 _silent_unload .......... relance l'autoscroll et se decharge
 ;   1000:54ea gomander_orb_sprite_offsets — les 8 premiers octets sont la
 ;                                     boite du point faible : -16..+16 en X,
 ;                                     -8..+8 en Y (arcade) -> 6 x 6 en large.
 ;
-; CE QUE CETTE PASSE PORTE : la chronologie, les serpents, les deux sorties.
+; CE QUE CETTE PASSE PORTE : la chronologie, les serpents, les deux sorties,
+; et depuis le 08/09/2026 LA CASCADE DE MORT (a6a5) — un enfant commun,
+; bosscascade, sur la table de ce boss echantillonnee a 8 images par
+; seconde (cascade.unit.asm, tools/gen_gomander_death.py) — ainsi que le
+; RETRAIT DES SERPENTS a la mort (954b : tick == a523), par l'octet
+; gomander.dying que l'outslay lit. Les autres effets de la mort — fondu de
+; palette du fond, secousse, seconde deflagration — ne sont PAS reproduits
+; (decision auteur, 08/09/2026) ; le flash blink ne sert plus qu'au coup encaisse.
 ; CE QU'ELLE NE PORTE PAS, ET POURQUOI :
 ; - LE CORPS. Le Gomander n'est pas un sprite : `gomander_helper_blit_recipe`
 ;   (a578) recopie une bande de 4 x 12 cellules vers 0xd000, la VRAM de
@@ -81,9 +91,8 @@ gomander.delay    equ ext_variables+14   ; 14,15 compte a rebours du prochain
                                          ;       serpent (arcade [+0x22])
 gomander.hp       equ ext_variables+16   ; 16    PV restants — miroir de AABB.p,
                                          ;       qui passe a -128 hors fenetre
-gomander.d2nd     equ ext_variables+17   ; 17    la 2e deflagration est faite
-                                         ;       (l'ex-savedVel : la fin arcade
-                                         ;       ne re-scrolle jamais)
+                                         ; 17    libre (ex-d2nd : la 2e
+                                         ;       deflagration n'est plus jouee)
 
 ; L'ANIMATION DU TUBE. L'arcade repeint un rectangle de sa tilemap de fond
 ; (gomander_helper_blit_recipe, 0x40:A578) : le corps du boss est du DECOR, ce
@@ -128,11 +137,13 @@ gomander.ENGULF      equ 15              ; a2da : la TRAVERSEE apres un coup
 gomander.ORB_IDLE    equ 15              ; a3a6 : l'attente entre deux pulses
                                          ; sans coup — l'oeil bat toutes les
                                          ; 49 trames, pas toutes les 284
-gomander.DEATH_2NDBLAST equ $0100        ; a52b : la 2e deflagration de la mort
 gomander.WAVE_FIRST  equ $0164           ; a260 : 356, le premier serpent
 gomander.LATCH       equ $1740           ; a424 : le niveau enchaine
 gomander.TIMEOUT     equ $1780           ; a465 : delai depasse, aucun score
 gomander.DEATH       equ $0180           ; a518 : 384 trames de mort
+gomander.VP_Y        equ 11              ; scroll_vp_y_pos au repos (stage.asm,
+                                         ; stage-main.asm : « commun aux deux
+                                         ; niveaux ») — la base de la descente
 gomander.DEATH_LATCH equ $0080           ; a534 : le niveau enchaine
 
 ; --- les indices de routine ---------------------------------------------------
@@ -179,7 +190,12 @@ gomander.Init
         ; disparu avec le scroll-out.
         ldd   #0
         std   scroll_vel
-        ; (d2nd part a zero gratuitement : LoadObject zere l'OST)
+        clr   gomander.dying           ; un checkpoint ne recharge pas le cast :
+                                       ; la mort precedente ne doit pas survivre
+        clr   globals.tilesBehind      ; ... ni son decor passe derriere
+        clr   globals.tilesDrop        ; ... ni sa descente
+        lda   #gomander.VP_Y
+        sta   scroll_vp_y_pos
         ; LA PORTE SE REFERME D'OFFICE : un checkpoint ne recharge pas la
         ; carte depuis la disquette — mourir pendant la fenetre laissait le
         ; trou ouvert pour toute la reprise.
@@ -389,7 +405,7 @@ gomander.EyeStep
         ldb   #engulf.HOLD
         jmp   tilemap.animate
 
-; Le flash blink, partage entre le coup encaisse et le strobe d'agonie.
+; Le flash blink du coup encaisse (a2e9).
 gomander.Flash
         jsr   LoadObject_x
         beq   @ret                     ; pool plein : pas de flash, tant pis
@@ -402,19 +418,14 @@ gomander.Flash
         clr   tanimobj.final,x
 @ret    rts
 
-; La grosse explosion sur le corps, partagee entre la mort et la 2e
-; deflagration (l'arcade seme une cascade de 352 trames ; sans corps a
-; faire exploser on en pose une a chaque jalon).
-gomander.Boom
-        jsr   LoadObject_x
-        beq   @ret
-        _ldd  ObjID_explosion,explosion.subtype.big+explosion.sfx.cascade
-        std   id,x
-        ldd   x_pos,u
-        std   x_pos,x
-        ldd   y_pos,u
-        std   y_pos,x
-@ret    rts
+; LA MORT EST UN SIGNAL (a51d) : la borne installe _tick_death_sequence et
+; c'est cette adresse de tick que segments d'outslay et pellets comparent
+; (tick == a523) pour se retirer. Chez nous le maitre de l'outslay n'a pas
+; de pointeur sur le boss : un octet de la page du cast, que les deux unites
+; partagent, tient lieu d'adresse de tick. Leve par ArmDeath, retombe a
+; l'Init (checkpoint : le cast n'est pas recharge).
+gomander.dying
+        fcb   0
 
 ; --- la queue commune : chaque etat y saute (40:a3f4) ------------------------
 gomander.CombatJoin
@@ -531,8 +542,24 @@ gomander.ArmDeath
         jsr   gomander.GateClose       ; la mort peut tomber porte ouverte
         ldb   #gomander_scoreIdx       ; a4d5 : 0x8718
         jsr   AwardScore
-        jsr   gomander.Boom            ; a4db : la cascade arcade, reduite a
-                                       ; une explosion par jalon (cf. Boom)
+        lda   #1                       ; a51d : le signal des serpents (cf.
+        sta   gomander.dying           ; gomander.dying, lu par l'outslay)
+        sta   globals.tilesBehind      ; a4ff : la borne efface les bits de
+                                       ; priorite du plan avant — le decor
+                                       ; passe SOUS les sprites, la cascade
+                                       ; explose par-dessus le corps
+        ; a4db : l'enfant de cascade, a (0, +4) arcade -> (0, -3) ; pool
+        ; plein : pas de cascade, la mort se joue quand meme
+        jsr   LoadObject_x
+        beq   >
+        lda   #ObjID_bosscascade
+        sta   id,x
+        ldd   x_pos,u
+        std   x_pos,x
+        ldd   y_pos,u
+        subd  #3
+        std   y_pos,x
+!
         ldd   #gomander.DEATH          ; a518 : 384 trames
         std   gomander.timer,u
         lda   #gomander.rt.death
@@ -544,26 +571,44 @@ gomander.Death
         jsr   gomander.Countdown
         lble  gomander.Finish          ; a528 : compte a rebours fini
         cmpd  #gomander.DEATH_LATCH
-        bls   @finale
-        ; a52b : la 2e deflagration, au passage sous $100 — UNE fois
-        cmpd  #gomander.DEATH_2NDBLAST
-        bhi   @ret
-        tst   gomander.d2nd,u
-        bne   @ret
-        inc   gomander.d2nd,u
-        jsr   gomander.Boom            ; a56c : la 2e deflagration
-        bra   @ret
+        bhi   @ret                     ; a52b/a56c : la 2e deflagration (son
+                                       ; + fondu de palette) n'est pas jouee —
+                                       ; seule la cascade explose (decision
+                                       ; auteur, 08/09/2026)
 @finale
         lda   #1                       ; a545 : le niveau enchaine (fondu,
         sta   globals.bossDefeated     ; autopilote et releve par obj_endlevel)
-        ; LA SECOUSSE (a54a : le scroll Y du fond alterne violemment chaque
-        ; paire de trames). Notre overlay n'a pas de scroll vertical fin :
-        ; V2-DEVIATION, l'agonie est un STROBE du decor — le flash blink
-        ; retire toutes les 8 trames pendant les 128 dernieres.
-        ldb   gomander.timer+1,u
-        andb  #7
-        bne   @ret
-        jsr   gomander.Flash
+        ; LA DESCENTE ET LA SECOUSSE (a54a..a569, analyse doc/analyse-
+        ; explosions-boss-stage2-2026-09.md §8) : sur les 128 dernieres trames
+        ; la vitesse Y du plan AVANT alterne +0,75 px (deux trames) et -1,00 px
+        ; (deux trames) : -0,5 px net par cycle de quatre, le decor COULE de
+        ; 16 px en tremblant de 2 px. Chez nous le plan est la tilemap et sa
+        ; hauteur est scroll_vp_y_pos, lue a chaque trame : on la calcule
+        ; depuis le compteur (pas d'accumulateur : sur au frame drop), a
+        ; l'echelle 0,75 — 12 lignes en 128 trames, une ligne de secousse.
+        ;   e = 128 - compteur (0..127), k = e/4 : tendance = 3k/8 (0..11)
+        ;   r = e & 3 : 1 et 2 = les deux trames « vers le haut » du cycle
+        ; Le blackout de palette (a56c) n'est pas reproduit (decision auteur).
+        ldb   gomander.timer+1,u       ; 1..128 (D <= DEATH_LATCH : A = 0)
+        negb
+        addb  #gomander.DEATH_LATCH    ; e = 128 - compteur
+        pshs  b
+        lsrb
+        lsrb                           ; k = e / 4
+        lda   #3
+        mul                            ; D = 3k (<= 93, tient dans B)
+        lsrb
+        lsrb
+        lsrb                           ; B = 3k / 8, la tendance en lignes
+        lda   ,s+                      ; r = e & 3
+        anda  #3
+        beq   >
+        cmpa  #3
+        beq   >
+        decb                           ; r = 1, 2 : une ligne plus haut
+!       stb   globals.tilesDrop        ; ce qui nait sur le decor suit (cascade)
+        addb  #gomander.VP_Y
+        stb   scroll_vp_y_pos          ; le decor lui-meme
 @ret    rts
 
 ; --- la sortie, commune aux deux chemins (40:a473) ---------------------------
@@ -575,6 +620,8 @@ gomander.Finish
         ; glissement d'obj_endlevel est vraie immediatement, et la sequence
         ; commune s'arme sans un pixel de defilement. scroll_vel reste a zero.
         jsr   gomander.GateClose
+        lda   #1                       ; a44c : le jalon 0x1760 du timeout fait
+        sta   globals.tilesBehind      ; le meme geste que la mort (a4ff)
         ldd   glb_camera_x_pos
         std   scroll_max
         lda   #1

@@ -34,7 +34,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_shellEraser
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_saw
-        fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+stage2.cascade.page ; ObjID_dobkeratops_explosion = ObjID_bosscascade
         fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
         fcb   map.RAM_OVER_CART+common.counterairreflect.page ; ObjID_forcepod_counterairreflect
         fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata (commun)
@@ -102,7 +102,7 @@ Obj_Index_Address
         fdb   stage.placeholder.raw ; ObjID_shellEraser
         fdb   stage.placeholder ; ObjID_commonmissileflame
         fdb   stage.placeholder ; ObjID_dobkeratops_saw
-        fdb   stage.placeholder ; ObjID_dobkeratops_explosion
+        fdb   bosscascade.Object ; ObjID_dobkeratops_explosion = ObjID_bosscascade
         fdb   groundlaser.Object ; ObjID_forcepod_groundlaser
         fdb   counterairreflect.Object ; ObjID_forcepod_counterairreflect
         fdb   patapata.Object ; ObjID_patapata (commun)

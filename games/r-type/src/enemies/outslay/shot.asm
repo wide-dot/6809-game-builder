@@ -60,6 +60,10 @@ outslay.ShotInit
         std   AABB.rx,x
 
 outslay.ShotLive
+        ; -- la mort du boss (95f1 compare aussi le tick a a523) : le tir
+        ; s'eteint en silence, comme le serpent qui l'a lance ----------------
+        tst   gomander.dying
+        lbne  outslay.ShotDestroy
         ; -- l'image, EN PHASE pour toute la salve (95f1 n'ajoute pas BP>>3) --
         ldb   gfxlock.frame.count+1
         andb  #6                        ; 0/2/4/6 = deja le decalage d'un fdb

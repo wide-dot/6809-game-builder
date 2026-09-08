@@ -167,6 +167,8 @@ stage.stateKept
         clr   globals.realBoss         ; par defaut : le combat de substitution
         clr   globals.compilerDead     ; aucune piece de boss tombee
         clr   globals.plainBackdrop    ; le decor reprend ses droits
+        clr   globals.tilesBehind      ; ... et repasse DEVANT les sprites
+        clr   globals.tilesDrop        ; ... a sa hauteur (scroll_vp_y_pos = 11)
         clr   globals.foeBgSolid       ; le fond n'est du sol pour les ennemis
                                        ; terrestres que la ou le stage le dit
         ; LE CROCHET DE COUCHE DESTRUCTIBLE, neutre par defaut : les armes du
@@ -694,7 +696,15 @@ stage.frame.faded
         ; fondu — sauf le vaisseau, qui flotte sur le noir jusqu'au releve :
         ; stage.drawShip le peint seul, comme BuildSprites l'aurait fait.
         ; Etude : doc/etude-pixel-fade.md.
-        lda   stage.overlayPhase
+        ; LE DECOR DERRIERE, SUR DEMANDE (08/09/2026) : c'est le geste de la
+        ; borne a la mort d'un boss — elle efface les bits de priorite de ses
+        ; tuiles et tout le plan passe sous les sprites (etude : doc/etude-
+        ; priorite-tilemap-2026-09.md). Un tst par trame ; le dessin des tuiles
+        ; est une sous-routine appelee d'un des deux cotes de BuildSprites.
+        lda   globals.tilesBehind
+        beq   >
+        jsr   stage.frame.tiles
+!       lda   stage.overlayPhase
         cmpa  #endstage.PHASE_SHIPONLY
         blo   stage.frame.sprites
         jsr   stage.drawShip
@@ -702,38 +712,9 @@ stage.frame.faded
 stage.frame.sprites
         jsr   BuildSprites
 stage.frame.drawn
-
-        ; LE DECOR PAR-DESSUS LES SPRITES — ordre officiel du jeu depuis le
-        ; 21/08/2026 (decision auteur), sur TOUS les stages, celui a couche
-        ; mobile compris : un sprite passe DERRIERE le terrain, et le ciel
-        ; transparent de la carte le laisse voir partout ailleurs. C'est la
-        ; transparence exacte du plan arcade qui rend l'ordre tenable — avec
-        ; un ciel peint, la carte effacerait tout le champ de jeu.
-        ;
-        ; Le champ vient d'etre efface, le decor DOIT donc se repeindre chaque
-        ; trame ; Scroll ne leve glb_camera_move que quand la camera a bouge,
-        ; on le force. DrawTiles est autonome : il sauve la page cartouche a
-        ; l'entree, la restaure en sortie, et calcule lui-meme
-        ; glb_screen_location_1/2 — passer apres BuildSprites (qui les ecrit
-        ; aussi, par sprite) ne lui coute rien.
-        ; Sous le fondu, plus de decor a repeindre : cf. la garde en tete de
-        ; verrou. C'est le second des deux points ou la trame ecrasait la
-        ; dissolution.
-        lda   stage.overlayPhase
-        cmpa  #endstage.PHASE_FADE
-        bhs   stage.frame.noTiles
-        ; ...et rien non plus sous le FOND DE BOSS : le champ d'etoiles a pris
-        ; l'ecran, il n'y a plus de decor a repeindre. Meme raison que le
-        ; fondu, autre moment.
-        lda   globals.plainBackdrop
-        bne   stage.frame.noTiles
-        lda   #1
-        sta   glb_camera_move
- IFDEF stage.TILES_COLS
-        jsr   DrawTilesCols
- ELSE
-        jsr   DrawTiles
- ENDC
+        lda   globals.tilesBehind
+        bne   stage.frame.noTiles      ; deja peint, sous les sprites
+        jsr   stage.frame.tiles
 stage.frame.noTiles
 
         ; Les surimpressions, selon la phase de fin de niveau que CE stage
@@ -1337,3 +1318,47 @@ gfxlock.off
 gfxlock.loop
         _gfxlock.loop
         rts
+
+* ---------------------------------------------------------------------------
+* stage.frame.tiles — le decor de la trame, dans le verrou
+*
+* LE DECOR PAR-DESSUS LES SPRITES — ordre officiel du jeu depuis le
+* 21/08/2026 (decision auteur), sur TOUS les stages, celui a couche mobile
+* compris : un sprite passe DERRIERE le terrain, et le ciel transparent de
+* la carte le laisse voir partout ailleurs. C'est la transparence exacte du
+* plan arcade qui rend l'ordre tenable — avec un ciel peint, la carte
+* effacerait tout le champ de jeu. Et c'est la borne : sur les stages 1 a 5,
+* toutes les cellules du plan avant portent l'attribut de priorite (groupe 2
+* de MAME, la tuile entiere devant les sprites — doc/etude-priorite-tilemap-
+* 2026-09.md). Depuis le 08/09/2026 la boucle appelle cette routine AVANT
+* BuildSprites quand globals.tilesBehind est leve (la mort d'un boss),
+* APRES sinon.
+*
+* Le champ vient d'etre efface, le decor DOIT donc se repeindre chaque
+* trame ; Scroll ne leve glb_camera_move que quand la camera a bouge, on le
+* force. DrawTiles est autonome : il sauve la page cartouche a l'entree, la
+* restaure en sortie, et calcule lui-meme glb_screen_location_1/2 — passer
+* apres BuildSprites (qui les ecrit aussi, par sprite) ne lui coute rien.
+* ---------------------------------------------------------------------------
+stage.frame.tiles
+        ; Sous le fondu, plus de decor a repeindre : cf. la garde en tete de
+        ; verrou. C'est le second des deux points ou la trame ecrasait la
+        ; dissolution.
+        lda   stage.overlayPhase
+        cmpa  #endstage.PHASE_FADE
+        bhs   @done
+        ; ...et rien non plus sous le FOND DE BOSS : le champ d'etoiles a pris
+        ; l'ecran, il n'y a plus de decor a repeindre. Meme raison que le
+        ; fondu, autre moment.
+        lda   globals.plainBackdrop
+        bne   @done
+        lda   #1
+        sta   glb_camera_move
+ IFDEF stage.TILES_COLS
+        jsr   DrawTilesCols
+ ELSE
+        jsr   DrawTiles
+ ENDC
+@done   rts
+
+
