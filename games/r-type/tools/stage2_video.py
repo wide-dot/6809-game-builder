@@ -23,6 +23,25 @@ DIFFERENCE avec stage1_video.py : on entre DIRECTEMENT au stage 2 (tct.pstage
 = 2), sans jouer le stage 1. Le declencheur reste l'entree de la region stage,
 ou le loader saute quand le stage 2 prend la main. La capture s'arrete quand
 bench.stage n'est plus 2.
+
+Options d'environnement (08/09/2026) :
+  FRAMEDROP_MAX=N  pose gfxlock.frameDrop.max a N une fois le stage en place
+                   (et le repose a chaque pas). 0 = PLUS DE PLAFOND : le jeu
+                   avance de toutes les trames ecoulees, la video est au
+                   rythme arcade quel que soit le debit du rendu. Le stage
+                   ecrit 8 a son entree ; la capture rend la valeur du jeu.
+
+LA VIDEO N'AGIT PAS SUR LE JEU par defaut (decision auteur, 08/09/2026) :
+aucune mort scriptee, aucune action joueur — elle enregistre le comportement
+du jeu livre a lui-meme, pour la comparaison cote a cote avec la borne. Le
+boss se termine donc par son timeout, comme sur la borne sans joueur.
+
+  KILL_BOSS=1      EXCEPTION EXPLICITE, pour VOIR la sequence de mort (le
+                   vaisseau ne tire pas) : la boite du Gomander est posee a 0
+                   dans un etat ou HitCheck tourne, le geste de
+                   tools/gomander_death_probe.py. Jamais pour une comparaison.
+  KILL_AFTER=N     avec KILL_BOSS : trames de combat laissees avant le coup
+                   fatal (defaut 0 = sa premiere fenetre, ~10 s).
 """
 import os, re, sys
 
@@ -62,6 +81,26 @@ TRIGGER = layout('stage.address')            # ou le loader saute pour le stage
 _, ENG  = unit_base('common.engine')
 WAIT    = ENG + equ('gen/common/build/engine.lwmap', 'gfxlock.bufferSwap.wait')
 INV     = ENG + equ('gen/common/build/engine.lwmap', 'cheat.invincible')
+FDMAX   = ENG + equ('gen/common/build/engine.lwmap', 'gfxlock.frameDrop.max')
+FRAMEDROP_MAX = os.environ.get('FRAMEDROP_MAX')
+KILL_BOSS = os.environ.get('KILL_BOSS') == '1'
+KILL_AFTER = int(os.environ.get('KILL_AFTER', '0'))
+
+# le pool d'objets, pour trouver le boss (ram.const.asm / constants.asm)
+POOL, NOBJ, OSZ, ROUTINE, EXT = 0x4000, 60, 63, 34, 38
+ID_GOMANDER = 40                             # src/stages/02/objid.const.asm
+
+
+def find_gomander(t):
+    """(adresse OST, routine) du gomander vivant, ou None."""
+    raw = []
+    for off in range(0, NOBJ * OSZ, 256):
+        raw += t.read('%04X' % (POOL + off), min(256, NOBJ * OSZ - off))
+    for i in range(NOBJ):
+        o = raw[i * OSZ:(i + 1) * OSZ]
+        if o[0] == ID_GOMANDER:
+            return POOL + i * OSZ, o[ROUTINE]
+    return None
 
 out = os.path.abspath(sys.argv[2] if len(sys.argv) > 2 else 'dist/stage2.avi')
 os.makedirs(os.path.dirname(out), exist_ok=True)
@@ -115,7 +154,34 @@ if not inv:
 os.environ.pop('TOJE_FAST', None)            # le turbo est coupe de toute facon
 BUDGET = int(os.environ.get('STAGE_FRAMES', '30000'))
 done = 0
+killed = False
+boss_seen = None                             # t~ de l'apparition du boss
 while done < BUDGET:
+    if FRAMEDROP_MAX is not None:
+        t.call('write_memory', {'addr': '%04X' % FDMAX,
+                                'bytes': ['%02X' % int(FRAMEDROP_MAX)]})
+    if KILL_BOSS and not killed:
+        g = find_gomander(t)
+        if g is not None and boss_seen is None:
+            boss_seen = done
+        if g is not None and done - boss_seen >= KILL_AFTER:
+            # une passe fine : la fenetre vulnerable (phaseA 2, orbArm 3,
+            # phaseB 4, engulf 5) dure 15 a 30 trames
+            for _ in range(50):
+                base, rt = g
+                if rt in (2, 3, 4, 5):
+                    t.call('write_memory', {'addr': '%04X' % (base + EXT), 'bytes': ['00']})
+                    killed = True
+                    print('t~%5d  gomander tue (routine %d)' % (done, rt), flush=True)
+                    break
+                if rt >= 6:
+                    killed = True
+                    break
+                r = t.call('run_frames', {'n': 10, 'timeout_ms': 600000})
+                done += r.get('frames', 10) if isinstance(r, dict) else 10
+                g = find_gomander(t)
+                if g is None:
+                    break
     step = min(500, BUDGET - done)
     r = t.call('run_frames', {'n': step, 'timeout_ms': 600000})
     done += r.get('frames', step) if isinstance(r, dict) else step

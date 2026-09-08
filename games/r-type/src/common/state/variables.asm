@@ -5,7 +5,7 @@
 ; pas de valeur propre. En v2 le contenu resident s'arrete bien plus bas et
 ; l'ancre est un choix de layout : $9E80 donne un bloc reserve de $80 pile, et
 ; il se retient. Les temoins du banc partagent ce bloc (bench.const.asm).
-GLOBAL_VARIABLES         equ $9DCB ; ancre du bloc reserve `globals` ($9DCB-$9E5E)
+GLOBAL_VARIABLES         equ $9DCB ; ancre du bloc reserve `globals` ($9DCB-$9E6C, taille $A2)
                                    ; = GLOBALS_BASE (ram.const.asm) = layout —
                                    ; les trois bougent ENSEMBLE (2026-08-10 :
                                    ; -117 pour agrandir la pile, pool 45 -> 44)
@@ -190,6 +190,29 @@ globals.realBoss           equ GLOBAL_VARIABLES+158 ; 1 octet, 0 = substitution
 ; boss a la fois : le rythme d'une de ses armes est un etat de partie.
 globals.cplWave            equ GLOBAL_VARIABLES+159 ; 1 octet, trames avant la paire
 globals.cplWavePair        equ GLOBAL_VARIABLES+160 ; 1 octet, paires laches
+
+* LE DECOR DERRIERE LES SPRITES (08/09/2026, etude doc/etude-priorite-
+* tilemap-2026-09.md). Sur la borne la priorite est un attribut de chaque
+* tuile, et les stages 1 a 5 ont TOUT leur plan avant devant les sprites —
+* l'ordre officiel de la boucle (tuiles apres BuildSprites). A la mort du
+* Gomander (_arm_death_sequence, 40:a4cd) et au timeout du combat (jalon
+* 0x1760), la borne efface les bits de priorite de 1152 cellules : le decor
+* passe derriere, la cascade explose par-dessus le corps. Cet octet est ce
+* geste : leve, la boucle peint les tuiles AVANT les sprites. Le stage le
+* remet a zero a son entree ; le boss qui le leve le rend a son Init
+* (checkpoint). Un tst par trame, rien d'autre.
+globals.tilesBehind        equ GLOBAL_VARIABLES+161 ; 1 octet, 0 = decor devant
+
+* LA DESCENTE DU DECOR (08/09/2026, analyse doc/analyse-explosions-boss-
+* stage2-2026-09.md §8). A la mort du Gomander la borne fait couler son plan
+* avant de 16 px en 128 trames, avec une secousse de 2 px (a54a : la vitesse
+* Y alterne +0,75 / -1,00 par paires de trames). Chez nous c'est
+* scroll_vp_y_pos que le boss deplace ; cet octet SIGNE dit de combien de
+* lignes le decor est descendu (11 + cet octet = scroll_vp_y_pos), pour que
+* ce qui nait sur le decor le suive — la cascade, comme l'acteur arcade qui
+* ajoute le delta 0x2ED2 a son ancre. Zero hors de la mort ; le stage le
+* remet a zero a son entree, le boss a son Init.
+globals.tilesDrop          equ GLOBAL_VARIABLES+162 ; 1 octet signe, lignes
 ; 5ABA : LA VARIANTE DU COMPILER, tiree UNE FOIS pour le boss entier. La borne
 ; tire un slot parmi huit ; chaque slot donne la MEME lettre (A/B/C) aux trois
 ; pieces, chacune avec son propre script. Je tirais la lettre separement dans

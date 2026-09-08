@@ -41,6 +41,11 @@ ObjID_shellEraser equ 26
 ObjID_commonmissileflame equ 27
 ObjID_dobkeratops_saw equ 28
 ObjID_dobkeratops_explosion equ 29
+* Le meme slot vu des stages 2-8 : LA CASCADE DE MORT DU BOSS. Le stage 1 y
+* met la sequence v1 du Dobkeratops, les autres le marcheur commun
+* (src/common/fx/bosscascade/obj.asm) avec la table de leur boss — deux
+* unites alternatives, un seul identifiant (08/09/2026).
+ObjID_bosscascade equ ObjID_dobkeratops_explosion
 * Le laser de sol : la TETE de faisceau. Le renderer groupe de ses
 * suiveurs sera une ROUTINE de ce meme objet, comme reboundmgr — il ne
 * coute pas d'identifiant.
