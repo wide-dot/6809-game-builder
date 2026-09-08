@@ -41,6 +41,9 @@ public class DirEntryPlugin {
 	 * @param codec       the file codec attribute, null when uncompressed
 	 * @param linkSection the linkdata attribute, null when not linked
 	 */
+	/** how a file's link data payload is named on the media, after the file */
+	public static final String LINKDATA_SUFFIX = " (linkdata)";
+
 	public static int blockCount(String codec, String linkSection) {
 		return 1 + (codec != null ? 1 : 0) + (linkSection != null ? 1 : 0);
 	}
@@ -466,7 +469,7 @@ public class DirEntryPlugin {
 		}
 		if (hasLinkData) {
 			entry.pending.add(new DirEntry.Pending(linkSection, linkdata.data,
-					name + " (linkdata)", linkPatch));
+					name + LINKDATA_SUFFIX, linkPatch));
 		}
 	    media.addDirEntry(entry);
 		

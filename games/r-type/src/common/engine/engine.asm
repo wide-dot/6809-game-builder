@@ -83,6 +83,8 @@ boot.entry
         _ram.data.set #loader.PAGE         ; le loader vit dans la fenetre DATA
         ldx   #compositions.boot
         jsr   loader.ADDRESS+loader.composition.set.IDX
+        ldx   #0                           ; la barre du splash a fini son travail :
+        jsr   loader.ADDRESS+loader.progress.hook.set.IDX ; plus de hook
         clrb                               ; 0 : le title
         jmp   game.stage.switch
 

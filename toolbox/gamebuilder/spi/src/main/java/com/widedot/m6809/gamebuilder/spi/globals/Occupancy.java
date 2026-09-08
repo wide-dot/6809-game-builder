@@ -54,15 +54,41 @@ public class Occupancy {
 		public final int tracks;
 		public final int sectors;
 		public final int sectorSize;
+		/**
+		 * How the image is interleaved, for the head-path model : the sector
+		 * NUMBERS in the loader's reading order (logical index 0, 1, 2… of a
+		 * track), the physical slot of every sector number (index = number−1,
+		 * from the format's hard skip), and the reading-order index the media
+		 * starts each track at (indexed by track, one skew period long). Null
+		 * arrays on a media without geometry.
+		 */
+		public final int softskip;
+		public final int softskew;
+		public final int hardskip;
+		public final int[] readOrder;
+		public final int[] slotOfNumber;
+		public final int[] skewByTrack;
 
 		public Instance(String name, int capacity, int faces, int tracks, int sectors,
 				int sectorSize) {
+			this(name, capacity, faces, tracks, sectors, sectorSize, 1, 1, 1, null, null, null);
+		}
+
+		public Instance(String name, int capacity, int faces, int tracks, int sectors,
+				int sectorSize, int softskip, int softskew, int hardskip, int[] readOrder,
+				int[] slotOfNumber, int[] skewByTrack) {
 			this.name = name;
 			this.capacity = capacity;
 			this.faces = faces;
 			this.tracks = tracks;
 			this.sectors = sectors;
 			this.sectorSize = sectorSize;
+			this.softskip = softskip;
+			this.softskew = softskew;
+			this.hardskip = hardskip;
+			this.readOrder = readOrder;
+			this.slotOfNumber = slotOfNumber;
+			this.skewByTrack = skewByTrack;
 		}
 	}
 

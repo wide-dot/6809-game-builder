@@ -30,10 +30,15 @@ def read_dir(face,track,idx):
             p+=8
         entries[fid]=e; fid+=1+comp+link
     return base,entries
-locs=[(1,0,3),(1,0,9),(1,79,0),(0,79,0),(0,79,3),(0,79,5),(0,79,7),(0,79,9),(0,79,11),(1,0,13)]
+# les emplacements des repertoires, tels que le builder les a ecrits pour le loader
+locs=[]
+for l in open("gen/directories/locations.asm"):
+    m=re.match(r"\s+fcb\s+(\d+),(\d+),(\d+),(\d+)\s+; directory", l)
+    if m: locs.append((int(m.group(2)),int(m.group(3)),int(m.group(4))))
 allE={}
 for d,(face,track,idx) in enumerate(locs):
     base,ent=read_dir(face,track,idx); allE.update(ent)
+    if __name__=="__main__": print("repertoire %2d : face %d piste %2d index %2d, %d entrees"%(d,face,track,idx,len(ent)))
 names={}
 for f in glob.glob("gen/directories/*/entries.asm"):
     for l in open(f):

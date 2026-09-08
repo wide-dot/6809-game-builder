@@ -42,7 +42,8 @@ boss included) ; the R-Type port on this generation already runs its stages
 - convert pcm, vgm audio data (`vgm2ymm`, `vgm2vgc`, `vgm2sfx`)
 - compress code and data (zx0)
 - validate the configuration against a generated XSD, and report RAM
-  occupancy per scene, link cost and disk seeks
+  occupancy per scene, link cost and the drive's head path per state
+  change (a costed model, parameters editable on the page)
 
 #### Engine
 - boot loader, file and scene loader, hot scene swap from disk

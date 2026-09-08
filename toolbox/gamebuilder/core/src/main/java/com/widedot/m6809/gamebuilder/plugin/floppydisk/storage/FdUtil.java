@@ -93,7 +93,16 @@ public class FdUtil implements MediaDataInterface{
 			log.error(m);
 			throw new Exception(m);
 		}
-		
+		write(s, srcData);
+    }
+
+    /**
+     * the same full-sector write, on ANY cursor : the section's own, or the
+     * copy a reservation kept. The journal names the section the cursor
+     * belongs to.
+     */
+    private void write(Section s, byte[] srcData) throws Exception {
+		String location = s.name;
 		int dstIdx = getIndex(s.face, s.track, s.sector);
 		log.debug("write sector - section: {}, track: {}, face: {}, sector: {}, remaining bytes: {}",
 				s.name,
@@ -141,6 +150,78 @@ public class FdUtil implements MediaDataInterface{
 
     }
     
+    /**
+     * Reserve a run of sectors at the section's cursor, whole and on one
+     * track/face, for a colocated directory. A sector the cursor has already
+     * started (the previous file ended in it) is skipped, and so is a track
+     * tail shorter than the run : those sectors are simply lost to the
+     * section — a directory is a few sectors, the loss is bounded by one
+     * partial sector plus one short tail. The cursor moves past the run ;
+     * nothing is written until {@link #writeReserved}.
+     */
+    @Override
+    public Reservation reserveContiguous(String location, int sectors, String name)
+            throws Exception {
+        Section s = storage.sections.get(location);
+        if (s == null) {
+            String m = "Unknown Section: " + location;
+            log.error(m);
+            throw new Exception(m);
+        }
+        if (sectors < 1 || sectors > storage.segment.sectors) {
+            throw new Exception(String.format(
+                "'%s' needs %d contiguous sectors, a track holds %d : it cannot be read as one run",
+                name, sectors, storage.segment.sectors));
+        }
+        // a sector already begun cannot start a run the loader reads whole
+        if (dataMask[getIndex(s)]) {
+            nextSector(s);
+        }
+        int free = storage.segment.sectors - (s.sector - 1);
+        if (sectors > free) {
+            log.debug("reserve '{}' : {} sectors do not fit in the {} left on track {} face {}, skipping to the next face",
+                    name, sectors, free, s.track, s.face);
+            while (s.sector != 1) {
+                nextSector(s);
+            }
+        }
+        Section at = new Section(s);
+        at.name = s.name;
+        for (int i = 0; i < sectors; i++) {
+            if (dataMask[getIndex(s)]) {
+                String m = String.format(
+                    "'%s' cannot reserve sector %d of track %d face %d : already written by another section",
+                    name, s.sector, s.track, s.face);
+                log.error(m);
+                throw new Exception(m);
+            }
+            nextSector(s);
+        }
+        log.debug("reserved {} sectors for '{}' at track {} face {} sector {}",
+                sectors, name, at.track, at.face, at.sector);
+        return new Reservation(at.face, at.track, at.sector, sectors, at);
+    }
+
+    @Override
+    public void writeReserved(Reservation reservation, byte[] srcData, String name)
+            throws Exception {
+        int need = (int) Math.ceil(srcData.length / (double) storage.segment.sectorSize);
+        if (need > reservation.sectors) {
+            throw new Exception(String.format(
+                "'%s' grew to %d sectors after reserving %d : the reservation is taken before the"
+                + " content is flushed, its size must not change in between", name, need,
+                reservation.sectors));
+        }
+        Section at = new Section((Section) reservation.handle);
+        at.name = ((Section) reservation.handle).name;
+        pendingName = name;
+        try {
+            write(at, srcData);
+        } finally {
+            pendingName = null;
+        }
+    }
+
     /**
      * write that refuses to cross the section's track/face boundary — see the
      * interface javadoc for the loader contract this enforces. The check runs

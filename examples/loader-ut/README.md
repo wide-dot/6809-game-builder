@@ -48,7 +48,7 @@ operation — see the loader analysis in the repository `CLAUDE.md`.
 | +31 | final status |
 
 The whole bench runs inside a deliberately reduced memory pool
-(`loader.DEFAULT_DYNAMIC_MEMORY_SIZE = $0E00`, 3.5 KB) holding a 3-sector
+(`loader.DEFAULT_DYNAMIC_MEMORY_SIZE = $0EF1`, 3.7 KB, the directory buffer allocated inside it since 07/09/2026) holding a 3-sector
 directory, a 32-slot index at peak and all link data blobs — any alloc/free
 imbalance or fragmentation drift aborts the run.
 

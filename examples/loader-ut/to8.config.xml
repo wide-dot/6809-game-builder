@@ -452,7 +452,7 @@
             <!-- the top of the pool at $BE50, where it has always been ; it  -->
             <!-- moves when the loader's size does, since the pool follows the -->
             <!-- loader in memory. -->
-            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$0EE1"/>
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$0EF1"/> <!-- +$10 le 07/09 : le tampon de repertoire est alloue dans le pool (768 o + 4 d en-tete), il en etait retranche -->
 
             <define symbol="boot.CHECK_MEMORY_EXT"/>
 

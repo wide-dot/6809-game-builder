@@ -12,7 +12,7 @@ after +31 is written; on no-verdict the engine log block is dumped.
 
 Exit code: 0 pass, 1 fail, 2 no verdict.
 """
-import sys, time
+import sys, os, time
 from mcp import Toje
 
 disk0, disk1 = sys.argv[1], sys.argv[2]
@@ -52,6 +52,33 @@ for i in range(600):
             else:
                 print(f"LOADER-UT FAIL (status $0D but T18 log.code={code:04X},"
                       " expected $8301)")
+                # the whole log block : page, site, and D/X/Y/U as photographed
+                # (a tlsf trap, $8101, carries the tlsf.err code in A)
+                lb = t.read("9EF0", 13)
+                print("  log.block : page %02X pc %04X D %04X X %04X Y %04X U %04X"
+                      % (lb[2], (lb[3] << 8) | lb[4], (lb[5] << 8) | lb[6],
+                         (lb[7] << 8) | lb[8], (lb[9] << 8) | lb[10], (lb[11] << 8) | lb[12]))
+                # the TLSF pool, block by block (size word : bit 15 = free,
+                # 15 bits = size-1 ; then prev.phys), from the loader's map
+                try:
+                    import re as _re
+                    lm = os.path.join(os.path.dirname(os.path.dirname(disk0)), "gen", "bootloader", "build", "loader.lwmap")
+                    sy = {}
+                    for l in open(lm):
+                        m = _re.match(r"Symbol: (\S+) .*= ([0-9A-F]{4})", l)
+                        if m: sy[m.group(1)] = int(m.group(2), 16)
+                    pool = t.read("%04X" % sy["tlsf.memoryPool"], 2); pool = (pool[0] << 8) | pool[1]
+                    end = t.read("%04X" % sy["tlsf.memoryPool.end"], 2); end = (end[0] << 8) | end[1]
+                    p, rows, free_total, biggest = pool, [], 0, 0
+                    while p + 4 <= end and len(rows) < 80:
+                        h = t.read("%04X" % p, 4); size = ((h[0] & 0x7F) << 8 | h[1]) + 1; free = bool(h[0] & 0x80)
+                        rows.append("%04X:%s%d" % (p + 4, "free" if free else "used", size))
+                        if free: free_total += size; biggest = max(biggest, size)
+                        p += 4 + size
+                    print("  pool $%04X-$%04X : %s" % (pool, end, " ".join(rows)))
+                    print("  free %d bytes, biggest free block %d" % (free_total, biggest))
+                except Exception as e:
+                    print("  (pool walk failed :", e, ")")
                 verdict = 1
         else:
             print(f"LOADER-UT FAIL (status ${status:02X})")

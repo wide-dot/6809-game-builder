@@ -1,0 +1,31 @@
+# Greaseweazle disk definition for the Thomson TO8 3.5" 640 KB media, as the
+# builder's fd640 storage writes it :
+#   80 cylinders, 2 sides, 16 sectors of 256 bytes, MFM 250 kbit/s, 300 rpm,
+#   physical interleave 7 (the DOS format numbering, storage.xml hardskip="7").
+#
+# Why not the stock thomson.2s320 : Thomson treats each side as its own drive
+# and formats BOTH sides with head number 0 in the sector ID field (toje /
+# teo-wd : MFM_HEAD_NUMBER = 0), and the THMFC1 checks that byte against the
+# head bit the monitor programs. The stock definition writes H=1 on side 1,
+# so a real TO8 finds no sector there — "I/O Error" at boot, the loader's tail
+# living on side 1 of track 0 (07/09/2026, two disks written and verified on
+# a PC drive, both refused by the TO8).
+#
+#   gw write --diskdefs thomson-to8.diskdefs --format thomson.to8 to8.fd
+#   gw read  --diskdefs thomson-to8.diskdefs --format thomson.to8 relu.fd
+#
+# The .fd image is side 0 whole then side 1 whole, which Greaseweazle's FD
+# reader already expects. An HD diskette in a PC drive needs its HD hole
+# taped over, or the DD write does not take.
+disk thomson.to8
+    cyls = 80
+    heads = 2
+    tracks * ibm.mfm
+        secs = 16
+        bps = 256
+        rate = 250
+        interleave = 7
+        h = 0
+    rpm = 300
+    end
+end

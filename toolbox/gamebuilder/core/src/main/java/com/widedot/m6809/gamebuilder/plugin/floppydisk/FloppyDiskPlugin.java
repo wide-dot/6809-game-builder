@@ -87,9 +87,23 @@ public class FloppyDiskPlugin {
 		// instance. Named after the first image file it produces, so the
 		// report speaks the name the user sees in dist/.
 		String instance = instanceName(node, ctx, model);
+		// the interleave goes with the geometry : the head-path model reads
+		// the image the way the loader does, sector by physical slot
+		com.widedot.m6809.gamebuilder.plugin.floppydisk.storage.configuration.Interleave il =
+				storage.interleave;
+		int[] slotOfNumber = new int[storage.segment.sectors];
+		for (int slot = 0; slot < il.hardMap.length; slot++) {
+			slotOfNumber[il.hardMap[slot] - 1] = slot;
+		}
+		int[] skewByTrack = new int[il.skewPeriod()];
+		for (int t = 0; t < skewByTrack.length; t++) {
+			skewByTrack[t] = il.skewIndex(t);
+		}
 		ctx.occupancy.declareInstance(new com.widedot.m6809.gamebuilder.spi.globals.Occupancy.Instance(
 				instance, mediaData.capacity(), storage.segment.faces, storage.segment.tracks,
-				storage.segment.sectors, storage.segment.sectorSize));
+				storage.segment.sectors, storage.segment.sectorSize,
+				il.softskip, il.softskew, il.hardskip, il.softMap.clone(), slotOfNumber,
+				skewByTrack));
 		for (FdUtil.Piece piece : mediaData.journal()) {
 			ctx.occupancy.write(new com.widedot.m6809.gamebuilder.spi.globals.Occupancy.MediaWrite(
 					instance, piece.section, piece.start, piece.length, piece.name));

@@ -105,6 +105,31 @@ svg text { fill: var(--dim); font-family: ui-monospace, Menlo, Consolas, monospa
 .cell { stroke: var(--bg); stroke-width: .6; }
 .cell.hl { stroke: var(--accent); stroke-width: 1.4; }
 
+/* head path */
+.params { padding: 4px 12px 8px; display: grid; grid-template-columns: 1fr 64px; gap: 3px 8px; font-size: 12px; align-items: center; }
+.params label { color: var(--dim); }
+.params input {
+  width: 64px; background: var(--bg); color: var(--ink); border: 1px solid var(--rule);
+  border-radius: 4px; padding: 2px 5px; font: inherit; font-size: 12px; text-align: right;
+}
+.hop { display: flex; align-items: baseline; gap: 8px; padding: 3px 12px; cursor: pointer; user-select: none; }
+.hop:hover { background: var(--hover); }
+.hop.sel { background: var(--hover); box-shadow: inset 2px 0 0 var(--accent); }
+.hop .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hop .t { color: var(--dim); font-size: 11px; }
+.totals { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 14px; font-size: 12px; color: var(--dim); }
+.totals b { color: var(--ink); font-size: 15px; font-weight: 600; margin-right: 4px; }
+table.steps { border-collapse: collapse; font-size: 12px; margin-top: 18px; }
+table.steps th, table.steps td { padding: 2px 9px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--rule); }
+table.steps th { color: var(--dim); font-weight: 500; position: sticky; top: 0; background: var(--bg); }
+table.steps td.l, table.steps th.l { text-align: left; }
+table.steps tr:hover td { background: var(--hover); }
+table.steps tr.sel td { background: var(--hover); box-shadow: inset 2px 0 0 var(--accent); }
+table.steps td.back { color: var(--danger); }
+table.steps td.lost { color: var(--danger); }
+table.steps td.dim { color: var(--dim); }
+.kind { display: inline-block; min-width: 40px; padding: 0 5px; border-radius: 3px; font-size: 11px; text-align: center; color: #fff; }
+
 #tip {
   position: fixed; pointer-events: none; z-index: 10; display: none;
   background: var(--panel); color: var(--ink); border: 1px solid var(--rule);
@@ -120,6 +145,7 @@ svg text { fill: var(--dim); font-family: ui-monospace, Menlo, Consolas, monospa
   <nav>
     <button id="tab-ram" class="on">RAM</button>
     <button id="tab-media">Média</button>
+    <button id="tab-path">Parcours</button>
   </nav>
   <div class="stats" id="stats"></div>
 </header>
@@ -562,10 +588,279 @@ function mediaView() {
   }
 }
 
+/* ------------------------------------------------------------ head path */
+/* The same walk and the same model as report/HeadPath.java (the reference) :
+   the loader converges scene by scene — directory, table, the files' data,
+   their link data — and the drive pays seeks and rotation for every sector.
+   Kept in step with the Java by hand ; the text seek report is the check. */
+const PATH = DATA.path || { disks: [], scenes: {}, chain: [], defaults: {} };
+const KIND = { dir: "répertoire", table: "table", data: "données", link: "liens", other: "autre" };
+const KINDCOL = { dir: "#c47a1a", table: "#7c5cd6", data: "#2e8bd9", link: "#2aa876", other: "#888" };
+let pathDisk = 0;
+let pathSel = 0;            /* selected hop in the chain */
+let pathFrom = null;        /* override of the hop's origin state, or null */
+let pathStep = -1;          /* highlighted step */
+const params = Object.assign({ step: 4, settle: 25, overhead: 1, rpm: 300, frac: 0.8 }, PATH.defaults);
+
+function slotOf(disk, track, k) {
+  if (!disk.readOrder) return k % disk.sectors;
+  const skew = disk.skewByTrack[track % disk.skewByTrack.length];
+  const number = disk.readOrder[(skew + k) % disk.sectors];
+  return disk.slotOfNumber[number - 1];
+}
+
+function newState() { return { headTrack: 0, currentDir: null, cachedTable: null, ptsec: null, timeMs: 0 }; }
+function cloneState(st) { return Object.assign({}, st); }
+
+function simulate(disk, from, to, st) {
+  const r = { steps: [], seekMs: 0, waitMs: 0, readMs: 0, seeks: 0, tracks: 0, sectors: 0, cached: 0, lost: 0, elsewhere: 0 };
+  const slotMs = 60000 / params.rpm / disk.sectors;
+  const perFace = disk.tracks * disk.sectors;
+
+  function read(kind, key, name) {
+    const el = disk.elements[key];
+    if (!el) {
+      if (kind === "data" || kind === "link") return;
+      r.steps.push({ kind, name, elsewhere: true, sectors: 0, cached: 0, seekMs: 0, waitMs: 0, readMs: 0, lin: [] });
+      r.elsewhere++;
+      return;
+    }
+    const s = { kind, name, elsewhere: false, sectors: 0, cached: 0, seeks: 0, tracks: 0,
+      seekMs: 0, waitMs: 0, readMs: 0, startMs: st.timeMs, lost: 0, lin: [], face: 0, track: 0, sector: 0, lastTrack: 0 };
+    const n = el.sectors.length;
+    el.sectors.forEach((lin, idx) => {
+      const face = Math.floor(lin / perFace);
+      const track = Math.floor((lin % perFace) / disk.sectors);
+      const k = lin % disk.sectors;
+      if (idx === 0) { s.face = face; s.track = track; s.sector = k; }
+      s.lastTrack = track;
+      s.lin.push(lin);
+      const partial = (idx === 0 && el.pf) || (idx === n - 1 && el.pl);
+      if (partial && st.ptsec === lin) { s.cached++; return; }
+      let sought = false;
+      if (track !== st.headTrack) {
+        const d = Math.abs(track - st.headTrack);
+        s.seeks++; s.tracks += d;
+        const ms = d * params.step + params.settle;
+        s.seekMs += ms; st.timeMs += ms; st.headTrack = track;
+        sought = true;
+      }
+      /* a long wait right after a seek is latency ; on a head that did not
+         move it is a turn lost, the slot went by before the loader asked */
+      const angle = (st.timeMs / slotMs) % disk.sectors;
+      let wait = ((slotOf(disk, track, k) - angle) % disk.sectors + disk.sectors) % disk.sectors;
+      if (wait > disk.sectors - 0.001) wait = 0;
+      const waitMs = wait * slotMs;
+      if (!sought && wait > disk.sectors / 2) s.lost++;
+      const readMs = slotMs * params.frac;
+      s.waitMs += waitMs; s.readMs += readMs;
+      st.timeMs += waitMs + readMs + params.overhead;
+      s.sectors++;
+      if (partial) st.ptsec = lin;
+    });
+    r.steps.push(s);
+    r.seekMs += s.seekMs; r.waitMs += s.waitMs; r.readMs += s.readMs;
+    r.seeks += s.seeks; r.tracks += s.tracks; r.sectors += s.sectors; r.cached += s.cached; r.lost += s.lost;
+  }
+  function dirLoad(dir) {
+    if (dir < 0 || st.currentDir === dir) return;
+    st.currentDir = dir;
+    read("dir", "directory " + dir, "directory " + dir);
+    st.ptsec = null;
+  }
+  const target = new Set(to), held = new Set(from);
+  from.forEach(scene => {
+    if (target.has(scene)) return;
+    const load = PATH.scenes[scene]; if (!load) return;
+    dirLoad(load.dir);
+    if (st.cachedTable === scene) st.cachedTable = null; else read("table", scene, scene);
+  });
+  to.forEach(scene => {
+    if (held.has(scene)) return;
+    const load = PATH.scenes[scene]; if (!load) return;
+    dirLoad(load.dir);
+    read("table", scene, scene);
+    st.cachedTable = scene;
+    load.files.forEach(f => read("data", f, f));
+    load.files.forEach(f => read("link", f + PATH.linkSuffix, f));
+  });
+  r.totalMs = r.seekMs + r.waitMs + r.readMs;
+  return r;
+}
+
+/* the chain : every state from the previous one, drive state carried along ;
+   returns per hop {from, to, result, before (state snapshot)} */
+function runChain(disk) {
+  const hops = [];
+  let st = newState(), from = [], fromName = "(rien)";
+  PATH.chain.forEach(c => {
+    const before = cloneState(st);
+    const result = simulate(disk, from, c.scenes, st);
+    hops.push({ fromName, toName: c.name, from, to: c.scenes, result, before });
+    from = c.scenes; fromName = c.name;
+  });
+  return hops;
+}
+
+function ms(v) { return v >= 1000 ? (v / 1000).toFixed(2) + " s" : Math.round(v) + " ms"; }
+
+function pathSide() {
+  const scroll = side.scrollTop;
+  side.innerHTML = "";
+  const disk = PATH.disks[pathDisk];
+  if (!disk) { $("div", { class: "sidetitle", text: "aucun média" }, side); return; }
+
+  $("div", { class: "sidetitle", text: "modèle mécanique" }, side);
+  const box = $("div", { class: "params" }, side);
+  [["step", "pas de piste (ms)"], ["settle", "stabilisation (ms)"], ["overhead", "entre deux secteurs (ms)"],
+   ["rpm", "tours / minute"], ["frac", "créneau occupé (0-1)"]].forEach(([k, label]) => {
+    $("label", { text: label }, box);
+    const inp = $("input", { type: "number", step: k === "frac" ? "0.05" : "1", value: params[k] }, box);
+    inp.addEventListener("change", () => { params[k] = +inp.value || 0; render(); });
+  });
+  $("div", { class: "params" }, side).innerHTML =
+    "<span style='grid-column:1/3;color:var(--dim)'>entrelacement " + disk.softskip + ", skew " + disk.softskew
+    + ", format " + disk.hardskip + " — " + (60000 / params.rpm / disk.sectors).toFixed(1) + " ms le créneau</span>";
+
+  $("div", { class: "sidetitle", text: "enchaînement des états" }, side);
+  const hops = runChain(disk);
+  let total = 0;
+  hops.forEach((h, i) => {
+    total += h.result.totalMs;
+    const row = $("div", { class: "hop" + (i === pathSel ? " sel" : "") }, side);
+    $("span", { class: "nm", text: h.fromName + " → " + h.toName, title: h.fromName + " → " + h.toName }, row);
+    $("span", { class: "t mono", text: ms(h.result.totalMs) }, row);
+    row.addEventListener("click", () => { pathSel = i; pathFrom = null; pathStep = -1; render(); });
+  });
+  const tot = $("div", { class: "hop" }, side);
+  tot.style.cursor = "default";
+  $("span", { class: "nm", text: "toute la chaîne" }, tot);
+  $("span", { class: "t mono", text: ms(total) }, tot);
+
+  if (hops.length) {
+    $("div", { class: "sidetitle", text: "ou depuis un autre état" }, side);
+    const sel = $("select", { class: "state" }, side);
+    $("option", { value: "", text: "(l'état précédent de la chaîne)" }, sel);
+    $("option", { value: "(rien)", text: "(rien) — disquette froide" }, sel);
+    PATH.chain.forEach(c => { const o = $("option", { value: c.name, text: c.name }, sel); if (pathFrom === c.name) o.selected = true; });
+    if (pathFrom === "(rien)") sel.value = "(rien)";
+    sel.addEventListener("change", () => { pathFrom = sel.value || null; pathStep = -1; render(); });
+  }
+  side.scrollTop = scroll;
+}
+
+/* the hop the view shows : the chain's, or the selected target from another origin */
+function currentHop(disk) {
+  const hops = runChain(disk);
+  if (!hops.length) return null;
+  const hop = hops[Math.min(pathSel, hops.length - 1)];
+  if (!pathFrom) return hop;
+  let st, from = [], fromName = pathFrom;
+  if (pathFrom === "(rien)") { st = newState(); }
+  else {
+    const origin = hops.find(h => h.toName === pathFrom);
+    if (!origin) return hop;
+    st = cloneState(origin.before);
+    simulate(disk, origin.from, origin.to, st);   /* the drive as that state left it */
+    from = origin.to;
+  }
+  return { fromName, toName: hop.toName, from, to: hop.to, result: simulate(disk, from, hop.to, st) };
+}
+
+function pathView() {
+  view.innerHTML = "";
+  const head = $("div", { class: "viewhead" }, view);
+  const sel = $("select", {}, head);
+  PATH.disks.forEach((d, i) => { const o = $("option", { value: i, text: d.name }, sel); if (i === pathDisk) o.selected = true; });
+  sel.addEventListener("change", () => { pathDisk = +sel.value; pathStep = -1; render(); });
+  const disk = PATH.disks[pathDisk];
+  if (!disk) { stats.textContent = ""; return; }
+  const hop = currentHop(disk);
+  if (!hop) { $("span", { class: "hint", text: "aucun état déclaré" }, head); stats.textContent = ""; return; }
+  const r = hop.result;
+  $("span", { class: "hint", text: hop.fromName + " → " + hop.toName + " : ce que la tête lit, dans l'ordre du loader" }, head);
+  stats.textContent = hop.fromName + " → " + hop.toName + " · " + ms(r.totalMs);
+
+  const tot = $("div", { class: "totals" }, view);
+  const cell = (v, l) => { const c = $("span", {}, tot); $("b", { text: v }, c); c.append(l); };
+  cell(ms(r.totalMs), "estimé");
+  cell(ms(r.seekMs), r.seeks + " déplacement" + (r.seeks > 1 ? "s" : "") + ", " + r.tracks + " pistes");
+  cell(ms(r.waitMs), "d'attente de rotation, " + r.lost + " tour" + (r.lost > 1 ? "s" : "") + " perdu" + (r.lost > 1 ? "s" : ""));
+  cell(ms(r.readMs), "de lecture, " + r.sectors + " secteurs" + (r.cached ? " (+" + r.cached + " en cache)" : ""));
+  if (r.elsewhere) cell(r.elsewhere, "lecture(s) sur une autre disquette");
+
+  /* the disk, coloured by reading order */
+  const order = new Map();   /* linear sector -> step index */
+  r.steps.forEach((s, i) => s.lin.forEach(lin => { if (!order.has(lin)) order.set(lin, i); }));
+  const nsteps = Math.max(1, r.steps.length);
+  const CELL = 9, GAPC = 1, LABEL = 34, TITLE = 20;
+  const gridW = disk.sectors * (CELL + GAPC);
+  const wrap = $("div", {}, view);
+  wrap.style.display = "flex"; wrap.style.gap = "28px"; wrap.style.flexWrap = "wrap";
+  for (let f = 0; f < disk.faces; f++) {
+    const svg = S("svg", { width: LABEL + gridW + 6, height: TITLE + disk.tracks * (CELL + GAPC) + 8 }, wrap);
+    S("text", { x: LABEL, y: 12 }, svg).textContent = "face " + f;
+    for (let t = 0; t < disk.tracks; t++) {
+      if (t % 10 === 0) S("text", { x: LABEL - 6, y: TITLE + t * (CELL + GAPC) + CELL - 1, "text-anchor": "end" }, svg).textContent = t;
+      for (let k = 0; k < disk.sectors; k++) {
+        const lin = (f * disk.tracks + t) * disk.sectors + k;
+        const rect = S("rect", { class: "cell", x: LABEL + k * (CELL + GAPC), y: TITLE + t * (CELL + GAPC), width: CELL, height: CELL, rx: 1.5 }, svg);
+        const i = order.get(lin);
+        if (i === undefined) { rect.style.fill = "var(--free)"; continue; }
+        const st = r.steps[i];
+        const hue = 210 - 190 * (i / nsteps);
+        rect.style.fill = "hsl(" + hue + " 70% 50%)";
+        if (pathStep >= 0 && pathStep !== i) rect.style.opacity = ".25";
+        if (pathStep === i) rect.classList.add("hl");
+        rect.addEventListener("mousemove", e => showTip(e, "<b>" + st.name + "</b> · " + KIND[st.kind]
+          + "<br><span class='mono'>lecture n°" + (i + 1) + " · face " + f + " · piste " + t + " · secteur logique " + k
+          + " · créneau " + slotOf(disk, t, k) + "</span>"));
+        rect.addEventListener("mouseleave", hideTip);
+        rect.addEventListener("click", () => { pathStep = pathStep === i ? -1 : i; render(); });
+      }
+    }
+  }
+
+  /* the steps */
+  const table = $("table", { class: "steps" }, view);
+  const thead = $("tr", {}, $("thead", {}, table));
+  ["n°", "type", "élément", "face", "pistes", "secteur", "secteurs", "cache", "déplacement", "attente", "lecture", "total", "cumul"].forEach((h, i) =>
+    $("th", { class: i < 3 ? "l" : "", text: h }, thead));
+  const tbody = $("tbody", {}, table);
+  let cum = 0, prevTrack = -1;
+  r.steps.forEach((s, i) => {
+    const tr = $("tr", { class: i === pathStep ? "sel" : "" }, tbody);
+    $("td", { class: "l dim", text: i + 1 }, tr);
+    const kt = $("td", { class: "l" }, tr);
+    $("span", { class: "kind", text: KIND[s.kind] }, kt).style.background = KINDCOL[s.kind];
+    $("td", { class: "l", text: s.name }, tr);
+    if (s.elsewhere) {
+      $("td", { class: "dim l", text: "sur une autre disquette", colspan: 10 }, tr);
+      return;
+    }
+    const back = prevTrack >= 0 && s.track < prevTrack;
+    const total = s.seekMs + s.waitMs + s.readMs;
+    cum += total;
+    $("td", { text: s.face }, tr);
+    $("td", { class: back ? "back" : "", text: (back ? "← " : "") + (s.track === s.lastTrack ? s.track : s.track + "…" + s.lastTrack) }, tr);
+    $("td", { text: s.sector }, tr);
+    $("td", { text: s.sectors }, tr);
+    $("td", { class: "dim", text: s.cached || "" }, tr);
+    $("td", { class: s.seeks ? "" : "dim", text: s.seeks ? Math.round(s.seekMs) + " (" + s.tracks + " p)" : "" }, tr);
+    $("td", { class: s.lost ? "lost" : "", text: Math.round(s.waitMs) + (s.lost ? " ⟳" + s.lost : "") }, tr);
+    $("td", { text: Math.round(s.readMs) }, tr);
+    $("td", { text: Math.round(total) }, tr);
+    $("td", { class: "dim", text: ms(cum) }, tr);
+    tr.addEventListener("click", () => { pathStep = pathStep === i ? -1 : i; render(); });
+    prevTrack = s.lastTrack;
+  });
+}
+
 /* ------------------------------------------------------------------ tabs */
 let tab = "ram";
 const bRam = document.getElementById("tab-ram");
 const bMedia = document.getElementById("tab-media");
+const bPath = document.getElementById("tab-path");
 /* the page opens ON a state, checked : that is the memory the machine holds.
    applyState() renders, so the bootstrap render() below is only for the
    configurations that declare no composition. */
@@ -574,13 +869,16 @@ if (ramState) {
 }
 bRam.addEventListener("click", () => { tab = "ram"; render(); });
 bMedia.addEventListener("click", () => { tab = "media"; render(); });
+bPath.addEventListener("click", () => { tab = "path"; render(); });
 
 function render() {
   bRam.classList.toggle("on", tab === "ram");
   bMedia.classList.toggle("on", tab === "media");
+  bPath.classList.toggle("on", tab === "path");
   hideTip();
   if (tab === "ram") { ramSide(); ramView(); }
-  else { mediaSide(); mediaView(); }
+  else if (tab === "media") { mediaSide(); mediaView(); }
+  else { pathSide(); pathView(); }
 }
 render();
 addEventListener("resize", () => { if (tab === "ram") ramView(); });

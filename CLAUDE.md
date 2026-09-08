@@ -59,10 +59,12 @@ GitHub, lien `engine`, rappel de build). La synchro entre chantiers passe par
   Sorties dans `dist/`, avec les rapports : `link-report-<cible>.csv` (ce que
   chaque direntry coûte en données de lien), `linked-refs-<cible>.csv` (chaque
   référence résolue au chargement, AVEC sa cause — depuis le 10/08),
-  `occupancy-<cible>.html` (l'occupation RAM par scène + le média, remplace
-  l'ancien ram-map), `pool-map-<cible>.txt` (le coût de liaison par scène face
-  au pool) et `seek-report-<cible>.txt` (les déplacements de tête par scène —
-  depuis le 10/08).
+  `occupancy-<cible>.html` (l'occupation RAM par scène + le média + l'onglet
+  *Parcours* : chaque lecture du loader d'un état au suivant, dessinée sur la
+  disquette et chiffrée par un modèle mécanique aux paramètres modifiables —
+  depuis le 08/09), `pool-map-<cible>.txt` (le coût de liaison par scène face
+  au pool) et `seek-report-<cible>.txt` (le même parcours en texte, aux
+  paramètres par défaut).
   Le `<hfe/>` fonctionne sur macOS depuis 08/2026
   (`hxcfe` 2.16.15.2 universel embarqué, sources dans
   `toolbox/third-party/src/floppy/`).
@@ -715,6 +717,30 @@ le storage pour une cible — c'est ainsi que se fabriquent les deux images
 de l'essai machine (entrelacement 2 et 1). Tous les disques d'une cible
 doivent partager le même entrelacement, le builder refuse sinon.
 
+## Le tampon de répertoire est un bloc du tas, et le répertoire 0 est scindé (07/09/2026)
+
+`dir.load` alloue le tampon à la taille exacte du répertoire et le
+redimensionne sur place (`tlsf.realloc`) quand un autre le remplace ;
+`loader.dir.unload` (table de saut 45) le rend pour de bon, personne ne
+le fait par défaut. Plus de tampon statique : le gel
+du 14/08 qui l'avait imposé était, selon toute vraisemblance, le bug de
+`realloc`. Contrainte de taille : un répertoire monté en pleine
+convergence doit tenir dans le trou de celui qu'il remplace — d'où le
+**répertoire 10** (title + bibliothèque d'ennemis, 2 secteurs, piste 79
+face 1), le 0 ne gardant que le résident (4 secteurs). Étude §11.
+
+## La barre de chargement : le loader compte, l'engine dessine (07/09/2026)
+
+`loader.progress.hook.set` (table de saut 42) installe un hook appelé à
+chaque unité : un secteur lu, 512 octets décompressés. Le total est mesuré
+au répertoire avant les lectures (`file.measure`, `scene.measure`, la
+passe de mesure de `composition.load`). L'effet de référence,
+`engine/graphics/loadbar/loadbar.asm`, est relogeable et DOIT être copié
+dans une place que rien ne charge (`<reserved name="loading.fx">` en
+r-type) : il tourne pendant que le chargement recouvre l'unité qui l'a
+apporté. Budget d'un hook : 2 000 cycles, un tour de disque au-delà.
+Étude §10. Le loader fait 4 744 octets : `INDEX` est passé au secteur 5.
+
 ## L'état résident se déclare : `loader.composition.set` (07/09/2026)
 
 `composition.load` converge la RAM depuis `composition.current`, et seule
@@ -824,6 +850,22 @@ Modèle et syntaxe : [`memory.md`](docs/lang/en/memory.md) (manuel),
 [`modele-memoire-2026-09.md`](docs/lang/fr/modele-memoire-2026-09.md)
 (concepts) et [`plan-modele-memoire-2026-09.md`](docs/lang/fr/plan-modele-memoire-2026-09.md)
 (le journal des six phases, avec les écarts).
+
+## Disposition disque : répertoires colocalisés (08/09/2026)
+
+Un répertoire déclaré `colocate="true"` est écrit dans sa section **juste
+avant ce qu'il liste** (secteurs réservés au curseur, contenu écrit derrière
+dans l'ordre de lecture du loader — table, données des fichiers, puis leurs
+liens — répertoire écrit en dernier). Avec les tables de scènes et les
+données de lien dans la même section, charger un stage est une marche avant
+de la tête. r-type n'a plus qu'une section `DATA` (piste 1) : le modèle
+passe de 90 à 64 s de disque sur la chaîne title → stage 8, le temps de
+déplacement d'un stage de ~3 s à ~0,7 s ; amorçage → title mesuré sous toje
+à la trame 952 contre 1100. Contrainte : la table des emplacements
+(`gen/directories/locations.asm`) est réécrite à l'émission de chaque
+répertoire, le `<data>` du loader doit venir APRÈS les répertoires (sinon
+`ERROR` à l'assemblage, nommant le répertoire). Modèle et mesures :
+`docs/lang/fr/etude-chargement-2026-09.md` §12, manuel `config.md`.
 
 ## Dettes / pièges connus
 

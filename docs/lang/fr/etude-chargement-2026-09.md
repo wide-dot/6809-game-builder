@@ -397,3 +397,226 @@ sous toje au même chiffre que l'expérience manuelle (17,0 s).
 Les deux jeux d'images (`to8.fd`, `to8.sd`, `to8_0.sap`, `to8_1.sap`)
 sont livrés à l'auteur pour l'essai sur machine : A = entrelacement 2, B =
 entrelacement 1, skew 4 dans les deux cas.
+
+## 10. La barre, faite (07/09, soir)
+
+Ce qui est en place, sur l'entrelacement 2 nominal :
+
+- **Le loader compte** (`loader.progress.done`) : une unité par secteur lu
+  — `pulse`, relectures servies par le cache comprises, puisque le
+  répertoire les compte — et une unité par 512 octets qu'un fichier
+  compressé produit (`loader.file.decompress`). Il **mesure** le total au
+  répertoire avant les lectures qu'il couvre : `loader.file.measure`
+  (secteurs du fichier, de ses link data, tranches de 512 octets s'il est
+  compressé) et `loader.scene.measure` (la même marche que l'application
+  d'une scène, `scene.apply` avec la mesure pour routine). `scene.load`
+  mesure sa scène juste après avoir lu sa table ; `composition.load`
+  mesure toutes les arrivantes AVANT la première lecture, si un hook
+  écoute — une lecture de table par scène, relue par le chargement. Les
+  lectures de tables ne sont ni comptées ni mesurées (`progress.mute`) :
+  une unité comptée contre un total pas encore connu remplissait la barre
+  d'un coup, vu.
+- **L'API** : `loader.progress.hook.set` (table de saut 42, X = routine ou
+  0) installe le hook et remet les compteurs à zéro. Le hook reçoit B = les
+  unités ajoutées et X = les compteurs (mot fait, mot total), tourne sur la
+  pile du loader et son DP, adressage étendu seulement, budget 2 000 cycles.
+  Contrat dans `loader.const.asm`.
+- **L'effet** : `engine/graphics/loadbar/loadbar.asm`, une barre BM16 en
+  colonnes de quatre pixels, sans division — un accumulateur gagne
+  unités × largeur, une colonne par dépassement du total, jamais en
+  arrière. Mesuré : 27 cycles par secteur sans colonne, une colonne = 3
+  lignes × 2 plans. Le bloc est **relogeable** (adressage relatif au PC),
+  parce que le hook tourne pendant que la scène de boot recouvre l'unité
+  qui l'a apporté (le moteur en est le premier fichier) : le splash le
+  recopie dans `loading.fx`, un `<reserved>` de 242 octets en page 1
+  (`$8700`, entre la plus grosse unité de stage et le témoin du banc), et
+  installe la copie.
+- **Le résultat** : sur le splash, la barre part à la première lecture et
+  finit à 573 unités sur 584 (l'arrondi des tranches ZX0), sans à-coup
+  entre la passe disque et la passe ZX0. Histogramme des écarts secteur
+  inchangé (aucun secteur à 200 ms), title à la même trame (1000).
+  `boot.entry` retire le hook avant de demander le title.
+
+Coût sur le loader : 4 744 octets, soit 279 de plus que ce matin (cache,
+`composition.set`, tables d'entrelacement, mesure et compteurs). Le loader
+a dépassé les 18 secteurs de la piste 0 : `INDEX` passe du secteur 4 au 5
+en face 1 dans `storage.xml`, et r-type décale `INDEX1` en 11 et `INDEX9`
+en 15. Le tas du loader perd d'autant ; les bancs tiennent.
+
+Le poids d'une tranche ZX0 : 512 octets à 14,5 Ko/s font 35 ms, un
+secteur en fait 25 à 34 ; une unité pour chacun est juste à 10 % près, le
+poids ne se retouche que si la machine donne d'autres temps. Reste
+l'effet pour les transitions de stage, qui attend l'écran de chargement du
+plan.
+
+Coût mesuré au listing, par secteur lu : 77 cycles sans hook installé
+(le compteur), 174 avec la barre quand aucune colonne n'est due, environ
+350 quand une colonne l'est (une fois sur vingt unités) — sur les 12 500
+du créneau. Mesure d'une scène : ~150 cycles par fichier, 6 ms pour les
+42 de `scenes.boot`. Passe de mesure de `composition.load`, seulement si
+un hook écoute : une lecture de table par scène arrivante, 25 à 200 ms
+chacune. Code : +105 octets de loader, autant de tas en moins ; l'effet,
+100 octets, hors du loader.
+
+## 11. Le tampon de répertoire redevient un bloc du tas (07/09, nuit)
+
+Décision auteur : un loader générique n'a pas de tampon statique. Le
+tampon de répertoire, statique depuis le 15/08 après un gel du game over
+imputé à la fragmentation, est de nouveau **alloué par TLSF à la taille
+exacte du répertoire lu** : `dir.load` le **redimensionne sur place** par
+`tlsf.realloc` quand un autre répertoire le remplace (un rétrécissement
+garde sa place, une croissance dans la queue qu'il a laissée aussi : le
+répertoire ne se promène pas dans le pool), et `loader.dir.unload` (table
+de saut 45) le rend pour de bon à qui veut la place entre deux
+chargements. Le pool TLSF reprend la totalité du tas du loader. Une
+allocation qui échoue passe par le callback d'erreur dans le bloc de log
+— un diagnostic, plus un gel muet.
+
+Deux essais ont réglé le geste. Libérer puis réallouer laissait le tampon
+se promener au gré des trous : loader-ut le voyait au milieu du pool.
+Et le rendre en fin de convergence, comme je l'avais d'abord fait, était
+faux : un chargement direct par `scene.load` qui suit une convergence
+lisait ses entrées à l'adresse zéro (T18, « plus de mémoire » avec 2 734
+octets libres — le parcours du pool ajouté au harnais l'a montré). Le
+tampon reste ; le gain est pendant les convergences, pas entre elles.
+
+Le gel du 14/08 s'explique très probablement par le bug de `realloc`
+corrigé ce jour (§3, `tlsf-realloc.asm`) : l'index de lien grandit par
+realloc au premier stage, un slot revenait rempli d'un en-tête de bloc
+libre, et au game over la convergence libérait ces faux pointeurs — un
+tas corrompu ressemble en tout point à un tas fragmenté, et à l'époque
+personne n'a lu l'index.
+
+**Ce que ça rend.** Le tampon statique gardait 1 536 octets, la taille du
+plus gros répertoire, en permanence. Or ce répertoire-là n'est vivant qu'à
+l'amorçage, quand les link data pèsent 512 octets ; pendant un stage le
+répertoire courant fait 512 à 1 024 octets et les link data culminent à
+1 140. Les deux maximums ne coïncident jamais.
+
+**Ce que ça exige : l'ordre des tailles.** Un répertoire monté au milieu
+d'une convergence, après les link data du stage, doit tenir dans le trou
+du répertoire qu'il remplace. Le premier essai l'a démontré : `rtype_bench`
+et loader-ut ont piégé une erreur TLSF ($8101) au passage du répertoire du
+stage 1 (4 secteurs) à celui des lots, qui était le 0 (6 secteurs, 1 536
+octets contigus introuvables). D'où la **scission du répertoire 0** : le
+résident et `scenes.boot` restent dans le 0 (43 entrées, 4 secteurs) ; le
+title et la bibliothèque d'ennemis partagée passent dans un **répertoire
+10** (26 entrées, 2 secteurs, piste 79 face 1). Le plus gros répertoire
+fait 4 secteurs, celui des lots 2 : il tient toujours dans le trou. Le
+title coûte un changement de répertoire de plus, deux secteurs, une fois
+par partie. Le banc du classement reprend le répertoire 9 renuméroté 1
+(les ids doivent se suivre) et loader-ut gagne les 16 octets d'en-tête
+TLSF que son tampon coûte désormais dans son pool.
+
+Résultat : loader-ut 17/17 + T18, rtype_bench 7/7 — dont les convergences
+stage → lots → stage suivant, celles qui échouaient sans la scission.
+
+**Et deux bugs de plus dans le realloc**, réveillés par le tampon de
+répertoire qui grandit de 512 à 1 024 octets sur place : la croissance
+sans découpage écrivait la taille entière au lieu de taille − 1 (un bloc
+un octet trop long, la chaîne du pool dérive), et ne réécrivait pas le
+`prev.phys` du bloc suivant (le `free` de ce bloc remontait dans des
+données). La sonde qui l'a trouvé, `c1/catch6.py` du scratch, vérifie la
+chaîne physique du pool toutes les deux trames pendant une convergence ;
+son parcours du pool est désormais dans le harnais loader-ut, affiché sur
+tout échec. Ce sont les troisième et quatrième bugs de `tlsf-realloc.asm`
+de la journée : le realloc n'avait jamais servi avant l'index de lien, et
+sa croissance sur place jamais avant le répertoire.
+
+**Bilan du tampon dynamique.** loader-ut 17/17 + T18, rtype_bench 7/7,
+le banc du classement cinq tours de game over sans erreur TLSF et avec
+une chaîne de pool intacte à chaque tour — le scénario du gel du 14/08,
+vérifié cette fois en lisant le tas. Le tas : pool de 3 448 octets tout
+entier ; à l'état stage 1, répertoire des lots compris (512), la marge
+est de l'ordre de 800 octets. Touche B → title sous toje : trame 1100,
+contre 1020 avant, l'écart étant du même ordre que les décrochages
+moteur de 0,4 s du §8, qui tombent ailleurs dès que la chronologie bouge
+(le répertoire 0 est passé de six à quatre secteurs, le title en lit deux
+de plus). Le loader fait 4 797 octets.
+
+## 12. Les répertoires sur la route de la tête (08/09)
+
+La position des répertoires interpellait l'auteur : le loader relit un
+répertoire à chaque scène qui arrive d'un autre répertoire ou qui en part,
+la table d'une scène et les données de lien de ses fichiers à chaque
+scène — et tout cela vivait ailleurs que les données. Piste 0 pour les
+répertoires 0, 1, 9 ; piste 79 pour les répertoires des stages et de la
+bibliothèque ; piste 1 pour les tables (`SCENE`), piste 2 pour les liens
+(`LINK`) ; les données à partir de la piste 8. Un chargement de stage
+était donc : piste 79 (répertoire), piste 1 (table), pistes 20-30
+(données), piste 2 (liens) — puis la même chose pour chaque lot, avec le
+répertoire 10 en piste 79 entre deux.
+
+**Le modèle.** Pour le voir, le builder simule désormais le parcours de la
+tête (`report/HeadPath.java`, onglet *Parcours* de la page d'occupation,
+et `seek-report-<cible>.txt` en texte) : pour chaque état déclaré, convergé
+depuis le précédent dans l'ordre de déclaration, chaque lecture du loader
+dans son ordre (`composition.load` : les partantes, puis pour chaque
+arrivante son répertoire s'il n'est pas monté, sa table, les données de ses
+fichiers dans l'ordre de la table, puis leurs liens), secteur par secteur,
+avec le créneau physique de chaque secteur tiré de l'entrelacement même
+qui écrit l'image. Le coût : un déplacement = `pistes × pas +
+stabilisation` (4 ms et 25 ms par défaut, à calibrer sur machine), un
+changement de face gratuit, le disque qui continue de tourner pendant
+tout (un déplacement plus long que le skew perd un tour, comme sur la
+machine), un secteur lu quand son créneau passe, le cache `ptsec` modélisé.
+Cinq paramètres modifiables sur la page, les totaux suivent. Un tour
+« perdu » est une attente de plus d'un demi-tour sur une tête qui n'a pas
+bougé ; après un déplacement c'est de la latence, la phase est quelconque.
+
+**Ce que ça mesurait, disposition d'avant** (défauts du modèle) :
+
+| passage | temps | dont déplacements | pistes parcourues |
+|---|---|---|---|
+| amorçage → title (4 états) | 10,2 s | 1,5 s | 242 |
+| title → stage 1 | 15,4 s | 2,4 s (33 déplacements) | 392 |
+| stage 1 → stage 2 | 12,4 s | 2,4 s | 471 |
+| stage 4 → stage 5 | 8,2 s | 3,8 s | 832 |
+| stage 5 → stage 6 | 7,3 s | 3,9 s | 872 |
+| chaîne complète | 90,1 s | | |
+
+Sur les petits stages la tête passe **la moitié du temps à se déplacer**.
+
+**L'option.** `<directory colocate="true">` : le répertoire est écrit dans
+sa section juste AVANT ce qu'il liste — ses secteurs réservés au curseur
+quand ses entrées sont complètes (leur taille ne dépend pas des
+emplacements), le contenu écrit derrière dans l'ordre de lecture du loader
+(la table d'une scène, les données de ses fichiers, puis leurs liens — cet
+ordre d'écriture vaut pour tous les builds, il ne change rien quand les
+sections sont distinctes, vérifié à l'octet sur r-type et loader-ut), le
+répertoire écrit en dernier dans ses secteurs réservés. Les tables de
+scènes et les données de lien passent dans la même section. r-type n'a plus
+qu'une section, `DATA` en piste 1 (les pistes 1-7 de `SCENE` et `LINK` sont
+rendues), onze répertoires colocalisés.
+
+La difficulté : la table des emplacements est **dans le loader**, assemblé
+avant que les répertoires soient émis — et l'emplacement d'un répertoire
+colocalisé n'est connu qu'à son émission. Réponse : `locations.asm` est un
+registre (`ctx.dirLocations`) réécrit à chaque émission ; une ligne non
+résolue s'écrit `ERROR directory N is colocated and not emitted yet…`, donc
+un `<data>` du loader déclaré avant les répertoires échoue à l'assemblage
+en nommant le coupable. Toutes les configs du corpus déclarent le loader
+après. Le cache de build suit les INCLUDE (`hashTree`) : le loader se
+réassemble quand la table change.
+
+**Ce que ça donne, même modèle :**
+
+| passage | temps | dont déplacements | pistes parcourues |
+|---|---|---|---|
+| amorçage → title | 7,6 s | 0,3 s | 10 |
+| title → stage 1 | 12,4 s | 0,7 s (19 déplacements) | 47 |
+| stage 1 → stage 2 | 10,6 s | 0,6 s | 44 |
+| stage 4 → stage 5 | 5,5 s | 1,0 s | 158 |
+| stage 5 → stage 6 | 4,2 s | 1,0 s | 166 |
+| chaîne complète | 63,7 s | | |
+
+Ce qui reste de déplacements, c'est la structure : les lots partagés
+(bibliothèque d'ennemis, répertoire 10 en piste 9) que chaque stage
+recharge depuis son propre bout de disque. Sous toje, l'amorçage arrive au
+title à la **trame 952** (19,0 s) contre 1100 la veille — 3 s de mieux, le
+modèle en prédisait 2,6.
+
+Le banc du classement (`bench/ranking/gen-config.py`) suit : une section,
+répertoires colocalisés copiés avec leurs lignes. Le corpus des autres
+configs est identique à l'octet (aucune n'utilise `colocate`, et le
+réordonnancement d'écriture n'y change rien).

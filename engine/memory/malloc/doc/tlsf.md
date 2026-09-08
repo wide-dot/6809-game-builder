@@ -243,3 +243,16 @@ Coût : une comparaison quand le bloc n'a pas fusionné par l'avant (le cas
 courant) ; 8 octets sauvés et remis, une quarantaine de cycles, quand il l'a
 fait. Aucune allocation, aucun appel de plus. Tests : `tlsf.ut.realloc.merge`
 (coupe dans les données, coupe dans le trou, bloc de 4 octets).
+
+### Deux défauts de la croissance sur place (07/09/2026, soir)
+
+`tlsf.realloc.growth`, quand le bloc libre suivant est absorbé sans qu'il
+reste de quoi faire un bloc libre (moins de 8 octets), écrivait la taille
+entière dans le champ qui stocke taille − 1 : un bloc un octet trop long,
+et la chaîne physique dérive à partir de là. Et dans ce même cas il ne
+prévenait pas le bloc suivant que son prédécesseur avait changé : son
+`prev.phys` désignait l'en-tête absorbé, et `tlsf.free`, qui fusionne vers
+l'arrière par ce lien, y lisait des données. Jamais rencontrés : il faut
+un voisin libre qui tombe juste. Le tampon de répertoire du loader, qui
+passe de 512 à 1 024 octets par `realloc`, les a réveillés tous les deux.
+Test : `tlsf.ut.realloc.merge`, dernier cas.

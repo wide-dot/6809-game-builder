@@ -282,8 +282,23 @@ tlsf.realloc.growth
         cmpd  #sizeof{tlsf.blockHdr}
         bhs   >                                       ; branch if enough room to build a new free block
         addd  ,s                                      ; no room for a split, add requested size to free size
+        subd  #1                                      ; size is stored as size-1 — it was stored whole
+                                                      ; (07/09/2026 : a block one byte too long, the
+                                                      ; physical chain drifting from there ; met when
+                                                      ; the loader's directory buffer grew 512 -> 1024
+                                                      ; into a free neighbour that fitted to the byte)
         std   tlsf.blockHdr.size-tlsf.BHDR_OVERHEAD,u ; update size of currently allocated block
-        puls  d,x,y,pc                                ; return
+        ; the block that followed the absorbed one now follows this one :
+        ; tell it, or its next free reads the dead header as its previous
+        ; block (07/09/2026 — tlsf.free merges backwards through prev.phys)
+        addd  #1                                      ; [D] the new size
+        leay  d,u                                     ; [Y] the next physical block header
+        beq   @whole                                  ; end of memory
+        cmpy  tlsf.memoryPool.end
+        bhs   @whole                                  ; no next physical block
+        leax  -tlsf.BHDR_OVERHEAD,u                   ; [X] this block's header
+        stx   tlsf.blockHdr.prev.phys,y
+@whole  puls  d,x,y,pc                                ; return
 !
         ; create a new free block
         ldd   ,s                                      ; get requested size

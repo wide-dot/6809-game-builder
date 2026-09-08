@@ -717,3 +717,25 @@ le splash charge `scenes.boot` par `scene.load`, qui ne déclare rien, et la
 convergence vers le title (composition boot + title) partait d'un état
 courant nul. Entrée de table de saut 39 dans le loader (`stx
 composition.current`), appelée par `boot.entry` avec `compositions.boot`.
+
+**FAIT le 07/09/2026 (soir) — la barre de chargement du splash.** Le
+loader compte et mesure (étude `docs/lang/fr/etude-chargement-2026-09.md`
+§10), le splash installe `loadbar` recopié dans `loading.fx` (`$8700`,
+réservé) ; « presents » retiré, la barre à sa place, 30 colonnes de 4
+pixels sur 3 lignes, teal. `boot.entry` retire le hook. Répertoires de la
+piste 0 décalés d'un secteur (le loader a dépassé 18 secteurs).
+
+**FAIT le 07/09/2026 (nuit) — tampon de répertoire dynamique, répertoire 0
+scindé, deux bugs de plus dans le realloc.** Décision auteur : plus de
+tampon statique dans le loader. Étude §11. Le title et la bibliothèque
+d'ennemis vivent dans le répertoire 10 (piste 79 face 1), le 0 ne garde
+que le résident.
+
+**FAIT le 08/09/2026 — les répertoires sur la route de la tête.** Étude
+§12. Le builder simule le parcours de la tête (onglet *Parcours* de
+l'occupation, `seek-report` en texte, modèle mécanique aux paramètres
+modifiables) ; `<directory colocate="true">` écrit chaque répertoire juste
+avant son contenu, tables et liens dans `DATA` : une seule section en
+piste 1, onze répertoires colocalisés. Modèle : 90 → 64 s de disque sur la
+chaîne, ~3 s → ~0,7 s de déplacements par stage ; toje : title à la trame
+952 contre 1100.

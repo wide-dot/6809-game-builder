@@ -89,7 +89,8 @@ public final class Handlers {
 			.req("id", INT, "disk id, matched by the loader at run time")
 			.req("section", STRING, "section receiving the directory")
 			.req("gensymbols", STRING, "generated file of <name> equ <file id> equates")
-			.opt("genbinary", STRING, "debug copy of the directory binary"));
+			.opt("genbinary", STRING, "debug copy of the directory binary")
+			.opt("colocate", BOOL, "true : the directory is written in its section right BEFORE the content it lists, reserved at the cursor and filled once the entries know where their bytes landed — with the scene tables and link data sent to the same section, a scene's whole load is one forward walk of the head. Its location is only known at emission : the loader's <data> must come after the directories. Default false : written at its section's cursor after its content"));
 		spec(element("file").doc("one loadable file of the directory")
 			.req("name", STRING, "unique alias, becomes the file id equate")
 			.opt("codec", STRING, "zx0 (default) compresses the whole entry as one stream ; none stores it raw with no compression block — for content whose raw path is the point")
