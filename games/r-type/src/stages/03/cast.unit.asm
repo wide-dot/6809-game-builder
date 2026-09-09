@@ -115,13 +115,6 @@ set_fireball_flash_4  EXTERNAL
 set_fireball_flash_5  EXTERNAL
 set_fireball_flash_6  EXTERNAL
 set_fireball_flash_7  EXTERNAL
-set_rear_reactor_0  EXTERNAL
-set_reactor_startup_0  EXTERNAL
-set_reactor_startup_1  EXTERNAL
-set_reactor_startup_2  EXTERNAL
-set_reactor_startup_3  EXTERNAL
-set_reactor_flame_0_0  EXTERNAL
-set_reactor_flame_1_0  EXTERNAL
 set_reactor_white_bullet_0  EXTERNAL
 set_reactor_white_bullet_1  EXTERNAL
 set_reactor_white_bullet_2  EXTERNAL
@@ -131,39 +124,13 @@ set_bottom_reactor_bottom_left_0  EXTERNAL
 set_bottom_reactor_bottom_right_0  EXTERNAL
 set_bottom_reactor_bottom_left_full_0  EXTERNAL
 set_bottom_reactor_bottom_right_full_0  EXTERNAL
-set_bottom_reactor_flame_left_0  EXTERNAL
-set_bottom_reactor_flame_left_1  EXTERNAL
-set_bottom_reactor_flame_left_2  EXTERNAL
-set_bottom_reactor_flame_left_3  EXTERNAL
-set_bottom_reactor_flame_left_4  EXTERNAL
-set_bottom_reactor_flame_left_5  EXTERNAL
-set_bottom_reactor_flame_left_6  EXTERNAL
-set_bottom_reactor_flame_left_7  EXTERNAL
-set_bottom_reactor_flame_left_8  EXTERNAL
-set_bottom_reactor_flame_left_9  EXTERNAL
-set_bottom_reactor_flame_right_0  EXTERNAL
-set_bottom_reactor_flame_right_1  EXTERNAL
-set_bottom_reactor_flame_right_2  EXTERNAL
-set_bottom_reactor_flame_right_3  EXTERNAL
-set_bottom_reactor_flame_right_4  EXTERNAL
-set_bottom_reactor_flame_right_5  EXTERNAL
-set_bottom_reactor_flame_right_6  EXTERNAL
-set_bottom_reactor_flame_right_7  EXTERNAL
-set_bottom_reactor_flame_right_8  EXTERNAL
-set_bottom_reactor_flame_right_9  EXTERNAL
-set_bottom_reactor_flame_straight_down_0  EXTERNAL
-set_bottom_reactor_flame_straight_down_1  EXTERNAL
-set_bottom_reactor_flame_straight_down_2  EXTERNAL
-set_bottom_reactor_flame_straight_down_3  EXTERNAL
-set_bottom_reactor_flame_straight_down_4  EXTERNAL
-set_bottom_reactor_flame_straight_down_5  EXTERNAL
-set_bottom_reactor_flame_straight_down_6  EXTERNAL
-set_bottom_reactor_flame_straight_down_7  EXTERNAL
-set_bottom_reactor_flame_straight_down_8  EXTERNAL
-set_bottom_reactor_flame_straight_down_9  EXTERNAL
-set_escape_capsule_0  EXTERNAL
-set_small_escape_capsule_0  EXTERNAL
-set_falling_triangle_0  EXTERNAL
+; Les GROS sprites mobiles (decision auteur, 09/09/2026) sont TRANCHES en
+; 16x12 par gen_warship_slices.py et gen_warship_flames.py ; les pieces
+; inscrivent la liste des tranches d'une pose chez le manager wsmgr, qui les
+; dessine au fond. Reacteur arriere, allumage, flammes geantes, capsules,
+; triangle (reactor/slices.ext.asm) et gerbes de ventre (reactor/flames.ext.asm).
+        INCLUDE "src/enemies/warship-elements/reactor/slices.ext.asm"
+        INCLUDE "src/enemies/warship-elements/reactor/flames.ext.asm"
 set_horizontal_laser_0  EXTERNAL
 set_horizontal_laser_1  EXTERNAL
 set_horizontal_laser_2  EXTERNAL
@@ -173,14 +140,21 @@ part.Object     EXPORT
 fturret.Object  EXPORT
 fire.Object     EXPORT
 react.Object    EXPORT
-; La table des gerbes vit dans le resident : le cast l'ARME, la page des
-; flammes la DESSINE (reactor/flameslots.asm).
+flamemgr.Object EXPORT
+; La table des gerbes vit dans le resident (reactor/flameslots.asm), armee par
+; les reacteurs et lue par le manager des gerbes — tous deux ici depuis le
+; 09/09/2026 ; elle y reste parce qu'elle doit arriver ZEROEE.
 ; La seconde entree du manager de tirs : la tourelle multiple tire en gerbe,
 ; chaque coup avec son vecteur — pas de preset de direction. Resolue au
 ; chargement, atteinte par RunPgSubRoutine qui monte la page des balles.
 bullet.ArmV     EXTERNAL
 flamemgr.Slots  EXTERNAL
 flamemgr.live   EXTERNAL
+; Le manager des pieces mobiles (resident, wsmgr/wsmgr.asm) : les gros
+; sprites s'y inscrivent avec la page de leurs descripteurs — Img_Page_Index
+; de leur identifiant.
+wsmgr.Draw      EXTERNAL
+wsmgr.page      EXTERNAL
 
         INCLUDE "src/common/engine/api.asm"
 
@@ -189,6 +163,7 @@ mscroll.camera.x  EXTERNAL
 mscroll.camera.y  EXTERNAL
 ; L'index d'objets du stage charge : les tirs et les explosions y sont lus.
 Obj_Index_Page    EXTERNAL
+Img_Page_Index    EXTERNAL
 Obj_Index_Address EXTERNAL
 
  SECTION code
@@ -219,6 +194,7 @@ Obj_Index_Address EXTERNAL
         INCLUDE "src/enemies/warship-elements/multiturret/obj.asm"
         INCLUDE "src/enemies/warship-elements/reactor/obj.asm"
         INCLUDE "src/enemies/warship-elements/reactor/children.asm"
+        INCLUDE "src/enemies/warship-elements/reactor/flamemgr.asm"
         INCLUDE "src/enemies/warship-elements/capsule/obj.asm"
 
  ENDSECTION

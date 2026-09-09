@@ -10,6 +10,9 @@ WARSHIP_FAMILIES equ 1
 fire.MULTI      equ 0
 fire.BALL       equ 1
 fire.MUZZLE     equ 2
+; le MONTAGE de la tourelle multiple (tl, bl, tr, br = 0..3, l'ordre de
+; multi.Anims) voyage dans les bits 2-3 du sous-type : fire.MULTI+fire.MOUNT*n
+fire.MOUNT      equ 4
 
 ; groupe `react` : la page d'images stage3.cast.imgReactor
 react.RREACTOR  equ 0

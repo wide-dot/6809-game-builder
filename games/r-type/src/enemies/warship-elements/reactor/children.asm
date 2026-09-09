@@ -9,8 +9,13 @@
 ; — vitesse figee a la ponte, comme la boule de la proue.
 ;
 ; LA BOUFFEE DE VENTRE N'EST PLUS UN OBJET (28/08/2026) : elle arme un slot du
-; manager, qui la dessine en quatre tranches depuis sa propre page. Ce qui
-; reste ici est le geste d'armement — voir reactor/flamemgr.asm.
+; manager des gerbes (reactor/flamemgr.asm), qui l'inscrit chaque tick chez le
+; manager de tranches wsmgr. Ce qui reste ici est le geste d'armement.
+;
+; LES FLAMMES GEANTES ET L'ALLUMAGE sont de GROS sprites mobiles (48x24 et
+; 48x48) : depuis le 09/09/2026 (decision auteur) ils n'ont plus de sprite a
+; eux, ils inscrivent la liste des tranches 16x12 de leur pose chez wsmgr
+; (reactor/slices.asm), qui les dessine au fond.
 ;*******************************************************************************
 
         INCLUDE "src/enemies/warship-elements/reactor/flame.equ"
@@ -86,25 +91,36 @@ rflame.Live
         asla
         ldx   #rflame.Startup
         ldx   a,x
-        stx   image_set,u
-        jmp   DisplaySprite
+        bra   rflame.Show
 @flamme ; les flammes : deux couches qui alternent au bit 2 (cf00)
         anda  #4
         beq   >
-        ldx   #set_reactor_flame_1_0
-        bra   @pose
-!       ldx   #set_reactor_flame_0_0
-@pose   stx   image_set,u
-        jmp   DisplaySprite
+        ldx   #react.sl.reactor_flame_1.0
+        bra   rflame.Show
+!       ldx   #react.sl.reactor_flame_0.0
+rflame.Show                            ; X = la liste des tranches de la pose
+        ldd   x_pos,u                  ; pas de boite ici : l'ancre se calcule,
+        subd  glb_camera_x_pos         ; avec la borne des pieces (cf. layer.XGONE)
+        cmpd  #layer.XGONE
+        bhi   @rts
+        pshs  b
+        ldd   y_pos,u
+        addd  #6
+        cmpd  #204+6
+        puls  a
+        bhi   @rts
+        subb  #6
+        jmp   react.Show
+@rts    rts
 @fin    lda   #2
         sta   routine,u
         jmp   DeleteObject
 rflame.Deleted
         rts
 
-rflame.Startup
-        fdb   set_reactor_startup_0,set_reactor_startup_1
-        fdb   set_reactor_startup_2,set_reactor_startup_3
+rflame.Startup                         ; les listes de tranches des quatre cercles
+        fdb   react.sl.reactor_startup.0,react.sl.reactor_startup.1
+        fdb   react.sl.reactor_startup.2,react.sl.reactor_startup.3
 
 ;--- LA BOUFFEE D'UN REACTEUR DE VENTRE ----------------------------------------
 ; Dix poses jouees une fois, orientees comme le reacteur qui l'a lachee : les

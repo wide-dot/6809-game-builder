@@ -54,6 +54,8 @@ _, MSCROLL_BASE = unit_base('common.mscroll')
 _, ENGINE_BASE  = unit_base('common.engine')
 SETUP = sym('gen/common/build/mscroll.lwmap', 'mscroll.setup', MSCROLL_BASE)
 INV   = sym('gen/common/build/engine.lwmap', 'cheat.invincible', ENGINE_BASE)
+FDMAX = sym('gen/common/build/engine.lwmap', 'gfxlock.frameDrop.max', ENGINE_BASE)
+FRAMEDROP_MAX = os.environ.get('FRAMEDROP_MAX')   # 0 = plus de plafond, comme stage2_video.py
 
 def cheat_state_addr():
     occ = open('dist/occupancy-fd.html').read()
@@ -135,6 +137,9 @@ print(t.call('video_capture_status'), flush=True)
 BUDGET = int(os.environ.get('STAGE_FRAMES', '9000'))
 done = 0
 while done < BUDGET:
+    if FRAMEDROP_MAX is not None:
+        t.call('write_memory', {'addr': '%04X' % FDMAX,
+                                'bytes': ['%02X' % int(FRAMEDROP_MAX)]})
     step = min(500, BUDGET - done)
     r = t.call('run_frames', {'n': step, 'timeout_ms': 600000})
     done += r.get('frames', step) if isinstance(r, dict) else step

@@ -62,9 +62,15 @@ multi.Init
         std   multi.AABB+AABB.rx,u
         clr   multi.acc,u
         clr   multi.phase,u
-        ; le montage arrive dans subtype et demenage : subtype porte
-        ; desormais la FAMILLE du groupe (voir fire.Object)
+        ; le montage arrive dans les bits 2-3 de subtype (fire.MOUNT, pose
+        ; par le script de spawn) et demenage : les bits 0-1 sont la FAMILLE
+        ; du groupe (voir fire.Object). Lire le sous-type entier donnait le
+        ; montage 0 aux quatre — toutes tournees vers le haut-gauche
+        ; (09/09/2026).
         lda   subtype,u
+        lsra
+        lsra
+        anda  #3
         sta   multi.mount,u
         inc   routine,u
         ; PAS DE RTS : elle vit des sa premiere trame

@@ -3,44 +3,73 @@
 ;
 ; Une chaine = les dix pas de l'animation, chacun donnant le rang de la
 ; POSE UNIQUE a jouer (l'arcade cycle quatre recettes sur dix pas). Le
-; manager y lit le rang, puis dessine les QUATRE TRANCHES de cette pose
-; qui tiennent dans la bande.
+; manager des gerbes (flamemgr.asm) y lit le rang, puis INSCRIT chez
+; wsmgr la liste des tranches 16x12 de cette pose (fcb n / fdb sets),
+; que wsmgr dessine tranche par tranche, chacune testee contre la bande.
 ;
-; Les images sont rangees pose par pose, tranche par tranche :
-;   set_fl_<n>, n courant sur tout le dossier, tranche 0 = la plus HAUTE.
-; Ce sont les IMAGESETS : le manager y lit la geometrie (bornes, taille,
-; centre) pour son test de bande, puis l'adresse de la routine compilee —
-; le meme chemin que outslay.RecPublish. Les quatre tranches d'une pose
-; se dessinent a la MEME ancre : elles gardent le canevas de la gerbe.
+; Les images sont rangees pose par pose, fenetre par fenetre (rangees
+; du haut vers le bas, colonnes de gauche a droite) : set_fl_<n>, n
+; courant sur tout le dossier. Toutes les tranches d'une pose gardent
+; le canevas de la gerbe, donc partagent son ancre.
 
 ; bottom-reactor-flame-straight-down : 4 poses uniques sur dix pas (chaine 7EF2)
 flame.chain.fl_d
         fcb   0,1,2,1,2,3,2,3,2,3
+flame.sl.fl_d.0
+        fcb   4
+        fdb   set_fl_d_0,set_fl_d_1,set_fl_d_2,set_fl_d_3
+flame.sl.fl_d.1
+        fcb   4
+        fdb   set_fl_d_4,set_fl_d_5,set_fl_d_6,set_fl_d_7
+flame.sl.fl_d.2
+        fcb   4
+        fdb   set_fl_d_8,set_fl_d_9,set_fl_d_10,set_fl_d_11
+flame.sl.fl_d.3
+        fcb   4
+        fdb   set_fl_d_12,set_fl_d_13,set_fl_d_14,set_fl_d_15
 flame.sets.fl_d
-        fdb   set_fl_0,set_fl_1,set_fl_2,set_fl_3
-        fdb   set_fl_4,set_fl_5,set_fl_6,set_fl_7
-        fdb   set_fl_8,set_fl_9,set_fl_10,set_fl_11
-        fdb   set_fl_12,set_fl_13,set_fl_14,set_fl_15
+        fdb   flame.sl.fl_d.0,flame.sl.fl_d.1,flame.sl.fl_d.2,flame.sl.fl_d.3
 
 ; bottom-reactor-flame-right : 4 poses uniques sur dix pas (chaine 7F38)
 flame.chain.fl_r
         fcb   0,1,2,3,2,3,2,3,2,3
+flame.sl.fl_r.0
+        fcb   8
+        fdb   set_fl_r_0,set_fl_r_1,set_fl_r_2,set_fl_r_3,set_fl_r_4,set_fl_r_5,set_fl_r_6,set_fl_r_7
+flame.sl.fl_r.1
+        fcb   8
+        fdb   set_fl_r_8,set_fl_r_9,set_fl_r_10,set_fl_r_11,set_fl_r_12,set_fl_r_13,set_fl_r_14,set_fl_r_15
+flame.sl.fl_r.2
+        fcb   8
+        fdb   set_fl_r_16,set_fl_r_17,set_fl_r_18,set_fl_r_19,set_fl_r_20,set_fl_r_21,set_fl_r_22,set_fl_r_23
+flame.sl.fl_r.3
+        fcb   7
+        fdb   set_fl_r_24,set_fl_r_25,set_fl_r_26,set_fl_r_27,set_fl_r_28,set_fl_r_29,set_fl_r_30
 flame.sets.fl_r
-        fdb   set_fl_16,set_fl_17,set_fl_18,set_fl_19
-        fdb   set_fl_20,set_fl_21,set_fl_22,set_fl_23
-        fdb   set_fl_24,set_fl_25,set_fl_26,set_fl_27
-        fdb   set_fl_28,set_fl_29,set_fl_30,set_fl_31
+        fdb   flame.sl.fl_r.0,flame.sl.fl_r.1,flame.sl.fl_r.2,flame.sl.fl_r.3
 
 ; bottom-reactor-flame-left : 4 poses uniques sur dix pas (chaine 7F7E)
 flame.chain.fl_l
         fcb   0,1,2,3,2,3,2,3,2,3
+flame.sl.fl_l.0
+        fcb   8
+        fdb   set_fl_l_0,set_fl_l_1,set_fl_l_2,set_fl_l_3,set_fl_l_4,set_fl_l_5,set_fl_l_6,set_fl_l_7
+flame.sl.fl_l.1
+        fcb   7
+        fdb   set_fl_l_8,set_fl_l_9,set_fl_l_10,set_fl_l_11,set_fl_l_12,set_fl_l_13,set_fl_l_14
+flame.sl.fl_l.2
+        fcb   7
+        fdb   set_fl_l_15,set_fl_l_16,set_fl_l_17,set_fl_l_18,set_fl_l_19,set_fl_l_20,set_fl_l_21
+flame.sl.fl_l.3
+        fcb   7
+        fdb   set_fl_l_22,set_fl_l_23,set_fl_l_24,set_fl_l_25,set_fl_l_26,set_fl_l_27,set_fl_l_28
 flame.sets.fl_l
-        fdb   set_fl_32,set_fl_33,set_fl_34,set_fl_35
-        fdb   set_fl_36,set_fl_37,set_fl_38,set_fl_39
-        fdb   set_fl_40,set_fl_41,set_fl_42,set_fl_43
-        fdb   set_fl_44,set_fl_45,set_fl_46,set_fl_47
+        fdb   flame.sl.fl_l.0,flame.sl.fl_l.1,flame.sl.fl_l.2,flame.sl.fl_l.3
 
 flame.Chains
         fdb   flame.chain.fl_d,flame.chain.fl_r,flame.chain.fl_l
 flame.Sets
         fdb   flame.sets.fl_d,flame.sets.fl_r,flame.sets.fl_l
+; la page des tranches de chaque gerbe : Img_Page_Index de cet identifiant
+flame.PageIds
+        fcb   ObjID_warship_flamemgr,ObjID_warship_flamemgr,ObjID_warship_turret

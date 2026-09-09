@@ -31,7 +31,7 @@
         fdb   24,150,-42
         fcb   ObjID_warship_turret,turret.TOP ; #3 petite tourelle HAUT
         fdb   24,147,31
-        fcb   ObjID_warship_fire,fire.MULTI ; #4 tourelle multiple bl
+        fcb   ObjID_warship_fire,fire.MULTI+fire.MOUNT*1 ; #4 tourelle multiple bl
         fdb   24,146,-27
         fcb   ObjID_warship_part,5 ; #5 sous-partie de coque #5
         fdb   24,146,15
@@ -69,7 +69,7 @@
         fdb   57,146,3
         fcb   ObjID_warship_part,10 ; #22 sous-partie de coque #10
         fdb   60,151,-68
-        fcb   ObjID_warship_fire,fire.MULTI ; #23 tourelle multiple tl
+        fcb   ObjID_warship_fire,fire.MULTI+fire.MOUNT*0 ; #23 tourelle multiple tl
         fdb   60,146,-75
         fcb   ObjID_warship_part,1 ; #24 sous-partie de coque #1
         fdb   63,150,36
@@ -79,7 +79,7 @@
         fdb   72,146,-93
         fcb   ObjID_warship_part,0 ; #27 sous-partie de coque #0
         fdb   75,150,19
-        fcb   ObjID_warship_fire,fire.MULTI ; #28 tourelle multiple br
+        fcb   ObjID_warship_fire,fire.MULTI+fire.MOUNT*3 ; #28 tourelle multiple br
         fdb   75,156,18
         fcb   ObjID_warship_react,react.DETACH2 ; #29 triangle qui tombe
         fdb   75,146,-9
@@ -101,7 +101,7 @@
         fdb   132,150,42
         fcb   ObjID_warship_react,react.BREACTOR ; #38 reacteur de ventre
         fdb   135,150,-37
-        fcb   ObjID_warship_fire,fire.MULTI ; #39 tourelle multiple tr
+        fcb   ObjID_warship_fire,fire.MULTI+fire.MOUNT*2 ; #39 tourelle multiple tr
         fdb   144,150,42
         fcb   ObjID_warship_react,react.BREACTOR ; #40 reacteur de ventre
         fdb   155,150,-18
