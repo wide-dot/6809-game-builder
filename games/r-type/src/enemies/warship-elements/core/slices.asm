@@ -42,5 +42,5 @@ core.sl.core_open.0
         fcb   4
         fdb   set_core_open_0,set_core_open_1,set_core_open_2,set_core_open_3
 core.sl.core_cover.0
-        fcb   8
-        fdb   set_core_cover_0,set_core_cover_1,set_core_cover_2,set_core_cover_3,set_core_cover_4,set_core_cover_5,set_core_cover_6,set_core_cover_7
+        fcb   6
+        fdb   set_core_cover_0,set_core_cover_1,set_core_cover_2,set_core_cover_3,set_core_cover_4,set_core_cover_5

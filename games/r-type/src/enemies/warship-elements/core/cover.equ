@@ -1,4 +1,4 @@
 ; GENERE par tools/gen_core_cover.py — le cache de coque du noyau :
-; l'ecart du centre de son canevas (48x36) a l'ancre de REPOS du noyau.
-core.COVERDX equ 12
+; l'ecart du centre de son canevas (32x36) a l'ancre de REPOS du noyau.
+core.COVERDX equ 28
 core.COVERDY equ 0

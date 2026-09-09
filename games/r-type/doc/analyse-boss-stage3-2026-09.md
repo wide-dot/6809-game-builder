@@ -221,14 +221,21 @@ décision d'auteur, comme pour tout son nouveau.
 ## 10. Le cache de coque (09/09/2026)
 
 L'arcade dessine le noyau DERRIÈRE le plan de tuiles : au repos il est dans
-une cavité de la coque, et sa glissade de 13 px le fait passer sous la masse
-de coque de droite. Notre couche est peinte avant les sprites. Le geste
-retenu : le noyau inscrit chez wsmgr, juste après lui-même, un morceau de
-coque découpé dans `battleship.png` autour de sa position de repos (352,
-102 en couche), fenêtre 48 × 36, la cavité rendue transparente par
-remplissage du noir connexe à son centre (`tools/gen_core_cover.py` →
-`images/core-cover`, 8 tranches, `core/cover.equ` pour l'écart de canevas).
-Le cache est ancré à la position de repos, il ne glisse pas ; il est inscrit
-à chaque trame, clignotement compris. Vérifié sous toje aux quatre
-positions : visible dans la cavité, caché sous la coque en glissant, ouvert
-en dépassant de la coque, revenu dans la cavité pour pomper.
+une cavité de la coque, posé sur sa plaque, et sa glissade de 13 px le fait
+passer sous la masse de coque de DROITE. Notre couche est peinte avant les
+sprites. Le geste retenu : le noyau inscrit chez wsmgr, juste après
+lui-même, un morceau de coque découpé dans `battleship.png` — la masse de
+droite seule, fenêtre 32 × 36 à partir de la colonne 364, ligne 73
+(`tools/gen_core_cover.py` → `images/core-cover`, 6 tranches,
+`core/cover.equ` pour l'écart de canevas, +28 en x). Rien en bas : la
+plaque n'est pas cachée (retour auteur sur la capture arcade). Le cache est
+ancré à la position de repos, il ne glisse pas ; inscrit à chaque trame,
+clignotement compris.
+
+Piège relevé : la ligne de carte n'est pas `y écran + camera.y` mais
+`y écran + camera.y − 11`, la couche étant peinte 11 lignes sous le haut de
+l'écran (le cadre du champ). Le premier cache, découpé 11 lignes trop bas,
+posait sa plaque sur le bas du noyau — c'est ce que la capture arcade a fait
+voir. Le repos du noyau est la colonne 352, ligne 91 de la carte, et il est
+posé sur la plaque (ligne 103) comme sur la borne. Vérifié sous toje aux
+quatre positions, en proportions vraies.

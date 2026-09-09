@@ -57,5 +57,3 @@ set_core_cover_2  EXTERNAL
 set_core_cover_3  EXTERNAL
 set_core_cover_4  EXTERNAL
 set_core_cover_5  EXTERNAL
-set_core_cover_6  EXTERNAL
-set_core_cover_7  EXTERNAL
