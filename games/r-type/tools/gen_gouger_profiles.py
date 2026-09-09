@@ -30,10 +30,21 @@ meme a chaque partie, quel que soit le debit du rendu.
 
 LA SIMULATION est l'arithmetique du runtime : positions 16.8 sur trois
 octets, vitesses 8.8 des tables de gouger/obj.asm, sonde a la cellule 3x6
-contenant l'entier de la position — colonne = x div 3 (monde), rangee =
+contenant l'entier de la position — colonne = (x - 8) div 3, rangee =
 (y - 11) div 6, bornee a [0, 29] comme la borne borne la sienne a la
 rangee 0 (probe_foreground_tile, `0x17F - y` ecrete a zero). L'ordre
 arcade, run_gouger 7048 : sonde PUIS deplacement, chaque trame.
+
+LE -8 ET LE -11 SONT LE CADRE : la cellule (0, 0) de la carte est a
+x monde = 8, y = 11 — le coin du champ de jeu (scroll_vp_x_pos = 8,
+scroll_vp_y_pos = 11), et terrainCollision.xOffset/yOffset commencent
+8 et 22 octets avant leurs labels pour cette raison. La premiere version
+de ce generateur prenait x div 3 (09/09/2026) : huit pixels, presque
+trois cellules, et tous les profils sortaient d'une carte decalee — les
+gougers plongeaient a cote de la roche comme avec le mauvais masque.
+Verifie en appelant terrainCollision.do sur 568 points sous toje
+(tools/terrain_probe_calib.py) : (x - 8) div 3 est le seul decalage qui
+tombe juste partout.
 
 FORMAT d'un profil : x_spawn (fdb), puis des octets de run — bit 7 = 1
 reptation / 0 plongee, bits 0-6 = nombre de trames (1..127, les runs plus
@@ -56,6 +67,7 @@ SPAWN_X = 158                        # (720 - 320) x 0,375 + 8, comme gouger.Ini
 PRESET_Y = (15, 15, 183, 183)        # gouger.PresetY
 VEL_PRIM = ((144, 384), (-144, 384), (144, -384), (-144, -384))   # gouger.VelPrim
 VEL_TRAIL = ((36, 96), (-36, 96), (36, -96), (-36, -96))          # gouger.VelTrail
+VP_X = 8                             # scroll_vp_x_pos : la colonne 0 commence a x = 8
 VP_Y = 11                            # scroll_vp_y_pos : la rangee 0 commence a y = 11
 # gouger.MovePrim/MoveTrail n'ont plus de table : elles DECALENT (9n << 4, 3n << 7,
 # 9n << 2, 3n << 5) et le signe vient de la variante. Ces constantes en sont la
@@ -70,7 +82,7 @@ MAX_FRAMES = 512
 
 
 def solid(mask, x_int, y_int):
-    col = x_int // 3
+    col = (x_int - VP_X) // 3
     row = (y_int - VP_Y) // 6
     row = max(0, min(H - 1, row))
     if col < 0 or col >= W:

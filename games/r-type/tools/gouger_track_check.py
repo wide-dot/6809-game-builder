@@ -76,24 +76,37 @@ def main(path):
             bad += 1
             continue
         k0 = ks[0]
+        # Chaque echantillon doit etre SUR LE CHEMIN simule, a un rang k qui
+        # ne recule jamais. Un rang qui avance de moins que l'horloge est un
+        # RETARD (recul apres un coup : 23 trames sans deplacement ; ou le
+        # +/- 1 trame entre l'horloge de jeu et le drop latche) — compte a
+        # part, ce n'est pas un ecart de trajectoire. Un echantillon absent
+        # du chemin est le vrai defaut.
         errs = []
+        lags = 0
+        k_prev, t_prev = k0, t0
         for t, X, Y in pts[1:]:
-            k = k0 + (t - t0)
-            if k >= len(sim):
-                break
-            sx, sy = sim[k]
-            if sy != Y or sx not in (X, X + 256):
-                errs.append((t, X, Y, sx, sy))
+            k_exp = k_prev + (t - t_prev)
+            found = None
+            for kk in range(k_prev, min(len(sim), k_exp + 2)):
+                if sim[kk][1] == Y and sim[kk][0] in (X, X + 256):
+                    found = kk
+            if found is None:
+                errs.append((t, X, Y) + (sim[k_exp] if k_exp < len(sim) else (0, 0)))
+                continue
+            if abs(found - k_exp) > 1:
+                lags += 1
+            k_prev, t_prev = found, t
         if errs:
             bad += 1
             t, X, Y, sx, sy = errs[0]
-            print('profil %2d slot %2d : %d/%d echantillons faux, premier a t=%d : releve %d.%02X,%d.%02X simule %d.%02X,%d.%02X'
+            print('profil %2d slot %2d : %d/%d echantillons HORS du chemin simule, premier a t=%d : releve %d.%02X,%d.%02X (attendu %d.%02X,%d.%02X)'
                   % (idx, slot, len(errs), len(pts) - 1, t, X >> 8, X & 255, Y >> 8, Y & 255,
                      sx >> 8, sx & 255, sy >> 8, sy & 255))
         else:
             ok += 1
-            print('profil %2d slot %2d : %3d echantillons de plongee = la simulation (depart trame %d)'
-                  % (idx, slot, len(pts), t0 - k0))
+            print('profil %2d slot %2d : %3d echantillons sur le chemin simule (depart trame %d%s)'
+                  % (idx, slot, len(pts), t0 - k0, ', %d retard(s)' % lags if lags else ''))
     print('%d profils conformes, %d en defaut' % (ok, bad))
     return 1 if bad else 0
 

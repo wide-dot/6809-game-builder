@@ -18,6 +18,12 @@ Meme methode que warship_video.py, dont il reprend les pieges :
 Le declencheur est l'entree de la REGION stage : le loader y saute quand le
 stage 1 prend la main, et le title — qui vit a la meme adresse — a rendu la
 sienne bien avant.
+
+Option d'environnement (09/09/2026, comme stage2_video.py) :
+  FRAMEDROP_MAX=N  pose gfxlock.frameDrop.max a N une fois le stage en place
+                   (et le repose a chaque pas). 0 = PLUS DE PLAFOND : le jeu
+                   avance de toutes les trames ecoulees, la video est au
+                   rythme arcade quel que soit le debit du rendu.
 """
 import os, re, sys
 
@@ -57,6 +63,8 @@ TRIGGER = layout('stage.address')            # ou le loader saute pour le stage
 _, ENG  = unit_base('common.engine')
 WAIT    = ENG + equ('gen/common/build/engine.lwmap', 'gfxlock.bufferSwap.wait')
 INV     = ENG + equ('gen/common/build/engine.lwmap', 'cheat.invincible')
+FDMAX   = ENG + equ('gen/common/build/engine.lwmap', 'gfxlock.frameDrop.max')
+FRAMEDROP_MAX = os.environ.get('FRAMEDROP_MAX')
 
 out = os.path.abspath(sys.argv[2] if len(sys.argv) > 2 else 'dist/stage1.avi')
 os.makedirs(os.path.dirname(out), exist_ok=True)
@@ -111,6 +119,9 @@ os.environ.pop('TOJE_FAST', None)            # le turbo est coupe de toute facon
 BUDGET = int(os.environ.get('STAGE_FRAMES', '20000'))
 done = 0
 while done < BUDGET:
+    if FRAMEDROP_MAX is not None:
+        t.call('write_memory', {'addr': '%04X' % FDMAX,
+                                'bytes': ['%02X' % int(FRAMEDROP_MAX)]})
     step = min(500, BUDGET - done)
     r = t.call('run_frames', {'n': step, 'timeout_ms': 600000})
     done += r.get('frames', step) if isinstance(r, dict) else step

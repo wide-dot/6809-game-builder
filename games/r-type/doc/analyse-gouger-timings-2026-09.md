@@ -281,3 +281,24 @@ suivi d'un `leax` avant le branchement branchait toujours du même côté.
 Le point de sondage par trame rendue est `RunObjects`, pas l'attente de
 bascule : un rendu en retard saute l'attente et deux tours passaient
 entre deux relevés.
+
+### 6.2 Le convertisseur sondait 8 px trop à droite (09/09/2026)
+
+L'auteur retrouvait, avec les profils, les écarts de l'époque du mauvais
+masque. Cause : `gen_gouger_profiles.py` prenait la colonne `x div 3` ;
+le runtime prend `(x − 8) div 3` — la cellule 0 de la carte est au bord
+du champ (`scroll_vp_x_pos` = 8), `terrainCollision.xOffset` commence
+huit octets avant son label pour cela, et la lecture RAM sous toje donne
+24 × `scroll_tile_pos` + `offset24` = caméra, sans décalage. Huit
+pixels, presque trois cellules : tous les profils venaient d'une carte
+décalée, et le contrôle « 17 plongées = la simulation » ne pouvait pas
+le voir, il prouve que le runtime rejoue la simulation, pas que la
+simulation est la borne.
+
+Tranché par une mesure directe, `tools/terrain_probe_calib.py` :
+`terrainCollision.do` appelé sur 568 points (quatre rangées, x de
+caméra + 8 à caméra + 150), le B rendu comparé au masque pour douze
+décalages de colonne — 568/568 pour dx = 8, 560 au mieux pour les
+autres. Le générateur corrigé (constante `VP_X`), 27 profils sur 29
+changent, 191 octets. Leçon : une simulation du runtime se calibre en
+appelant le runtime, pas en relisant son code.
