@@ -78,6 +78,16 @@ warship_big_turret_hitbox_x    equ 4    ; arcade +-12
 warship_big_turret_hitbox_y    equ 6    ; arcade 16 de haut
 warship_big_turret_hitdamage   equ 4    ; 4 PV (40:e157)
 warship_big_turret_cy          equ 3    ; arcade -4 -> +3
+; le NOYAU (le boss, 40:dcc0) : boite fermee 1000:81ca x[-12..12] y[-12..12],
+; boite ouverte 1000:81d2 x[-32..12] (le centre recule de 4 px TO8) ; 20 PV
+warship_core_hitbox_x          equ 4
+warship_core_hitbox_y          equ 9
+warship_core_open_hitbox_x     equ 8
+warship_core_hitdamage         equ 20   ; 40:dcc0 : HP_max 0x14
+; son feu (40:e00f) : 8x8 arcade (1000:81f2), un point de degat
+warship_corefire_hitbox_x      equ 2
+warship_corefire_hitbox_y      equ 3
+warship_corefire_hitdamage     equ 1
 
 ; cytron — arcade AABB 0x1000:2E36 = -12..+12 sur les deux axes ; x0,375 et
 ; x0,75 donnent 4 et 9. PV arcade indexes par la difficulte (3/5/8/14) : on

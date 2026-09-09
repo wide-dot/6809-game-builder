@@ -50,17 +50,24 @@ ObjID_warship_flamemgr equ 43
 * flammes geantes, gerbes de ventre, capsules, triangle. Ne se lance pas depuis un script : la premiere inscription le
 * fait naitre. Voir enemies/warship-elements/wsmgr/wsmgr.asm.
 ObjID_warship_wsmgr equ 44
+* LE BOSS (09/09/2026) : le NOYAU du vaisseau (40:dcc0), seme par le script de
+* spawn (entree 41), et le feu qu'il crache (40:e00f) — un groupe, bit 0 du
+* sous-type (boss.CORE / boss.FIRE), une page d'images (imgCore). Sa mort
+* leve globals.bossDefeated : c'est elle qui finit le stage. Sa cascade
+* d'explosions est le slot commun ObjID_bosscascade (29), page stage3.cascade.
+* Voir enemies/warship-elements/core/obj.asm, doc/analyse-boss-stage3-2026-09.md.
+ObjID_warship_boss equ 45
 
 * Les cinq assets de la couche mscroll : PAS des objets (jamais lances) —
 * des entrees d'index que mscroll.setup resout en pages/adresses, le
 * patron du banc examples/mscroll.
-objid.bship.map    equ 45
-objid.bship.tilesA equ 46
-objid.bship.tilesB equ 47
-objid.bship.bufA   equ 48
-objid.bship.bufB   equ 49
+objid.bship.map    equ 46
+objid.bship.tilesA equ 47
+objid.bship.tilesB equ 48
+objid.bship.bufA   equ 49
+objid.bship.bufB   equ 50
 
-objid.count equ 49
+objid.count equ 50
 objid.animation equ ObjID_animation
 
 * GARDE-FOU (26/08/2026). Les cinq entrees bship ne sont pas des objets, mais
@@ -71,7 +78,7 @@ objid.animation equ ObjID_animation
 * de la couche battleship ont ete resolus sur les mauvaises pages et le stage 3
 * s'est fige au chargement, ecran noir. Le controle de densite des tables ne
 * pouvait pas le voir — les longueurs restaient justes.
- IFNE objid.bship.map-(ObjID_warship_wsmgr+1)
+ IFNE objid.bship.map-(ObjID_warship_boss+1)
         ERROR les cinq entrees bship doivent suivre le dernier objet, sans trou
  ENDC
  IFNE objid.count-objid.bship.bufB

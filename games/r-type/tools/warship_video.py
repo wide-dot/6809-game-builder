@@ -3,6 +3,8 @@
 
     TOJE_MCP=<toje>/scripts/toje-mcp.sh TOJE_FAST=1 \
     python3 tools/warship_video.py dist/to8.fd [dist/stage3.avi]
+    FRAMEDROP_MAX=0 : plus de plafond de compensation ; KILL_BOSS=1 : voir la
+    mort du noyau (exception explicite, voir plus bas).
 
 Boote, arme le cheat (stage 3 + invincible), verifie l'invincibilite EN RAM,
 et filme de l'entree du stage jusqu'a ce qu'il rende la main.
@@ -56,6 +58,24 @@ SETUP = sym('gen/common/build/mscroll.lwmap', 'mscroll.setup', MSCROLL_BASE)
 INV   = sym('gen/common/build/engine.lwmap', 'cheat.invincible', ENGINE_BASE)
 FDMAX = sym('gen/common/build/engine.lwmap', 'gfxlock.frameDrop.max', ENGINE_BASE)
 FRAMEDROP_MAX = os.environ.get('FRAMEDROP_MAX')   # 0 = plus de plafond, comme stage2_video.py
+# KILL_BOSS=1 : EXCEPTION EXPLICITE, pour VOIR la mort du noyau (le vaisseau ne
+# tire pas) — la boite du noyau est posee a 0 dans sa phase OUVERTE (routine 4),
+# le geste de la sonde boss_probe. Jamais pour une comparaison avec la borne.
+KILL_BOSS = os.environ.get('KILL_BOSS') == '1'
+POOL, NOBJ, OSZ, ROUTINE, EXT = 0x4000, 60, 63, 34, 38
+ID_BOSS = 45                                   # ObjID_warship_boss, sous-type 0
+
+
+def find_core(t):
+    """(adresse OST, routine) du noyau vivant, ou None."""
+    raw = []
+    for off in range(0, NOBJ * OSZ, 256):
+        raw += t.read('%04X' % (POOL + off), min(256, NOBJ * OSZ - off))
+    for i in range(NOBJ):
+        o = raw[i * OSZ:(i + 1) * OSZ]
+        if o[0] == ID_BOSS and o[1] == 0:
+            return POOL + i * OSZ, o[ROUTINE]
+    return None
 
 def cheat_state_addr():
     occ = open('dist/occupancy-fd.html').read()
@@ -136,17 +156,27 @@ print(t.call('video_capture_status'), flush=True)
 
 BUDGET = int(os.environ.get('STAGE_FRAMES', '9000'))
 done = 0
+killed = False
 while done < BUDGET:
     if FRAMEDROP_MAX is not None:
         t.call('write_memory', {'addr': '%04X' % FDMAX,
                                 'bytes': ['%02X' % int(FRAMEDROP_MAX)]})
     step = min(500, BUDGET - done)
+    if KILL_BOSS and not killed:
+        c = find_core(t)
+        if c is not None:
+            step = 25                  # la phase ouverte dure ~160 trames
+            if c[1] == 4:
+                t.call('write_memory', {'addr': '%04X' % (c[0] + EXT), 'bytes': ['00']})
+                killed = True
+                print('t~%5d  KILL_BOSS : le noyau est ouvert, sa boite a 0' % done, flush=True)
     r = t.call('run_frames', {'n': step, 'timeout_ms': 600000})
     done += r.get('frames', step) if isinstance(r, dict) else step
     st = t.read(hex(BSTAGE), 1)
     vs = t.call('video_capture_status')
-    print('t~%5d  stage=%d  film: %s img, %s o'
-          % (done, st[0], vs.get('frames'), vs.get('bytes')), flush=True)
+    if done % 500 < step:
+        print('t~%5d  stage=%d  film: %s img, %s o'
+              % (done, st[0], vs.get('frames'), vs.get('bytes')), flush=True)
     if st[0] != 3:
         print('le stage 3 a rendu la main — 100 trames de queue', flush=True)
         t.call('run_frames', {'n': 100, 'timeout_ms': 600000})

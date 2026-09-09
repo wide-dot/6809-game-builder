@@ -4391,6 +4391,38 @@
                     </lwasm>
                 </file>
 
+                <!-- LE NOYAU (le boss du stage 3, 09/09/2026) et son feu : leur
+                     page a eux dans l'arene (la sixieme), parce que ses treize
+                     poses de 24x24 tranchees en 16x12 (52 routines) ne tiennent
+                     dans aucune des cinq autres. Img_Page_Index de
+                     ObjID_warship_boss est cette page : wsmgr y lit les
+                     tranches du noyau, BuildSprites le feu. Voir
+                     enemies/warship-elements/core/obj.asm. -->
+                <file name="stage3.cast.imgCore" linkdata="DATA" arena="stage3.foes">
+                    <lwasm gensource="gen/enemies/stage3-cast-imgcore.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <gfxcomp file="stage3.cast.imgCore" gendir="gen/enemies/stage3-cast-imgcore"
+                                 gensource="gen/enemies/stage3-cast-imgcore/includes.asm"
+                                 genindex="gen/enemies/stage3-cast-imgcore/index.asm">
+                            <images dir="src/enemies/warship-elements/images/core_anim-slices" names="core_anim"/>
+                            <images dir="src/enemies/warship-elements/images/core_opening-slices" names="core_opening"/>
+                            <images dir="src/enemies/warship-elements/images/core_open-slices" names="core_open"/>
+                            <images dir="src/enemies/warship-elements/images/core-fire" names="core_fire"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- La cascade de mort du noyau : le marcheur commun bosscascade
+                     et la table de CE boss (generee, core/explosions.asm), dans
+                     leur propre direntry — l'index y pointe le slot commun 29
+                     (ObjID_bosscascade), comme au stage 2. -->
+                <file name="stage3.cascade" linkdata="DATA" arena="stage3.foes">
+                    <lwasm gensource="gen/stages/03/stage03-cascade.asm">
+                        <asm filename="src/enemies/warship-elements/core/cascade.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <!-- La table des gerbes : residente, chargee en zeros comme
                      stage2.outslay.res (armee et lue par le cast). -->
                 <file name="stage3.flame.res" linkdata="DATA" arena="stage3.res">
@@ -4511,6 +4543,8 @@
                     <load name="stage3.cast.imgFire"/>
                     <load name="stage3.cast.imgReactor"/>
                     <load name="stage3.cast.imgFlame"/>
+                    <load name="stage3.cast.imgCore"/>
+                    <load name="stage3.cascade"/>
                     <load name="stage3.flame.res"/>
                     <load name="stage3.wsmgr.res"/>
                     <load name="stage3.cast"/>

@@ -131,6 +131,13 @@ set_bottom_reactor_bottom_right_full_0  EXTERNAL
 ; triangle (reactor/slices.ext.asm) et gerbes de ventre (reactor/flames.ext.asm).
         INCLUDE "src/enemies/warship-elements/reactor/slices.ext.asm"
         INCLUDE "src/enemies/warship-elements/reactor/flames.ext.asm"
+; Le NOYAU (le boss, 09/09/2026) : ses poses tranchees et les quatre
+; variantes de son feu, dans la page imgCore.
+        INCLUDE "src/enemies/warship-elements/core/slices.ext.asm"
+set_core_fire_0  EXTERNAL
+set_core_fire_1  EXTERNAL
+set_core_fire_2  EXTERNAL
+set_core_fire_3  EXTERNAL
 set_horizontal_laser_0  EXTERNAL
 set_horizontal_laser_1  EXTERNAL
 set_horizontal_laser_2  EXTERNAL
@@ -141,6 +148,7 @@ fturret.Object  EXPORT
 fire.Object     EXPORT
 react.Object    EXPORT
 flamemgr.Object EXPORT
+boss.Object     EXPORT
 ; La table des gerbes vit dans le resident (reactor/flameslots.asm), armee par
 ; les reacteurs et lue par le manager des gerbes — tous deux ici depuis le
 ; 09/09/2026 ; elle y reste parce qu'elle doit arriver ZEROEE.
@@ -196,5 +204,6 @@ Obj_Index_Address EXTERNAL
         INCLUDE "src/enemies/warship-elements/reactor/children.asm"
         INCLUDE "src/enemies/warship-elements/reactor/flamemgr.asm"
         INCLUDE "src/enemies/warship-elements/capsule/obj.asm"
+        INCLUDE "src/enemies/warship-elements/core/obj.asm"
 
  ENDSECTION

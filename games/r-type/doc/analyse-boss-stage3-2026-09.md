@@ -187,3 +187,33 @@ décision d'auteur, comme pour tout son nouveau.
   fixe) ;
 - si le noyau doit passer par le manager de tranches (`wsmgr`) ou rester un
   sprite entier : décision auteur.
+
+## 9. Réalisé le 09/09/2026 — l'implantation
+
+- `src/enemies/warship-elements/core/obj.asm` : le noyau (`core.*`, sept
+  états, le cycle du § 2, PV 20, 10 000 points, dégâts absorbés hors phase
+  ouverte par une boîte invincible) et son feu (`corefire.*`, fontaine
+  8.8 avec gravité 12/256 par trame, décor et joueur, quatre variantes par
+  compteur). Groupe `boss.Object`, bit 0 du sous-type (`boss.CORE`,
+  `boss.FIRE`), `ObjID_warship_boss` = 45 (les assets bship glissent à
+  46-50).
+- Dessin par le manager de tranches (`core/slices.asm`, 52 tranches pour
+  13 poses de 24 × 24), page `stage3.cast.imgCore` (12 952 octets, la
+  sixième de l'arène) qui porte aussi le feu. Le flash de coup est un
+  clignotement (pas de palette par objet).
+- La mort : `bosscascade` commun avec la table générée par
+  `tools/gen_core_death.py` (40 entrées, période 8, 320 trames, 9 grosses
+  pré-tirées), direntry `stage3.cascade` sur le slot commun 29 ;
+  `globals.bossDefeated` arme la fin de stage existante.
+- Câblage : index (cinq tables), cast, `enemies_properties.asm`, entrée
+  41 du script de spawn (`gen_warship_spawn.py`), `families.equ`,
+  `to8.config.xml`.
+- Vérifié sous toje : naissance au seuil, dormance 1512 trames de jeu,
+  puis le cycle glisse (36) → ouverture (63) → ouvert (128) → fermeture
+  (63) → recul (36) → pompe (63, 3 à 7 feux en vol) en boucle jusqu'à la
+  fin du script ; mort forcée en phase ouverte → +10 000, cascade de
+  320 trames, passation au stage 4. rtype_bench 7/7.
+- **Non porté, à décider** : l'effacement des 256 cases de coque à la
+  mort ; la collision joueur/noyau qui n'existe pas en phase ouverte dans
+  l'arcade (ici la liste ennemie touche le joueur dans toutes les
+  phases) ; le son de lancement du feu.

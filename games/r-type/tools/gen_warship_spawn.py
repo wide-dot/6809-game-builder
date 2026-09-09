@@ -63,6 +63,7 @@ for _t in (0xD8B7, 0xD8C4, 0xD8D1, 0xD8DE):
     PORTE[_t] = ('ObjID_warship_react', 'react.BREACTOR', 'reacteur de ventre')
 PORTE[0xCFE9] = ('ObjID_warship_react', 'react.DETACH', 'petite capsule')
 PORTE[0xD095] = ('ObjID_warship_react', 'react.DETACH2', 'triangle qui tombe')
+PORTE[0xDCC0] = ('ObjID_warship_boss', 'boss.CORE', 'le noyau — le boss')
 
 # Les 27 sous-parties de coque : leurs vignettes se suivent de douze en douze
 # a partir de 40:c656, et le RANG de la vignette est le sous-type de la piece —
