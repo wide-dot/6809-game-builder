@@ -47,12 +47,18 @@ flamemgr.Live
         stb   flamemgr.di
         lda   ,x
         beq   @suiv
+        ; LA POSE DE CE RENDU SE LIT SUR LA VIE D'AVANT LE VIEILLISSEMENT :
+        ; un rendu compense sept trames en moyenne, vieillir d'abord sautait
+        ; toujours la pose 0 — la bouffee initiale, celle qui fait
+        ; l'apparition (vecu le 09/09/2026). L'arcade la tient cinq trames.
+        pshs  a
         suba  flamemgr.drop+1
         bhi   >
-        clra                           ; la gerbe est finie
+        clra                           ; la gerbe est finie apres ce rendu
 !       sta   ,x
-        beq   @suiv
+        beq   >
         inc   flamemgr.any
+!       puls  a
         ; le pas de la chaine : (LIFE - vie) / STEP, plafonne au dernier
         nega
         adda  #flamemgr.LIFE

@@ -28,6 +28,7 @@ rflame.mapX     equ ext_variables      ; 0,1
 rflame.y0       equ ext_variables+2    ; 2,3
 rflame.cam0     equ ext_variables+4    ; 4,5
 rflame.life     equ ext_variables+6    ; 6
+rflame.tog      equ ext_variables+7    ; 7  la couche affichee, une sur deux
 
 rflame.LIFE     equ 112
 rflame.STARTUP  equ 96                 ; au-dessus : les cercles
@@ -92,8 +93,14 @@ rflame.Live
         ldx   #rflame.Startup
         ldx   a,x
         bra   rflame.Show
-@flamme ; les flammes : deux couches qui alternent au bit 2 (cf00)
-        anda  #4
+@flamme ; les flammes : deux couches en alternance. L'arcade les fait
+        ; alterner au bit 2 de son compteur (cf00) ; ici la compensation de
+        ; trame faisait sauter ce bit au hasard et la meme couche restait
+        ; plusieurs rendus. Decision auteur (09/09/2026) : une couche par
+        ; RENDU, l'une puis l'autre — le clignotement rapide de la borne.
+        inc   rflame.tog,u
+        lda   rflame.tog,u
+        anda  #1
         beq   >
         ldx   #react.sl.reactor_flame_1.0
         bra   rflame.Show
