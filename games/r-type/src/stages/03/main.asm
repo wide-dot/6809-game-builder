@@ -47,6 +47,7 @@ fturret.Object         EXTERNAL
 fire.Object            EXTERNAL
 react.Object           EXTERNAL
 flamemgr.Object        EXTERNAL
+wsmgr.Object           EXTERNAL
 
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT

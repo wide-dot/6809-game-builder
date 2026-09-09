@@ -42,6 +42,18 @@ rreactor.cycle  equ ext_variables+15   ; 15  le compteur de cycle (256)
 
 rreactor.HP     equ 20                 ; 40:cbf3 : 20 PV (250 au second tour)
 
+; react.Show — INSCRIRE une piece du groupe chez le manager des pieces
+; mobiles (wsmgr.asm), qui la dessine par tranches de 16x12 au fond.
+; X = la liste des tranches de la pose (reactor/slices.asm), A = x et B = y
+; ecran 0-base — ceux de la boite pour les pieces qui en ont une. La page des
+; descripteurs est celle du groupe, Img_Page_Index de son identifiant.
+react.Show
+        pshs  a
+        lda   Img_Page_Index+ObjID_warship_react
+        sta   wsmgr.page
+        puls  a
+        jmp   wsmgr.Draw
+
 rreactor.Object
         lda   routine,u
         asla
@@ -65,7 +77,8 @@ rreactor.Init
         std   rreactor.cam0,u
         lda   #render_playfieldcoord_mask
         sta   render_flags,u
-        ldb   #6
+        ldb   #8                       ; PRIORITE DE FOND (09/09/2026, decision auteur) :
+                                       ; les pieces mobiles du vaisseau derriere tout autre sprite
         stb   priority,u
         _Collision_AddAABB rreactor.AABB,AABB_list_ennemy
         lda   #rreactor.HP
@@ -73,8 +86,6 @@ rreactor.Init
         ldd   #rreactor.BODYBOX
         std   rreactor.AABB+AABB.rx,u
         clr   rreactor.cycle,u
-        ldx   #set_rear_reactor_0      ; le corps ne change jamais de pose
-        stx   image_set,u
         inc   routine,u
 
 rreactor.Live
@@ -134,7 +145,12 @@ rreactor.Live
         incb
         cmpb  #3
         blo   @evt
-        jmp   DisplaySprite
+        ; PLUS DE SPRITE A LUI (09/09/2026) : 36x24, six tranches chez wsmgr.
+        ; Le corps ne change jamais de pose.
+        ldx   #react.sl.rear_reactor.0
+        lda   rreactor.AABB+AABB.cx,u
+        ldb   rreactor.AABB+AABB.cy,u
+        jmp   react.Show
 
 ; A = la phase visee ; Z = 1 si elle vient d'etre franchie dans ce pas.
 ; Le tour de 64 peut s'enrouler dans le meme pas — d'ou les deux cas.
@@ -419,3 +435,6 @@ breactor.Deleted
         rts
 
         INCLUDE "src/enemies/warship-elements/reactor/tables.asm"
+; Les listes de tranches des gros sprites du groupe — dans la page du cast,
+; la ou les pieces les designent (generees par tools/gen_warship_slices.py).
+        INCLUDE "src/enemies/warship-elements/reactor/slices.asm"

@@ -47,9 +47,15 @@ PORTE = {
 for _i, _t in enumerate((0xD596, 0xD5A3, 0xD5B0, 0xD5BD, 0xD5CA, 0xD5D7)):
     PORTE[_t] = ('ObjID_warship_front', str(_i), 'tourelle de proue %c' % (97 + _i))
 
-# Les quatre tourelles multiples : groupe `fire`, le montage suit dans le code.
+# Les quatre tourelles multiples : groupe `fire`, le MONTAGE dans les bits 2-3
+# du sous-type (fire.Object n'aiguille que sur les bits 0-1). Jusqu'au
+# 09/09/2026 le script ne portait que la famille et multi.Init lisait le
+# sous-type entier comme montage : zero, haut-gauche, pour les quatre —
+# « elles pointent toutes vers haut gauche » (auteur, video du stage 3).
+# L'ordre des montages est celui des vignettes arcade et de multi.Anims
+# (gen_warship_frontmulti.py) : tl, bl, tr, br.
 for _i, _t in enumerate((0xDB63, 0xDB70, 0xDB7D, 0xDB8A)):
-    PORTE[_t] = ('ObjID_warship_fire', 'fire.MULTI',
+    PORTE[_t] = ('ObjID_warship_fire', 'fire.MULTI+fire.MOUNT*%d' % _i,
                  'tourelle multiple ' + ('tl', 'bl', 'tr', 'br')[_i])
 
 # Les quatre reacteurs de ventre et les deux detachables : groupe `react`.

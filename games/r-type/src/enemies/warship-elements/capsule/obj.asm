@@ -63,7 +63,8 @@ capsule.Init
         std   capsule.cam0,u
         lda   #render_playfieldcoord_mask
         sta   render_flags,u
-        ldb   #6
+        ldb   #8                       ; PRIORITE DE FOND (09/09/2026, decision auteur) :
+                                       ; les pieces mobiles du vaisseau derriere tout autre sprite
         stb   priority,u
         _Collision_AddAABB capsule.AABB,AABB_list_ennemy
         lda   #capsule.HP
@@ -73,8 +74,6 @@ capsule.Init
         ldd   #capsule.PHASE0
         std   capsule.clock,u
         clr   capsule.fire,u
-        ldx   #set_escape_capsule_0
-        stx   image_set,u
         inc   routine,u
 
 capsule.InPlace
@@ -121,7 +120,15 @@ capsule.InPlace
         jsr   capsule.Laser
         ldb   #1
         jsr   capsule.Laser
-@pas    jmp   DisplaySprite
+@pas    jmp   capsule.Show
+
+; PLUS DE SPRITE A ELLE (09/09/2026) : 60x24, huit tranches chez wsmgr, a
+; l'ancre de sa boite (capsule.Box vient de la poser).
+capsule.Show
+        ldx   #react.sl.escape_capsule.0
+        lda   capsule.AABB+AABB.cx,u
+        ldb   capsule.AABB+AABB.cy,u
+        jmp   react.Show
 
 capsule.Laser
         aslb
@@ -177,9 +184,9 @@ capsule.Eject
         bgt   >
         lda   #3                       ; la montee est finie : elle derive
         sta   routine,u
-        jmp   DisplaySprite
+        jmp   capsule.Show
 !       std   capsule.clock,u
-        jmp   DisplaySprite
+        jmp   capsule.Show
 
 capsule.Drift
         ldb   gfxlock.frameDrop.count
@@ -194,7 +201,7 @@ capsule.Drift
         jsr   layer.AddPos
         jsr   capsule.Box
         lbne  capsule.Vanish
-        jmp   DisplaySprite
+        jmp   capsule.Show
 
 capsule.Box
         ldd   x_pos,u
@@ -345,7 +352,8 @@ detach.Init
         std   detach.cam0,u
         lda   #render_playfieldcoord_mask
         sta   render_flags,u
-        ldb   #6
+        ldb   #8                       ; PRIORITE DE FOND (09/09/2026, decision auteur) :
+                                       ; les pieces mobiles du vaisseau derriere tout autre sprite
         stb   priority,u
         _Collision_AddAABB detach.AABB,AABB_list_ennemy
         lda   #detach.HP
@@ -356,10 +364,6 @@ detach.Init
         suba  #react.DETACH            ; les deux detachables : 6 et 7
         anda  #1
         sta   detach.kind,u
-        asla
-        ldx   #detach.Sets
-        ldx   a,x
-        stx   image_set,u
         inc   routine,u
 
 detach.Live
@@ -390,7 +394,14 @@ detach.Live
         addd  #6
         cmpd  #204+6
         lbhi  detach.Vanish
-        jmp   DisplaySprite
+        ; PLUS DE SPRITE A LUI (09/09/2026) : 24x24, quatre tranches chez wsmgr.
+        lda   detach.kind,u
+        asla
+        ldx   #detach.Sets
+        ldx   a,x
+        lda   detach.AABB+AABB.cx,u
+        ldb   detach.AABB+AABB.cy,u
+        jmp   react.Show
 
 detach.Boom
         ldb   #warship_subpart_scoreIdx
@@ -411,5 +422,5 @@ detach.Vanish
 detach.Deleted
         rts
 
-detach.Sets
-        fdb   set_small_escape_capsule_0,set_falling_triangle_0
+detach.Sets                            ; les listes de tranches des deux poses
+        fdb   react.sl.small_escape_capsule.0,react.sl.falling_triangle.0

@@ -48,7 +48,8 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_front
         fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_fire
         fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_react
-        fcb   map.RAM_OVER_CART+stage3.cast.imgFlame.page ; ObjID_warship_flamemgr
+        fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_flamemgr (dans le cast depuis le 09/09/2026)
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_warship_wsmgr (resident)
         ; la couche mscroll : carte et buffers montes en espace cartouche
         ; (RAM_OVER_CART), tilesets montes en fenetre donnees (numero nu) —
         ; la convention du banc examples/mscroll
@@ -110,6 +111,7 @@ Obj_Index_Address
         fdb   fire.Object ; ObjID_warship_fire
         fdb   react.Object ; ObjID_warship_react
         fdb   flamemgr.Object ; ObjID_warship_flamemgr
+        fdb   wsmgr.Object ; ObjID_warship_wsmgr
         fdb   stage3.bship.map.address ; objid.bship.map
         fdb   stage3.bship.tilesA.address ; objid.bship.tilesA
         fdb   stage3.bship.tilesB.address ; objid.bship.tilesB
@@ -163,6 +165,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_fire
         fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_react
         fcb   map.RAM_OVER_CART+stage3.cast.imgFlame.page ; ObjID_warship_flamemgr
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_warship_wsmgr (resident)
         fcb   map.RAM_OVER_CART+stage.page ; objid.bship.map
         fcb   map.RAM_OVER_CART+stage.page ; objid.bship.tilesA
         fcb   map.RAM_OVER_CART+stage.page ; objid.bship.tilesB
@@ -215,6 +218,7 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_warship_fire
         fdb   Ani_Asd_none ; ObjID_warship_react
         fdb   Ani_Asd_none ; ObjID_warship_flamemgr
+        fdb   Ani_Asd_none ; ObjID_warship_wsmgr
         fdb   Ani_Asd_none ; objid.bship.map
         fdb   Ani_Asd_none ; objid.bship.tilesA
         fdb   Ani_Asd_none ; objid.bship.tilesB
@@ -271,6 +275,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage3.cast.imgFire.page ; ObjID_warship_fire
         fcb   map.RAM_OVER_CART+stage3.cast.imgReactor.page ; ObjID_warship_react
         fcb   map.RAM_OVER_CART+stage3.cast.imgFlame.page ; ObjID_warship_flamemgr
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_warship_wsmgr (resident)
         fcb   map.RAM_OVER_CART+stage.page ; objid.bship.map
         fcb   map.RAM_OVER_CART+stage.page ; objid.bship.tilesA
         fcb   map.RAM_OVER_CART+stage.page ; objid.bship.tilesB

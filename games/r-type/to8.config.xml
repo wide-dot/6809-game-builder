@@ -4285,6 +4285,10 @@
                             <images dir="src/enemies/warship-elements/images/small-turret-top-wheel" names="small_turret_top"/>
                             <images dir="src/enemies/warship-elements/images/small-turret-bottom-wheel" names="small_turret_bottom"/>
                             <images dir="src/enemies/warship-elements/images/big-turret-wheel" names="big_turret"/>
+                            <!-- la gerbe GAUCHE des reacteurs de ventre : la page
+                                 des gerbes ne tient plus les trois une fois
+                                 tranchees en 16x12 (gen_warship_flames.py) -->
+                            <images dir="src/enemies/warship-elements/images/flame-wheel-l" names="fl_l"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
@@ -4340,59 +4344,68 @@
                         <gfxcomp file="stage3.cast.imgReactor" gendir="gen/enemies/stage3-cast-imgreactor"
                                  gensource="gen/enemies/stage3-cast-imgreactor/includes.asm"
                                  genindex="gen/enemies/stage3-cast-imgreactor/index.asm">
-                            <images dir="src/enemies/warship-elements/images/rear-reactor" names="rear_reactor"/>
-                            <images dir="src/enemies/warship-elements/images/reactor-startup" names="reactor_startup"/>
-                            <images dir="src/enemies/warship-elements/images/reactor-flame-0" names="reactor_flame_0"/>
-                            <images dir="src/enemies/warship-elements/images/reactor-flame-1" names="reactor_flame_1"/>
+                            <images dir="src/enemies/warship-elements/images/rear-reactor-slices" names="rear_reactor"/>
+                            <images dir="src/enemies/warship-elements/images/reactor-startup-slices" names="reactor_startup"/>
+                            <images dir="src/enemies/warship-elements/images/reactor-flame-0-slices" names="reactor_flame_0"/>
+                            <images dir="src/enemies/warship-elements/images/reactor-flame-1-slices" names="reactor_flame_1"/>
                             <images dir="src/enemies/warship-elements/images/reactor-white-bullet" names="reactor_white_bullet"/>
                             <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom" names="bottom_reactor_bottom"/>
                             <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-left" names="bottom_reactor_bottom_left"/>
                             <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-right" names="bottom_reactor_bottom_right"/>
                             <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-left-full" names="bottom_reactor_bottom_left_full"/>
                             <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-right-full" names="bottom_reactor_bottom_right_full"/>
-                            <images dir="src/enemies/warship-elements/images/escape-capsule" names="escape_capsule"/>
-                            <images dir="src/enemies/warship-elements/images/small-escape-capsule" names="small_escape_capsule"/>
-                            <images dir="src/enemies/warship-elements/images/falling-triangle" names="falling_triangle"/>
+                            <images dir="src/enemies/warship-elements/images/escape-capsule-slices" names="escape_capsule"/>
+                            <images dir="src/enemies/warship-elements/images/small-escape-capsule-slices" names="small_escape_capsule"/>
+                            <images dir="src/enemies/warship-elements/images/falling-triangle-slices" names="falling_triangle"/>
                             <images dir="src/enemies/warship-elements/images/horizontal-laser" names="horizontal_laser"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
 
-                <!-- LES GERBES DES REACTEURS DE VENTRE, ART ET MANAGER DANS
-                     LA MEME ENTREE. Elles etaient trois direntries et trois
-                     ObjID : dix poses de 24x48 par orientation, 36 Ko en tout,
-                     plus du double d'une page.
-                     Deux gestes les ramenent a une (gen_warship_flames.py) :
-                     la chaine arcade ne designe que QUATRE poses uniques sur
-                     ses dix pas, et chaque pose est tranchee en quatre sans
-                     changer de canevas — 15,5 Ko, une page.
-                     LE CODE DU MANAGER EST ICI, avec l'art, et pas dans le
-                     cast : BuildSprites monte la page d'images de l'objet
-                     avant d'appeler sa routine de dessin, donc le dessin et
-                     ce qu'il dessine doivent partager la page. Le cast n'y
-                     entre jamais ; il arme des slots dans le resident.
-                     Voir enemies/warship-elements/reactor/flamemgr.asm. -->
+                <!-- LES GERBES DES REACTEURS DE VENTRE : l'art seul. Elles
+                     etaient trois direntries et trois ObjID : dix poses de
+                     24x48 par orientation, 36 Ko en tout, plus du double
+                     d'une page. La chaine arcade ne designe que QUATRE poses
+                     uniques sur ses dix pas (gen_warship_flames.py), et
+                     chaque pose est tranchee en fenetres de 16x12 sans
+                     changer de canevas — deux gerbes ici, la gauche dans la
+                     page des tourelles.
+                     Le manager des gerbes vit dans le cast depuis le
+                     09/09/2026 : il inscrit les tranches chez wsmgr, qui
+                     monte cette page (Img_Page_Index de l'identifiant) pour
+                     les dessiner. Voir enemies/warship-elements/reactor/flamemgr.asm. -->
                 <file name="stage3.cast.imgFlame" linkdata="DATA" arena="stage3.foes">
                     <lwasm gensource="gen/enemies/stage3-cast-imgflame.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir10/entries.asm"/>
-                        <asm filename="src/enemies/warship-elements/reactor/flamemgr.unit.asm"/>
                         <gfxcomp file="stage3.cast.imgFlame" gendir="gen/enemies/stage3-cast-imgflame"
                                  gensource="gen/enemies/stage3-cast-imgflame/includes.asm"
                                  genindex="gen/enemies/stage3-cast-imgflame/index.asm">
-                            <images dir="src/enemies/warship-elements/images/flame-wheel" names="fl"/>
+                            <images dir="src/enemies/warship-elements/images/flame-wheel-d" names="fl_d"/>
+                            <images dir="src/enemies/warship-elements/images/flame-wheel-r" names="fl_r"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
 
-                <!-- La table des gerbes : residente, parce que le cast l'arme
-                     et que la page ci-dessus la lit. Chargee en zeros comme
-                     stage2.outslay.res. -->
+                <!-- La table des gerbes : residente, chargee en zeros comme
+                     stage2.outslay.res (armee et lue par le cast). -->
                 <file name="stage3.flame.res" linkdata="DATA" arena="stage3.res">
                     <lwasm gensource="gen/stages/03/flame-res.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir10/entries.asm"/>
                         <asm filename="src/enemies/warship-elements/reactor/flameslots.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Le manager des gros sprites mobiles : resident, parce que
+                     son dessin monte lui-meme les pages des pieces qu'il
+                     tranche (16x12, decision auteur 09/09/2026). Voir
+                     enemies/warship-elements/wsmgr/wsmgr.asm. -->
+                <file name="stage3.wsmgr.res" linkdata="DATA" arena="stage3.res">
+                    <lwasm gensource="gen/stages/03/wsmgr-res.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <asm filename="src/enemies/warship-elements/wsmgr/wsmgr.unit.asm"/>
                     </lwasm>
                 </file>
 
@@ -4495,6 +4508,7 @@
                     <load name="stage3.cast.imgReactor"/>
                     <load name="stage3.cast.imgFlame"/>
                     <load name="stage3.flame.res"/>
+                    <load name="stage3.wsmgr.res"/>
                     <load name="stage3.cast"/>
                     <load name="stage3.collision"/>
                     <load name="stage3"/>
