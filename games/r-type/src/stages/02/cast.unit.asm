@@ -68,6 +68,7 @@ set_gouger_hit_tl_bottom_0  EXTERNAL
 set_gouger_hit_tr_bottom_0  EXTERNAL
 set_gouger_hit_bl_bottom_0  EXTERNAL
 set_gouger_hit_br_bottom_0  EXTERNAL
+stage.gougerProfiles EXTERNAL       ; les profils de plongee, dans le main du stage
 gouger.Object    EXPORT
 gouger.Half      EXPORT
 outslay.Object   EXPORT

@@ -54,7 +54,12 @@
 ;       soit -0,5625 v2 — exactement la vitesse primaire du gouger.
 ;   Y : DEUX composantes qui s ajoutent —
 ;         . un rattrapage lent vers (ancre du parent + rand[-32..+31]) a
-;           +/-0,0625 px/trame arcade (0,046875 v2)
+;           +/-0,0625 px/trame arcade (0,046875 v2). LA CIBLE EST RETIREE A
+;           CHAQUE TRAME (887d, random_ax dans le tick, verifie le
+;           09/09/2026) : c'est une marche aleatoire rappelee vers l'ancre,
+;           pas une cible fixee a la naissance. Ici, un tirage par trame
+;           RENDUE et un pas de drop trames dans la direction tiree — la
+;           marche est plus grossiere, ecart assume.
 ;         . un CRENEAU de +/-0,25 px/trame arcade (0,1875 v2) commande par le
 ;           bit 6 d un compteur : amplitude ~32 px arcade (24 v2), periode
 ;           128 trames. C est l ondulation de tetard.
@@ -144,6 +149,9 @@ wick.LIFE       equ $0600              ; 1536 trames de jeu
 wick.VX         equ -144               ; -1,5 px/trame arcade a la difficulte 0
 wick.VTRACK     equ 12                 ; +/-0,0625 arcade : le rattrapage lent
 wick.VOSC       equ 48                 ; +/-0,25 arcade : le creneau
+wick.STRIDE     equ 32                 ; trames qu'un deplacement de derive
+                                       ; avance au plus par tour (24 x 32 << 4
+                                       ; tient sur quinze bits)
 wick.CTORC      equ $40                ; le compte a rebours pose par le ctor
 
 ;*******************************************************************************
@@ -431,15 +439,37 @@ wick.DriftBody
         ; --- mort au premier coup -----------------------------------------
         lda   wick.uAABB+AABB.p,u
         lbeq  wick.Boom
+        ; LES TROIS DEPLACEMENTS DE LA DERIVE SANS MULTIPLICATION 8.8
+        ; (08/09/2026, le geste du gouger) : leurs vitesses sont des
+        ; multiples de puissances de deux — derive 144/288/336/384 =
+        ; (9/18/21/24) << 4, rattrapage 12 = 3 << 2, creneau 48 = 3 << 4 — et
+        ; leur signe est connu (gauche ; comparaison ; bit 6). Un mul 8 bits
+        ; du multiplicateur par le nombre de trames, des decalages fixes, et
+        ; le module s'ajoute ou se retranche a la position 24 bits. Mesure :
+        ; 795 -> ~610 cycles par tour de derive. Le pique garde wick.AddPos,
+        ; ses vitesses viennent de tables quelconques.
+        ldb   wick.drop+1
+        cmpb  #wick.STRIDE
+        bls   >
+        ldb   #wick.STRIDE
+!       stb   wick.n
         ; --- X : la vitesse propre, le defilement etant implicite ----------
         ldb   globals.difficulty       ; la derive s'accelere avec la difficulte
         andb  #3
+        ldx   #wick.DriftM
+        lda   b,x                      ; 9, 18, 21 ou 24
+        ldb   wick.n
+        mul
         aslb
-        ldx   #wick.DriftVx
-        abx
-        ldd   ,x
+        rola
+        aslb
+        rola
+        aslb
+        rola
+        aslb
+        rola                           ; << 4 : 144n .. 384n
         leax  x_pos,u
-        jsr   wick.AddPos
+        jsr   wick.SubAbs              ; toujours vers la gauche
         ; --- Y, premiere composante : le rattrapage lent ------------------
         ldx   wick.uParent,u
         beq   @ancre                   ; parent mort : on garde la derniere
@@ -462,23 +492,45 @@ wick.DriftBody
         addd  #24
         subd  ,s++
         cmpd  y_pos,u
+        pshs  cc                       ; C = cible au-dessus (remonter)
+        lda   #3
+        ldb   wick.n
+        mul
+        aslb
+        rola
+        aslb
+        rola                           ; 12n
+        leax  y_pos,u
+        puls  cc
         bhi   >
-        ldd   #-wick.VTRACK            ; on est sous la cible : remonter
-        bra   @track
-!       ldd   #wick.VTRACK
-@track  leax  y_pos,u
-        jsr   wick.AddPos
+        jsr   wick.SubAbs              ; on est sous la cible : remonter
+        bra   @osc0
+!       jsr   wick.AddAbs
+@osc0
         ; --- Y, seconde composante : le creneau ---------------------------
+        lda   #3
+        ldb   wick.n
+        mul
+        aslb
+        rola
+        aslb
+        rola
+        aslb
+        rola
+        aslb
+        rola                           ; 48n
+        pshs  d                        ; le module, le temps de lire la phase
+        leax  y_pos,u                  ; AVANT le test : leax pose Z
         lda   wick.uOsc,u
         adda  wick.drop+1
         sta   wick.uOsc,u
         bita  #$40
+        puls  d                        ; puls ne touche pas CC
         beq   >
-        ldd   #wick.VOSC               ; bit 6 arme : l'arcade descend
+        jsr   wick.AddAbs              ; bit 6 arme : l'arcade descend
         bra   @osc
-!       ldd   #-wick.VOSC
-@osc    leax  y_pos,u
-        jsr   wick.AddPos
+!       jsr   wick.SubAbs
+@osc
         ; --- l'animation : quatre poses tenues quatre trames --------------
         lda   wick.uAnim,u
         adda  wick.drop+1
@@ -611,8 +663,9 @@ wick.UnitDeleted
 
 ; -----------------------------------------------------------------------------
 ; Deplacer de la vitesse 8.8 en D, compensee du frame-drop, sur le champ
-; pointe par X (haut, bas, fraction). Meme calcul que le gouger : deux `mul`
-; non signes, le produit tronque a seize bits etant juste en complement a deux.
+; pointe par X (haut, bas, fraction) : deux `mul` non signes, le produit
+; tronque a seize bits etant juste en complement a deux. NE SERT PLUS QU'AU
+; PIQUE (vitesses de table) ; la derive passe par AddAbs/SubAbs ci-dessous.
 ; -----------------------------------------------------------------------------
 wick.AddPos
         pshs  a
@@ -638,6 +691,25 @@ wick.AddPos
         rts
 
 wick.tmp        fdb 0
+wick.n          fcb 0                  ; trames d'un deplacement de derive (<= STRIDE)
+
+; D = |delta| 8.8, X = le champ position (haut, bas, fraction).
+wick.AddAbs
+        addd  1,x
+        std   1,x
+        lda   ,x
+        adca  #0                       ; la retenue monte dans l'octet haut
+        sta   ,x
+        rts
+wick.SubAbs
+        std   wick.tmp
+        ldd   1,x
+        subd  wick.tmp
+        std   1,x
+        lda   ,x
+        sbca  #0                       ; l'emprunt descend l'octet haut
+        sta   ,x
+        rts
 
 wick.Poses
         fdb   set_wick_16,set_wick_17,set_wick_18,set_wick_19
@@ -652,9 +724,10 @@ wick.DiffParams
         fdb   16,2
         fdb   8,1
 ; La vitesse de derive par difficulte (1000:3b2a), 8.8 : -1,5 a -4 px/trame
-; arcade, x 0,375.
-wick.DriftVx
-        fdb   -144,-288,-336,-384
+; arcade, x 0,375 = -144, -288, -336, -384 — soit ces multiplicateurs << 4,
+; le signe etant toujours « vers la gauche » (wick.SubAbs).
+wick.DriftM
+        fcb   9,18,21,24
 ; Les seize directions du pique, QUATRE tables — une par difficulte
 ; (1000:3b22 dispatche vers 9010, 9050, 9090, 90D0). La magnitude passe de
 ; 2,6 a 3,6 px/trame arcade de la plus facile a la plus dure.

@@ -53,7 +53,9 @@
 ; L'axe Y arcade monte : $0178 (376) est donc le PLAFOND et $0098 (152) le
 ; SOL — les variantes 0 et 1 descendent (vy negatif), les 2 et 3 montent.
 ; X est fixe a $02D0, juste a droite de l'ecran. Les deux ordonnees sont
-; RAMENEES dans le cadre chez nous, faute de decoupe : voir gouger.PresetY.
+; prises TELLES QUELLES (15 et 183) : le recadrage de la premiere passe
+; (24 et 175, pour que le sprite entier tienne dans le cadre) est tombe
+; avec la coupe en deux moities du 25/08/2026 — voir gouger.PresetY.
 ;
 ; LES POSES. La table d'une variante fait seize mots, mais ce sont HUIT slots
 ; repetes deux fois — et le cycle fait un aller-retour :
@@ -138,6 +140,8 @@
 ;       26/08/2026.
 ;
 ;   B — la plongee. Chaque trame : x_pos += scroll_amount (verrou de defilement),
+;       [v2 : la suite des verdicts est PRECALCULEE par gouger — 08/09/2026,
+;       voir gouger.Dive et doc/analyse-gouger-timings-2026-09.md §6]
 ;       puis SONDE DU DECOR au centre.
 ;         . case VIDE  -> vitesse PRIMAIRE (+0x30/+0x32) et pose FIXE (2).
 ;         . case SOLIDE-> vitesse de TRAINEE (+0x38/+0x3A), animation, et le
@@ -157,12 +161,30 @@
 ; Retrait silencieux hors cadre, mais SEULEMENT si aucun coup n'a ete encaisse
 ; cette trame — le test de visibilite est dans cette branche-la.
 ;
-; LA SONDE, cote v2. L'arcade lit l'index de tuile et le compare a 0xFA0 ;
-; nous avons terrainCollision.do, qui rend B != 0 sur du solide :
-;       ldd   <x>  / std terrainCollision.sensor.x
-;       ldd   <y>  / std terrainCollision.sensor.y
-;       ldb   #1   / jsr terrainCollision.do / tstb
-; B = 0 vaut donc « case vide » et rend exactement le test arcade.
+; LA SONDE, cote v2 : IL N'Y EN A PLUS (08/09/2026, idee auteur). Le gouger
+; ne bouge pas dans le monde en attente, sa plongee part donc toujours de sa
+; position de spawn, et la carte est statique : la suite des verdicts
+; « vide -> plongee / solide -> reptation », trame de jeu par trame de jeu,
+; ne depend que du gouger. tools/gen_gouger_profiles.py la calcule une fois
+; (l'arithmetique du runtime, sur le masque ci-dessous) et l'ecrit dans
+; stage.gougerProfiles (src/stages/02/gouger-profiles.asm, region du stage,
+; lisible sans changement de page) : x de spawn, puis des runs — bit 7 = 1
+; reptation / 0 plongee, bits 0-6 = trames, 0 = fin. Le 4e octet du
+; descripteur de wave est l'index du profil. La plongee coute alors un ou
+; deux deplacements par trame rendue, contre une sonde par trame de jeu
+; (~650 cycles la trame de jeu, mesure au compteur).
+; CE QUE LE MASQUE DOIT ETRE, et ce qui ne l'etait pas (le code et non les plates).
+; La borne a DEUX solidites : le vaisseau, les armes, cancer, pow armor et
+; bink tiennent pour solide tout id < 0xDFC — le critere de level2_fc.bin —
+; tandis que run_gouger (40:7051) ne plonge que sur 0xFA0, LA cellule vide,
+; et rampe sur tout le reste. Au stage 2, 245 cellules (les pointes claires
+; des crocs, rangees 0-5 et 24-29 : la ou il attend et rampe) portent des
+; ids 0xFA1..0xFFC — traversables pour le vaisseau, solides pour lui. Sonde
+; sur la carte du vaisseau, il plongeait des la premiere pointe la ou la
+; borne rampe jusqu'a la roche vide : c'etait l'ecart visible sur une partie
+; des gougers, ceux poses sur ces pointes. D'ou SON masque, level2_gouger.bin
+; = fc + ces cellules (tools/gen_gouger_mask.py), que le generateur de
+; profils lit ; le runtime, lui, n'a plus de carte a consulter.
 ;
 ; CE QUI DEMANDERA UN ARBITRAGE
 ; - le clignotement de coup passe par un echange de palette d'objet ; la
@@ -197,7 +219,12 @@ AABB_0          equ ext_variables      ; 0..8   la boite
 gouger.var      equ ext_variables+9    ; 9      la variante, 0..3
 gouger.trig     equ ext_variables+10   ; 10,11  le declencheur : $FFFF = guetter
                                        ;        le joueur, sinon compte a rebours
-gouger.anim     equ ext_variables+12   ; 12,13  le compteur d'animation
+gouger.cursor   equ ext_variables+10   ; 10,11  EN PLONGEE : le run courant du
+                                       ;        profil (le declencheur a servi)
+gouger.run      equ ext_variables+12   ; 12     bit 7 = reptation, bits 0-6 = les
+                                       ;        trames restantes du run
+gouger.anim     equ ext_variables+13   ; 13     le compteur d'animation (la pose
+                                       ;        ne lit que ses bits 2-4)
 gouger.recoil   equ ext_variables+14   ; 14     le compte a rebours du recul
 gouger.prevP    equ ext_variables+15   ; 15     le potentiel du tour precedent
 gouger.blink    equ ext_variables+16   ; 16     1 = blanc cette trame
@@ -209,6 +236,9 @@ gouger.snap     equ ext_variables+19   ; 19     1 = un pixel a rendre a la vraie
 gouger.hParent  equ ext_variables      ; 0,1    l'OST de son parent
 
 gouger.RECOIL   equ 23                 ; 0x17 trames de jeu, comme l'arcade
+gouger.STRIDE   equ 32                 ; trames qu'un deplacement avance au plus
+                                       ; (384 x 32 tient sur 15 bits, le signe
+                                       ; du delta reste juste)
 
 gouger.Object
         lda   routine,u
@@ -233,13 +263,23 @@ gouger.Init
         abx
         ldd   ,x
         std   y_pos,u
-        ldd   glb_camera_x_pos
-        addd  #144+8+6                 ; arcade $02D0 = 720 : (720-320) x 0,375
-                                       ; + 8 de bordure gauche, comme pata-pata
-                                       ; le fait pour son $02C8 (144+8+3)
+        ; L'ABSCISSE VIENT DU PROFIL : camera + 158 a l'instant arcade
+        ; ($02D0 = 720 : (720-320) x 0,375 + 8 de bordure), calculee par le
+        ; generateur avec la camera exacte de l'horodatage — la wave pose
+        ; l'objet jusqu'a sept trames plus tard, et « camera d'alors moins
+        ; retard x vitesse » pouvait tomber 1 px a gauche selon l'arrondi.
+        ; La trajectoire simulee part de cette valeur : elle doit etre celle
+        ; du jeu, a la fraction pres (nulle).
+        jsr   gouger.Profile           ; X = le profil de CE gouger
+        ldd   ,x
         std   x_pos,u
         clr   x_pos+2,u                ; la fraction repart nette
         clr   y_pos+2,u
+        ; LE RETARD DE WAVE (08/09/2026, doc/analyse-gouger-timings-2026-09.md) :
+        ; le compte a rebours a deja couru pendant le retard — l'outslay et
+        ; le pata-pata font de meme.
+        lda   wave_frame_drop,u
+        sta   @late
         puls  b                        ; bits 2-3 : le declencheur
         lsrb
         lsrb
@@ -248,7 +288,11 @@ gouger.Init
         ldx   #gouger.PresetTrig
         abx
         ldd   ,x
-        std   gouger.trig,u
+        bmi   >                        ; le guet n'a pas d'horloge
+        subb  #0                       ; le compte a rebours a deja couru
+@late   equ   *-1                      ; pendant le retard de wave
+        sbca  #0
+!       std   gouger.trig,u
         lda   #render_playfieldcoord_mask
         sta   render_flags,u
         _Collision_AddAABB AABB_0,AABB_list_ennemy
@@ -271,7 +315,7 @@ gouger.Init
         lda   ,x
         sta   id,u
         ldd   #0
-        std   gouger.anim,u
+        std   gouger.run,u             ; run ET anim : rien encore
         std   gouger.child,u           ; pas encore d'enfant
         clr   gouger.recoil,u
         clr   gouger.blink,u
@@ -346,6 +390,10 @@ gouger.Hidden
         bra   @dessine
 @plonge lda   #2
         sta   routine,u
+        jsr   gouger.Profile           ; le profil prend la main : curseur sur
+        leax  2,x                      ; son premier run (apres x_spawn), run
+        stx   gouger.cursor,u          ; courant vide — Dive le lira
+        clr   gouger.run,u
         ldb   #1                       ; encore contre la paroi cette trame
 @dessine
         jsr   gouger.Draw
@@ -358,24 +406,67 @@ gouger.Hidden
 gouger.Dive
         jsr   gouger.Frame
         lbne  gouger.Gone
-        ldd   x_pos,u
-        std   terrainCollision.sensor.x
-        ldd   y_pos,u
-        std   terrainCollision.sensor.y
-        ldb   #1
-        jsr   terrainCollision.do
-        tstb
-        bne   @rampe
-        ldx   #gouger.VelPrim          ; case vide : la plongee
-        jsr   gouger.Move
+        ; LE PROFIL PRECALCULE (08/09/2026, idee auteur — voir « LA SONDE »
+        ; en tete et doc/analyse-gouger-timings-2026-09.md §6). Les trames de
+        ; jeu du tour se jouent run par run : un run = un mode (bit 7) et des
+        ; trames restantes ; on avance d'un coup du minimum entre ce qui
+        ; reste au run et ce qui reste au tour (MovePrim/MoveTrail decalent), puis
+        ; on passe au run suivant si le premier est epuise. En pratique un
+        ; ou deux deplacements par trame rendue, la ou la sonde par trame de
+        ; jeu coutait ~650 cycles chacune (mesure, gouger_cost_probe.py).
+        ; L'ordre arcade « sonde puis deplacement » est celui du generateur.
+        ldb   gouger.var,u             ; les signes de la variante, pour Move :
+        andb  #1                       ; bit 0 -> x vers la gauche
+        stb   gouger.negX
+        ldb   gouger.var,u
+        andb  #2                       ; bit 1 -> y vers le haut (au sol)
+        stb   gouger.negY
+        ldb   gouger.drop+1            ; les trames de jeu a jouer (>= 1)
+@loop   lda   gouger.run,u
+        anda  #$7F
+        bne   @have
+        ldy   gouger.cursor,u          ; run epuise : le suivant
+        lda   ,y+
+        beq   @hold                    ; fin de profil : le mode reste
+        sty   gouger.cursor,u
+        sta   gouger.run,u
+        anda  #$7F
+        bra   @have
+@hold   lda   gouger.run,u             ; 127 trames de plus du meme mode — il
+        ora   #$7F                     ; est deja hors cadre, Frame l'ote
+        sta   gouger.run,u
+        lda   #$7F
+@have   pshs  b                        ; A = reste du run, B = reste du tour
+        cmpa  ,s
+        bls   >
+        lda   ,s                       ; le run deborde le tour : jouer B
+!       cmpa  #gouger.STRIDE
+        bls   >
+        lda   #gouger.STRIDE           ; jamais plus que le produit ne tient
+!       sta   gouger.n                 ; k trames d'un coup
+        ldb   gouger.run,u
+        subb  gouger.n                 ; le bit 7 survit : reste >= k
+        stb   gouger.run,u
+        bmi   @rampe                   ; N = le bit 7 de l'octet range
+        jsr   gouger.MovePrim          ; case vide : la plongee
         ldb   #2                       ; la pose que l'arcade fige
-        bra   @dessine
-@rampe  ldx   #gouger.VelTrail         ; case solide : la reptation
-        jsr   gouger.Move
-        jsr   gouger.Anim
+        stb   gouger.slot
+        bra   @next
+@rampe  jsr   gouger.MoveTrail         ; case solide : la reptation
+        lda   gouger.anim,u            ; l'animation compte par trame de jeu
+        adda  gouger.n                 ; (7077 : INC par tick)
+        sta   gouger.anim,u
+        lsra
+        lsra
+        anda  #7                       ; un slot toutes les quatre trames
+        sta   gouger.slot
+@next   puls  b
+        subb  gouger.n
+        bne   @loop
+        ldb   gouger.slot
 @dessine
-        pshs  b                        ; le calage APRES la sonde et le
-        jsr   gouger.Snap              ; deplacement, AVANT le dessin — c'est
+        pshs  b                        ; le calage APRES le deplacement et
+        jsr   gouger.Snap              ; AVANT le dessin — c'est
         puls  b                        ; lui qui recopie x_pos chez l'enfant
         jsr   gouger.Draw
         jmp   DisplaySprite
@@ -531,12 +622,23 @@ gouger.Half
 ; L'animation : une horloge de JEU. B rend le slot du cycle, 0..7.
 ; -----------------------------------------------------------------------------
 gouger.Anim
-        ldd   gouger.anim,u
-        addd  gouger.drop
-        std   gouger.anim,u
+        ldb   gouger.anim,u
+        addb  gouger.drop+1
+        stb   gouger.anim,u
         lsrb                           ; une pose toutes les quatre trames
         lsrb
         andb  #7
+        rts
+
+; -----------------------------------------------------------------------------
+; X = le profil de ce gouger (stage.gougerProfiles, region du stage) : le 4e
+; octet du descripteur de wave est son index, ecrit par le generateur.
+; -----------------------------------------------------------------------------
+gouger.Profile
+        ldb   subtype,u
+        aslb
+        ldx   #stage.gougerProfiles
+        ldx   b,x
         rts
 
 ; -----------------------------------------------------------------------------
@@ -601,44 +703,90 @@ gouger.Child
 @seul   rts
 
 ; -----------------------------------------------------------------------------
-; Deplacer des deux vitesses 8.8 pointees par X, compensees du frame-drop.
-; Le produit vitesse x n tient sur seize bits (384 x 8 = 3072) et le calcul
-; tronque a seize bits est juste en complement a deux — meme raison que pour le
-; vol libre du serpent, voir slither/obj.asm.
+; Deplacer de gouger.n trames (un run du profil, ou ce qu'il en reste dans le
+; tour : gouger.STRIDE au plus), a la vitesse du mode.
+;
+; SANS MULTIPLICATION 8.8 (08/09/2026). Les quatre vitesses arcade ramenees a
+; notre echelle sont des multiples de puissances de deux :
+;     plongee   x 144 = 9 << 4     y 384 = 3 << 7
+;     reptation x  36 = 9 << 2     y  96 = 3 << 5
+; Le delta d'un run vaut donc (9 x n) ou (3 x n) — UN mul 8 bits, n <= 32 —
+; decale d'un nombre fixe de rangs ; et le signe est celui de la variante
+; (bit 0 : x vers la gauche, bit 1 : y vers le haut), pose dans negX/negY en
+; tete de Dive. L'ancien gouger.AddPos multipliait les deux octets de la
+; vitesse par n (deux mul et leur remue-menage de registres, 112 cycles par
+; axe) ; ici ~34 cycles le delta et 28 a 40 l'addition 24 bits.
+; CES DECOMPOSITIONS SONT CELLES DES CONSTANTES DE gen_gouger_profiles.py
+; (VEL_PRIM, VEL_TRAIL) : le generateur les verifie, changer une vitesse
+; c'est changer les deux.
 ; -----------------------------------------------------------------------------
-gouger.Move
-        ldb   gouger.var,u
+gouger.MovePrim
+        lda   #9
+        ldb   gouger.n
+        mul                            ; 9n, 288 au plus
         aslb
-        aslb                           ; quatre octets par variante
-        abx
-        pshs  x
-        ldd   ,x
+        rola
+        aslb
+        rola
+        aslb
+        rola
+        aslb
+        rola                           ; 144n
         leax  x_pos,u
-        jsr   gouger.AddPos
-        puls  x
-        ldd   2,x
+        bsr   gouger.AddX
+        lda   #3
+        ldb   gouger.n
+        mul                            ; 3n, 96 au plus : tient dans B
+        tfr   b,a
+        clrb                           ; 3n << 8
+        lsra
+        rorb                           ; 384n
         leax  y_pos,u
-; D = vitesse 8.8 signee, X = le champ position (haut, bas, fraction)
-gouger.AddPos
-        pshs  a                        ; l'octet haut de la vitesse
-        lda   gouger.drop+1
-        mul                            ; D = octet bas x n
-        std   gouger.tmp
-        puls  a
-        ldb   gouger.drop+1
-        mul                            ; D = octet haut x n
-        tfr   b,a                      ; ... decale de huit bits
-        clrb
-        addd  gouger.tmp               ; le delta complet, tronque a 16 bits
-        pshs  d
-        ldb   ,s                       ; son octet haut : le signe
-        sex
-        sta   @a+1
-        puls  d
+        bra   gouger.AddY
+gouger.MoveTrail
+        lda   #9
+        ldb   gouger.n
+        mul
+        aslb
+        rola
+        aslb
+        rola                           ; 36n
+        leax  x_pos,u
+        bsr   gouger.AddX
+        lda   #3
+        ldb   gouger.n
+        mul
+        tfr   b,a
+        clrb                           ; 3n << 8
+        lsra
+        rorb
+        lsra
+        rorb
+        lsra
+        rorb                           ; 96n
+        leax  y_pos,u
+        bra   gouger.AddY
+; D = |delta| 8.8, X = le champ position (haut, bas, fraction) : ajouter ou
+; retrancher selon le signe de la variante (Z du tst, que bra conserve).
+gouger.AddX
+        tst   gouger.negX
+        bra   gouger.AddD
+gouger.AddY
+        tst   gouger.negY
+gouger.AddD
+        bne   @sub
         addd  1,x                      ; les deux octets bas de la position
         std   1,x
         lda   ,x
-@a      adca  #$00
+        adca  #0                       ; la retenue monte dans l'octet haut
+        sta   ,x
+        rts
+@sub    std   gouger.tmp
+        ldd   1,x
+        subd  gouger.tmp
+        std   1,x
+        lda   ,x
+        sbca  #0                       ; l'emprunt descend l'octet haut
         sta   ,x
         rts
 
@@ -691,6 +839,10 @@ gouger.Snap
 
 gouger.drop     fdb 0                  ; trames de jeu de ce tour
 gouger.tmp      fdb 0
+gouger.n        fcb 0                  ; trames que Move avance
+gouger.negX     fcb 0                  ; 1 = la variante va vers la gauche
+gouger.negY     fcb 0                  ; 2 = la variante va vers le haut
+gouger.slot     fcb 0                  ; le slot de pose du dernier run joue
 
 ; -----------------------------------------------------------------------------
 ; LES TABLES. Tout vient du releve arcade — voir la fiche en tete de fichier.
@@ -717,17 +869,13 @@ gouger.PresetTrig
 gouger.Compass
         fdb   $0018,$0028,$0008,$0038
 ; vitesses a l'echelle du jeu (x 0.375 en x, x 0.75 en y). L'axe Y arcade
-; MONTE, le notre descend : le signe de vy est donc inverse.
-gouger.VelPrim
-        fdb    144,384  ; var 0 : plafond, vers la droite
-        fdb   -144,384  ; var 1 : plafond, vers la gauche
-        fdb    144,-384  ; var 2 : sol, vers la droite
-        fdb   -144,-384  ; var 3 : sol, vers la gauche
-gouger.VelTrail
-        fdb     36,96
-        fdb    -36,96
-        fdb     36,-96
-        fdb    -36,-96
+; MONTE, le notre descend : le signe de vy est donc inverse. Elles ne sont
+; plus des tables mais des constantes de gouger.MovePrim/MoveTrail (les
+; decalages) et du generateur de profils :
+;     plongee   var 0 : +144,+384   var 1 : -144,+384
+;               var 2 : +144,-384   var 3 : -144,-384
+;     reptation var 0 :  +36, +96   var 1 :  -36, +96
+;               var 2 :  +36, -96   var 3 :  -36, -96
 ; le cycle slot -> pose, tel que --dedup l'a ecrit dans cycle.txt
 gouger.CycA
         fcb   0,1,2,3,2,1,0,4
