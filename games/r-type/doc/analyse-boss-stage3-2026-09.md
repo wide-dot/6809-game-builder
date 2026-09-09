@@ -213,10 +213,19 @@ décision d'auteur, comme pour tout son nouveau.
   (63) → recul (36) → pompe (63, 3 à 7 feux en vol) en boucle jusqu'à la
   fin du script ; mort forcée en phase ouverte → +10 000, cascade de
   320 trames, passation au stage 4. rtype_bench 7/7.
+- **Collision joueur (09/09, soir)** : comme l'arcade, hors phase ouverte
+  la boîte est dans la liste ennemie (elle tue le joueur au contact et
+  absorbe les tirs), en phase ouverte elle passe dans la liste des points
+  faibles `AABB_list_target`, que seules les armes rencontrent. Changer de
+  liste exige `_Collision_CleanLinksAABB` entre le retrait et l'ajout
+  (macros.asm) — sans quoi la boîte reste dans les deux listes, vérifié.
+- **Flash de coup (09/09, soir)** : la pose ouverte est convertie une
+  seconde fois sous la palette arcade du flash (`0x55`, blanche :
+  `core_open_flash`, entrée de catalogue), et le noyau l'affiche un rendu
+  sur deux pendant deux rendus après un coup — six trames arcade n'en
+  feraient pas un chez nous.
 - **Non porté, à décider** : l'effacement des 256 cases de coque à la
-  mort ; la collision joueur/noyau qui n'existe pas en phase ouverte dans
-  l'arcade (ici la liste ennemie touche le joueur dans toutes les
-  phases) ; le son de lancement du feu.
+  mort ; le son de lancement du feu.
 
 ## 10. Le cache de coque (09/09/2026)
 
