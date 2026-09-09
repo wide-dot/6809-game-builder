@@ -3,8 +3,8 @@
 ;
 ; ELLE EST PERMANENTE, EN PAGE 26 AVEC LES AUTRES MUSIQUES (04/09/2026, plan de
 ; l'auteur). Le bloc musical de la page est calé en TÊTE : musiques communes
-; $0000-$0B4D, créneau de stage $0B4D-$1B0D dimensionné sur la plus grosse
-; (stage 1, 4 032 octets), puis cette piste $1B0D-$1FCF ; les tuiles coulent
+; $0000-$0B62, créneau de stage $0B70-$1B50 dimensionné sur la plus grosse
+; (stage 1, 4 052 octets), puis cette piste $1B50-$2011 ; les tuiles coulent
 ; dans l'unique zone qui reste, $1FCF-$4000 (8 241 octets, il en reste 18 au
 ; pire stage). Chargée au boot, jamais échangée : la séquence GAME OVER ->
 ; classement -> CONTINUE se joue SANS AUCUN CHARGEMENT, comme sur la borne.
