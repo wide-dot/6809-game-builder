@@ -217,3 +217,18 @@ décision d'auteur, comme pour tout son nouveau.
   mort ; la collision joueur/noyau qui n'existe pas en phase ouverte dans
   l'arcade (ici la liste ennemie touche le joueur dans toutes les
   phases) ; le son de lancement du feu.
+
+## 10. Le cache de coque (09/09/2026)
+
+L'arcade dessine le noyau DERRIÈRE le plan de tuiles : au repos il est dans
+une cavité de la coque, et sa glissade de 13 px le fait passer sous la masse
+de coque de droite. Notre couche est peinte avant les sprites. Le geste
+retenu : le noyau inscrit chez wsmgr, juste après lui-même, un morceau de
+coque découpé dans `battleship.png` autour de sa position de repos (352,
+102 en couche), fenêtre 48 × 36, la cavité rendue transparente par
+remplissage du noir connexe à son centre (`tools/gen_core_cover.py` →
+`images/core-cover`, 8 tranches, `core/cover.equ` pour l'écart de canevas).
+Le cache est ancré à la position de repos, il ne glisse pas ; il est inscrit
+à chaque trame, clignotement compris. Vérifié sous toje aux quatre
+positions : visible dans la cavité, caché sous la coque en glissant, ouvert
+en dépassant de la coque, revenu dans la cavité pour pomper.

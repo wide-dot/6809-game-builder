@@ -51,3 +51,11 @@ set_core_open_0  EXTERNAL
 set_core_open_1  EXTERNAL
 set_core_open_2  EXTERNAL
 set_core_open_3  EXTERNAL
+set_core_cover_0  EXTERNAL
+set_core_cover_1  EXTERNAL
+set_core_cover_2  EXTERNAL
+set_core_cover_3  EXTERNAL
+set_core_cover_4  EXTERNAL
+set_core_cover_5  EXTERNAL
+set_core_cover_6  EXTERNAL
+set_core_cover_7  EXTERNAL

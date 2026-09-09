@@ -51,7 +51,9 @@ JEUX = [
      ('falling-triangle', 'falling_triangle')),
     # le NOYAU (le boss, 09/09/2026) : 24x24 comme la petite capsule et le
     # triangle, il glisse de 13 px en s'ouvrant et suit la coque — chez wsmgr
-    (('core_anim', 'core_anim'), ('core_opening', 'core_opening'), ('core_open', 'core_open')),
+    (('core_anim', 'core_anim'), ('core_opening', 'core_opening'), ('core_open', 'core_open'),
+     # et le cache de coque qui le recouvre (gen_core_cover.py)
+     ('core-cover', 'core_cover')),
 ]
 TABLES = [('react.sl', 'reactor/slices.asm', 'reactor/slices.ext.asm'),
           ('core.sl', 'core/slices.asm', 'core/slices.ext.asm')]
