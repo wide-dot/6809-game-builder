@@ -116,18 +116,68 @@ Live
         lbmi  SkipPlayer1Controls      ; negative means player is not controlled
         jsr   ApplyJoypadInput
 @testFire
-        ; press fire
-        lda   joypad.pressed.fire
-        anda  #joypad.0.A
-        beq   @testHoldFire
+        ; UN TIR PAR APPUI (09/09/2026, decision auteur : ne pas penaliser le
+        ; joueur quand le jeu ralentit). L'IRQ a note la TRAME F de chaque
+        ; appui sur A (joypad.taps, octet bas de gfxlock.frame.count). Chaque
+        ; tir nait a la position du vaisseau a cette trame-la — l'anneau que
+        ; ApplyJoypadInput vient de remplir, une entree (x ecran, y) par
+        ; trame, la derniere sous le pointeur, celle de la trame courante —
+        ; et en retard de lastCount - F trames, que weapon.Init rattrape a
+        ; 6 px la trame : lastCount est la trame de la bascule de tampons,
+        ; l'horloge sur laquelle le pas suivant du tir ajoutera 6 x drop.
+        ; Borne a drop - 1 (le plafond de frame drop compresse les trames
+        ; reelles) et a zero (un appui apres la bascule). Avant : un seul tir
+        ; par rendu, a la position d'AVANT le deplacement du rendu, sans
+        ; rattrapage.
+        clr   player1.tapIdx
+@tap    ldb   player1.tapIdx
+        cmpb  joypad.taps.count
+        bhs   @tapsDone
         jsr   LoadObject_x
-        beq   @testHoldFire            ; branch if no more available object slot
+        beq   @tapsDone                ; plus de slot : les appuis restants se perdent
         lda   #ObjID_Weapon            ; fire !
         sta   id,x
-        ldd   player1+x_pos
+        ldb   player1.tapIdx
+        inc   player1.tapIdx
+        ldy   #joypad.taps
+        ldb   b,y                      ; F, la trame de l'appui
+        pshs  b
+        lda   gfxlock.frame.lastCount+1
+        suba  ,s                       ; lastCount - F, modulo 256
+        bpl   >
+        clra                           ; appui apres la bascule : rien a rattraper
+!       ldb   gfxlock.frameDrop.count
+        beq   @late                    ; (count = 0 : 1re boucle apres un checkpoint)
+        decb
+        pshs  b
+        cmpa  ,s+
+        bls   @late
+        tfr   b,a                      ; jamais plus que drop - 1
+@late   sta   wave_frame_drop,x
+        lda   gfxlock.frame.count+1    ; l'entree de l'anneau : (maintenant - F)
+        suba  ,s+                      ; trames sous le pointeur, une au moins
+        bne   >
+        inca
+!       cmpa  #32
+        bls   >
+        lda   #32                      ; l'anneau n'en a que trente-deux
+!       asla
+        asla
+        nega
+        ldy   player_pos_ring_buffer_ptr
+        leay  a,y
+        cmpy  #player_pos_ring_buffer
+        bhs   >
+        leay  4*32,y                   ; l'anneau boucle
+!       ldd   ,y                       ; x ecran a cette trame
+        addd  glb_camera_x_pos
         std   x_pos,x
-        ldd   player1+y_pos
+        ldd   2,y
         std   y_pos,x
+        bra   @tap
+@tapsDone
+        lda   joypad.taps.count
+        beq   @testHoldFire            ; pas d'appui ce tour
         ; --- missiles : gate (débloqué par bonus) + paire pas déjà en vol ---
         lda   globals.missileUnlocked
         beq   @testHoldFire
@@ -448,6 +498,8 @@ SetVerticalAnim
 
 bank.step    fcb 0                         ; SetVerticalAnim scratch (frames this tick)
 ship.bankCnt fcb bank.CENTER              ; ship tilt counter (reset to neutral in Init)
+
+player1.tapIdx  fcb   0                ; l'appui en cours de service (@testFire)
 
 ; Apply joypad input to player velocity and position
 ; Uses the speed.preset table to determine velocities based on direction
