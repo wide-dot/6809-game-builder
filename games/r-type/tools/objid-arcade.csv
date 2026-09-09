@@ -24,7 +24,7 @@ id,nom_arcade,addr_rom,stages,sprites,note
 16,city-panel,0x8c12,7,non,decor du niveau 7 — pas dans src/enemies/
 18,fast,0x8469,7,oui,
 20,geld,0x8f5e,4,oui,arcade ecrit « Geld » avec une majuscule ; le dossier est `geld`
-23,warship-core,0xc46e,3,non,a rapprocher de src/enemies/warship-elements/ (non verifie)
+23,warship-core,0xc46e,3,oui,le MAITRE du vaisseau (create_warship) — porte par warship/pilot.asm ; le noyau (boss) est 0xdcc0 dans le script de spawn du vaisseau (doc/analyse-boss-stage3-2026-09.md)
 26,palette_blackout_15_bg_cadence3,0x5596,7,non,effet de palette, pas un ennemi
 30,pursuer,0x7182,5,oui,
 31,newt,0x7294,6,oui,
