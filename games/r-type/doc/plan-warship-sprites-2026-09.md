@@ -171,6 +171,34 @@ par gerbe quand une partie de ses tranches sort de la bande ; un rendu à
 du balayage montrent chaque pièce en place : flamme géante derrière le
 réacteur arrière, jets coupés net sur le sol, capsule et son laser.
 
+## 4 ter. Les flammes vérifiées contre l'arcade (09/09/2026)
+
+Relecture du code arcade (`40:cee6` la flamme géante, `40:dac8`/`db02`
+les gerbes) et chronologie sous toje des listes inscrites chez wsmgr à
+chaque rendu, sur toute la traversée.
+
+- **Flamme géante** : compteur de 112 trames, 16 d'allumage puis 96 de
+  flamme ; l'arcade peint à chaque trame un bandeau de 128 × 32 en quatre
+  sprites, avec deux frames A/B alternées au bit 2 du compteur. Nos deux
+  images sont ces frames A et B, complètes. Chez nous le compteur descend
+  de sept par rendu, le bit 2 sautait au hasard : la couche alterne à
+  chaque rendu (décision auteur). Mesuré : six épisodes de 18 rendus,
+  `S2 S1` puis `F1 F0 F1 F0 …` strictement. L'allumage n'a que deux
+  rendus pour quatre poses arcade, il en montre deux.
+- **Gerbes de ventre** : chaîne de dix pas de cinq trames, quatre poses
+  uniques, offsets par zone (0,−42), (37,−32), (−37,−32) arcade — les
+  nôtres. Défaut trouvé : la vie était vieillie avant le choix de la
+  pose, la pose 0, la bouffée initiale, n'apparaissait jamais. La pose se
+  lit sur la vie d'avant. Mesuré : `0 1 2 3 2 2 3 2 3` à droite et à
+  gauche, `0 1 2 1 2 2 3 2 3` en bas, la chaîne arcade échantillonnée à
+  notre cadence. De la trame 4900 à la passation, les quatre réacteurs
+  du bas soufflent en continu vers le bas, c'est la fin du script.
+- **Non porté, à signaler** : les trois mini-flammes des petits orifices
+  du réacteur arrière (`cf6c/cf7c/cf8c`, images `reactor-mini-*`, jamais
+  montées), la bouffée d'épave des réacteurs de ventre (chaîne `7fc4`,
+  images `small-puffs`), et la boîte de collision de la flamme géante,
+  qui tue le joueur au contact dans l'arcade.
+
 ## 5. Les étapes
 
 1. Le générateur et le manager résident, protocole, mesure du coût sous
