@@ -101,7 +101,7 @@ que le plan de collision de fond vient d'adopter, pour la même raison.
 | 3 | l'épave dans la tilemap | chirurgie de couche `c8e8` | 2 |
 | 4 | tourelles de proue et multiples | 10 objets, patrons voisins | 1 |
 | 5 | réacteurs, capsules, triangle | 10 objets, comportements propres | 1 |
-| 6 | le cœur et la fin de séquence | `DCC0`, le fondu vers le stage 4 | 2, 5 |
+| 6 | le cœur et la fin de séquence | `DCC0`, le fondu vers le stage 4 — **FAIT le 09/09/2026** (`core/obj.asm`, `doc/analyse-boss-stage3-2026-09.md` § 9 ; reste l'effacement de coque) | 2, 5 |
 
 La tranche 1 est la fondation : **le spawner sert tout le reste**, et les
 tourelles sont l'élément que l'on voit et que l'on tire en premier. Les

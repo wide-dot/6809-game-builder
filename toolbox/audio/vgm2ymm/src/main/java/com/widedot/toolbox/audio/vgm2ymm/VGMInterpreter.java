@@ -180,15 +180,48 @@ public class VGMInterpreter {
 		return this.input.getTotalSamples();
 	}
 
+	// The register order of the loop-point snapshot : everything that shapes
+	// a note (user patch, rhythm, F-number low, instrument/volume) BEFORE the
+	// key-on/block registers 0x20-0x28, so that a channel keyed on across the
+	// loop boundary retriggers with its final settings.
+	private static final int[] SNAPSHOT_ORDER = buildSnapshotOrder();
+
+	private static int[] buildSnapshotOrder() {
+		int[] order = new int[0x39];
+		int n = 0;
+		for (int r = 0x00; r <= 0x0F; r++) order[n++] = r;
+		for (int r = 0x10; r <= 0x1F; r++) order[n++] = r;
+		for (int r = 0x30; r <= 0x38; r++) order[n++] = r;
+		for (int r = 0x20; r <= 0x2F; r++) order[n++] = r;
+		return order;
+	}
+
 	public void fireLoopPointHit() {
 		loopMarkerHit = s;
 		
-		// reinit cache at loop start
-		for (int i=0; i < ymupd.length; i++) {
-			ymupd[i] = false;
+		// THE LOOP POINT CARRIES A FULL SNAPSHOT OF THE CHIP STATE (2026-09-09).
+		// The stream only holds the writes the VGM makes, minus the redundant
+		// ones : after the loop point, a register the song never rewrites
+		// (instrument, volume, user patch, rhythm mode) is simply absent. The
+		// natural loop never notices, the chip still holds the values. But
+		// `ymm.restart` — the checkpoint reload after a death — resumes at the
+		// loop point from WHATEVER state the chip was in when the player died,
+		// notes keyed on included : wrong instruments and hanging notes until
+		// the song happened to rewrite them (author's report, stage 1
+		// checkpoint). Emitting every register known so far at the loop point
+		// makes the loop segment self-contained : ~57 writes, once per loop,
+		// compressed with the rest.
+		int written = 0;
+		for (int cmd : SNAPSHOT_ORDER) {
+			if (ymupd[cmd]) {
+				arrayOfInt[s++] = cmd;
+				arrayOfInt[s++] = ymreg[cmd];
+				written++;
+			}
 		}
+		// the cache stays valid : the snapshot IS the state the loop starts from
 		
-		log.debug(String.format("            [LOOP POINT: %04X]", s));
+		log.debug(String.format("            [LOOP POINT: %04X, snapshot of %d registers]", loopMarkerHit, written));
 	}
 
 	public void fireWrite(int cmd, int data) {

@@ -185,6 +185,15 @@ ymm.restart
         stu   ymm.data.pos
         jsr   ymm.buffer.reset         ; meme table rase qu'au lancement
         jsr   ymm.decompress
+        ; LA PUCE EST TUE AVANT DE REPARTIR (2026-09-09) : le joueur meurt au
+        ; milieu d'une note, la reprise au point de bouclage la laissait
+        ; sonner et gardait les reglages du moment de la mort — fausses notes
+        ; et notes tronquees au rechargement de checkpoint (releve auteur).
+        ; ym2413.init eteint les percussions et les neuf canaux (key off), et
+        ; le flux, qui porte depuis le meme jour un instantane complet des
+        ; registres a son point de bouclage (vgm2ymm), repose tout le reste
+        ; dans la trame qui suit. Le meme geste que ymm.obj.play.
+        jsr   ym2413.init
         jsr   ymm.frame.play
         lda   #0
 @page   equ   *-1

@@ -26,4 +26,9 @@ react.LASER     equ 5
 react.DETACH    equ 6                  ; la petite capsule
 react.DETACH2   equ 7                  ; le triangle qui tombe
 
+; groupe `boss` : la page d'images stage3.cast.imgCore — le noyau (le boss du
+; stage 3, 40:dcc0) et le feu qu'il crache (40:e00f), bit 0 du sous-type
+boss.CORE       equ 0
+boss.FIRE       equ 1
+
  ENDC

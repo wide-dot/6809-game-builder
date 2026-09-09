@@ -105,7 +105,7 @@
         fdb   144,150,42
         fcb   ObjID_warship_react,react.BREACTOR ; #40 reacteur de ventre
         fdb   155,150,-18
-        fcb   0,0 ; #41 arcade DCC0, pas encore porte
+        fcb   ObjID_warship_boss,boss.CORE ; #41 le noyau — le boss
         fdb   156,150,42
         fcb   ObjID_warship_react,react.BREACTOR ; #42 reacteur de ventre
         fdb   165,150,-60

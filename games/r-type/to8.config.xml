@@ -31,7 +31,7 @@
                 <!-- $1A : bloc musical en $1C9B-$3C00 — lecteur YMM (résident) puis
                      les musiques communes (résidentes) puis la piste du stage
                      (alternative). Deux fenetres libres de part et d'autre. -->
-                <zone page="$1A" address="$1FCF" size="$2031"/>
+                <zone page="$1A" address="$2020" size="$1FE0"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -43,7 +43,7 @@
             <arena name="stage2.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <zone page="$1A" address="$1FCF" size="$2031"/>
+                <zone page="$1A" address="$2020" size="$1FE0"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -53,7 +53,7 @@
             <arena name="stage3.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <zone page="$1A" address="$1FCF" size="$2031"/>
+                <zone page="$1A" address="$2020" size="$1FE0"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <!-- $1C-$1F : la couche battleship (mscroll) est POSEE en dur —
                      les tilesets doivent partager la meme adresse dans leurs
@@ -127,7 +127,7 @@
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
                 <!-- $1A : fenetre de tete seule (queue laissee au bloc musical) -->
-                <zone page="$1A" address="$1FCF" size="$2031"/>
+                <zone page="$1A" address="$2020" size="$1FE0"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <!-- $1D RETIREE (28/08/2026) : c'est pscroll.buf3, le quatrieme
@@ -143,7 +143,7 @@
             <arena name="stage5.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <zone page="$1A" address="$1FCF" size="$2031"/>
+                <zone page="$1A" address="$2020" size="$1FE0"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -153,7 +153,7 @@
             <arena name="stage6.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <zone page="$1A" address="$1FCF" size="$2031"/>
+                <zone page="$1A" address="$2020" size="$1FE0"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -163,7 +163,7 @@
             <arena name="stage7.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <zone page="$1A" address="$1FCF" size="$2031"/>
+                <zone page="$1A" address="$2020" size="$1FE0"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -174,7 +174,7 @@
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
                 <!-- $1A : fenetre de tete seule (queue laissee au bloc musical) -->
-                <zone page="$1A" address="$1FCF" size="$2031"/>
+                <zone page="$1A" address="$2020" size="$1FE0"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -1163,14 +1163,18 @@
 
                 <!-- La musique de la SAISIE DES INITIALES, PERMANENTE (04/09/2026,
                      plan de l'auteur) : le bloc musical de la page 26 est cale en
-                     TETE de page — musiques communes $0000-$0B4D, creneau
-                     de stage $0B4D-$1B0D dimensionne sur la plus grosse (stage 1,
-                     4032 octets), puis cette piste $1B0D-$1FCF — et les tuiles
-                     coulent dans l'unique zone qui reste, $1FCF-$4000. Chargee au
+                     TETE de page — musiques communes $0000-$0B62, creneau
+                     de stage $0B70-$1B50 dimensionne sur la plus grosse (stage 1,
+                     4052 octets), puis cette piste $1B50-$2011 — et les tuiles
+                     coulent dans l'unique zone qui reste, $2020-$4000. (Le
+                     09/09/2026 les pistes a point de bouclage ont grossi d'un
+                     instantane des registres — boss +21, stage 1 +20 — et tout
+                     le bloc a glisse, avec une marge d'une douzaine d'octets
+                     entre chaque piece.) Chargee au
                      boot, jamais echangee : plus aucun chargement au game over ni au
                      continue. Si une musique de stage depasse le creneau, elle
                      recouvre celle-ci et le build refuse. -->
-<file name="common.nameentry.ymm" linkdata="DATA" page="$1A" address="$1B0D">
+<file name="common.nameentry.ymm" linkdata="DATA" page="$1A" address="$1B50">
                     <lwasm gensource="gen/sound/nameentry-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir10/entries.asm"/>
@@ -2489,7 +2493,7 @@
                 <!-- Musiques du title. YMM : le lecteur resident ne monte qu'une page,
                      les donnees d'un morceau vivent avec lui — la place du title est
                      CELLE du bloc musical des stages (alternative). -->
-                <file name="title.music.ymm" linkdata="DATA" page="$1A" address="$0B4D">
+                <file name="title.music.ymm" linkdata="DATA" page="$1A" address="$0B70">
                     <lwasm gensource="gen/sound/title-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir10/entries.asm"/>
@@ -2610,7 +2614,7 @@
                 <default name="images.encoder"   value="draw"/>
 
 
-                <file name="stage1.music.ymm" linkdata="DATA" page="$1A" address="$0B4D">
+                <file name="stage1.music.ymm" linkdata="DATA" page="$1A" address="$0B70">
                     <lwasm gensource="gen/sound/ymm-data.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir10/entries.asm"/>
@@ -4155,7 +4159,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage2.music.ymm" linkdata="DATA" page="$1A" address="$0B4D">
+                <file name="stage2.music.ymm" linkdata="DATA" page="$1A" address="$0B70">
                     <lwasm gensource="gen/sound/stage2-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir10/entries.asm"/>
@@ -4387,6 +4391,39 @@
                     </lwasm>
                 </file>
 
+                <!-- LE NOYAU (le boss du stage 3, 09/09/2026) et son feu : leur
+                     page a eux dans l'arene (la sixieme), parce que ses treize
+                     poses de 24x24 tranchees en 16x12 (52 routines) ne tiennent
+                     dans aucune des cinq autres. Img_Page_Index de
+                     ObjID_warship_boss est cette page : wsmgr y lit les
+                     tranches du noyau, BuildSprites le feu. Voir
+                     enemies/warship-elements/core/obj.asm. -->
+                <file name="stage3.cast.imgCore" linkdata="DATA" arena="stage3.foes">
+                    <lwasm gensource="gen/enemies/stage3-cast-imgcore.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <gfxcomp file="stage3.cast.imgCore" gendir="gen/enemies/stage3-cast-imgcore"
+                                 gensource="gen/enemies/stage3-cast-imgcore/includes.asm"
+                                 genindex="gen/enemies/stage3-cast-imgcore/index.asm">
+                            <images dir="src/enemies/warship-elements/images/core_anim-slices" names="core_anim"/>
+                            <images dir="src/enemies/warship-elements/images/core_opening-slices" names="core_opening"/>
+                            <images dir="src/enemies/warship-elements/images/core_open-slices" names="core_open"/>
+                            <images dir="src/enemies/warship-elements/images/core-cover-slices" names="core_cover"/>
+                            <images dir="src/enemies/warship-elements/images/core-fire" names="core_fire"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- La cascade de mort du noyau : le marcheur commun bosscascade
+                     et la table de CE boss (generee, core/explosions.asm), dans
+                     leur propre direntry — l'index y pointe le slot commun 29
+                     (ObjID_bosscascade), comme au stage 2. -->
+                <file name="stage3.cascade" linkdata="DATA" arena="stage3.foes">
+                    <lwasm gensource="gen/stages/03/stage03-cascade.asm">
+                        <asm filename="src/enemies/warship-elements/core/cascade.unit.asm"/>
+                    </lwasm>
+                </file>
+
                 <!-- La table des gerbes : residente, chargee en zeros comme
                      stage2.outslay.res (armee et lue par le cast). -->
                 <file name="stage3.flame.res" linkdata="DATA" arena="stage3.res">
@@ -4482,7 +4519,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage3.music.ymm" linkdata="DATA" page="$1A" address="$0B4D">
+                <file name="stage3.music.ymm" linkdata="DATA" page="$1A" address="$0B70">
                     <lwasm gensource="gen/sound/stage3-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir10/entries.asm"/>
@@ -4507,6 +4544,8 @@
                     <load name="stage3.cast.imgFire"/>
                     <load name="stage3.cast.imgReactor"/>
                     <load name="stage3.cast.imgFlame"/>
+                    <load name="stage3.cast.imgCore"/>
+                    <load name="stage3.cascade"/>
                     <load name="stage3.flame.res"/>
                     <load name="stage3.wsmgr.res"/>
                     <load name="stage3.cast"/>
@@ -4600,7 +4639,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage4.music.ymm" linkdata="DATA" page="$1A" address="$0B4D">
+                <file name="stage4.music.ymm" linkdata="DATA" page="$1A" address="$0B70">
                     <lwasm gensource="gen/sound/stage4-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir10/entries.asm"/>
@@ -4861,7 +4900,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage5.music.ymm" linkdata="DATA" page="$1A" address="$0B4D">
+                <file name="stage5.music.ymm" linkdata="DATA" page="$1A" address="$0B70">
                     <lwasm gensource="gen/sound/stage5-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir10/entries.asm"/>
@@ -4968,7 +5007,7 @@
                 <!-- Pas de musique de niveau 6 en v1 : l'unite rejoue les octets du
                      niveau 1 sous SON nom. Un <load> inter-repertoires ne marcherait
                      pas — le loader ne lit que le repertoire courant. -->
-                <file name="stage6.music.ymm" linkdata="DATA" page="$1A" address="$0B4D">
+                <file name="stage6.music.ymm" linkdata="DATA" page="$1A" address="$0B70">
                     <lwasm gensource="gen/sound/stage6-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir10/entries.asm"/>
@@ -5066,7 +5105,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage7.music.ymm" linkdata="DATA" page="$1A" address="$0B4D">
+                <file name="stage7.music.ymm" linkdata="DATA" page="$1A" address="$0B70">
                     <lwasm gensource="gen/sound/stage7-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir10/entries.asm"/>
@@ -5175,7 +5214,7 @@
                     </lwasm>
                 </file>
 
-                <file name="stage8.music.ymm" linkdata="DATA" page="$1A" address="$0B4D">
+                <file name="stage8.music.ymm" linkdata="DATA" page="$1A" address="$0B70">
                     <lwasm gensource="gen/sound/stage8-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="gen/directories/dir10/entries.asm"/>

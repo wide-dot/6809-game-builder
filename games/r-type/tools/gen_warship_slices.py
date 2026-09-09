@@ -49,8 +49,14 @@ JEUX = [
      ('reactor-flame-0', 'reactor_flame_0'), ('reactor-flame-1', 'reactor_flame_1'),
      ('escape-capsule', 'escape_capsule'), ('small-escape-capsule', 'small_escape_capsule'),
      ('falling-triangle', 'falling_triangle')),
+    # le NOYAU (le boss, 09/09/2026) : 24x24 comme la petite capsule et le
+    # triangle, il glisse de 13 px en s'ouvrant et suit la coque — chez wsmgr
+    (('core_anim', 'core_anim'), ('core_opening', 'core_opening'), ('core_open', 'core_open'),
+     # et le cache de coque qui le recouvre (gen_core_cover.py)
+     ('core-cover', 'core_cover')),
 ]
-TABLES = [('react.sl', 'reactor/slices.asm', 'reactor/slices.ext.asm')]
+TABLES = [('react.sl', 'reactor/slices.asm', 'reactor/slices.ext.asm'),
+          ('core.sl', 'core/slices.asm', 'core/slices.ext.asm')]
 
 
 def slices_of(im):

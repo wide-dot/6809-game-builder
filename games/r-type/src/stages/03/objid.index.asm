@@ -34,7 +34,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_shellEraser
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_commonmissileflame
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_saw
-        fcb   map.RAM_OVER_CART+stage.page ; ObjID_dobkeratops_explosion
+        fcb   map.RAM_OVER_CART+stage3.cascade.page ; ObjID_dobkeratops_explosion = ObjID_bosscascade (la cascade du noyau)
         fcb   map.RAM_OVER_CART+common.groundlaser.page ; ObjID_forcepod_groundlaser
         fcb   map.RAM_OVER_CART+common.counterairreflect.page ; ObjID_forcepod_counterairreflect
         fcb   map.RAM_OVER_CART+lib.patapata.page ; ObjID_patapata (commun)
@@ -50,6 +50,7 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_react
         fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_flamemgr (dans le cast depuis le 09/09/2026)
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_warship_wsmgr (resident)
+        fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_boss
         ; la couche mscroll : carte et buffers montes en espace cartouche
         ; (RAM_OVER_CART), tilesets montes en fenetre donnees (numero nu) —
         ; la convention du banc examples/mscroll
@@ -96,7 +97,7 @@ Obj_Index_Address
         fdb   stage.placeholder.raw ; ObjID_shellEraser
         fdb   stage.placeholder ; ObjID_commonmissileflame
         fdb   stage.placeholder ; ObjID_dobkeratops_saw
-        fdb   stage.placeholder ; ObjID_dobkeratops_explosion
+        fdb   bosscascade.Object ; ObjID_dobkeratops_explosion = ObjID_bosscascade
         fdb   groundlaser.Object ; ObjID_forcepod_groundlaser
         fdb   counterairreflect.Object ; ObjID_forcepod_counterairreflect
         fdb   patapata.Object ; ObjID_patapata (commun)
@@ -112,6 +113,7 @@ Obj_Index_Address
         fdb   react.Object ; ObjID_warship_react
         fdb   flamemgr.Object ; ObjID_warship_flamemgr
         fdb   wsmgr.Object ; ObjID_warship_wsmgr
+        fdb   boss.Object ; ObjID_warship_boss
         fdb   stage3.bship.map.address ; objid.bship.map
         fdb   stage3.bship.tilesA.address ; objid.bship.tilesA
         fdb   stage3.bship.tilesB.address ; objid.bship.tilesB
@@ -166,6 +168,7 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage3.cast.page ; ObjID_warship_react
         fcb   map.RAM_OVER_CART+stage3.cast.imgFlame.page ; ObjID_warship_flamemgr
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_warship_wsmgr (resident)
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_warship_boss
         fcb   map.RAM_OVER_CART+stage.page ; objid.bship.map
         fcb   map.RAM_OVER_CART+stage.page ; objid.bship.tilesA
         fcb   map.RAM_OVER_CART+stage.page ; objid.bship.tilesB
@@ -219,6 +222,7 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_warship_react
         fdb   Ani_Asd_none ; ObjID_warship_flamemgr
         fdb   Ani_Asd_none ; ObjID_warship_wsmgr
+        fdb   Ani_Asd_none ; ObjID_warship_boss
         fdb   Ani_Asd_none ; objid.bship.map
         fdb   Ani_Asd_none ; objid.bship.tilesA
         fdb   Ani_Asd_none ; objid.bship.tilesB
@@ -276,6 +280,7 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage3.cast.imgReactor.page ; ObjID_warship_react
         fcb   map.RAM_OVER_CART+stage3.cast.imgFlame.page ; ObjID_warship_flamemgr
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_warship_wsmgr (resident)
+        fcb   map.RAM_OVER_CART+stage3.cast.imgCore.page ; ObjID_warship_boss (le noyau et son feu)
         fcb   map.RAM_OVER_CART+stage.page ; objid.bship.map
         fcb   map.RAM_OVER_CART+stage.page ; objid.bship.tilesA
         fcb   map.RAM_OVER_CART+stage.page ; objid.bship.tilesB
