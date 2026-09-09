@@ -369,6 +369,10 @@ stage.handOver
 ;*******************************************************************************
         INCLUDE "src/stages/02/objid.const.asm"
         INCLUDE "src/stages/02/objid.index.asm"
+        ; Les profils de plongee des 29 gougers (tools/gen_gouger_profiles.py) :
+        ; ici, dans la region du stage, parce que le cast les lit sans
+        ; changer de page. Voir src/enemies/gouger/obj.asm, « LA SONDE ».
+        INCLUDE "src/stages/02/gouger-profiles.asm"
 
 
  ENDSECTION

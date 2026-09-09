@@ -110,8 +110,14 @@ def main():
                     inherited.setdefault(new, old)
 
         out, active, named = [], 0, 0
+        gougers = 0
         for name, hi, lo, idval, val in fresh:
             name = inherited.get(name, name)
+            if name == 'gouger':
+                # Le 4e octet est l'index du profil de plongee precalcule
+                # (tools/gen_gouger_profiles.py, a rejouer apres ce script).
+                idval = '%02X' % gougers
+                gougers += 1
             payload = f'${hi},${lo},ObjID_{name},${idval},${val}'
             if not name.isdigit():
                 named += 1

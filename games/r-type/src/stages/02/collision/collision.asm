@@ -109,6 +109,13 @@ collisionMapBackground
 collisionMapForeground
         INCLUDEBIN "src/stages/02/terrain/level2_fc.bin"
 
+; LE GOUGER NE SONDE PAS CETTE CARTE (08/09/2026). Sa solidite n'est pas
+; celle du vaisseau — run_gouger rampe sur tout id != 0xFA0, quand le
+; vaisseau traverse tout id >= 0xDFC, et 245 cellules du stage les
+; separent — et sa plongee est PRECALCULEE par gouger (stage.gougerProfiles,
+; tools/gen_gouger_profiles.py sur le masque level2_gouger.bin). Voir
+; src/enemies/gouger/obj.asm, « LA SONDE ».
+
 ; L'EXEMPLAIRE VIERGE — la reference de la fermeture de porte : refermer,
 ; c'est recopier les octets d'origine, cellule par cellule. Idempotent dans
 ; les deux sens, aucun tampon de sauvegarde, aucun drapeau d'etat.
