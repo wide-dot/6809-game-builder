@@ -21,6 +21,10 @@ Player            EXPORT
 ; L'etat de la boucle vit dans le stage : le joueur y ecrit DEAD a la fin de
 ; son explosion, la boucle bascule sur sa routine de mort.
 mainloop.state    EXTERNAL
+; la liste des appuis sur A de la fenetre de rendu, tenue par le stage
+; (joypad.latch.asm inclus dans stage-main.asm) — voir @testFire
+joypad.taps        EXTERNAL
+joypad.taps.count  EXTERNAL
 
 ; Ce que le joueur emprunte au moteur resident : la liste unique du contrat.
         INCLUDE "src/common/engine/api.asm"

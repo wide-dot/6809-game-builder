@@ -62,6 +62,8 @@ stage.main
 
         jsr   InitGlobals
         jsr   joypad.init
+        jsr   joypad.latch.init        ; le verrou de tir (ci-dessous, dans CETTE
+                                       ; unite : le moteur est plein), amorce au repos
 
         ; 160x200 en 16 couleurs : sans ça la machine reste dans son mode de
         ; démarrage et lit les tuiles comme du 320x200 deux couleurs
@@ -435,7 +437,13 @@ statics.SIZE  equ nb_static_objects*object_size
         ; qui avance « par frame drop » les consomme d'un coup :
         ; moveByScript.runByFrameDrop sort alors par le bout de son script.
         ; La v1 pose 8 ici, pour la trainee d'effacement des tuiles.
-        lda   #8
+        ; 6 DEPUIS LE 09/09/2026 (decision auteur, sur le releve du stage 2 :
+        ; le pas vaut 5 ou 6 trames dans 78 % des rendus, 7 dans 12 %, 8 dans
+        ; 0,5 %) : le pire pas passe de 160 a 120 ms de jeu pour 3 % de
+        ; vitesse rendus dans les creux seulement — au-dela le jeu ralentit
+        ; et la wave, en trames de jeu, derive de la musique qui joue en
+        ; temps reel. Etude : doc/analyse-controles-2026-09.md.
+        lda   #6
         sta   gfxlock.frameDrop.max
         jsr   IrqOn
 
@@ -505,11 +513,12 @@ endstage.PHASE_FADE     equ 4   ; des ici : plus d'effacement ni de decor, le fo
 endstage.PHASE_READOUT  equ 5   ; le releve de score
 
 stage.state.running
-        ; La manette, en tete de tour comme la v1 (ReadJoypadsKbd) :
-        ; joypad.readKbd alimente held/pressed (le tir) et fait de n'importe
-        ; quelle touche du clavier le bouton B — c'est exactement ce que la v1
-        ; appelle ici. addDirection, LUI, est dans l'IRQ — voir stage.userIRQ.
-        jsr   joypad.readKbd
+        ; La manette, en tete de tour comme la v1 (ReadJoypadsKbd) : held et
+        ; pressed (le tir) viennent du VERROU rempli sous IRQ depuis le
+        ; 09/09/2026 — joypad.latch.read pose les memes octets que readKbd,
+        ; clavier en bouton B compris, mais aucun front ne se perd entre deux
+        ; rendus. addDirection et latch.sample sont dans l'IRQ (stage.userIRQ).
+        jsr   joypad.latch.read
 
         ; PAS DE TIR SOUS LA SEQUENCE DE FIN (21/08/2026, tous stages). Hors
         ; phase 0 le joueur n'a plus la main : l'objet de fin pose
@@ -845,6 +854,14 @@ stage.drawShip.off
         rts
 stage.drawShip.x fcb 0
 stage.drawShip.y fcb 0
+;*******************************************************************************
+; Le verrou de tir : le bouton echantillonne sous IRQ, un tir par appui
+; (09/09/2026). Dans l'unite du stage parce que le moteur resident n'a plus de
+; marge devant le lecteur YMM. joypad.taps est exporte d'ici pour le joueur.
+;*******************************************************************************
+        INCLUDE "engine/system/to8/controller/joypad.const.asm"
+        INCLUDE "engine/system/to8/controller/joypad.latch.asm"
+
 stage.userIRQ
         jsr   gfxlock.bufferSwap.check
         ; Une direction par TRAME 50 Hz, pas par tour de boucle : c'est la
@@ -854,6 +871,11 @@ stage.userIRQ
         ; (vecu). La v1 l'appelle exactement ici, dans UserIRQ.
         jsr   PalUpdateNow
         jsr   joypad.buffer.addDirection
+        ; Le BOUTON aussi, a 50 Hz (09/09/2026) : ses fronts s'accumulent
+        ; jusqu'a la lecture de la boucle (joypad.latch.read). Avant, lu une
+        ; fois par rendu, un appui de moins d'un rendu etait perdu quatre
+        ; fois sur cinq — mesure tools/fire_latch_probe.py.
+        jsr   joypad.latch.sample
 
         ; Le son, dans l'IRQ comme la v1 (main.asm:406-410) : une trame de
         ; musique, puis le pilote de bruitages qui depile la boite aux lettres.
@@ -1200,6 +1222,13 @@ stage.death.ready                      ; atteint aussi depuis le continue accept
         ; apres le chargement du checkpoint, avant de rendre la main a la
         ; boucle. Elle reprend a son point de bouclage, pas au debut.
         jsr   ymm.restart                    ; lecteur resident : appel direct
+        ; LE VERROU DE TIR EST VIDE (09/09/2026, remarque auteur) : pendant le
+        ; menu « continue » et la reapparition, la boucle ne lit pas le verrou
+        ; mais l'IRQ y accumule toujours — l'appui qui valide le continue
+        ; devenait un tir a la premiere trame de jeu. latch.init reamorce sur
+        ; l'etat du port (un bouton encore tenu ne fait pas de front) et vide
+        ; fronts et appuis. IRQ coupee ici, aucune course.
+        jsr   joypad.latch.init
         jsr   IrqOn
         lbra  stage.loop
 

@@ -50,6 +50,18 @@ Init
         ldd   y_pos,u
         addd  #2
         std   y_pos,u
+        ; LE RATTRAPAGE (09/09/2026) : le joueur nous a fait naitre a la
+        ; position du vaisseau a la trame de l'appui, mais wave_frame_drop
+        ; trames se sont ecoulees depuis, jusqu'au rendu — autant de pas de
+        ; 6 px, l'arithmetique de weapon.step (le defilement de ces trames est
+        ; deja dans la position de naissance, relevee contre la camera
+        ; courante). L'impact mur se calcule ensuite d'ici.
+        lda   #6
+        ldb   wave_frame_drop,u
+        mul
+        addd  x_pos,u
+        std   x_pos,u
+        clr   wave_frame_drop,u        ; c'est anim_frame_duration : rendu propre
         ldd   #set_weapon
         std   image_set,u
         ldb   #2
