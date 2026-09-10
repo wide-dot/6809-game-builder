@@ -64,6 +64,10 @@ main.loop
         _main.test main.str.YM.rythm,ym2413.ut.testYM2413
         _main.test main.str.demo,song.ut.test
         _main.test main.str.MEA,mea8000.ut.testMEA8000
+        _main.test main.str.MEA.files,mea8000.ut.testFiles
+ IFDEF TO8
+        _main.test main.str.MEA.irq,mea8000.ut.testFileIrq
+ ENDC
         
         ; MIDI test
         _main.test main.str.MIDI,ef6850.ut.testMIDI
@@ -125,6 +129,8 @@ main.str.YM         fcs "- YM2413 ........... "
 main.str.YM.rythm   fcs "- YM2413 Rythm ..... "
 main.str.demo       fcs "- Demo song ........ press enter to stop... "
 main.str.MEA        fcs "- MEA8000 .......... "
+main.str.MEA.files  fcs "- MEA8000 files .... "
+main.str.MEA.irq    fcs "- MEA8000 file IRQ . "
 main.str.MIDI       _monitor.chr.CRLF
                     fcc "MIDI:"
                     _monitor.str.CRLF
@@ -165,5 +171,9 @@ main.str.KO         fcs "KO"
         INCLUDE "engine/system/thomson/sound/mea8000.phonemes.const.asm"
         INCLUDE "engine/system/thomson/sound/mea8000.phonemes.asm"
         INCLUDE "engine/system/thomson/sound/mea8000.phonemes.read.asm"
+        INCLUDE "engine/system/thomson/sound/mea8000.file.read.asm"
+ IFDEF TO8
+        INCLUDE "engine/system/thomson/sound/mea8000.file.read.irq.asm" ; takes the 6846 timer interrupt: TO8 only
+ ENDC
         INCLUDE "engine/system/thomson/controller/ascii.const.asm"
         INCLUDE "engine/timing/time.asm"

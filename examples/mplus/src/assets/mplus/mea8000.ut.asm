@@ -1,8 +1,14 @@
 sounds.mea8000               EXTERNAL
 assets.sounds.mea8000$PAGE   EXTERNAL
+sounds.mea8000.vocabulary    EXTERNAL
+assets.sounds.mea8000.vocabulary$PAGE EXTERNAL
 
 mea8000.ut.testMEA8000       EXPORT
 mea8000.ut.testMEA8000.440Hz EXPORT
+mea8000.ut.testFiles         EXPORT
+ IFDEF TO8
+mea8000.ut.testFileIrq       EXPORT
+ ENDC
 mea8000.ut.detectMEA8000     EXPORT
 
  SECTION code
@@ -29,6 +35,62 @@ mea8000.ut.testMEA8000
         jsr   mea8000.phonemes.read
         andcc #%11111110 ; OK
         rts
+
+ ; ----------------------------------------------------------------------------
+ ; testFiles - play every file of the vocabulary image (polling player)
+ ; ----------------------------------------------------------------------------
+ ; The image mixes two Cedic-Nathan words of 1985 (bonjour, bienvenue) with
+ ; files produced by the mea8000 encoder: the same player reads both.
+
+mea8000.ut.testFiles
+        jsr   mea8000.ut.detectMEA8000
+        bcc   @mea8000Present
+        _monitor.print #mea8000.ut.notDetected
+        andcc #%11111110 ; OK
+        rts
+@mea8000Present
+        _monitor.print #mea8000.ut.detected
+        _ram.cart.set #assets.sounds.mea8000.vocabulary$PAGE
+        ldx   #sounds.mea8000.vocabulary
+        clrb                 ; file number
+@next
+        pshs  b
+        clra
+        lslb
+        rola
+        ldd   d,x            ; offset table entry, $FFFF ends the table
+        cmpd  #$FFFF
+        puls  b
+        beq   @done
+        jsr   mea8000.rom.read
+        incb
+        bra   @next
+@done
+        andcc #%11111110 ; OK
+        rts
+
+ ; ----------------------------------------------------------------------------
+ ; testFileIrq - play the first file with the interrupt-driven player (TO8)
+ ; ----------------------------------------------------------------------------
+
+ IFDEF TO8
+mea8000.ut.testFileIrq
+        jsr   mea8000.ut.detectMEA8000
+        bcc   @mea8000Present
+        _monitor.print #mea8000.ut.notDetected
+        andcc #%11111110 ; OK
+        rts
+@mea8000Present
+        _monitor.print #mea8000.ut.detected
+        _ram.cart.set #assets.sounds.mea8000.vocabulary$PAGE
+        ldx   #sounds.mea8000.vocabulary
+        ldd   ,x             ; first file
+        leax  d,x
+        jsr   mea8000.file.read.irq.start
+        jsr   mea8000.file.read.irq.wait
+        andcc #%11111110 ; OK
+        rts
+ ENDC
 
  ; ----------------------------------------------------------------------------
  ; testMEA8000.440Hz - Test MEA8000 with sustained vowel approximating 440Hz
