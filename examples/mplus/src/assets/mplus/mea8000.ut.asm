@@ -28,11 +28,13 @@ mea8000.ut.testMEA8000
         rts
 @mea8000Present
         _monitor.print #mea8000.ut.detected
+        jsr   dac.enable
         _ram.cart.set #assets.sounds.mea8000$PAGE
         lda   #$3C
         ldx   #mea8000.phonemes
         ldy   #sounds.mea8000
         jsr   mea8000.phonemes.read
+        jsr   dac.disable
         andcc #%11111110 ; OK
         rts
 
@@ -50,6 +52,7 @@ mea8000.ut.testFiles
         rts
 @mea8000Present
         _monitor.print #mea8000.ut.detected
+        jsr   dac.enable     ; the chip's output rides the sound line: open it
         _ram.cart.set #assets.sounds.mea8000.vocabulary$PAGE
         ldx   #sounds.mea8000.vocabulary
         clrb                 ; file number
@@ -66,6 +69,7 @@ mea8000.ut.testFiles
         incb
         bra   @next
 @done
+        jsr   dac.disable
         andcc #%11111110 ; OK
         rts
 
@@ -82,12 +86,14 @@ mea8000.ut.testFileIrq
         rts
 @mea8000Present
         _monitor.print #mea8000.ut.detected
+        jsr   dac.enable
         _ram.cart.set #assets.sounds.mea8000.vocabulary$PAGE
         ldx   #sounds.mea8000.vocabulary
         ldd   ,x             ; first file
         leax  d,x
         jsr   mea8000.file.read.irq.start
         jsr   mea8000.file.read.irq.wait
+        jsr   dac.disable
         andcc #%11111110 ; OK
         rts
  ENDC
