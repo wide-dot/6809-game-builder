@@ -106,7 +106,7 @@ sn76489.ut.testSN76489.440Hz
 
         _time.ms.wait #500
  IFDEF TO8
-        jsr   main.waitButton
+        jsr   main.waitKey
  ENDC
  IFDEF MO6
         _keyboard.fast.waitKey #scancode.ENTER
@@ -125,7 +125,7 @@ sn76489.ut.testSN76489.440Hz
         rts
 
 ; SN76489 test messages
-sn76489.ut.440Hz.pressKey fcc "Playing SN76489 440Hz - press a key or button 2 to stop..."
+sn76489.ut.440Hz.pressKey fcc "Playing SN76489 440Hz - press a key to stop..."
                           _monitor.str.CRLF
 
  ENDSECTION 

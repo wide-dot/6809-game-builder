@@ -106,22 +106,18 @@ main.test
 
 
 ; ----- WAIT FOR THE USER (TO8) -------------------------------------------------
-; Same idiom as the R-Type title: joypad.readKbd folds KTEST (any key held) into
-; button B of pad 0, and the edge (pressed) is tested so a key still held from the
-; previous prompt does not skip this one. Button B of pad 0 is bit 2 of PIA1 port B,
-; which the DAC drives as an output while it is enabled: joypad.init puts the port
-; back to inputs before polling (the tests that need the DAC enable it again).
+; KTST: bit 0 of the system PIA port A ($E7C8) is set while a key is held.
  IFDEF TO8
-main.checkButton                ; Z clear when button B / a key has just been pressed
-        jsr   joypad.readKbd
-        lda   joypad.pressed.fire
-        anda  #joypad.0.B
+main.keyHeld                    ; C set while a key is held
+        lda   map.MC6821.PRA
+        lsra
         rts
 
-main.waitButton
-        jsr   joypad.init
-@loop   bsr   main.checkButton
-        beq   @loop
+main.waitKey                    ; a press, then its release (one press = one prompt)
+        bsr   main.keyHeld
+        bcc   main.waitKey
+@up     bsr   main.keyHeld
+        bcs   @up
         rts
  ENDC
 
@@ -148,7 +144,7 @@ main.str.SN         fcs "- SN76489 .......... "
 main.str.SN.noise   fcs "- SN76489 Noise .... "
 main.str.YM         fcs "- YM2413 ........... "
 main.str.YM.rythm   fcs "- YM2413 Rythm ..... "
-main.str.demo       fcs "- Demo song ........ press a key or button 2 to stop... "
+main.str.demo       fcs "- Demo song ........ press a key to stop... "
 main.str.MEA        fcs "- MEA8000 .......... "
 main.str.MEA.files  fcs "- MEA8000 files .... "
 main.str.MEA.irq    fcs "- MEA8000 file IRQ . "
@@ -177,8 +173,6 @@ main.str.KO         fcs "KO"
         INCLUDE "engine/system/to8/irq/irq.asm"
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/system/to8/controller/keyboard.fast.asm"
-        INCLUDE "engine/system/to8/controller/joypad.asm"
-        INCLUDE "engine/system/to8/controller/joypad.kbd.asm"
  ENDC
 
  IFDEF MO6       
