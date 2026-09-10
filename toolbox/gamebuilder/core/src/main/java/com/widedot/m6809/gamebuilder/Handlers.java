@@ -417,7 +417,9 @@ public final class Handlers {
 			.opt("plane", INT, "memory plane for tiles and start (0 or 1)")
 			.opt("viewheight", INT, "start only : lines of the initial view (default 200)")
 			.opt("symbol", STRING, "prefix of the generated equates (default : the file name)")
-			.opt("shiftcolors", BOOL, "index 0 is transparency and 1..16 are colours 0..15"));
+			.opt("shiftcolors", BOOL, "index 0 is transparency and 1..16 are colours 0..15")
+			.opt("patches", STRING, "csv of patch rectangles (name,x,y,w,h in map pixels) : their tiles join the set, <gendir>/<name>.patches.asm lists the cells to rewrite")
+			.opt("patchimage", STRING, "the map with the patches painted in place, same size — goes with patches"));
 		OBJECTS.put("mscroll", com.widedot.toolbox.graphics.png.MscrollPlugin::getObject);
 		OBJECTS.put("png2bin", com.widedot.toolbox.graphics.png.Png2BinPlugin::getObject);
 		OBJECTS.put("txt2bas", com.widedot.toolbox.text.txt2bas.Txt2BasPlugin::getObject);
