@@ -629,6 +629,11 @@ stage.objectsRan
         ; dans la foulee du blast, comme dans le banc examples/mscroll.
         jsr   mscroll.do
         jsr   mscroll.move
+        ; Les patches de carte en attente (l'epave d'une sous-partie qui vient
+        ; de tomber) : appliques ICI, dans la foulee du feed et sous les memes
+        ; conditions — la carte reecrite, puis ses colonnes visibles
+        ; re-nourries par mscroll.feedTile. Voir src/stages/03/bship/patch.asm.
+        jsr   bship.patch.drain
         ; La camera de la couche vient de bouger : on recale les registres du
         ; plan de collision 0, qui s'indexe par ELLE et non par le scroll
         ; d'avant-plan (le stage pose BG_OWN_CAMERA dans son unite de
@@ -1308,7 +1313,16 @@ stage.checkpointReset
         ldx   #pellet.reset
         jmp   paged.call             ; sa valeur de retour est la notre
  ELSE
+ IFEQ STAGE_ID-3
+        ; Le stage 3 y remet sa coque INTACTE : les epaves des sous-parties sont
+        ; des patches de la carte mscroll, que checkpoint.load ne recharge pas
+        ; plus que la carte de collision. Voir src/stages/03/bship/patch.asm.
+        ; (stage.setup ne tourne PAS a la reprise — vecu le 10/09/2026, le
+        ; bitmap des patches survivait a la mort.)
+        jmp   bship.patch.reset
+ ELSE
         rts
+ ENDC
  ENDC
 
 stage.paletteFadeIn EXPORT   ; l'unite checkpoint l'appelle apres rechargement

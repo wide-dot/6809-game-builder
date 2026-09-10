@@ -120,6 +120,7 @@ set_reactor_white_bullet_1  EXTERNAL
 set_reactor_white_bullet_2  EXTERNAL
 set_reactor_white_bullet_3  EXTERNAL
 set_bottom_reactor_bottom_0  EXTERNAL
+set_bottom_reactor_wreckage_0  EXTERNAL
 set_bottom_reactor_bottom_left_0  EXTERNAL
 set_bottom_reactor_bottom_right_0  EXTERNAL
 set_bottom_reactor_bottom_left_full_0  EXTERNAL
@@ -163,6 +164,13 @@ flamemgr.live   EXTERNAL
 ; de leur identifiant.
 wsmgr.Draw      EXTERNAL
 wsmgr.page      EXTERNAL
+; L'epave d'une sous-partie : un patch de la carte mscroll, applique par le
+; resident du stage (bship/patch.asm) apres mscroll.move. La piece ne fait
+; que le demander. Les tables generees (battleship.patches) vivent ICI, dans
+; la page du cast : le resident les copie avant de monter la carte.
+bship.patch.request EXTERNAL
+bship.patch.done    EXTERNAL           ; le moignon y lit la mort de sa piece
+battleship.patches  EXPORT
 
         INCLUDE "src/common/engine/api.asm"
 

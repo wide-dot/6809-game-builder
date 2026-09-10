@@ -26,9 +26,11 @@
 ;    trames, une trame sur deux) : ici la pose ouverte existe en DEUX jeux,
 ;    convertis chacun sous sa palette arcade (core_open, core_open_flash), et
 ;    le noyau alterne entre les deux pendant ces six trames ;
-;  - l'arcade efface 256 cases du plan arriere a la mort (la chambre du
-;    noyau) : NON PORTE, la coque reste — a faire avec la chirurgie de couche
-;    de l'epave des sous-parties (tranche 3 du plan des pieces) ;
+;  - a la mort, l'arcade n'efface RIEN : la boucle de 256 cases (c544/de86)
+;    abat la PRIORITE des cases de la bande du noyau (mot d'attribut AND $F),
+;    ce qui fait passer le noyau et ses explosions DEVANT la coque — relu le
+;    10/09/2026 ; ici le noyau est un sprite au-dessus de la couche, il n'y a
+;    rien a faire. La coque, elle, se detruit zone par zone : part.Wreck ;
 ;  - difficulte fixe (politique v1) : 128 trames ouvert, un feu par 8 trames ;
 ;  - le feu n'a pas de son de lancement (0x5d, sans equivalent v2) ;
 ;  - le feu choisit son image par l'identite du slot objet (e06c) : ici un

@@ -95,13 +95,20 @@ cycle.
 
 Phase 3, `damage ≥ 20` (`de61`) :
 
-1. `parent.[+0x3e] = 1` — le maître, à sa trame suivante, **efface 256 cases
-   du plan arrière** (`0xd000:9d02`, pas de 4) puis entre dans son fondu ;
+1. `parent.[+0x3e] = 1` — le maître, à sa trame suivante, **ôte la priorité
+   des 256 cases de la bande du noyau** (`0xd000:9d02`, pas de 4 : le mot
+   d'ATTRIBUT des cases, `AND 0xf` garde la palette et abat les bits de
+   priorité 6-7 ; le mot de tuile n'est pas touché, **rien n'est effacé** —
+   relu le 10/09/2026, une lecture antérieure disait « efface ») : lignes 29
+   à 32 de la tilemap = la bande de 24 px du noyau sur toute la largeur. La
+   coque y avait priorité sur les sprites, c'est ce qui dessinait le noyau
+   *sous* elle ; dès lors le noyau, sa cascade et les explosions passent
+   *devant*. Puis le maître entre dans son fondu ;
 2. score : `update_current_stage_score(0x871c)` = index **13 → 10 000 points**
    (le plate y voit un « événement de fin de stage » ; c'est la table des
    récompenses, `0x86E8 + 13×4`) ;
 3. SFX `0x53` ;
-4. le noyau lui-même efface les mêmes 256 cases (`de86..de9e`, le même
+4. le noyau lui-même abat la priorité des mêmes 256 cases (`de86..de9e`, le même
    code que le maître en `c544`) ;
 5. il pose l'enfant **cascade** (`dec9`, priorité `0xef00`) à sa position
    (+4 en Y), table d'offsets `1000:80ce`, vie 320 trames ; puis se
@@ -165,10 +172,14 @@ décision d'auteur, comme pour tout son nouveau.
    4 images ; cadence 8 trames pendant la phase 2 bis.
 3. **La mort** : `tools/gen_core_death.py` → table `bosscascade` (période 4,
    320 trames) ; le noyau pose l'enfant `ObjID_bosscascade` et meurt.
-4. **La coque** : effacer 256 cases du plan (le carré `0x9d02` — sa position
-   sur notre carte est à établir depuis `TileMap.java` : base du plan
-   arrière et largeur 64) via la chirurgie de couche `mscroll` déjà prévue
-   pour l'épave des sous-parties (tranche 3 du plan des pièces).
+4. **La coque** : rien à effacer — la boucle de 256 cases n'ôte que la
+   priorité de la bande du noyau (§ 4), et chez nous le noyau passe déjà
+   devant la coque à sa mort (le cache de coque, § 10, n'est plus dessiné).
+   La coque, elle, est **détruite zone par zone pendant le combat**, par les
+   27 sous-parties : chacune, à 12 coups, blitte sa recette d'épave dans la
+   tilemap (`c8e8`) — porté le 10/09/2026 en patch de la carte mscroll,
+   `src/stages/03/bship/patch.asm`, `tools/gen_warship_wreck.py`, export
+   `re.arcade --extract-warship`.
 5. **La fin du stage** : `main.endstage` armé par la mort du noyau au lieu
    du délai, séquence existante.
 6. **Câblage** : ObjID (noyau, feu), les cinq tables d'index, l'EXPORT du
@@ -181,7 +192,7 @@ décision d'auteur, comme pour tout son nouveau.
 
 - le sens du feu (fontaine vers le haut d'après l'axe, « vers le bas »
   d'après le plate) — MAME ;
-- la position du carré de 256 cases effacé à la mort (`0x9d02`) sur la
+- la position des 256 cases dont la priorité tombe à la mort (`0x9d02`) sur la
   carte du vaisseau, et ce qu'il représente (la chambre du noyau ?) ;
 - le sens du `[0x3e] ≥ 2` (2e boucle) — sans effet chez nous (difficulté
   fixe) ;
@@ -224,8 +235,12 @@ décision d'auteur, comme pour tout son nouveau.
   `core_open_flash`, entrée de catalogue), et le noyau l'affiche un rendu
   sur deux pendant deux rendus après un coup — six trames arcade n'en
   feraient pas un chez nous.
-- **Non porté, à décider** : l'effacement des 256 cases de coque à la
-  mort ; le son de lancement du feu.
+- **Sans objet (relu le 10/09/2026)** : les « 256 cases effacées » à la
+  mort n'existent pas — la boucle abat la PRIORITÉ des cases de la bande du
+  noyau (plates `c544`/`de86`/`ddf4` corrigées dans Ghidra). La destruction
+  de la coque est celle des sous-parties, zone par zone : `part.Wreck`,
+  `doc/warship-parts-plan.md` tranche 3.
+- **Non porté, à décider** : le son de lancement du feu.
 
 ## 10. Le cache de coque (09/09/2026)
 

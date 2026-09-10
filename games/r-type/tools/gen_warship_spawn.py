@@ -59,8 +59,11 @@ for _i, _t in enumerate((0xDB63, 0xDB70, 0xDB7D, 0xDB8A)):
                  'tourelle multiple ' + ('tl', 'bl', 'tr', 'br')[_i])
 
 # Les quatre reacteurs de ventre et les deux detachables : groupe `react`.
-for _t in (0xD8B7, 0xD8C4, 0xD8D1, 0xD8DE):
-    PORTE[_t] = ('ObjID_warship_react', 'react.BREACTOR', 'reacteur de ventre')
+# Les quatre reacteurs de ventre portent leur RANG dans les bits 4-5 : a sa
+# mort chacun fait naitre sa propre piece d'epave (part.REACTOR0 + rang).
+for _i, _t in enumerate((0xD8B7, 0xD8C4, 0xD8D1, 0xD8DE)):
+    PORTE[_t] = ('ObjID_warship_react', 'react.BREACTOR+react.VARIANT*%d' % _i,
+                 'reacteur de ventre')
 PORTE[0xCFE9] = ('ObjID_warship_react', 'react.DETACH', 'petite capsule')
 PORTE[0xD095] = ('ObjID_warship_react', 'react.DETACH2', 'triangle qui tombe')
 PORTE[0xDCC0] = ('ObjID_warship_boss', 'boss.CORE', 'le noyau — le boss')

@@ -1,4 +1,5 @@
-; Les boites des 27 sous-parties de coque — GENERE par
+; Les boites des 27 sous-parties de coque et des 4 pieces d'epave des
+; reacteurs de ventre (rangs 27..30) — GENERE par
 ; tools/gen_warship_parts.py depuis le dump arcade (deux indirections :
 ; vignette 40:c656+12i -> recette 1000:73xx -> boite 1000:77b8+8k).
 ;
@@ -35,3 +36,15 @@ part.Boxes
         fcb   12,10,2,8 ; #24 recette 7712 boite 7878 face 0 — arcade x[-28..38] y[-24..4]
         fcb   15,10,5,8 ; #25 recette 7738 boite 7880 face 1 — arcade x[-28..54] y[-24..4]
         fcb   15,19,5,16 ; #26 recette 776A boite 7888 face 0 — arcade x[-28..54] y[-47..4]
+        fcb   7,10,4,8 ; #27 recette 7890 boite 7938 face 1 — arcade x[-6..30] y[-24..4]
+        fcb   7,19,4,16 ; #28 recette 78B0 boite 7940 face 0 — arcade x[-6..30] y[-47..4]
+        fcb   7,13,4,10 ; #29 recette 78E8 boite 7948 face 1 — arcade x[-6..30] y[-31..4]
+        fcb   7,13,4,10 ; #30 recette 7910 boite 7950 face 0 — arcade x[-6..30] y[-31..4]
+
+; Les pieces d'epave des reacteurs de ventre : leur rang (= sous-type), et
+; l'ecart de naissance au reacteur (40:da18 x - 12 ; [BP+0x24] par reacteur,
+; axe y arcade vers le haut), en pixels v2.
+part.REACTOR0   equ 27
+part.REACTOR_DX equ -4
+part.ReactorDy
+        fcb   -21,-39,-27,-27 ; arcade +28,+52,+36,+36

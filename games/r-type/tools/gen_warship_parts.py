@@ -30,6 +30,14 @@ DATA = 0x1000 * 16        # segment de donnees
 THUNK0 = 0xC656           # la premiere vignette
 NPARTS = 27
 VIGNETTE = 12             # 5 + 4 + 3 octets
+# LES QUATRE PIECES D'EPAVE DES REACTEURS DE VENTRE (10/09/2026) : chaque
+# reacteur nomme, dans son installateur (40:d8b7/d8c4/d8d1/d8de, [BP+0x22]),
+# une vignette de la meme forme (40:c9a0 + 12v) qu'il fait naitre a sa mort
+# (40:da0a) a (x - 12, y + [BP+0x24]) — une sous-partie de coque de plus,
+# rangs 27..30, la zone de coque au-dessus du reacteur mort. Voir
+# doc/warship-parts-plan.md § 8.
+REACTORS = (0xD8B7, 0xD8C4, 0xD8D1, 0xD8DE)
+REACTOR_DX = -12
 
 
 def main():
@@ -46,7 +54,8 @@ def main():
         return v - 0x10000 if v >= 0x8000 else v
 
     lignes = [
-        "; Les boites des 27 sous-parties de coque — GENERE par",
+        "; Les boites des 27 sous-parties de coque et des 4 pieces d'epave des",
+        "; reacteurs de ventre (rangs 27..30) — GENERE par",
         "; tools/gen_warship_parts.py depuis le dump arcade (deux indirections :",
         "; vignette 40:c656+12i -> recette 1000:73xx -> boite 1000:77b8+8k).",
         ";",
@@ -57,8 +66,14 @@ def main():
         "",
         "part.Boxes",
     ]
-    for i in range(NPARTS):
-        t = CODE + THUNK0 + i * VIGNETTE
+    vignettes = [CODE + THUNK0 + i * VIGNETTE for i in range(NPARTS)]
+    dys = []
+    for th in REACTORS:
+        a = CODE + th                       # MOV [BP+0x22],vignette ; MOV [BP+0x24],dy
+        assert rom[a + 2] == 0x22 and rom[a + 7] == 0x24, 'installateur %04X inattendu' % th
+        vignettes.append(CODE + w(a, 3))
+        dys.append(sw(a, 8))
+    for i, t in enumerate(vignettes):
         assert rom[t] == 0xC7 and rom[t + 1] == 0x46 and rom[t + 2] == 0x10, \
             'vignette %d inattendue' % i
         recette = rom[t + 3] | (rom[t + 4] << 8)
@@ -78,12 +93,21 @@ def main():
                       'face %d — arcade x[%d..%d] y[%d..%d]'
                       % (rx, ry, cx, cy, i, recette, boite, face, x0, x1, y0, y1))
     lignes.append('')
+    lignes.append('; Les pieces d\'epave des reacteurs de ventre : leur rang (= sous-type), et')
+    lignes.append('; l\'ecart de naissance au reacteur (40:da18 x - 12 ; [BP+0x24] par reacteur,')
+    lignes.append('; axe y arcade vers le haut), en pixels v2.')
+    lignes.append('part.REACTOR0   equ %d' % NPARTS)
+    lignes.append('part.REACTOR_DX equ %d' % round(REACTOR_DX * 0.375))
+    lignes.append('part.ReactorDy')
+    lignes.append('        fcb   ' + ','.join(str(round(-dy * 0.75)) for dy in dys)
+                  + ' ; arcade ' + ','.join('+%d' % dy for dy in dys))
+    lignes.append('')
     dst = os.path.join(racine, 'src/enemies/warship-elements/part/boxes.asm')
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     with open(dst, 'w') as f:
         f.write('\n'.join(lignes))
-    print('%d boites extraites -> src/enemies/warship-elements/part/boxes.asm'
-          % NPARTS)
+    print('%d boites extraites (27 + 4 epaves de reacteur) -> '
+          'src/enemies/warship-elements/part/boxes.asm' % len(vignettes))
 
 
 if __name__ == '__main__':

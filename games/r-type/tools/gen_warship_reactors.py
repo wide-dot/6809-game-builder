@@ -75,12 +75,21 @@ def main():
             "; sur la coque — le defaut vu le 28/08/2026.",
             "; La zone vaut (orientation & 3) >> 1 : 0-1 vers le bas, 2-3 a droite,",
             "; 4-5 a gauche. Une entree : fcb dx,dy signes, en pixels v2.",
+            "; Zone 0 : +2 en x sur la conversion arcade — constat a l'ecran (29/08/2026,",
+            "; decision auteur) : le jet vertical tombait 2 px a gauche de la buse, un cran",
+            "; du pas horizontal de la couche. Les zones inclinees sont justes telles",
+            "; quelles. Zone 3 : la bouffee du moignon (40:da7d, [+0x20] = 12).",
             "breactor.FlameOff"]
-    for k in range(3):
+    # la correction de la zone 0, vue a l'ecran (elle vivait a la main dans le
+    # fichier genere jusqu'au 10/09/2026)
+    CORR = {0: (2, 0)}
+    for k in range(4):
         a = FLAMEPAR + 8 * k
         dx, dy = sw(a), sw(a + 2)
-        out.append('        fcb   %d,%d ; zone %d — arcade (%+d,%+d)'
-                   % (round(dx * .375), round(-dy * .75), k, dx, dy))
+        cx, cy = CORR.get(k, (0, 0))
+        out.append('        fcb   %d,%d ; zone %d — arcade (%+d,%+d)%s'
+                   % (round(dx * .375) + cx, round(-dy * .75) + cy, k, dx, dy,
+                      ', +%d vu a l\'ecran' % cx if cx else ''))
     out += ["", "; Les six directions (1000:7e9a) vers cinq jeux d'images.",
             "breactor.Sets"]
     for k in range(6):

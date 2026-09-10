@@ -9,6 +9,8 @@ flamemgr.SLOTS   equ 8                 ; quatre reacteurs tirent ensemble ; huit
 flamemgr.SLOTSZ  equ 8                 ; vie, zone, lx(2), y0(2), cam0(2)
 flamemgr.LIFE    equ 50                ; dix pas de chaine, CINQ trames chacun
 flamemgr.STEP    equ 5
+flamemgr.PUFF    equ 3                 ; la zone de la bouffee du moignon :
+flamemgr.LIFE_PUFF equ 20              ; quatre pas, chaine calee en queue
 flamemgr.TRANCHES equ 4
 
  ENDC

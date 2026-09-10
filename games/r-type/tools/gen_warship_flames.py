@@ -60,9 +60,16 @@ TW, TH = 16, 12
 # tourelles (imgTurret, 9 Ko libres). Le manager de tranches wsmgr monte la
 # page par slot, donc la page peut differer par gerbe — le manager des gerbes
 # la lit dans Img_Page_Index de l'identifiant note ici (flame.PageIds).
-GERBES = ((0x7EF2, 'bottom-reactor-flame-straight-down', 'fl_d', 'ObjID_warship_flamemgr'),
-          (0x7F38, 'bottom-reactor-flame-right', 'fl_r', 'ObjID_warship_flamemgr'),
-          (0x7F7E, 'bottom-reactor-flame-left', 'fl_l', 'ObjID_warship_turret'))
+# LA BOUFFEE DU MOIGNON (zone 3, 10/09/2026) : la petite variante d'ejection
+# (entree 3 de 1000:7ed2, chaine 0x7fc4), QUATRE pas de cinq trames, lachee
+# toutes les 128 trames par le reacteur mort (40:da49). Le manager ne connait
+# qu'une vie de dix pas : la bouffee est armee avec une vie de quatre pas
+# (flamemgr.LIFE_PUFF) et sa chaine est calee en QUEUE des dix, les six
+# premiers pas ne servent jamais.
+GERBES = ((0x7EF2, 'bottom-reactor-flame-straight-down', 'fl_d', 'ObjID_warship_flamemgr', 10),
+          (0x7F38, 'bottom-reactor-flame-right', 'fl_r', 'ObjID_warship_flamemgr', 10),
+          (0x7F7E, 'bottom-reactor-flame-left', 'fl_l', 'ObjID_warship_turret', 10),
+          (0x7FC4, 'small-puffs', 'fl_p', 'ObjID_warship_flamemgr', 4))
 
 
 def main():
@@ -91,7 +98,7 @@ def main():
     ]
     n_img = 0
     externs = ['; GENERE par tools/gen_warship_flames.py — les tranches des gerbes, resolues au chargement.']
-    for chaine, dossier, prefixe, hote in GERBES:
+    for chaine, dossier, prefixe, hote, npas in GERBES:
         # UN DOSSIER PAR GERBE (images/flame-wheel-<prefixe>/), parce que les
         # gerbes peuvent vivre dans des pages differentes ; <images> numerote
         # par nom de fichier, si bien que le rang du fichier EST le rang du
@@ -107,7 +114,8 @@ def main():
             m = re.match(r'(\d+)_01([0-9a-f]{4})\.png$', nom)
             if m:
                 ordi[int(m.group(2), 16)] = int(m.group(1))
-        pas = [w(chaine + 2 * k) for k in range(10)]
+        pas = [w(chaine + 2 * k) for k in range(npas)]
+        pas = [pas[0]] * (10 - npas) + pas        # calee en queue des dix pas
         uniques = []
         for a in pas:
             if a not in uniques:
@@ -143,8 +151,9 @@ def main():
                     rang[0] += 1
                     n_img += 1
             listes.append(mots)
-        out.append('; %s : %d poses uniques sur dix pas (chaine %04X)'
-                   % (dossier, len(uniques), chaine))
+        out.append('; %s : %d poses uniques sur %d pas (chaine %04X)%s'
+                   % (dossier, len(uniques), npas, chaine,
+                      ', calee en queue des dix' if npas < 10 else ''))
         out.append('flame.chain.%s' % prefixe)
         out.append('        fcb   ' + ','.join(str(uniques.index(a)) for a in pas))
         for p, mots in enumerate(listes):

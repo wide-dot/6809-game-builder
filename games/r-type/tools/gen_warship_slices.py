@@ -27,7 +27,7 @@ SORTIES, par jeu d'images <dir> :
                                     <prefixe>.<sym>.P   fcb n / fdb set_<sym>_k...
                                   et les EXTERNAL correspondants dans <ext>.
 Le config pointe les dossiers -slices ; les pieces designent les listes
-(reactor/obj.asm, reactor/children.asm, capsule/obj.asm).
+(reactor/obj.asm, reactor/children.asm, capsule/obj.asm, core/obj.asm).
 """
 import os
 import sys

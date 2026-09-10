@@ -138,6 +138,10 @@ poses, elles ne changent pas.
   (6 + 6), escape-capsule (8), small-escape-capsule (4), falling-triangle
   (4) → `images/<jeu>-slices/`, listes `react.sl.<jeu>.<pose>` dans
   `reactor/slices.asm`.
+- (10/09/2026) les **épaves** des 27 sous-parties ont été tranchées ainsi
+  un jour, puis retirées : 1 700 cycles par épave et par rendu sur un stage
+  sans attente. Elles sont des patches de la carte mscroll depuis
+  (`warship-parts-plan.md` § 8).
 - `tools/gen_warship_flames.py` : les gerbes en fenêtres 16 × 12, 76
   tranches pour 12 poses uniques, **un dossier par gerbe**
   (`images/flame-wheel-d|r|l/`) parce que les trois ne tiennent plus dans

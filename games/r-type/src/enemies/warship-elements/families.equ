@@ -19,6 +19,10 @@ react.RREACTOR  equ 0
 react.RFLAME    equ 1
 react.WBULLET   equ 2
 react.BREACTOR  equ 3
+; le RANG du reacteur de ventre (0..3), bits 4-5 du sous-type : a sa mort il
+; fait naitre SA piece d'epave (part.REACTOR0 + rang). La famille tient dans
+; les bits 0-2 (groups.asm masque a 7).
+react.VARIANT   equ 16
 react.CAPSULE   equ 4
 react.LASER     equ 5
 ; les deux detachables prennent DEUX creneaux : le script de spawn ne peut
