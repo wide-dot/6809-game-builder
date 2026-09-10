@@ -26,7 +26,7 @@ song.ut.test
 
         _time.ms.wait #500
  IFDEF TO8
-        _keyboard.fast.waitKey
+        jsr   main.waitButton
  ENDC
  IFDEF MO6
         _keyboard.fast.waitKey #scancode.ENTER

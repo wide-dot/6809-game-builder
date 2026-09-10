@@ -132,7 +132,7 @@ ym2413.ut.testYM2413.440Hz
 
         _time.ms.wait #500
  IFDEF TO8
-        _keyboard.fast.waitKey
+        jsr   main.waitButton
  ENDC
  IFDEF MO6
         _keyboard.fast.waitKey #scancode.ENTER
@@ -155,6 +155,6 @@ ym2413.ut.testYM2413.440Hz
         rts
 
 ; YM2413 test messages
-ym2413.ut.440Hz.pressKey fcc "Playing YM2413 440Hz - press enter to stop..."
+ym2413.ut.440Hz.pressKey fcc "Playing YM2413 440Hz - press a key or button 2 to stop..."
                          _monitor.str.CRLF
  ENDSECTION 

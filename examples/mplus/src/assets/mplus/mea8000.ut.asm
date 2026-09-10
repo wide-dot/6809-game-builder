@@ -115,6 +115,9 @@ mea8000.ut.testMEA8000.440Hz
         ; Display message to user
         _monitor.print #mea8000.ut.mea440Hz.pressKey
         _time.ms.wait #500
+ IFDEF TO8
+        jsr   joypad.init    ; pad readable (see main.checkButton)
+ ENDC
         
         ; Initialize MEA8000
         ldb   #map.MEA8000.STOP_SLOW
@@ -133,7 +136,7 @@ mea8000.ut.testMEA8000.440Hz
         sta   map.MEA8000.D
         stb   map.MEA8000.D
  IFDEF TO8
-        _keyboard.fast.check
+        jsr   main.checkButton
  ENDC
  IFDEF MO6
         _keyboard.fast.check #scancode.ENTER
@@ -184,7 +187,7 @@ mea8000.ut.notDetected fcs "MEA8000 UNDETECTED "
 mea8000.ut.detected fcs "DETECTED "
 
 ; MEA8000 test messages
-mea8000.ut.mea440Hz.pressKey fcc "Playing MEA8000 sustained vowel (440Hz) - press enter to stop..."
+mea8000.ut.mea440Hz.pressKey fcc "Playing MEA8000 sustained vowel (440Hz) - press a key or button 2 to stop..."
                              _monitor.str.CRLF
 
  ENDSECTION 

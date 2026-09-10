@@ -104,6 +104,27 @@ main.test
         _monitor.print #main.str.CRLF
         rts
 
+
+; ----- WAIT FOR THE USER (TO8) -------------------------------------------------
+; Same idiom as the R-Type title: joypad.readKbd folds KTEST (any key held) into
+; button B of pad 0, and the edge (pressed) is tested so a key still held from the
+; previous prompt does not skip this one. Button B of pad 0 is bit 2 of PIA1 port B,
+; which the DAC drives as an output while it is enabled: joypad.init puts the port
+; back to inputs before polling (the tests that need the DAC enable it again).
+ IFDEF TO8
+main.checkButton                ; Z clear when button B / a key has just been pressed
+        jsr   joypad.readKbd
+        lda   joypad.pressed.fire
+        anda  #joypad.0.B
+        rts
+
+main.waitButton
+        jsr   joypad.init
+@loop   bsr   main.checkButton
+        beq   @loop
+        rts
+ ENDC
+
 clock.type fcb 0
 main.errorFlag fcb 0    ; Global error flag: 0=no errors, >0=at least one error
 
@@ -127,7 +148,7 @@ main.str.SN         fcs "- SN76489 .......... "
 main.str.SN.noise   fcs "- SN76489 Noise .... "
 main.str.YM         fcs "- YM2413 ........... "
 main.str.YM.rythm   fcs "- YM2413 Rythm ..... "
-main.str.demo       fcs "- Demo song ........ press enter to stop... "
+main.str.demo       fcs "- Demo song ........ press a key or button 2 to stop... "
 main.str.MEA        fcs "- MEA8000 .......... "
 main.str.MEA.files  fcs "- MEA8000 files .... "
 main.str.MEA.irq    fcs "- MEA8000 file IRQ . "
@@ -156,6 +177,8 @@ main.str.KO         fcs "KO"
         INCLUDE "engine/system/to8/irq/irq.asm"
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/system/to8/controller/keyboard.fast.asm"
+        INCLUDE "engine/system/to8/controller/joypad.asm"
+        INCLUDE "engine/system/to8/controller/joypad.kbd.asm"
  ENDC
 
  IFDEF MO6       
