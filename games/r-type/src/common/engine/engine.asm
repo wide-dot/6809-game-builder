@@ -256,6 +256,14 @@ AABB_list_forcepod           fdb   0,0
 ; par do_collision_with_player_and_weapons_v3_skip_player ($F7E4) — l'orbe du
 ; gomander (stage 2) et le coeur du cuirasse (stage 3, tranche 6) y passent.
 AABB_list_target             fdb   0,0
+; LA COQUE : tuable par les armes SEULEMENT — ni le contact du joueur, ni le
+; force pod, ni les bits (10/09/2026). Les 27 sous-parties de coque du
+; cuirasse (stage 3) : leur dispatcher arcade (40:c93f) n'a que quatre phases,
+; tir, missiles, laser roulant, laser — pas de pod, la ou celui de la piece
+; d'epave des reacteurs (40:cb7d) en a une cinquieme. WeaponContactTick ne
+; parcourt pas cette liste ; le joueur, lui, heurte la coque par le fond
+; solide. Neuf listes : Collision_ClearLists compte avec.
+AABB_list_armor              fdb   0,0
 
 ; Leur remise a zero en bloc, au rechargement d'un checkpoint. Porte du game
 ; mode v1 (Collision_ClearLists, main.asm) : les listes vivent ici, leur
@@ -263,7 +271,7 @@ AABB_list_target             fdb   0,0
 Collision_ClearLists
         ldd   #0
         ldy   #AABB_list_friend
-        ldx   #8*2                     ; huit listes de deux mots
+        ldx   #9*2                     ; neuf listes de deux mots
 !       std   ,y++
         leax  -1,x
         bne   <

@@ -52,6 +52,13 @@ public final class CompositionChecks {
 	}
 
 	public static void verify(BuildContext ctx) throws Exception {
+		// A file that runs past its window is refused whatever is declared :
+		// this check does not depend on the compositions.
+		List<String> unplaced = placement(ctx, windows(ctx));
+		if (!unplaced.isEmpty()) {
+			throw new Exception("files that cannot be placed:" + System.lineSeparator()
+					+ String.join(System.lineSeparator(), unplaced));
+		}
 		if (ctx.compositions.isEmpty()) {
 			// Nothing declared : the co-residency of scenes cannot be checked.
 			// That silence is only harmless when no two scenes share bytes in
@@ -267,6 +274,53 @@ public final class CompositionChecks {
 	 * reached through two different windows may be the same silicon — which is
 	 * exactly what a comparison on the declared page and address cannot see.
 	 */
+	/**
+	 * Every load must fit the window it lands in — the windows of the machine
+	 * occupy disjoint CPU ranges, so bytes past a window's end would land in
+	 * another one : a cartridge file of 8 KB at $3000 would write into the
+	 * screen. Until 2026-09-10 such a file was only marked « unplaced » in
+	 * the occupancy report while the build exited 0 (the battleship tilesets,
+	 * 16 KB posed at $2000 once the wrecks pushed them past 256 tiles).
+	 *
+	 * The one legitimate spill is a load LARGER than a page : the mplus PCM
+	 * example loads 24 KB from $0000 across three windows on purpose, and its
+	 * <file> says so by raising maxsize above what a directory entry can
+	 * describe. Such a load is warned and left out of the memory checks — the
+	 * builder cannot honestly say which silicon holds its bytes.
+	 */
+	static List<String> placement(BuildContext ctx, WindowMap windows) {
+		List<String> errors = new ArrayList<String>();
+		if (windows == null) {
+			return errors;
+		}
+		Set<String> seen = new LinkedHashSet<String>();
+		for (Map.Entry<String, List<RamMap.Load>> scene : ctx.ramMap.scenes().entrySet()) {
+			for (RamMap.Load load : scene.getValue()) {
+				if (load.size <= 0 || !seen.add(load.name)) {
+					continue;
+				}
+				if (load.size > windows.pageSize()) {
+					log.warn("'{}' spills past its window on purpose ({} bytes, more than a"
+							+ " page) and is left out of the memory checks", load.name, load.size);
+					continue;
+				}
+				try {
+					com.widedot.m6809.gamebuilder.spi.globals.Machines.Window w =
+							windows.of(load.address);
+					// a sliced window (the video window shows half a page) : the
+					// load's slice is not recorded here, the scene checks compare
+					// it as declared — but the fit is the same whatever the slice
+					windows.checkFits(w, load.address, load.size);
+				} catch (Exception e) {
+					errors.add("'" + load.name + "' (scene '" + scene.getKey() + "', page "
+							+ load.page + ", $" + String.format("%04X", load.address) + ", "
+							+ load.size + " bytes) cannot be placed: " + e.getMessage());
+				}
+			}
+		}
+		return errors;
+	}
+
 	private static Map<String, List<int[]>> footprints(List<RamMap.Load> loads,
 			WindowMap windows) throws Exception {
 		Map<String, List<int[]>> out = new LinkedHashMap<String, List<int[]>>();

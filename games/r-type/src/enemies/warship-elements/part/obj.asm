@@ -109,7 +109,17 @@ part.Init
         sta   render_flags,u
         ldb   #6
         stb   priority,u
-        _Collision_AddAABB part.AABB,AABB_list_ennemy
+        ; LA LISTE : les 27 sous-parties de coque vont dans `armor` — armes
+        ; seulement, ni pod ni bits (40:c93f n'a pas la phase pod) ; les
+        ; pieces d'epave des reacteurs (rangs 27+) dans `ennemy`, que le pod
+        ; touche a la porte du seizieme de trame (40:cb7d, cinquieme phase).
+        lda   subtype,u
+        cmpa  #part.REACTOR0
+        bhs   >
+        _Collision_AddAABB part.AABB,AABB_list_armor
+        bra   @added
+!       _Collision_AddAABB part.AABB,AABB_list_ennemy
+@added
         lda   #part.HP
         sta   part.AABB+AABB.p,u
         sta   part.lastP,u
@@ -194,7 +204,7 @@ part.Boom
         ldd   y_pos,u
         std   y_pos,x
 part.ToWreck
-        _Collision_RemoveAABB part.AABB,AABB_list_ennemy
+        bsr   part.Unlist
         lda   #part.WRECKDELAY
         sta   part.timer,u
         lda   #2
@@ -225,12 +235,22 @@ part.Wreck
 @rts    rts
 
 part.Vanish
-        _Collision_RemoveAABB part.AABB,AABB_list_ennemy
+        bsr   part.Unlist
 part.Gone
         lda   #3
         sta   routine,u
         jmp   DeleteObject
 part.Deleted
+        rts
+
+; part.Unlist — retirer la boite de SA liste (voir part.Init)
+part.Unlist
+        lda   subtype,u
+        cmpa  #part.REACTOR0
+        bhs   >
+        _Collision_RemoveAABB part.AABB,AABB_list_armor
+        rts
+!       _Collision_RemoveAABB part.AABB,AABB_list_ennemy
         rts
 
         INCLUDE "src/enemies/warship-elements/part/boxes.asm"

@@ -62,6 +62,28 @@ class CompositionChecksTest {
 	}
 
 	@Test
+	@DisplayName("a file that runs past its window is refused, compositions or not")
+	void unplacedFileIsRefused() throws Exception {
+		BuildContext ctx = context();
+		// 16 KB posed at $2000 of the cart window : the last 8 KB would land in
+		// the video window — the battleship tilesets of 2026-09-10
+		load(ctx, "scenes.stage", "stage.tiles", 27, 0x2000, 0x4000);
+		Exception e = assertThrows(Exception.class, () -> CompositionChecks.verify(ctx));
+		assertTrue(e.getMessage().contains("stage.tiles"), e.getMessage());
+		assertTrue(e.getMessage().contains("cannot be placed"), e.getMessage());
+		assertTrue(e.getMessage().contains("runs past the 'cart' window"), e.getMessage());
+	}
+
+	@Test
+	@DisplayName("a load larger than a page spills on purpose : warned, not refused")
+	void deliberateSpillIsTolerated() throws Exception {
+		BuildContext ctx = context();
+		// the mplus PCM samples : 24 KB from $0000 across three windows
+		load(ctx, "scenes.pcm", "assets.samples", 5, 0x0000, 0x6000);
+		CompositionChecks.verify(ctx);
+	}
+
+	@Test
 	@DisplayName("silent when nothing is declared : the mechanism is opt-in")
 	void optIn() throws Exception {
 		BuildContext ctx = context();
