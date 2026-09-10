@@ -51,11 +51,12 @@ breactor.script
 ; Zone 0 : +2 en x sur la conversion arcade — constat a l'ecran (29/08/2026,
 ; decision auteur) : le jet vertical tombait 2 px a gauche de la buse, un cran
 ; du pas horizontal de la couche. Les zones inclinees sont justes telles
-; quelles.
+; quelles. Zone 3 : la bouffee du moignon (40:da7d, [+0x20] = 12).
 breactor.FlameOff
         fcb   2,32 ; zone 0 — arcade (+0,-42), +2 vu a l'ecran
         fcb   14,24 ; zone 1 — arcade (+37,-32)
         fcb   -14,24 ; zone 2 — arcade (-37,-32)
+        fcb   0,12 ; zone 3 — arcade (+0,-16)
 
 ; Les six directions (1000:7e9a) vers cinq jeux d'images.
 breactor.Sets

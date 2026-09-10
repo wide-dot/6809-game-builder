@@ -67,6 +67,12 @@ mscroll.camera.speedx EXPORT
 mscroll.camera.impulse EXPORT
 mscroll.camera.x      EXPORT
 mscroll.camera.y      EXPORT
+; les patches de carte (stage 3, bship/patch.asm) : reecrire des cellules et
+; re-nourrir les colonnes du buffer qui les montrent
+mscroll.feedTile        EXPORT
+mscroll.obj.map.page    EXPORT
+mscroll.obj.map.address EXPORT
+mscroll.edge8           EXPORT
 
 ; l'horloge de compensation du moteur, et les tables d'objets du stage
 ; courant — le re-link global les repointe à chaque échange de stage,

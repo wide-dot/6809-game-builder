@@ -288,7 +288,15 @@ breactor.orient equ ext_variables+17   ; 17    l'orientation courante — PAS
 ; (l'age de reference n'est pas ici : c'est warship.age0, +18, que le spawner
 ;  a depose a la naissance — voir spawner.asm)
 
+; LE MOIGNON REUTILISE LE CURSEUR DE SCRIPT : les vingt octets d'extension
+; sont tous pris (ext_variables_size = 20, ram.const.asm), et l'octet 20 est
+; la RESERVE du moteur de sprites — y loger le compteur de bouffee le faisait
+; reecrire a chaque rendu, une bouffee par rendu (vecu le 10/09/2026). Le
+; script ne sert plus une fois le reacteur mort.
+breactor.puffT  equ breactor.cur       ; 15    trames avant la prochaine bouffee
 breactor.HP     equ 18                 ; 40:d8ec : 18 PV
+breactor.STUBHP equ 10                 ; 40:da9e : le moignon en feu, 10 PV
+breactor.PUFF_PERIOD equ 128           ; 40:da61 : une bouffee par 128 trames
 
 breactor.Object
         lda   routine,u
@@ -298,6 +306,7 @@ breactor.Object
 breactor.Routines
         fdb   breactor.Init
         fdb   breactor.Live
+        fdb   breactor.Stub
         fdb   breactor.Deleted
 
 breactor.Init
@@ -339,28 +348,7 @@ breactor.Live
         ldd   warship.age0,u
         addd  layer.drop
         std   warship.age0,u
-
-        jsr   layer.evenX
-        pshs  d
-        ldd   breactor.mapX,u
-        subd  ,s++
-        addd  glb_camera_x_pos
-        std   x_pos,u
-        ldd   breactor.y0,u
-        ldx   breactor.cam0,u
-        jsr   layer.followY
-        std   y_pos,u
-
-        ldd   x_pos,u
-        subd  glb_camera_x_pos
-        stb   breactor.AABB+AABB.cx,u
-        cmpd  #layer.XGONE
-        lbhi  breactor.Vanish
-        ldd   y_pos,u
-        stb   breactor.AABB+AABB.cy,u
-        addd  #6
-        cmpd  #204+6
-        lbhi  breactor.Vanish
+        jsr   breactor.Track           ; la couche nous porte
 
         ; --- le script : autant d'entrees echues que l'age en a franchies ----
         ldx   breactor.cur,u
@@ -385,6 +373,33 @@ breactor.Live
         ldx   a,x
         stx   image_set,u
         jmp   DisplaySprite
+
+; breactor.Track — la couche nous porte : position et boite, et la sortie du
+; champ nous retire (la pile de l'appelant rendue avant).
+breactor.Track
+        jsr   layer.evenX
+        pshs  d
+        ldd   breactor.mapX,u
+        subd  ,s++
+        addd  glb_camera_x_pos
+        std   x_pos,u
+        ldd   breactor.y0,u
+        ldx   breactor.cam0,u
+        jsr   layer.followY
+        std   y_pos,u
+        ldd   x_pos,u
+        subd  glb_camera_x_pos
+        stb   breactor.AABB+AABB.cx,u
+        cmpd  #layer.XGONE
+        bhi   @gone
+        ldd   y_pos,u
+        stb   breactor.AABB+AABB.cy,u
+        addd  #6
+        cmpd  #204+6
+        bhi   @gone
+        rts
+@gone   leas  2,s
+        jmp   breactor.Vanish
 
 ; La bouffee d'ejection, orientee comme nous.
 breactor.Flame
@@ -419,15 +434,122 @@ breactor.Boom
         ldb   #warship_reactor_scoreIdx
         jsr   AwardScore
         jsr   LoadObject_x
-        beq   breactor.Vanish
+        beq   >
         _ldd  ObjID_explosion,explosion.subtype.big.brown+explosion.sfx.turret
         std   id,x
         ldd   x_pos,u
         std   x_pos,x
         ldd   y_pos,u
         std   y_pos,x
-breactor.Vanish
+        ; LA PIECE D'EPAVE (40:da0a, 10/09/2026) : le reacteur mort decouvre
+        ; une sous-partie de coque de plus (rang part.REACTOR0 + le sien), a
+        ; (x - 12, y + [BP+0x24]) arcade — une boite de 12 PV dont la mort
+        ; blitte l'epave de la zone au-dessus du reacteur (part/obj.asm).
+!       jsr   LoadObject_x
+        beq   breactor.ToStub
+        lda   #ObjID_warship_part
+        sta   id,x
+        clr   routine,x
+        lda   subtype,u
+        lsra
+        lsra
+        lsra
+        lsra                           ; le rang du reacteur (react.VARIANT)
+        ldy   #part.ReactorDy
+        ldb   a,y
+        pshs  b
+        adda  #part.REACTOR0
+        sta   subtype,x
+        ldd   x_pos,u
+        addd  #part.REACTOR_DX
+        std   x_pos,x
+        clr   x_pos+2,x
+        ldd   y_pos,u
+        puls  b
+        sex
+        pshs  d
+        ldd   y_pos,u
+        addd  ,s++
+        std   y_pos,x
+        clr   y_pos+2,x
+        ; LE MOIGNON EN FEU (40:da49) : le reacteur ne s'efface pas, il reste
+        ; a sa place en socle eventre, avec 10 PV neufs dans la meme boite,
+        ; une bouffee toutes les 128 trames a une phase tiree au sort, et il
+        ; explose quand sa piece d'epave tombe (le bit 27+rang du bitmap des
+        ; patches, pose a l'instant meme ou l'epave s'applique) ou sous les
+        ; dix coups.
+breactor.ToStub
+        lda   #breactor.STUBHP
+        sta   breactor.AABB+AABB.p,u
+        jsr   RandomNumber
+        andb  #breactor.PUFF_PERIOD-1
+        stb   breactor.puffT,u
         lda   #2
+        sta   routine,u
+        rts
+
+breactor.Stub
+        ldb   gfxlock.frameDrop.count
+        bne   >
+        incb
+!       clra
+        std   layer.drop
+        lda   breactor.AABB+AABB.p,u
+        lbeq  breactor.StubBoom
+        lda   subtype,u                ; le bit 27+rang : octet 3, bit 3+rang
+        lsra
+        lsra
+        lsra
+        lsra
+        ldb   #$08
+@bit    tsta
+        beq   >
+        aslb
+        deca
+        bra   @bit
+!       bitb  bship.patch.done+3
+        lbne  breactor.StubBoom        ; la piece est tombee : le moignon saute
+        jsr   breactor.Track
+        lda   breactor.puffT,u
+        suba  layer.drop+1
+        bhi   >
+        pshs  a
+        jsr   breactor.Puff
+        puls  a
+        adda  #breactor.PUFF_PERIOD
+!       sta   breactor.puffT,u
+        ldx   #set_bottom_reactor_wreckage_0
+        stx   image_set,u
+        jmp   DisplaySprite
+
+; La bouffee du moignon : la zone 3, 12 lignes sous le socle (40:da7d).
+breactor.Puff
+        ldb   #3*2
+        ldy   #breactor.FlameOff
+        leay  b,y
+        ldb   ,y
+        sex
+        addd  x_pos,u
+        pshs  d
+        ldb   1,y
+        sex
+        addd  y_pos,u
+        tfr   d,y
+        puls  x
+        lda   #flamemgr.PUFF
+        jmp   flamemgr.Arm
+
+breactor.StubBoom
+        jsr   LoadObject_x
+        beq   breactor.Vanish
+        _ldd  ObjID_explosion,explosion.subtype.smallx2+explosion.sfx.turret
+        std   id,x
+        ldd   x_pos,u
+        std   x_pos,x
+        ldd   y_pos,u
+        std   y_pos,x
+breactor.Vanish
+        lda   #3
         sta   routine,u
         _Collision_RemoveAABB breactor.AABB,AABB_list_ennemy
         jmp   DeleteObject

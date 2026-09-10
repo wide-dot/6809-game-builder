@@ -27,7 +27,7 @@ SORTIES, par jeu d'images <dir> :
                                     <prefixe>.<sym>.P   fcb n / fdb set_<sym>_k...
                                   et les EXTERNAL correspondants dans <ext>.
 Le config pointe les dossiers -slices ; les pieces designent les listes
-(reactor/obj.asm, reactor/children.asm, capsule/obj.asm).
+(reactor/obj.asm, reactor/children.asm, capsule/obj.asm, core/obj.asm).
 """
 import os
 import sys
@@ -52,6 +52,7 @@ JEUX = [
     # le NOYAU (le boss, 09/09/2026) : 24x24 comme la petite capsule et le
     # triangle, il glisse de 13 px en s'ouvrant et suit la coque — chez wsmgr
     (('core_anim', 'core_anim'), ('core_opening', 'core_opening'), ('core_open', 'core_open'),
+     ('core_open_flash', 'core_open_flash'),   # ouvert sous la palette de flash de coup (0x55)
      # et le cache de coque qui le recouvre (gen_core_cover.py)
      ('core-cover', 'core_cover')),
 ]

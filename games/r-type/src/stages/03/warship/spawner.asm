@@ -37,6 +37,7 @@ bship.collisionFollow EXPORT
 
 mscroll.camera.x EXTERNAL
 mscroll.camera.y EXTERNAL
+wsmgr.Reset      EXTERNAL              ; les managers residents a zero (wsmgr.asm)
 
 ; l'etat du pilote que ce parcours touche — meme rang que dans pilot.asm
 pilot.spawn    equ ext_variables+8
@@ -70,8 +71,9 @@ warship.spawn
 @d2     std   warship.drift
         ldx   pilot.spawn,u
         bne   >                        ; premier appel : armer le curseur ici,
-        ldx   #warship.spawn.script    ; ou l'etiquette est locale
-!
+        jsr   wsmgr.Reset              ; ou l'etiquette est locale — et remettre
+        ldx   #warship.spawn.script    ; a zero l'etat RESIDENT des managers de
+!                                      ; pieces, qui survit au checkpoint
 @loop   ldd   ,x
         cmpd  #-1
         beq   @done                    ; sentinelle : le script est fini

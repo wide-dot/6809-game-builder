@@ -36,6 +36,14 @@
 ; L'OBJET est de rang 8, le fond : les pieces passent derriere tout autre
 ; sprite, joueur, tirs, ennemis, effets. Sa boite est garee au centre de
 ; l'ecran, donc jamais eliminee (le geste des managers du depot).
+;
+; L'ETAT EST RESIDENT, DONC IL SURVIT AU CHECKPOINT (vecu, 10/09/2026) : une
+; mort renvoie au checkpoint sans disque, tous les objets tombent, mais
+; wsmgr.live restait a 1 sans objet — plus aucune inscription ne faisait
+; renaitre le manager, et les pieces mobiles ne s'affichaient plus. Meme
+; chose pour la table des gerbes (flamemgr.live et ses slots). wsmgr.Reset
+; remet tout a zero ; le pilote du vaisseau l'appelle a son premier tour
+; (warship/spawner.asm), avant que la moindre piece ne naisse.
 ;*******************************************************************************
 
 wsmgr.SLOTS     equ 24                 ; pieces inscrites au plus par trame
@@ -64,6 +72,18 @@ wsmgr.list      fill  0,1+2*wsmgr.LISTMAX
 ; X = la liste des tranches de la pose (fcb n, fdb sets), wsmgr.page = la
 ; page de ses descripteurs (Img_Page_Index de la piece). Tout est preserve.
 ;*******************************************************************************
+wsmgr.Reset
+        clr   wsmgr.count
+        clr   wsmgr.live
+        clr   wsmgr.idle
+        clr   flamemgr.live
+        ldx   #flamemgr.Slots
+        ldb   #flamemgr.SLOTS*flamemgr.SLOTSZ
+!       clr   ,x+
+        decb
+        bne   <
+        rts
+
 wsmgr.Draw
         pshs  a,b,x
         lda   wsmgr.live

@@ -49,8 +49,34 @@ public class Mscroll {
 	private final int[] pix;      // hardware values, width*height
 	private final List<byte[]> tiles = new ArrayList<byte[]>();
 	private final int[][] grid;
+	private final Map<String, Integer> seen = new HashMap<String, Integer>();
+
+	/** One PATCH of the map : the cells of one rectangle of the patch image
+	 *  whose tile differs from the map's, with the ids of both. The runtime
+	 *  writes the patch ids into the map (and re-feeds the columns in the
+	 *  window) when the patch is applied, the original ids to undo it. */
+	public static final class Patch {
+		public final String name;
+		public int col0 = Integer.MAX_VALUE, col1 = -1;
+		public final List<int[]> cells = new ArrayList<int[]>(); // {offset, origId, patchId}
+		Patch(String name) { this.name = name; }
+	}
+	private final List<Patch> patches = new ArrayList<Patch>();
+	/** cells one patch may carry : the runtime copies a patch into a fixed
+	 *  buffer of this many entries before mounting the map page */
+	public static final int PATCH_MAX_CELLS = 12;
 
 	public Mscroll(File pngFile, boolean shiftColors) throws Exception {
+		this(pngFile, shiftColors, null, null);
+	}
+
+	/**
+	 * @param patchImage same size as the map, the map with every patch
+	 *        painted in place — or null
+	 * @param patchCsv   the patch rectangles : a header line, then
+	 *        {@code name,x,y,w,h} in pixels of the map — or null
+	 */
+	public Mscroll(File pngFile, boolean shiftColors, File patchImage, File patchCsv) throws Exception {
 
 		Png png = new Png(pngFile);
 		width = png.width;
@@ -77,7 +103,72 @@ public class Mscroll {
 		}
 
 		// unpack the indexed pixels to hardware values
-		pix = new int[width * height];
+		pix = unpack(png, shiftColors);
+
+		// cut and deduplicate the tiles
+		grid = new int[rows][cols];
+		for (int r = 0; r < rows; r++) {
+			for (int c = 0; c < cols; c++) {
+				grid[r][c] = tileId(pix, r, c);
+			}
+		}
+		int base = tiles.size();
+		log.info("mscroll {} : {}x{} tiles, {} unique, row stride {} (shift {})",
+		         pngFile.getName(), cols, rows, tiles.size(), stride, rowshift);
+
+		// the patches : their tiles join the set (deduplicated against it and
+		// against each other), the map keeps the original ids
+		if (patchImage != null || patchCsv != null) {
+			if (patchImage == null || patchCsv == null) {
+				throw new Exception("mscroll : patches and patchimage go together");
+			}
+			Png ppng = new Png(patchImage);
+			if (ppng.width != width || ppng.height != height) {
+				throw new Exception("mscroll : " + patchImage.getName() + " is " + ppng.width + "x"
+				                  + ppng.height + ", the patch image must be the map's size");
+			}
+			int[] ppix = unpack(ppng, shiftColors);
+			List<String> lines = java.nio.file.Files.readAllLines(patchCsv.toPath());
+			for (int i = 1; i < lines.size(); i++) {
+				String line = lines.get(i).trim();
+				if (line.isEmpty()) continue;
+				String[] f = line.split(",");
+				if (f.length < 5) {
+					throw new Exception("mscroll : " + patchCsv.getName() + " line " + (i + 1)
+					                  + " : expected name,x,y,w,h");
+				}
+				Patch p = new Patch(f[0].trim());
+				int x = Integer.parseInt(f[1].trim()), y = Integer.parseInt(f[2].trim());
+				int w = Integer.parseInt(f[3].trim()), h = Integer.parseInt(f[4].trim());
+				if (x < 0 || y < 0 || w <= 0 || h <= 0 || x + w > width || y + h > height) {
+					throw new Exception("mscroll : patch " + p.name + " is outside the map");
+				}
+				for (int c = x / TILE_W; c <= (x + w - 1) / TILE_W; c++) {
+					for (int r = y / TILE_H; r <= (y + h - 1) / TILE_H; r++) {
+						int id = tileId(ppix, r, c);
+						if (id == grid[r][c]) continue;
+						p.cells.add(new int[] { r * stride + c * 2, grid[r][c], id });
+						p.col0 = Math.min(p.col0, c);
+						p.col1 = Math.max(p.col1, c);
+					}
+				}
+				if (p.cells.size() > PATCH_MAX_CELLS) {
+					throw new Exception("mscroll : patch " + p.name + " changes " + p.cells.size()
+					                  + " cells, the runtime buffer holds " + PATCH_MAX_CELLS);
+				}
+				patches.add(p);
+			}
+			log.info("mscroll {} : {} patches, {} new tiles ({} in the set)",
+			         patchImage.getName(), patches.size(), tiles.size() - base, tiles.size());
+		}
+		if (tiles.size() > MAX_TILES) {
+			throw new Exception("mscroll : " + tiles.size() + " unique tiles, the tileset holds "
+			                  + MAX_TILES + " at most");
+		}
+	}
+
+	private int[] unpack(Png png, boolean shiftColors) throws Exception {
+		int[] out = new int[width * height];
 		int bits = png.colorModel.getPixelSize();
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
@@ -90,37 +181,64 @@ public class Mscroll {
 				} else {
 					throw new Exception("mscroll : unsupported pixel depth " + bits);
 				}
-				pix[y * width + x] = shiftColors && idx != 0 ? (idx - 1) & 0x0F : idx & 0x0F;
+				out[y * width + x] = shiftColors && idx != 0 ? (idx - 1) & 0x0F : idx & 0x0F;
 			}
 		}
+		return out;
+	}
 
-		// cut and deduplicate the tiles
-		Map<String, Integer> seen = new HashMap<String, Integer>();
-		grid = new int[rows][cols];
-		for (int r = 0; r < rows; r++) {
-			for (int c = 0; c < cols; c++) {
-				byte[] t = new byte[TILE_W * TILE_H];
-				for (int l = 0; l < TILE_H; l++) {
-					for (int i = 0; i < TILE_W; i++) {
-						t[l * TILE_W + i] = (byte) pix[(r * TILE_H + l) * width + c * TILE_W + i];
-					}
-				}
-				String key = java.util.Arrays.toString(t);
-				Integer id = seen.get(key);
-				if (id == null) {
-					id = tiles.size();
-					tiles.add(t);
-					seen.put(key, id);
-				}
-				grid[r][c] = id;
+	/** the id of the tile at (r, c) of a pixel array, added to the set if new */
+	private int tileId(int[] p, int r, int c) {
+		byte[] t = new byte[TILE_W * TILE_H];
+		for (int l = 0; l < TILE_H; l++) {
+			for (int i = 0; i < TILE_W; i++) {
+				t[l * TILE_W + i] = (byte) p[(r * TILE_H + l) * width + c * TILE_W + i];
 			}
 		}
-		if (tiles.size() > MAX_TILES) {
-			throw new Exception("mscroll : " + tiles.size() + " unique tiles, the tileset holds "
-			                  + MAX_TILES + " at most");
+		String key = java.util.Arrays.toString(t);
+		Integer id = seen.get(key);
+		if (id == null) {
+			id = tiles.size();
+			tiles.add(t);
+			seen.put(key, id);
 		}
-		log.info("mscroll {} : {}x{} tiles, {} unique, row stride {} (shift {})",
-		         pngFile.getName(), cols, rows, tiles.size(), stride, rowshift);
+		return id;
+	}
+
+	public boolean hasPatches() {
+		return !patches.isEmpty();
+	}
+
+	/**
+	 * The patch tables, as an asm source the game includes : an index of
+	 * pointers, then per patch {@code fcb cells, col0, cols} and per cell
+	 * {@code fdb offset, originalId, patchId} — offsets in bytes into the
+	 * map, ids premultiplied by 32 as the map holds them.
+	 */
+	public String patchesAsm(String symbol) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("; GENERE par l'element <mscroll patches=...> : les patches de la carte ")
+		  .append(symbol).append('\n');
+		sb.append("; index : fdb par patch ; patch : fcb cellules, colonne 0, colonnes ;\n");
+		sb.append("; cellule : fdb offset (octets dans la carte), id d'origine, id du patch\n");
+		sb.append("; (ids x32, tels que la carte les porte). ").append(symbol)
+		  .append(".PATCHES dans le .equ.\n");
+		sb.append(symbol).append(".patches\n");
+		for (int i = 0; i < patches.size(); i++) {
+			sb.append("        fdb   ").append(symbol).append(".patch.").append(i).append('\n');
+		}
+		for (int i = 0; i < patches.size(); i++) {
+			Patch p = patches.get(i);
+			int cols = p.cells.isEmpty() ? 0 : p.col1 - p.col0 + 1;
+			sb.append(symbol).append(".patch.").append(i).append("   ; ").append(p.name).append('\n');
+			sb.append("        fcb   ").append(p.cells.size()).append(',')
+			  .append(p.cells.isEmpty() ? 0 : p.col0).append(',').append(cols).append('\n');
+			for (int[] cell : p.cells) {
+				sb.append(String.format("        fdb   $%04X,$%04X,$%04X%n",
+				                        cell[0], cell[1] * 32, cell[2] * 32));
+			}
+		}
+		return sb.toString();
 	}
 
 	/** the two plane bytes of one tile line : plane 0 gets pixels 0,1 and 4,5 */
@@ -209,6 +327,7 @@ public class Mscroll {
 		sb.append(symbol).append(".MAP_HEIGHT equ ").append(height).append('\n');
 		sb.append(symbol).append(".ROWSHIFT   equ ").append(rowshift).append('\n');
 		sb.append(symbol).append(".TILES      equ ").append(tiles.size()).append('\n');
+		sb.append(symbol).append(".PATCHES    equ ").append(patches.size()).append('\n');
 		return sb.toString();
 	}
 }

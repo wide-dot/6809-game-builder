@@ -60,8 +60,12 @@ chevauchent la couche — 12 PV chacune, aucun dessin. Chez nous la couche est
 déjà peinte par `mscroll` : **il n'y a rien à dessiner, seulement à toucher.**
 
 Leur seul rendu propre arrive à la mort : une épave blittée dans la tilemap
-(`c846 → c8d6 → c8e8`). C'est de la chirurgie de couche, et c'est le seul
-morceau vraiment coûteux de la campagne.
+(`c846 → c8d6 → c8e8`) — la grille de tuiles de la queue de la recette,
+`{aabb, x_off, y_off, lignes, colonnes}` puis lignes × colonnes mots de
+tuile en colonnes, écrite à la CELLULE de l'ancre de la pièce. La coque est
+détruite zone par zone au fil des attaques, et le reste jusqu'au
+rechargement de la tilemap (checkpoint). **Fait le 10/09/2026** sans
+chirurgie de couche : voir la tranche 3 au § 8.
 
 ## 4. Les tourelles autonomes — le patron que la v2 sait déjà faire
 
@@ -98,10 +102,10 @@ que le plan de collision de fond vient d'adopter, pour la même raison.
 |---|---|---|---|
 | **1** | **le spawner + les tourelles autonomes** | le parcours du script, `ObjID_warship_turret` (HAUT/BAS) et `ObjID_warship_bigturret` — 22 des 40 externes | — |
 | 2 | les 27 sous-parties | boîtes de collision, 12 PV, explosion à la mort ; **sans** l'épave | 1 |
-| 3 | l'épave dans la tilemap | chirurgie de couche `c8e8` | 2 |
+| 3 | l'épave dans la tilemap | `c8e8` — **FAIT le 10/09/2026** : un patch de la carte mscroll, appliqué à la mort, défait au checkpoint (`bship/patch.asm`) | 2 |
 | 4 | tourelles de proue et multiples | 10 objets, patrons voisins | 1 |
 | 5 | réacteurs, capsules, triangle | 10 objets, comportements propres | 1 |
-| 6 | le cœur et la fin de séquence | `DCC0`, le fondu vers le stage 4 — **FAIT le 09/09/2026** (`core/obj.asm`, `doc/analyse-boss-stage3-2026-09.md` § 9 ; reste l'effacement de coque) | 2, 5 |
+| 6 | le cœur et la fin de séquence | `DCC0`, le fondu vers le stage 4 — **FAIT le 09/09/2026** (`core/obj.asm`, `doc/analyse-boss-stage3-2026-09.md` § 9 ; l'« effacement de coque » était une lecture fausse, cf. § 8) | 2, 5 |
 
 La tranche 1 est la fondation : **le spawner sert tout le reste**, et les
 tourelles sont l'élément que l'on voit et que l'on tire en premier. Les
@@ -154,9 +158,70 @@ dessine rien et son `Live` se termine sur un `rts`, pas sur `DisplaySprite`.
 
 ## 8. Ce qui reste à trancher, le moment venu
 
-- **l'épave** (tranche 3) : la couche mscroll est un tampon de code compilé ;
-  la repeindre localement demande le même genre d'outil que l'édition du champ
-  de gommes du stage 4 (`pscroll.edit`). À arbitrer avec l'auteur.
+- **l'épave** (tranche 3) — **FAIT le 10/09/2026**, par la voie arcade : un
+  PATCH de la carte mscroll. La chaîne : `re.arcade --extract-warship` écrit
+  `out/warship/warship-wreck.csv` (la cellule de chaque grille) et
+  `level3_b_wrecked.png` (le fond du stage 3 avec les 27 épaves en place) ;
+  `tools/gen_warship_wreck.py` le convertit comme la coque
+  (`arcade_to_mscroll.py --out`, mêmes forces) en
+  `map/battleship-wrecked.png` + `battleship-wrecks.csv` ; l'élément
+  `<mscroll patches=… patchimage=…>` ajoute les tuiles d'épave au jeu (94,
+  251 dans le jeu, 3 Ko par plan) et génère `bship/battleship.patches.asm` :
+  par pièce, les cellules à réécrire (offset, id d'origine, id d'épave).
+  Runtime : la pièce survit 26 trames sous son explosion puis DEMANDE son
+  patch (`bship.patch.request`) ; la boucle de stage l'applique après
+  `mscroll.move` (`bship/patch.asm` : carte réécrite, colonnes visibles
+  re-nourries par `mscroll.feedTile`) ; `stage.setup` défait tout patch
+  appliqué AVANT `mscroll.setup` au retour au checkpoint (la carte n'est pas
+  rechargée). Coût par trame : zéro.
+  **La voie sprite, essayée le même jour et refusée** : l'épave dessinée en
+  sprite de fond chez `wsmgr` (deux fichiers d'images, 13,5 Ko) coûtait
+  1 700 cycles par épave et par rendu, mesurés sous toje sur un stage sans
+  aucune attente — neuf épaves faisaient passer la période de rendu de 8,3 à
+  9,1 trames (`prof-wreck`, deux boots déterministes, même scène).
+  La CELLULE arcade : ancre = (camera + pos_x − 320, camera_y + 383 − pos_y),
+  caméra (128, 0) à la naissance du maître — trouvée en comptant, pour chaque
+  décalage de 8 px, les cases d'épave identiques à la coque qu'elles
+  remplacent (100 contre 52) ; les 27 ancres tombent alors à (+4, +3) dans
+  leur cellule. Et `wsmgr.Reset` remet à zéro l'état RÉSIDENT des managers
+  (wsmgr, table des gerbes) au premier tour du pilote : sans lui,
+  `wsmgr.live` restait à 1 sans objet et plus aucune pièce mobile ne
+  s'affichait après une mort.
+  **Les réacteurs de ventre** (10/09/2026, même jour) : en arcade chaque
+  réacteur mort fait naître une sous-partie de coque de plus (`c9a0`..`c9c4`,
+  nommée par son installateur `d8b7`..`d8de`, à x − 12, y + 28/52/36/36), 12 PV,
+  dont la mort blitte l'épave de la zone au-dessus du réacteur (`cb26`), et
+  laisse un moignon en feu (`da49`) qui explose quand la pièce tombe. Porté :
+  la pièce seule, rangs 27 à 30 de `part.Object` (`part.REACTOR0`,
+  `part.ReactorDy` dans `boxes.asm`, le rang du réacteur dans les bits 4-5 de
+  son sous-type, `react.VARIANT`), née dans `breactor.Boom` ; ses épaves sont
+  les patches 27 à 30 (l'export re.arcade les ajoute derrière les 27).
+  **Le moignon en feu** (même jour, en sprite, décision auteur) : le réacteur
+  mort ne s'efface pas, il passe en état `breactor.Stub` — l'image
+  `bottom-reactor-bottom-wreckage` à sa place, 10 PV neufs dans la même boîte
+  (`da9e`), une bouffée toutes les 128 trames à une phase tirée au sort
+  (`da61`), et il explose quand sa pièce d'épave tombe ou sous les dix coups.
+  La bouffée est la zone 3 du manager de gerbes (`small-puffs`, chaîne
+  `0x7fc4`, quatre pas de cinq trames) : armée avec une vie de quatre pas
+  (`flamemgr.LIFE_PUFF`), sa chaîne est calée en queue des dix du manager,
+  ses tranches dans la page `imgFlame`. Elle vieillit d'**un pas par rendu**,
+  pas du frame-drop (décision auteur) : vieillie du drop, à 8 trames par
+  rendu elle passait par les vies 20, 12, 4 et la pose 2 n'était jamais
+  dessinée. Vérifié sous toje : vies 20, 15, 10, 5, une par rendu. Le signal de la pièce est le bit
+  27 + rang du bitmap des patches, lu par le moignon — aucun lien entre
+  objets. **Mesure** (toje, 400 trames, même scène, trois boots) : quatre
+  réacteurs vivants 47 rendus (169 800 cycles par rendu) ; les quatre morts
+  sans moignon 50 rendus (159 600) ; quatre moignons 47 rendus (169 800).
+  Un moignon coûte ce que coûtait le réacteur vivant, 2 500 cycles par
+  rendu ; la scène ne s'alourdit pas quand les réacteurs meurent, elle ne
+  s'allège plus. Piège vécu : le compteur de bouffée logé en `ext+20`
+  tombait sur la réserve du moteur de sprites (`ext_variables_size` = 20),
+  réécrite à chaque rendu — une bouffée par rendu, 33 000 cycles.
+  Conséquence : 263 tuiles dans le jeu mscroll, au-delà du format
+  court — les deux tilesets passent en PLEINE PAGE ($1B et $1C à $0000, page
+  27 était vide), la carte reste en $1D. Piège vu : au-delà de 256 tuiles le
+  fichier de 16 Ko posé à $2000 était « unplaced » dans le rapport et le
+  build sortait quand même en 0.
 - **le signal de mort du parent** : chaque pièce lit `parent.[+0x3e]` pour
   mourir avec le vaisseau. Il faudra un drapeau partagé, et le pilote est le
   porteur naturel.

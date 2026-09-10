@@ -10,6 +10,11 @@
 wsmgr.Object   EXPORT                  ; l'objet, dans l'index du stage
 wsmgr.Draw     EXPORT                  ; l'inscription, depuis le cast
 wsmgr.page     EXPORT                  ; son entree : la page des descripteurs
+wsmgr.Reset    EXPORT                  ; l'etat a zero, au premier tour du pilote
+; la table des gerbes, residente elle aussi (reactor/flameslots.asm) : remise
+; a zero par wsmgr.Reset avec le reste
+flamemgr.Slots EXTERNAL
+flamemgr.live  EXTERNAL
 
  SECTION code
 
@@ -18,6 +23,7 @@ wsmgr.page     EXPORT                  ; son entree : la page des descripteurs
         INCLUDE "engine/constants.asm"
         INCLUDE "engine/macros.asm"
         INCLUDE "src/stages/03/objid.const.asm"
+        INCLUDE "src/enemies/warship-elements/reactor/flame.equ"
         INCLUDE "src/enemies/warship-elements/wsmgr/wsmgr.asm"
 
  ENDSECTION

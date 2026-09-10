@@ -54,14 +54,15 @@
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
                 <zone page="$1A" address="$2020" size="$1FE0"/>
-                <zone page="$1B" address="$0000" size="$4000"/>
-                <!-- $1C-$1F : la couche battleship (mscroll) est POSEE en dur —
+                <!-- $1B-$1F : la couche battleship (mscroll) est POSEE en dur —
                      les tilesets doivent partager la meme adresse dans leurs
                      pages (le LUT de lignes est commun aux deux plans) et les
-                     buffers de code sont pleine page. L'arene garde les
-                     queues. -->
-                <zone page="$1C" address="$0000" size="$2000"/>
+                     buffers de code sont pleine page. Depuis les epaves
+                     (10/09/2026) le jeu depasse 256 tuiles : les deux tilesets
+                     sont au format pleine page ($1B et $1C, a $0000). L'arene
+                     garde les queues de $1D. -->
                 <zone page="$1D" address="$1800" size="$0800"/>
+                <zone page="$1D" address="$2000" size="$2000"/>
                 <zone page="$1E" address="$38A0" size="$0760"/>
                 <zone page="$1F" address="$38A0" size="$0760"/>
             </arena>
@@ -4228,23 +4229,38 @@
                      premiere declaration materialise aussi gen/stages/03/bship/
                      (le .equ de geometrie et les flux de depart que les unites
                      buffers INCLUDEBINent). Places en dur : les tilesets a
-                     l'offset $2000 de leurs pages (le format court <= 256
-                     tuiles couvre la moitie que la fenetre donnees montre en
-                     $A000 — meme adresse dans les deux pages, le LUT de
+                     $0000 de leurs pages, au format PLEINE PAGE (263 tuiles
+                     avec les epaves, 10/09/2026 : au-dela de 256 le fichier
+                     est la page entiere, moities echangees pour la fenetre
+                     donnees — meme adresse dans les deux pages, le LUT de
                      lignes est commun aux deux plans), les buffers pleine
-                     page, la carte devant le tileset A (montages cart/data
-                     jamais simultanes). La moitie basse de $1C et la queue
-                     de $1D restent a l'arene. -->
-                <file name="stage3.bship.tilesA" page="$1D" address="$2000">
+                     page, la carte dans $1D (montages cart/data jamais
+                     simultanes). Les queues de $1D restent a l'arene. -->
+                <!-- LES EPAVES (10/09/2026) : les 27 sous-parties de coque
+                     detruisent la coque zone par zone, comme l'arcade qui
+                     blitte une grille de tuiles dans sa tilemap (40:c8e8). Le
+                     fond epave (tools/gen_warship_wreck.py) et ses rectangles
+                     entrent ici : leurs tuiles rejoignent le jeu (94 de plus,
+                     3 Ko par plan) et gen/stages/03/bship/battleship.patches.asm
+                     donne, par piece, les cellules de la carte a reecrire —
+                     bship/patch.asm les applique a la mort et les defait au
+                     checkpoint. Zero cycle par trame. -->
+                <file name="stage3.bship.tilesA" page="$1B" address="$0000">
                     <mscroll filename="src/stages/03/map/battleship.png"
+                             patches="src/stages/03/map/battleship-wrecks.csv"
+                             patchimage="src/stages/03/map/battleship-wrecked.png"
                              gendir="gen/stages/03/bship" output="tiles" plane="0" viewheight="180"/>
                 </file>
-                <file name="stage3.bship.tilesB" page="$1C" address="$2000">
+                <file name="stage3.bship.tilesB" page="$1C" address="$0000">
                     <mscroll filename="src/stages/03/map/battleship.png"
+                             patches="src/stages/03/map/battleship-wrecks.csv"
+                             patchimage="src/stages/03/map/battleship-wrecked.png"
                              gendir="gen/stages/03/bship" output="tiles" plane="1" viewheight="180"/>
                 </file>
                 <file name="stage3.bship.map" page="$1D" address="$0000">
                     <mscroll filename="src/stages/03/map/battleship.png"
+                             patches="src/stages/03/map/battleship-wrecks.csv"
+                             patchimage="src/stages/03/map/battleship-wrecked.png"
                              gendir="gen/stages/03/bship" output="map" viewheight="180"/>
                 </file>
                 <file name="stage3.bship.bufA" page="$1E" address="$0000">
@@ -4354,6 +4370,7 @@
                             <images dir="src/enemies/warship-elements/images/reactor-flame-1-slices" names="reactor_flame_1"/>
                             <images dir="src/enemies/warship-elements/images/reactor-white-bullet" names="reactor_white_bullet"/>
                             <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom" names="bottom_reactor_bottom"/>
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-wreckage" names="bottom_reactor_wreckage"/>
                             <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-left" names="bottom_reactor_bottom_left"/>
                             <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-right" names="bottom_reactor_bottom_right"/>
                             <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-left-full" names="bottom_reactor_bottom_left_full"/>
@@ -4387,6 +4404,7 @@
                                  genindex="gen/enemies/stage3-cast-imgflame/index.asm">
                             <images dir="src/enemies/warship-elements/images/flame-wheel-d" names="fl_d"/>
                             <images dir="src/enemies/warship-elements/images/flame-wheel-r" names="fl_r"/>
+                            <images dir="src/enemies/warship-elements/images/flame-wheel-p" names="fl_p"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
@@ -4408,6 +4426,7 @@
                             <images dir="src/enemies/warship-elements/images/core_anim-slices" names="core_anim"/>
                             <images dir="src/enemies/warship-elements/images/core_opening-slices" names="core_opening"/>
                             <images dir="src/enemies/warship-elements/images/core_open-slices" names="core_open"/>
+                            <images dir="src/enemies/warship-elements/images/core_open_flash-slices" names="core_open_flash"/>
                             <images dir="src/enemies/warship-elements/images/core-cover-slices" names="core_cover"/>
                             <images dir="src/enemies/warship-elements/images/core-fire" names="core_fire"/>
                         </gfxcomp>

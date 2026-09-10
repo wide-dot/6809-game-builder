@@ -41,6 +41,15 @@ terrainCollision.bgWorldAdj EXTERNAL
 warship.camera.script  EXTERNAL
 warship.spawn          EXTERNAL
 bship.collisionFollow  EXTERNAL
+; Les patches de carte (bship/patch.asm) : la piece demande depuis le cast,
+; les tables generees y vivent, le feed est celui du module resident.
+bship.patch.request    EXPORT
+bship.patch.done       EXPORT
+battleship.patches     EXTERNAL
+mscroll.feedTile        EXTERNAL
+mscroll.obj.map.page    EXTERNAL
+mscroll.obj.map.address EXTERNAL
+mscroll.edge8           EXTERNAL
 turret.Object          EXTERNAL
 part.Object            EXTERNAL
 fturret.Object         EXTERNAL
@@ -425,6 +434,11 @@ bship.params
 ; Le pilote de la couche battleship
 ;*******************************************************************************
         INCLUDE "src/stages/03/warship/pilot.asm"
+
+;*******************************************************************************
+; Les patches de la carte : l'epave des sous-parties de coque
+;*******************************************************************************
+        INCLUDE "src/stages/03/bship/patch.asm"
 
 ;*******************************************************************************
 ; L'index d'objets et la wave — les données réelles du niveau 2

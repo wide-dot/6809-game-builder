@@ -51,6 +51,10 @@ set_core_open_0  EXTERNAL
 set_core_open_1  EXTERNAL
 set_core_open_2  EXTERNAL
 set_core_open_3  EXTERNAL
+set_core_open_flash_0  EXTERNAL
+set_core_open_flash_1  EXTERNAL
+set_core_open_flash_2  EXTERNAL
+set_core_open_flash_3  EXTERNAL
 set_core_cover_0  EXTERNAL
 set_core_cover_1  EXTERNAL
 set_core_cover_2  EXTERNAL

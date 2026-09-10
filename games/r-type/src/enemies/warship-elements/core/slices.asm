@@ -41,6 +41,9 @@ core.sl.core_opening.7
 core.sl.core_open.0
         fcb   4
         fdb   set_core_open_0,set_core_open_1,set_core_open_2,set_core_open_3
+core.sl.core_open_flash.0
+        fcb   4
+        fdb   set_core_open_flash_0,set_core_open_flash_1,set_core_open_flash_2,set_core_open_flash_3
 core.sl.core_cover.0
         fcb   6
         fdb   set_core_cover_0,set_core_cover_1,set_core_cover_2,set_core_cover_3,set_core_cover_4,set_core_cover_5

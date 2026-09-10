@@ -52,7 +52,20 @@ flamemgr.Live
         ; toujours la pose 0 — la bouffee initiale, celle qui fait
         ; l'apparition (vecu le 09/09/2026). L'arcade la tient cinq trames.
         pshs  a
-        suba  flamemgr.drop+1
+        ; LA BOUFFEE DU MOIGNON VIEILLIT D'UN PAS PAR RENDU, pas du frame-drop
+        ; (decision auteur, 10/09/2026) : quatre poses jouees une fois, une
+        ; par rendu, quel que soit le drop. Vieillie du drop, a 8 trames par
+        ; rendu elle passait par les vies 20, 12, 4 — les poses 0, 1, 3, la 2
+        ; jamais dessinee ; a 7 c'est la 3 qui sautait. Les grandes gerbes
+        ; restent au drop : dix pas, quatre poses en cycle, le saut ne se voit
+        ; pas et leur duree suit l'arcade.
+        ldb   1,x
+        cmpb  #flamemgr.PUFF
+        bne   >
+        suba  #flamemgr.STEP
+        bra   @vieilli
+!       suba  flamemgr.drop+1
+@vieilli
         bhi   >
         clra                           ; la gerbe est finie apres ce rendu
 !       sta   ,x

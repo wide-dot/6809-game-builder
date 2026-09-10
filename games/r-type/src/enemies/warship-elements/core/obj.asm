@@ -23,15 +23,23 @@
 ;
 ; ECARTS ASSUMES (09/09/2026) :
 ;  - le flash de coup arcade est un echange de palette (0x39 -> 0x55, six
-;    trames) : ici le noyau CLIGNOTE, il n'est pas dessine une trame de jeu
-;    sur deux pendant ces six trames ;
-;  - l'arcade efface 256 cases du plan arriere a la mort (la chambre du
-;    noyau) : NON PORTE, la coque reste — a faire avec la chirurgie de couche
-;    de l'epave des sous-parties (tranche 3 du plan des pieces) ;
+;    trames, une trame sur deux) : ici la pose ouverte existe en DEUX jeux,
+;    convertis chacun sous sa palette arcade (core_open, core_open_flash), et
+;    le noyau alterne entre les deux pendant ces six trames ;
+;  - a la mort, l'arcade n'efface RIEN : la boucle de 256 cases (c544/de86)
+;    abat la PRIORITE des cases de la bande du noyau (mot d'attribut AND $F),
+;    ce qui fait passer le noyau et ses explosions DEVANT la coque — relu le
+;    10/09/2026 ; ici le noyau est un sprite au-dessus de la couche, il n'y a
+;    rien a faire. La coque, elle, se detruit zone par zone : part.Wreck ;
 ;  - difficulte fixe (politique v1) : 128 trames ouvert, un feu par 8 trames ;
 ;  - le feu n'a pas de son de lancement (0x5d, sans equivalent v2) ;
 ;  - le feu choisit son image par l'identite du slot objet (e06c) : ici un
 ;    compteur tournant, meme diversite.
+;
+; LA COLLISION JOUEUR suit l'arcade (dd51 v2 / de2b v3_skip_player) : hors
+; phase ouverte le noyau est dans la liste ennemie — il tue le joueur au
+; contact et absorbe les tirs ; en phase ouverte il passe dans la liste des
+; POINTS FAIBLES (AABB_list_target), que seules les armes rencontrent.
 ;
 ; IL EST DESSINE PAR LE MANAGER DE TRANCHES (wsmgr) au rang du fond, comme les
 ; autres gros sprites mobiles : 24x24, quatre tranches par pose
@@ -65,7 +73,9 @@ core.OPEN    equ 128               ; ddd3 : 0x80 (0x40 en difficile — non rete
 core.PUMP    equ 63                ; df95 : 0x3f
 core.FIRE    equ 8                 ; dfc9 : masque 7, un feu toutes les 8 trames
 core.SLIDEPX equ 13                ; 36 px arcade x 0,375 = 13,5
-core.FLASH   equ 6                 ; de30 : six trames de flash
+core.FLASH   equ 2                 ; de30 : six trames de flash, une sur deux — ici DEUX
+                                   ; RENDUS (un rendu compense ~7 trames : six trames
+                                   ; n'en feraient pas un), le premier sous la palette
 core.BOX     equ warship_core_hitbox_x*256+warship_core_hitbox_y
 core.OPENBOX equ warship_core_open_hitbox_x*256+warship_core_hitbox_y
 core.OPENCTR equ 4                 ; 1000:81d2 : x[-32..12], le centre RECULE de 10 px arcade
@@ -190,14 +200,18 @@ core.Opening
         lbsr  core.ShowCover
         lbsr  core.Elapse
         bne   @rts
-        ; OUVERT (ddd3) : la boite s'elargit a gauche et les coups comptent
+        ; OUVERT (ddd3) : la boite s'elargit a gauche, les coups comptent, et
+        ; seules les armes la rencontrent (de2b : v3_skip_player)
         ldd   #core.OPEN
         std   core.timer,u
         clr   core.flash,u
+        _Collision_RemoveAABB core.AABB,AABB_list_ennemy
+        _Collision_CleanLinksAABB core.AABB ; changer de liste : les liens vierges (macros.asm)
         lda   core.hp,u
         sta   core.AABB+AABB.p,u
         ldd   #core.OPENBOX
         std   core.AABB+AABB.rx,u
+        _Collision_AddAABB core.AABB,AABB_list_target
         lda   #4
         sta   routine,u
 @rts    rts
@@ -215,33 +229,36 @@ core.Open
         lble  core.Die
         cmpa  core.hp,u
         beq   >
-        sta   core.hp,u                ; touche : six trames de flash (de30)
+        sta   core.hp,u                ; touche : le flash (de30)
         ldb   #core.FLASH
         stb   core.flash,u
 !       lda   core.flash,u
         beq   @show
-        suba  layer.drop+1
-        bhi   >
-        clra
-!       sta   core.flash,u
-        ldb   gfxlock.frame.gameCount+1
-        andb  #2
-        bne   @cover                   ; le clignotement : pas dessine
-@show   lda   Img_Page_Index+ObjID_warship_boss
+        deca                           ; un rendu de moins
+        sta   core.flash,u
+        anda  #1
+        beq   @show
+        ldx   #core.sl.core_open_flash.0 ; de16 : la palette de flash, un rendu sur deux
+        bra   @draw
+@show   ldx   #core.sl.core_open.0
+@draw   lda   Img_Page_Index+ObjID_warship_boss
         sta   wsmgr.page
         lda   core.AABB+AABB.cx,u
         adda  #core.OPENCTR            ; l'ancre de l'image, pas le centre de la boite
         ldb   core.AABB+AABB.cy,u
-        ldx   #core.sl.core_open.0
         jsr   wsmgr.Draw
-@cover  lbsr  core.ShowCover           ; la coque, meme quand le noyau clignote
+        lbsr  core.ShowCover
 @count  lbsr  core.Elapse
         bne   @rts
-        ; se referme (de56) : invincible a nouveau, la boite du corps
+        ; se referme (de56) : invincible a nouveau, la boite du corps, et de
+        ; retour dans la liste ennemie (dd51 : v2, le joueur y est)
+        _Collision_RemoveAABB core.AABB,AABB_list_target
+        _Collision_CleanLinksAABB core.AABB
         lda   #-1
         sta   core.AABB+AABB.p,u
         ldd   #core.BOX
         std   core.AABB+AABB.rx,u
+        _Collision_AddAABB core.AABB,AABB_list_ennemy
         ldd   #core.ANIM
         std   core.timer,u
         lda   #5
@@ -471,9 +488,14 @@ core.Die
         ldd   y_pos,u
         std   y_pos,x
 core.Vanish
-        lda   #7
-        sta   routine,u
+        lda   routine,u
+        cmpa  #4                       ; ouvert : la boite est chez les points faibles
+        beq   >
         _Collision_RemoveAABB core.AABB,AABB_list_ennemy
+        bra   @gone
+!       _Collision_RemoveAABB core.AABB,AABB_list_target
+@gone   lda   #7
+        sta   routine,u
         jmp   DeleteObject
 core.Deleted
         rts

@@ -163,7 +163,11 @@ flamemgr.Arm
         bne   @cherche
         puls  a,x,y,pc
 @libre  lda   #flamemgr.LIFE
-        sta   ,x
+        ldb   ,s                       ; la zone : la bouffee du moignon vit
+        cmpb  #flamemgr.PUFF           ; quatre pas, sa chaine est calee en
+        bne   >                        ; queue des dix (gen_warship_flames.py)
+        lda   #flamemgr.LIFE_PUFF
+!       sta   ,x
         lda   ,s                       ; la zone
         sta   1,x
         ; l'ancrage a la couche, le meme que toutes les pieces du vaisseau :

@@ -25,8 +25,11 @@ La comparaison se fait contre le RENDU de chaque emplacement, calculé par
 stockée, et pas contre une approximation ΔE76 de la quantification.
 
     usage : tools/arcade_to_mscroll.py 03 ~/.../out/tiles/level3_b.png
-            [--force R,G,B=IDX ...]
-    sortie : src/stages/03/map/battleship.png (+ stats)
+            [--force R,G,B=IDX ...] [--out CHEMIN]
+    sortie : src/stages/03/map/battleship.png (+ stats), ou CHEMIN
+             (gen_warship_wreck.py convertit ainsi le fond EPAVE exporte par
+             re.arcade, memes forces, pour y decouper les epaves des 27
+             sous-parties : memes couleurs que la coque qu'elles remplacent)
 
 `--force` affecte une couleur SOURCE à un emplacement nommé (index PNG), quoi
 qu'en dise la distance — même mécanisme et même raison d'être que dans
@@ -58,9 +61,13 @@ stage, src = sys.argv[1], sys.argv[2]
 # Ici c'est la coque du vaisseau — ses trois verts sombres tombent sinon sur
 # le gris commun, alors que l'olive #616100 leur donne un second niveau.
 forces = {}
+out_path = None
 _args = sys.argv[3:]
 while _args:
     a = _args.pop(0)
+    if a == '--out':
+        out_path = _args.pop(0)
+        continue
     if a != '--force':
         raise SystemExit('argument inconnu : %s' % a)
     rgb, idx = _args.pop(0).split('=')
@@ -116,7 +123,8 @@ for y in range(min(h, MSCROLL_H)):
         if hw[i] == px[x, y]:
             exact += 1
 
-dst = f"src/stages/{stage}/map/battleship.png"
+dst = out_path or f"src/stages/{stage}/map/battleship.png"
+os.makedirs(os.path.dirname(dst) or '.', exist_ok=True)
 out.save(dst, optimize=True)
 n = min(h, MSCROLL_H) * min(w, MSCROLL_W)
 print(f"{dst}: {MSCROLL_W}x{MSCROLL_H} (contenu {min(w,MSCROLL_W)}x{h}), "

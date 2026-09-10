@@ -12,7 +12,7 @@
 ; courant sur tout le dossier. Toutes les tranches d'une pose gardent
 ; le canevas de la gerbe, donc partagent son ancre.
 
-; bottom-reactor-flame-straight-down : 4 poses uniques sur dix pas (chaine 7EF2)
+; bottom-reactor-flame-straight-down : 4 poses uniques sur 10 pas (chaine 7EF2)
 flame.chain.fl_d
         fcb   0,1,2,1,2,3,2,3,2,3
 flame.sl.fl_d.0
@@ -30,7 +30,7 @@ flame.sl.fl_d.3
 flame.sets.fl_d
         fdb   flame.sl.fl_d.0,flame.sl.fl_d.1,flame.sl.fl_d.2,flame.sl.fl_d.3
 
-; bottom-reactor-flame-right : 4 poses uniques sur dix pas (chaine 7F38)
+; bottom-reactor-flame-right : 4 poses uniques sur 10 pas (chaine 7F38)
 flame.chain.fl_r
         fcb   0,1,2,3,2,3,2,3,2,3
 flame.sl.fl_r.0
@@ -48,7 +48,7 @@ flame.sl.fl_r.3
 flame.sets.fl_r
         fdb   flame.sl.fl_r.0,flame.sl.fl_r.1,flame.sl.fl_r.2,flame.sl.fl_r.3
 
-; bottom-reactor-flame-left : 4 poses uniques sur dix pas (chaine 7F7E)
+; bottom-reactor-flame-left : 4 poses uniques sur 10 pas (chaine 7F7E)
 flame.chain.fl_l
         fcb   0,1,2,3,2,3,2,3,2,3
 flame.sl.fl_l.0
@@ -66,10 +66,28 @@ flame.sl.fl_l.3
 flame.sets.fl_l
         fdb   flame.sl.fl_l.0,flame.sl.fl_l.1,flame.sl.fl_l.2,flame.sl.fl_l.3
 
+; small-puffs : 4 poses uniques sur 4 pas (chaine 7FC4), calee en queue des dix
+flame.chain.fl_p
+        fcb   0,0,0,0,0,0,0,1,2,3
+flame.sl.fl_p.0
+        fcb   2
+        fdb   set_fl_p_0,set_fl_p_1
+flame.sl.fl_p.1
+        fcb   2
+        fdb   set_fl_p_2,set_fl_p_3
+flame.sl.fl_p.2
+        fcb   2
+        fdb   set_fl_p_4,set_fl_p_5
+flame.sl.fl_p.3
+        fcb   2
+        fdb   set_fl_p_6,set_fl_p_7
+flame.sets.fl_p
+        fdb   flame.sl.fl_p.0,flame.sl.fl_p.1,flame.sl.fl_p.2,flame.sl.fl_p.3
+
 flame.Chains
-        fdb   flame.chain.fl_d,flame.chain.fl_r,flame.chain.fl_l
+        fdb   flame.chain.fl_d,flame.chain.fl_r,flame.chain.fl_l,flame.chain.fl_p
 flame.Sets
-        fdb   flame.sets.fl_d,flame.sets.fl_r,flame.sets.fl_l
+        fdb   flame.sets.fl_d,flame.sets.fl_r,flame.sets.fl_l,flame.sets.fl_p
 ; la page des tranches de chaque gerbe : Img_Page_Index de cet identifiant
 flame.PageIds
-        fcb   ObjID_warship_flamemgr,ObjID_warship_flamemgr,ObjID_warship_turret
+        fcb   ObjID_warship_flamemgr,ObjID_warship_flamemgr,ObjID_warship_turret,ObjID_warship_flamemgr

@@ -7,6 +7,7 @@
 ;   40:c797 warship_part_install   40:c7c3 son tick
 ;   40:c83b sa mort  40:c846 la cascade d'explosions  40:c8d6/c8e8 l'epave
 ;   1000:7302.. les recettes      1000:77b8.. les boites
+;   1000:73xx+8 la grille d'epave de chaque recette (lignes x colonnes)
 ;
 ; ELLES N'ONT PAS DE SPRITE, et c'est ce qui les rend simples. La plate de
 ; c797 le dit sans detour : « The sub-part has NO per-frame sprite paint. Its
@@ -31,11 +32,19 @@
 ; alterner reviendrait a inscrire et retirer la boite une trame sur deux —
 ; plus cher, et moins juste. On teste donc a chaque trame.
 ;
-; DIFFERE a la tranche 3 : l'EPAVE. La mort arcade blitte une grille de tuiles
-; dans la tilemap de fond (c8e8, dimensions et contenu dans la queue de la
-; recette). La couche v2 est un tampon de code compile ; la repeindre demande
-; le meme outillage que l'edition du champ de gommes du stage 4. Ici la piece
-; meurt en explosion et laisse la coque intacte.
+; L'EPAVE (tranche 3, 10/09/2026). La mort arcade blitte une grille de tuiles
+; — l'EPAVE de la recette — dans la tilemap de fond (c8e8), a la cellule de
+; l'ancre : la coque est detruite ZONE PAR ZONE au fil des attaques, et le
+; reste jusqu'au rechargement de la tilemap (checkpoint). Ici le MEME geste
+; sur la carte mscroll : l'epave est un PATCH de la carte, ses tuiles ajoutees
+; au jeu par le builder (<mscroll patches=...>, tools/gen_warship_wreck.py),
+; ses cellules listees dans battleship.patches (genere, inclus ci-dessous).
+; La piece survit a sa mort le temps du delai arcade (16 trames + 10, sous
+; la grosse explosion), puis DEMANDE son patch au resident du stage
+; (bship.patch.request, src/stages/03/bship/patch.asm) et se retire ; la
+; boucle de stage l'applique apres mscroll.move, et le checkpoint le defait.
+; Zero cycle par trame — la version sprite (wsmgr) coutait 1 700 cycles par
+; epave et par rendu, refusee par l'auteur.
 ;
 ; DIFFERE aussi : le signal de mort du parent (`parent.[+0x3e]`), qui fait
 ; mourir toutes les pieces avec le vaisseau — il viendra avec le coeur.
@@ -53,8 +62,10 @@ part.cam0       equ ext_variables+13   ; 13,14 la camera.y de ce moment
 part.cx         equ ext_variables+15   ; 15    excentrage du centre, signe
 part.cy         equ ext_variables+16   ; 16
 part.lastP      equ ext_variables+17   ; 17    dernier potentiel vu (le coup)
+part.timer      equ ext_variables+18   ; 18    trames avant l'epave
 
 part.HP         equ 12                 ; 40:c797 MOV byte ptr [BP+0x2f],0xc
+part.WRECKDELAY equ 26                 ; 40:c83b 16 trames + 40:c8cb 10
 
 part.Object
         lda   routine,u
@@ -64,6 +75,7 @@ part.Object
 part.Routines
         fdb   part.Init
         fdb   part.Live
+        fdb   part.Wreck
         fdb   part.Deleted
 
 ; -----------------------------------------------------------------------------
@@ -165,23 +177,61 @@ part.Live
 @rien   rts                            ; rien a dessiner : la couche EST le corps
 
 ; -----------------------------------------------------------------------------
+; -----------------------------------------------------------------------------
+; La mort : le score, la grosse explosion, la boite retiree — et la piece
+; SURVIT le temps du delai arcade, pour demander son epave
+; (c83b -> c846 -> c8d6 -> c8e8 : la grille blittee 26 trames plus tard).
+; -----------------------------------------------------------------------------
 part.Boom
         ldb   #warship_subpart_scoreIdx
         jsr   AwardScore
         jsr   LoadObject_x
-        beq   part.Vanish
+        beq   part.ToWreck
         _ldd  ObjID_explosion,explosion.subtype.big.brown+explosion.sfx.turret
         std   id,x
         ldd   x_pos,u
         std   x_pos,x
         ldd   y_pos,u
         std   y_pos,x
-part.Vanish
+part.ToWreck
+        _Collision_RemoveAABB part.AABB,AABB_list_ennemy
+        lda   #part.WRECKDELAY
+        sta   part.timer,u
         lda   #2
         sta   routine,u
+        rts
+
+; -----------------------------------------------------------------------------
+; L'EPAVE : la piece attend son delai sous l'explosion, puis demande son patch
+; de carte au resident du stage et se retire. Une demande non prise (une autre
+; attend) se represente au tick suivant.
+; -----------------------------------------------------------------------------
+part.Wreck
+        lda   part.timer,u
+        beq   @req
+        ldb   gfxlock.frameDrop.count
+        bne   >
+        incb
+!       pshs  b
+        suba  ,s+
+        bhi   >
+        clra
+!       sta   part.timer,u
+        rts
+@req    lda   subtype,u
+        jsr   bship.patch.request
+        bne   @rts
+        jmp   part.Gone
+@rts    rts
+
+part.Vanish
         _Collision_RemoveAABB part.AABB,AABB_list_ennemy
+part.Gone
+        lda   #3
+        sta   routine,u
         jmp   DeleteObject
 part.Deleted
         rts
 
         INCLUDE "src/enemies/warship-elements/part/boxes.asm"
+        INCLUDE "gen/stages/03/bship/battleship.patches.asm"

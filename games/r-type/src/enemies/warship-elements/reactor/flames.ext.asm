@@ -75,3 +75,11 @@ set_fl_l_25  EXTERNAL
 set_fl_l_26  EXTERNAL
 set_fl_l_27  EXTERNAL
 set_fl_l_28  EXTERNAL
+set_fl_p_0  EXTERNAL
+set_fl_p_1  EXTERNAL
+set_fl_p_2  EXTERNAL
+set_fl_p_3  EXTERNAL
+set_fl_p_4  EXTERNAL
+set_fl_p_5  EXTERNAL
+set_fl_p_6  EXTERNAL
+set_fl_p_7  EXTERNAL

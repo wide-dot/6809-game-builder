@@ -95,19 +95,19 @@
         fdb   114,174,48
         fcb   ObjID_warship_react,react.CAPSULE ; #35 capsule de survie
         fdb   120,150,42
-        fcb   ObjID_warship_react,react.BREACTOR ; #36 reacteur de ventre
+        fcb   ObjID_warship_react,react.BREACTOR+react.VARIANT*0 ; #36 reacteur de ventre
         fdb   123,150,-51
         fcb   ObjID_warship_turret,turret.BIG ; #37 grosse tourelle
         fdb   132,150,42
-        fcb   ObjID_warship_react,react.BREACTOR ; #38 reacteur de ventre
+        fcb   ObjID_warship_react,react.BREACTOR+react.VARIANT*1 ; #38 reacteur de ventre
         fdb   135,150,-37
         fcb   ObjID_warship_fire,fire.MULTI+fire.MOUNT*2 ; #39 tourelle multiple tr
         fdb   144,150,42
-        fcb   ObjID_warship_react,react.BREACTOR ; #40 reacteur de ventre
+        fcb   ObjID_warship_react,react.BREACTOR+react.VARIANT*2 ; #40 reacteur de ventre
         fdb   155,150,-18
         fcb   ObjID_warship_boss,boss.CORE ; #41 le noyau — le boss
         fdb   156,150,42
-        fcb   ObjID_warship_react,react.BREACTOR ; #42 reacteur de ventre
+        fcb   ObjID_warship_react,react.BREACTOR+react.VARIANT*3 ; #42 reacteur de ventre
         fdb   165,150,-60
         fcb   ObjID_warship_turret,turret.TOP ; #43 petite tourelle HAUT
         fdb   168,146,3
