@@ -217,11 +217,21 @@ dessine rien et son `Live` se termine sur un `rts`, pas sur `DisplaySprite`.
   s'allège plus. Piège vécu : le compteur de bouffée logé en `ext+20`
   tombait sur la réserve du moteur de sprites (`ext_variables_size` = 20),
   réécrite à chaque rendu — une bouffée par rendu, 33 000 cycles.
+  **Le contact des armes** (même jour) : le dispatcher arcade des 27
+  sous-parties (`c93f`) n'a pas de phase pod, celui de la pièce des
+  réacteurs (`cb7d`) en a une, à la porte du seizième de trame. Chez nous
+  `WeaponContactTick` touchait toute la liste `ennemy` : les 27 vont
+  désormais dans une neuvième liste, `AABB_list_armor` — armes seulement, ni
+  pod, ni bits, ni contact joueur (la coque est solide par le fond) — que
+  `Collision_Run` confronte aux tirs ; les pièces des réacteurs restent dans
+  `ennemy`. `Collision_ClearLists` compte neuf listes.
   Conséquence : 263 tuiles dans le jeu mscroll, au-delà du format
   court — les deux tilesets passent en PLEINE PAGE ($1B et $1C à $0000, page
-  27 était vide), la carte reste en $1D. Piège vu : au-delà de 256 tuiles le
-  fichier de 16 Ko posé à $2000 était « unplaced » dans le rapport et le
-  build sortait quand même en 0.
+  27 était vide), la carte reste en $1D. Piège vu et corrigé le même jour :
+  au-delà de 256 tuiles le fichier de 16 Ko posé à $2000 était « unplaced »
+  dans le rapport et le build sortait quand même en 0 — `CompositionChecks.
+  placement` refuse désormais tout fichier qui dépasse sa fenêtre, sauf un
+  fichier plus grand qu'une page (le débordement voulu du PCM mplus), averti.
 - **le signal de mort du parent** : chaque pièce lit `parent.[+0x3e]` pour
   mourir avec le vaisseau. Il faudra un drapeau partagé, et le pilote est le
   porteur naturel.
