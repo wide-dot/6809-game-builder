@@ -109,7 +109,20 @@ beam.gum.call equ *-2
         jsr   terrainCollision.xAxis.doRight
         ldd   terrainCollision.impact.x
         std   impactX,u
-        inc   routine,u
+        ; le plan de fond, s'il est solide : le meme geste que le tir simple
+        ; (weapon/obj.asm, 11/09/2026) — le beam traversait la coque du stage 3
+        lda   globals.backgroundSolid
+        beq   @fond
+        clrb                           ; background
+        jsr   terrainCollision.xAxis.doRight
+        ldd   terrainCollision.impact.x
+        beq   @fond
+        ldx   impactX,u
+        beq   >
+        cmpd  impactX,u
+        bhs   @fond
+!       std   impactX,u
+@fond   inc   routine,u
         ; ET LE PREMIER TICK TOUT DE SUITE — on entre dans Live par son pas
         ; (meme geste que le tir simple) : rattrapage du frame drop des la
         ; trame de naissance, boite balayee de la position initiale a la
