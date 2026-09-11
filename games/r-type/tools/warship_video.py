@@ -3,8 +3,17 @@
 
     TOJE_MCP=<toje>/scripts/toje-mcp.sh TOJE_FAST=1 \
     python3 tools/warship_video.py dist/to8.fd [dist/stage3.avi]
+    (le .mp4 H.264 du meme nom est encode a la fin)
     FRAMEDROP_MAX=0 : plus de plafond de compensation ; KILL_BOSS=1 : voir la
-    mort du noyau (exception explicite, voir plus bas).
+    mort du noyau (exception explicite, voir plus bas) ; STAGE_FRAMES=N budget
+    de trames (defaut 9000 — INSUFFISANT pour le stage entier : le script de
+    choreographie dure 9280 trames, prendre 11500 pour aller jusqu'au fondu).
+
+FIDELITE (10/09/2026, relu dans Ghidra, doc/analyse-boss-stage3 § 11) :
+l'arcade n'a aucune auto-destruction du noyau, et son mode invincible (DIP
+DSW2 bit 14) ne fait qu'avaler la mort du joueur. Sans tir, le stage se finit
+par la FIN DU SCRIPT (0xc51a -> 0xc55d), le noyau ayant ouvert quinze fois.
+Le film 1:1 se tourne donc SANS KILL_BOSS.
 
 Boote, arme le cheat (stage 3 + invincible), verifie l'invincibilite EN RAM,
 et filme de l'entree du stage jusqu'a ce qu'il rende la main.
@@ -184,3 +193,5 @@ while done < BUDGET:
 
 print(t.call('stop_video_capture'), flush=True)
 print('AVI :', out, os.path.getsize(out), 'octets')
+# H.264 OBLIGATOIRE (l'auteur regarde depuis un iPhone, qui refuse le HEVC hev1 par defaut de toje)
+print(t.call('encode_capture', {'path': out, 'codec': 'h264', 'quality': 18}), flush=True)
