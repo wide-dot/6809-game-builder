@@ -26,8 +26,9 @@
 ;
 ; LE PROTOCOLE. Une piece n'a plus de sprite a elle : a chaque tick elle
 ; INSCRIT un slot (wsmgr.Draw) — la page de ses descripteurs (posee dans
-; wsmgr.page), la liste des tranches de sa pose, et son x, y ecran, ceux de sa
-; boite. La liste est consommee et videe par le dessin : rien a armer, rien a
+; wsmgr.page), la liste des tranches de sa pose (fcb n, la boite de pose —
+; six octets, tools/wsmgr_box.py —, puis les n imagesets), et son x, y
+; ecran, ceux de sa boite. La liste est consommee et videe par le dessin : rien a armer, rien a
 ; vieillir, une liste refaite a chaque trame. L'ordre d'inscription est
 ; l'ordre de peinture (le manager peint, il ne trie pas). Le premier
 ; inscripteur fait naitre l'objet manager ; quand plus personne ne s'inscrit
@@ -69,7 +70,8 @@ wsmgr.list      fill  0,1+2*wsmgr.LISTMAX
 
 ;*******************************************************************************
 ; INSCRIRE une piece. A = x ecran, B = y ecran (0-base, ceux de la boite),
-; X = la liste des tranches de la pose (fcb n, fdb sets), wsmgr.page = la
+; X = la liste des tranches de la pose (fcb n, la boite de pose, fdb sets),
+; wsmgr.page = la
 ; page de ses descripteurs (Img_Page_Index de la piece). Tout est preserve.
 ;*******************************************************************************
 wsmgr.Reset
@@ -161,9 +163,12 @@ wsmgr.FakeMf
 
 ;*******************************************************************************
 ; LE DESSIN — appele par BuildSprites, une page quelconque montee, sans OST.
-; Slot par slot : monter la page des descripteurs, puis tranche par tranche
-; le containment (_sprite.cull, geometrie lue dans l'imageset), l'adresse
-; ecran (DRS_XYToAddress, resident), la page de la routine compilee, l'appel.
+; Slot par slot : la boite de la pose contre la fenetre (en tete de liste),
+; la page des descripteurs, l'adresse ecran (DRS_XYToAddress, resident, une
+; fois par pose) ; puis tranche par tranche le containment (geometrie lue dans
+; l'imageset), la page de la routine compilee, l'appel. Mesure du 10/09/2026
+; (doc/profil-boucle-stage3-2026-09.md) : le tour d'une tranche dessinee
+; valait 265 cycles, le code compile 380.
 ;*******************************************************************************
 wsmgr.DrawAll
         _GetCartPageA
@@ -180,15 +185,45 @@ wsmgr.DrawAll
         std   wsmgr.xy
         lda   5,x
         _SetCartPageA                  ; la page de la piece : sa liste
-        ldy   1,x                      ; fcb n, fdb sets — recopiee en RAM
-        ldu   #wsmgr.list
+        ldy   1,x                      ; fcb n, la boite de pose, fdb sets
+        ; LA BOITE DE POSE D'ABORD (10/09/2026, profil : le cache du noyau, a
+        ; cheval sur le bord droit, payait six rejets a 119 cycles par rendu).
+        ; Six octets ecrits par le generateur (tools/wsmgr_box.py) : le test
+        ; est EXACT, il rejette la pose quand aucune tranche ne peut tenir
+        ; dans la fenetre — toutes sortent du meme cote. Meme arithmetique 8
+        ; bits que les tranches : le bord gauche au-dela de 176 est ou bien a
+        ; droite de la fenetre, ou bien un debordement negatif, et le bord
+        ; gauche le plus a droite tranche (il passe le zero, retenue, ou non).
+        lda   wsmgr.xy
+        adda  1,y                      ; x + x1 : le bord gauche le plus a gauche
+        suba  #screen_left-8
+        cmpa  #160+16
+        bhi   @xneg
+        adda  2,y                      ; + xw0 : le bord droit le plus a gauche
+        cmpa  #160+16
+        lbhi  wsmgr.slotOut            ; toutes les tranches sortent a droite
+        bra   @y
+@xneg   adda  3,y                      ; + xdl : le bord gauche le plus a droite
+        lbcc  wsmgr.slotOut            ; toujours avant la fenetre : toutes sortent a gauche
+@y      lda   wsmgr.xy+1
+        adda  4,y                      ; y + y1 : le bord haut le plus haut
+        suba  #screen_top
+        cmpa  #screen_bottom-screen_top
+        bhi   @yneg
+        adda  5,y                      ; + yh0 : le bord bas le plus haut
+        cmpa  #screen_bottom-screen_top+1
+        lbhi  wsmgr.slotOut            ; toutes sortent par le bas
+        bra   @ok
+@yneg   adda  6,y                      ; + ydt : le bord haut le plus bas
+        lbcc  wsmgr.slotOut            ; toutes sortent par le haut
+@ok     ldu   #wsmgr.list
         ldb   ,y
         cmpb  #wsmgr.LISTMAX
         bls   >
         ldb   #wsmgr.LISTMAX           ; une liste plus longue est tronquee
 !       stb   ,u+
         stb   wsmgr.n
-        leay  1,y
+        leay  7,y
         pshs  b                        ; le compteur sur la pile : ldd ecrase B
 @copy   ldd   ,y++                     ; (vecu : la copie continuait jusqu'a un
         std   ,u++                     ;  octet nul et recouvrait wsmgr.Draw)
@@ -196,14 +231,22 @@ wsmgr.DrawAll
         bne   @copy
         leas  1,s
         lda   ,x
-        _SetCartPageA                  ; les descripteurs de la piece
+        sta   @pg+1                    ; la page des descripteurs, a remonter
+        _SetCartPageA                  ; apres chaque routine (immediat : 7 cycles)
+        ; L'ADRESSE ECRAN UNE FOIS PAR POSE (10/09/2026) : les tranches gardent
+        ; le canevas de leur pose, donc son ancre ET sa parite de centre (celle
+        ; de la largeur du canevas, gfxcomp Image.getCenterOffset) — les deux
+        ; globales de DRS_XYToAddress valent pour toutes, les routines ne font
+        ; que les lire.
+        ldx   wsmgr.list+1             ; la premiere tranche, pour la parite
+        ldd   wsmgr.xy
+        suba  imgset.center,x          ; la parite du centre, comme le moteur
+        jsr   DRS_XYToAddress          ; -> glb_screen_location_1 et _2 (resident)
         ldy   #wsmgr.list+1
         sty   wsmgr.lp
 @tr     ldy   wsmgr.lp
         ldx   ,y++                     ; X = l'imageset de la tranche
         sty   wsmgr.lp
-        ldd   wsmgr.xy
-        pshs  a,b
         ; LE TEST D'APPARITION, tranche par tranche. En X la fenetre est
         ; l'ecran ELARGI DE LA BORDURE : huit pixels de chaque cote, [-8, 168)
         ; (decision auteur, 09/09/2026). Une tranche fait 16 px au plus et la
@@ -215,7 +258,7 @@ wsmgr.DrawAll
         ; bord). Les bornes sont celles du CONTENU (imageset), toujours dans
         ; la tranche theorique. En Y le test reste strict : une tranche de 12
         ; lignes qui sort par le bas est sous le sol (voir l'en-tete).
-        lda   ,s
+        lda   wsmgr.xy
         adda  imgset.x1,x
         suba  #screen_left-8           ; le bord gauche, depuis la bordure gauche
         cmpa  #160+16
@@ -223,7 +266,7 @@ wsmgr.DrawAll
         adda  imgset.xsize,x           ; le bord droit, meme repere
         cmpa  #160+16
         bhi   wsmgr.hors               ; au-dela de la bordure droite
-!       lda   1,s
+        lda   wsmgr.xy+1
         adda  imgset.y1,x
         suba  #screen_top
         cmpa  #screen_bottom-screen_top
@@ -231,22 +274,17 @@ wsmgr.DrawAll
         adda  imgset.ysize,x
         cmpa  #screen_bottom-screen_top+1
         bhi   wsmgr.hors
-        lda   ,s
-        suba  imgset.center,x          ; la parite du centre, comme le moteur
-        ldb   1,s
-        jsr   DRS_XYToAddress          ; -> glb_screen_location_2 (resident)
         ldy   14,x                     ; la routine compilee...
         lda   13,x                     ; ... et sa page (celle des descripteurs,
         _SetCartPageA                  ;     sauf pageset)
         ldu   <glb_screen_location_2
         jsr   ,y                       ; la routine consomme U
-        ldx   wsmgr.sp
-        lda   ,x
-        _SetCartPageA                  ; les descripteurs, pour la tranche suivante
+@pg     lda   #0                       ; (auto-modifie) les descripteurs, pour la
+        _SetCartPageA                  ; tranche suivante
 wsmgr.hors
-        leas  2,s                      ; la pile rendue, sur les deux chemins
         dec   wsmgr.n
         bne   @tr
+wsmgr.slotOut
         ldd   wsmgr.sp
         addd  #wsmgr.SLOTSZ
         std   wsmgr.sp

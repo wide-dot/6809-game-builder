@@ -1,2 +1,0 @@
-# fenetre de battleship.png 364 73 396 109, cavite (index 1 connexe a 352,91) -> 0
-# centre du canevas en couche 380 91 ; repos du noyau 352 91

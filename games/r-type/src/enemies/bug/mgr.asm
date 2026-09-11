@@ -464,18 +464,23 @@ bugmgr.wLoop
         sta   fireDisplayDelay,u
         ldx   #player1
         stx   FoeFireTarget
-        lda   bm.RThr,y
-        sta   @thr
+        ; L'HORLOGE DE TIR SANS BOUCLE, comme tryFoeFireCommon (10/09/2026) :
+        ; le compteur avance du tick d'un coup ; s'il franchit le seuil il s'y
+        ; arrete et tire, sinon s'il atteint la remise a zero il tire a zero.
         ldd   bm.RCnt,y
-        ldx   gfxlock.frameDrop.count_w
-!       addd  #1
-        cmpd  #0
-@thr    equ   *-1
-        beq   @fire
+        addd  gfxlock.frameDrop.count_w
+        pshs  d
+        ldb   bm.RThr,y
+        clra
+        cmpd  bm.RCnt,y
+        bls   @noThr                   ; seuil deja passe, ou nul
+        cmpd  ,s
+        bhi   @noThr                   ; pas atteint dans ce tick
+        leas  2,s
+        bra   @fire                    ; D = le seuil
+@noThr  puls  d
         cmpd  bm.RRst,y
         bhs   @f0
-        leax  -1,x
-        bne   <
         std   bm.RCnt,y
         bra   @pub
 @f0     ldd   #0
