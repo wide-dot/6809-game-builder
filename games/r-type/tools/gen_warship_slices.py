@@ -24,7 +24,10 @@ SORTIES, par jeu d'images <dir> :
                                   bas, colonnes de gauche a droite) : NN est
                                   l'ordinal des set_<sym>_NN ;
   <asm>                           les listes : pour chaque pose P,
-                                    <prefixe>.<sym>.P   fcb n / fdb set_<sym>_k...
+                                    <prefixe>.<sym>.P   fcb n, la boite de pose
+                                                        fdb set_<sym>_k...
+                                  (six octets, wsmgr_box.py : ce que wsmgr
+                                  teste avant les tranches)
                                   et les EXTERNAL correspondants dans <ext>.
 Le config pointe les dossiers -slices ; les pieces designent les listes
 (reactor/obj.asm, reactor/children.asm, capsule/obj.asm, core/obj.asm).
@@ -33,6 +36,8 @@ import os
 import sys
 
 from PIL import Image
+
+from wsmgr_box import boite
 
 TW, TH = 16, 12
 TRANSPARENT = 0
@@ -51,10 +56,11 @@ JEUX = [
      ('falling-triangle', 'falling_triangle')),
     # le NOYAU (le boss, 09/09/2026) : 24x24 comme la petite capsule et le
     # triangle, il glisse de 13 px en s'ouvrant et suit la coque — chez wsmgr
-    (('core_anim', 'core_anim'), ('core_opening', 'core_opening'), ('core_open', 'core_open'),
-     ('core_open_flash', 'core_open_flash'),   # ouvert sous la palette de flash de coup (0x55)
-     # et le cache de coque qui le recouvre (gen_core_cover.py)
-     ('core-cover', 'core_cover')),
+    # ROGNE par la coque (gen_core_clip.py, 11/09/2026) : le repos et la glissade
+    # dans un jeu, les poses glissees dans les leurs ; plus de cache par-dessus
+    (('core_closed', 'core_closed'), ('core_opening-rogne', 'core_opening'),
+     ('core_open-rogne', 'core_open'),
+     ('core_open_flash-rogne', 'core_open_flash')),   # ouvert sous la palette de flash (0x55)
 ]
 TABLES = [('react.sl', 'reactor/slices.asm', 'reactor/slices.ext.asm'),
           ('core.sl', 'core/slices.asm', 'core/slices.ext.asm')]
@@ -91,7 +97,8 @@ def main():
     base = os.path.join(racine, 'src/enemies/warship-elements')
     for jeux, (prefixe, asm, ext) in zip(JEUX, TABLES):
         lignes = ['; GENERE par tools/gen_warship_slices.py — les tranches 16x12 de chaque',
-                  '; pose : fcb n, puis n imagesets, dans l\'ordre de peinture (rangees du',
+                  '; pose : fcb n, la boite de pose (six octets, tools/wsmgr_box.py),',
+                  '; puis n imagesets dans l\'ordre de peinture (rangees du',
                   '; haut vers le bas). Voir wsmgr.asm.', '']
         externs = ['; GENERE par tools/gen_warship_slices.py — les tranches, resolues au chargement.']
         total = 0
@@ -104,19 +111,26 @@ def main():
                     os.remove(os.path.join(dst, f))
             poses = sorted(f for f in os.listdir(src) if f.endswith('.png'))
             k = 0
-            for p, f in enumerate(poses):
-                im = Image.open(os.path.join(src, f))
-                if im.mode != 'P':
+            vues = {}                  # LES TRANCHES IDENTIQUES SE PARTAGENT (11/09/2026) :
+            for p, f in enumerate(poses):   # meme canevas, memes pixels = meme routine ; les
+                im = Image.open(os.path.join(src, f))   # variantes de glissade du noyau
+                if im.mode != 'P':              # gardent leurs tranches de gauche
                     sys.exit('%s n\'est pas une image indexee' % f)
                 wins = slices_of(im)
                 mots = []
                 for s, win in enumerate(wins):
-                    cut(im, win).save(os.path.join(dst, '%02d_p%d_s%d.png' % (k, p, s)))
+                    tr = cut(im, win)
+                    cle = tr.tobytes()
+                    if cle in vues:
+                        mots.append('set_%s_%d' % (sym, vues[cle]))
+                        continue
+                    vues[cle] = k
+                    tr.save(os.path.join(dst, '%02d_p%d_s%d.png' % (k, p, s)))
                     mots.append('set_%s_%d' % (sym, k))
                     externs.append('set_%s_%d  EXTERNAL' % (sym, k))
                     k += 1
                 lignes.append('%s.%s.%d' % (prefixe, sym, p))
-                lignes.append('        fcb   %d' % len(mots))
+                lignes.append('        fcb   %d,%s' % (len(mots), boite(im, wins)))
                 lignes.append('        fdb   ' + ','.join(mots))
             geo = os.path.join(src, 'geometrie.txt')
             if os.path.exists(geo):

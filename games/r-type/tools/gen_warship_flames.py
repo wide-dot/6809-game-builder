@@ -47,6 +47,8 @@ import re
 
 from PIL import Image
 
+from wsmgr_box import boite
+
 ROM = ('/Users/benoitrousseau/Documents/Claude/Projects/re.arcade.r-type'
        '/out/rom/maincpu.bin')
 ARC = ('/Users/benoitrousseau/Documents/Claude/Projects/re.arcade.r-type'
@@ -87,7 +89,8 @@ def main():
         "; Une chaine = les dix pas de l'animation, chacun donnant le rang de la",
         "; POSE UNIQUE a jouer (l'arcade cycle quatre recettes sur dix pas). Le",
         "; manager des gerbes (flamemgr.asm) y lit le rang, puis INSCRIT chez",
-        "; wsmgr la liste des tranches 16x12 de cette pose (fcb n / fdb sets),",
+        "; wsmgr la liste des tranches 16x12 de cette pose (fcb n puis la boite",
+        "; de pose, six octets, tools/wsmgr_box.py / fdb sets),",
         "; que wsmgr dessine tranche par tranche, chacune testee contre la bande.",
         ";",
         "; Les images sont rangees pose par pose, fenetre par fenetre (rangees",
@@ -128,11 +131,13 @@ def main():
             iw, ih = im.size
             px = im.tobytes()
             mots = []
+            wins = []
             for y0 in range(0, ih, TH):
                 for x0 in range(0, iw, TW):
                     x1, y1 = min(x0 + TW, iw), min(y0 + TH, ih)
                     if not any(px[y * iw + x] for y in range(y0, y1) for x in range(x0, x1)):
                         continue           # fenetre vide : rien a dessiner
+                    wins.append((x0, y0, x1, y1))
                     # LA DECOUPE RESTE EN MODE P, PALETTE ET INDEX INTACTS.
                     # gfxcomp lit l'octet brut du raster : pixel == 0 ->
                     # transparent, le RGB ne compte pas — et la palette du jeu
@@ -150,15 +155,15 @@ def main():
                     externs.append('set_%s_%d  EXTERNAL' % (prefixe, rang[0]))
                     rang[0] += 1
                     n_img += 1
-            listes.append(mots)
+            listes.append((mots, boite(im, wins)))
         out.append('; %s : %d poses uniques sur %d pas (chaine %04X)%s'
                    % (dossier, len(uniques), npas, chaine,
                       ', calee en queue des dix' if npas < 10 else ''))
         out.append('flame.chain.%s' % prefixe)
         out.append('        fcb   ' + ','.join(str(uniques.index(a)) for a in pas))
-        for p, mots in enumerate(listes):
+        for p, (mots, bx) in enumerate(listes):
             out.append('flame.sl.%s.%d' % (prefixe, p))
-            out.append('        fcb   %d' % len(mots))
+            out.append('        fcb   %d,%s' % (len(mots), bx))   # n, puis la boite de pose
             out.append('        fdb   ' + ','.join(mots))
         out.append('flame.sets.%s' % prefixe)
         out.append('        fdb   ' + ','.join('flame.sl.%s.%d' % (prefixe, p) for p in range(len(listes))))
