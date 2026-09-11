@@ -324,9 +324,10 @@ bullet.Live
         subd  #160-8/2
         cmpd  glb_camera_x_pos
         lbge  @mort
-        ldd   bullet.y,x
-        lble  @mort
-        cmpd  #160
+        ldd   bullet.y,x               ; -3..207 : la fenetre de l'arcade, voir
+        cmpd  #-3                      ; foefire.asm (le 160 recopie tuait les
+        lblt  @mort                    ; balles 25 px au-dessus du sol, 11/09/2026)
+        cmpd  #207
         lbge  @mort
 ;
         ; --- la boite suit la balle -----------------------------------------

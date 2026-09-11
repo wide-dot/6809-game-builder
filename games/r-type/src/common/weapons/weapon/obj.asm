@@ -102,6 +102,23 @@ Init
         ldd   terrainCollision.impact.x
         std   impactX,u
         clr   gumHit,u
+        ; LE PLAN DE FOND, quand le stage le declare solide (stage 3 : la
+        ; silhouette du vaisseau) — l'arcade sonde fg ET bg (e08a/e08f), le
+        ; missile et le module le font deja ; sans cette sonde le tir volait a
+        ; travers la coque et sa boite balayee touchait les tourelles derriere
+        ; (11/09/2026). Meme senseur, meme ligne ; le plus proche gagne.
+        lda   globals.backgroundSolid
+        beq   @fond
+        clrb                           ; background
+        jsr   terrainCollision.xAxis.doRight
+        ldd   terrainCollision.impact.x
+        beq   @fond                    ; rien devant sur le fond
+        ldx   impactX,u
+        beq   >                        ; pas de mur d'avant-plan : le fond decide
+        cmpd  impactX,u
+        bhs   @fond                    ; le mur vient avant
+!       std   impactX,u
+@fond
 
         ; le senseur est toujours pose : le crochet rebalaie LA MEME ligne
         ldx   stage.gum.hook
@@ -197,22 +214,16 @@ weapon.step
         ; naissance, un tir parti a moins d'un pas du mur ne pouvait plus
         ; RIEN toucher (31/08/2026). p reste arme : la passe de collision de
         ; la trame suivante teste ce segment, puis Impact/Delete le retire.
-        ; LA BOITE PAR SES BORDS (04/09/2026) — voir le site en vol plus bas.
-        ; L'avant est le point d'impact ; l'aleas du recul peut le mettre un
-        ; ou deux pixels derriere l'arriere : AABB.spanX sert les deux sens,
-        ; la boite couvre alors ce petit segment.
-        ldd   weapon.sweepFrom
-        subd  glb_camera_x_pos         ; l'arriere
-        tfr   d,x
-        ldd   x_pos,u
-        subd  glb_camera_x_pos
-        addd  #3                       ; l'avant : le point d'impact
-        leay  AABB_0,u
-        jsr   AABB.spanX
+        ; LA BOITE PAR SES BORDS (04/09/2026) — le site en vol ci-dessous la
+        ; pose, l'avant etant ici le point d'impact ; l'aleas du recul peut le
+        ; mettre un ou deux pixels derriere l'arriere : AABB.spanX sert les
+        ; deux sens, la boite couvre alors ce petit segment. (Un impact au-dela
+        ; du bord droit tombe dans Delete, comme un tir en vol au meme endroit :
+        ; invisible de toute facon — 11/09/2026, la queue est partagee.)
         ldd   #set_weapon_impact0
         std   image_set,u
         inc   routine,u
-        jmp   DisplaySprite
+        bra   >
 !
         ; update hitbox position — LA BOITE BALAYEE, PAR SES BORDS. Un seul
         ; echantillon par trame et un pas de 6*frameDrop : une boite posee sur

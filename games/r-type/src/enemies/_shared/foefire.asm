@@ -116,10 +116,14 @@ LAB_0000_ea42
         subd  #160-8/2
         cmpd  glb_camera_x_pos
         bge   destroy
-        ; y axis
+        ; y axis — LA FENETRE DE L'ARCADE (is_visible_range 40:1d6b : y de
+        ; 124 a 404 pour un raster 128..383, soit -3 a 207 en v2 pour un
+        ; champ de 0 a 191). L'ancien 160 etait la LARGEUR d'ecran recopiee :
+        ; les balles mouraient 25 px au-dessus du sol du stage 3 (11/09/2026).
         ldd   y_pos,u
-        ble   destroy
-        cmpd  #160
+        cmpd  #-3
+        blt   destroy
+        cmpd  #207
         bge   destroy
 
         ; collision
