@@ -45,17 +45,19 @@
 ; autres gros sprites mobiles : 24x24, quatre tranches par pose
 ; (core/slices.asm), page imgCore, l'ancre est le centre de sa boite.
 ;
-; LE CACHE DE COQUE (decision auteur, 09/09/2026). L'arcade dessine le noyau
-; DERRIERE le plan de tuiles : au repos il est dans une cavite de la coque, et
-; sa glissade le fait passer SOUS la masse de coque de droite. Notre couche est
-; peinte avant les sprites ; le noyau inscrit donc, juste apres lui-meme, un
-; morceau de coque decoupe dans la carte (gen_core_cover.py, la cavite en
-; transparence) que wsmgr peint par-dessus : ce qui est dans la cavite se
-; voit, ce qui est sous la coque disparait. Le cache est ancre a la couche a
-; la position de REPOS du noyau (il ne glisse pas, lui), un ecart de canevas
-; (cover.equ) plus loin.
+; SOUS LA COQUE PAR DES POSES ROGNEES (decision auteur, 11/09/2026 —
+; doc/etude-noyau-sans-cache-2026-09.md). L'arcade dessine le noyau DERRIERE
+; le plan de tuiles : au repos il remplit exactement sa cavite, et sa glissade
+; le fait passer SOUS la masse de coque de droite. Notre couche est peinte
+; avant les sprites ; jusqu'au 10/09 un morceau de coque (core-cover, six
+; tranches, ~3 100 cycles par rendu) etait repeint par-dessus lui. Desormais
+; la coque est retiree DES POSES (tools/gen_core_clip.py) : la glissade montre
+; la pose fermee 0 rognee a chaque ecart pair (core.SlideSets), et les poses
+; glissees — ouverture, ouvert, flash de coup — n'ont que leurs dix colonnes
+; visibles. Rien n'est repeint, et l'ouverture, dont l'oeil est sous la
+; coque, se reduit a six tranches distinctes pour huit poses.
 ;*******************************************************************************
-        INCLUDE "src/enemies/warship-elements/core/cover.equ"
+        INCLUDE "src/enemies/warship-elements/core/clip.equ"
 
 core.AABB   equ ext_variables      ; 0..8
 core.mapX   equ ext_variables+9    ; 9,10  l'abscisse de couche, au repos de la phase
@@ -72,7 +74,7 @@ core.ANIM    equ 63                ; dd72/de56 : 0x3f
 core.OPEN    equ 128               ; ddd3 : 0x80 (0x40 en difficile — non retenu)
 core.PUMP    equ 63                ; df95 : 0x3f
 core.FIRE    equ 8                 ; dfc9 : masque 7, un feu toutes les 8 trames
-core.SLIDEPX equ 13                ; 36 px arcade x 0,375 = 13,5
+; core.SLIDEPX : clip.equ (14 : l'ancre impaire de 13 etait rendue a 14)
 core.FLASH   equ 2                 ; de30 : six trames de flash, une sur deux — ici DEUX
                                    ; RENDUS (un rendu compense ~7 trames : six trames
                                    ; n'en feraient pas un), le premier sous la palette
@@ -125,8 +127,6 @@ core.Init
         ldd   #core.CLOSED
         std   core.timer,u
         clr   core.flash,u
-        ldd   core.mapX,u              ; le cache de coque reste ici
-        std   core.coverMap
         inc   routine,u
         ; PAS DE RTS : il vit des sa premiere trame
 
@@ -135,7 +135,6 @@ core.Closed
         lbsr  core.Tick
         lbne  core.Vanish
         lbsr  core.ShowClosed
-        lbsr  core.ShowCover
         lbsr  core.Elapse
         bne   @rts
         lda   #1                       ; dce6 : glisse a droite en s'ouvrant
@@ -158,14 +157,31 @@ core.Slide
         mul                            ; D = ecoulees x 3 (<= 108, en B)
         lsrb
         lsrb
-        lsrb
+        lsrb                           ; B = la derive, 0..13
+        ; LA POSE ROGNEE SUIT LE RENDU (mesure toje, 11/09/2026) : le moteur
+        ; dessine une ancre impaire a la colonne paire SUIVANTE, et l'ancre de
+        ; repos est paire (couche et camera paires). L'ecart dessine depuis le
+        ; repos est donc la derive arrondie au pair superieur a l'aller, et
+        ; SLIDEPX moins la derive arrondie au pair inferieur au retour (l'ancre
+        ; courante est alors repos + SLIDEPX). La boite suit l'ecart dessine.
         tst   core.dir,u
-        bpl   >
+        bmi   @recul
+        incb
+        andb  #$FE                     ; d = (derive + 1) & ~1
+        pshs  b
+        bra   >
+@recul  andb  #$FE
         negb
+        addb  #core.SLIDEPX            ; d = SLIDEPX - (derive & ~1)
+        pshs  b
+        subb  #core.SLIDEPX            ; ... rapporte a l'ancre courante
 !       addb  core.AABB+AABB.cx,u
         stb   core.AABB+AABB.cx,u
-        lbsr  core.ShowClosed
-        lbsr  core.ShowCover
+        puls  b                        ; d pair, 0..SLIDEPX : l'index x 2
+        ldx   #core.SlideSets
+        abx
+        ldx   ,x
+        lbsr  core.Show
         lbsr  core.Elapse
         bne   @rts
         ; la glissade est acquise dans la couche
@@ -197,7 +213,6 @@ core.Opening
         abx
         ldx   ,x
         lbsr  core.Show
-        lbsr  core.ShowCover
         lbsr  core.Elapse
         bne   @rts
         ; OUVERT (ddd3) : la boite s'elargit a gauche, les coups comptent, et
@@ -247,7 +262,6 @@ core.Open
         adda  #core.OPENCTR            ; l'ancre de l'image, pas le centre de la boite
         ldb   core.AABB+AABB.cy,u
         jsr   wsmgr.Draw
-        lbsr  core.ShowCover
 @count  lbsr  core.Elapse
         bne   @rts
         ; se referme (de56) : invincible a nouveau, la boite du corps, et de
@@ -277,7 +291,6 @@ core.Closing
         abx
         ldx   ,x
         lbsr  core.Show
-        lbsr  core.ShowCover
         lbsr  core.Elapse
         bne   @rts
         lda   #-1                      ; df85 : recule, et la branche « pompe »
@@ -298,7 +311,6 @@ core.Pump
         lbsr  core.Tick
         lbne  core.Vanish
         lbsr  core.ShowClosed
-        lbsr  core.ShowCover
         lda   core.flash,u
         adda  layer.drop+1
 @tire   cmpa  #core.FIRE
@@ -327,9 +339,6 @@ core.Tick
         std   layer.drop
         jsr   layer.evenX
         pshs  d
-        ldd   core.coverMap            ; le cache : sa position de couche, a l'ecran
-        subd  ,s
-        stb   core.coverSx
         ldd   core.mapX,u
         subd  ,s++
         addd  glb_camera_x_pos
@@ -372,18 +381,6 @@ core.Show
         sta   wsmgr.page
         lda   core.AABB+AABB.cx,u
         ldb   core.AABB+AABB.cy,u
-        jmp   wsmgr.Draw
-
-; core.ShowCover — le cache de coque, inscrit APRES le noyau (il le recouvre),
-; a la position de repos de la couche, l'ecart de canevas en plus
-core.ShowCover
-        lda   Img_Page_Index+ObjID_warship_boss
-        sta   wsmgr.page
-        lda   core.coverSx
-        adda  #core.COVERDX
-        ldb   core.AABB+AABB.cy,u
-        addb  #core.COVERDY
-        ldx   #core.sl.core_cover.0
         jmp   wsmgr.Draw
 
 ; core.ShowClosed — les quatre poses fermees, une par 8 trames de jeu
@@ -501,12 +498,15 @@ core.Deleted
         rts
 
 core.fireVar    fcb 0
-core.coverMap   fdb 0                  ; la position de couche du cache (celle du repos)
-core.coverSx    fcb 0                  ; ... a l'ecran, cette trame
 
 core.ClosedSets                        ; 1000:812e : les quatre poses fermees
-        fdb   core.sl.core_anim.0,core.sl.core_anim.1
-        fdb   core.sl.core_anim.2,core.sl.core_anim.3
+        fdb   core.sl.core_closed.0,core.sl.core_closed.1
+        fdb   core.sl.core_closed.2,core.sl.core_closed.3
+core.SlideSets                         ; l'ecart dessine d = 0, 2, .., SLIDEPX : la pose
+        fdb   core.sl.core_closed.0    ;  fermee 0 rognee de d (gen_core_clip.py)
+        fdb   core.sl.core_closed.4,core.sl.core_closed.5,core.sl.core_closed.6
+        fdb   core.sl.core_closed.7,core.sl.core_closed.8,core.sl.core_closed.9
+        fdb   core.sl.core_closed.10
 core.OpenSets                          ; 1000:815e : les huit poses d'ouverture
         fdb   core.sl.core_opening.0,core.sl.core_opening.1
         fdb   core.sl.core_opening.2,core.sl.core_opening.3

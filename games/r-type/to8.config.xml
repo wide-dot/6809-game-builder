@@ -4423,11 +4423,10 @@
                         <gfxcomp file="stage3.cast.imgCore" gendir="gen/enemies/stage3-cast-imgcore"
                                  gensource="gen/enemies/stage3-cast-imgcore/includes.asm"
                                  genindex="gen/enemies/stage3-cast-imgcore/index.asm">
-                            <images dir="src/enemies/warship-elements/images/core_anim-slices" names="core_anim"/>
-                            <images dir="src/enemies/warship-elements/images/core_opening-slices" names="core_opening"/>
-                            <images dir="src/enemies/warship-elements/images/core_open-slices" names="core_open"/>
-                            <images dir="src/enemies/warship-elements/images/core_open_flash-slices" names="core_open_flash"/>
-                            <images dir="src/enemies/warship-elements/images/core-cover-slices" names="core_cover"/>
+                            <images dir="src/enemies/warship-elements/images/core_closed-slices" names="core_closed"/>
+                            <images dir="src/enemies/warship-elements/images/core_opening-rogne-slices" names="core_opening"/>
+                            <images dir="src/enemies/warship-elements/images/core_open-rogne-slices" names="core_open"/>
+                            <images dir="src/enemies/warship-elements/images/core_open_flash-rogne-slices" names="core_open_flash"/>
                             <images dir="src/enemies/warship-elements/images/core-fire" names="core_fire"/>
                         </gfxcomp>
                     </lwasm>

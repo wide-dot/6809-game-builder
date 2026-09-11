@@ -242,7 +242,13 @@ décision d'auteur, comme pour tout son nouveau.
   `doc/warship-parts-plan.md` tranche 3.
 - **Non porté, à décider** : le son de lancement du feu.
 
-## 10. Le cache de coque (09/09/2026)
+## 10. Le cache de coque (09/09/2026) — REMPLACÉ le 11/09/2026
+
+> Le cache est supprimé : la coque est retirée des poses elles-mêmes
+> (`tools/gen_core_clip.py`, `core.SlideSets`), voir
+> `doc/etude-noyau-sans-cache-2026-09.md`. Le texte ci-dessous décrit le
+> mécanisme du 09/09, gardé pour l'histoire.
+
 
 L'arcade dessine le noyau DERRIÈRE le plan de tuiles : au repos il est dans
 une cavité de la coque, posé sur sa plaque, et sa glissade de 13 px le fait
@@ -263,3 +269,39 @@ posait sa plaque sur le bas du noyau — c'est ce que la capture arcade a fait
 voir. Le repos du noyau est la colonne 352, ligne 91 de la carte, et il est
 posé sur la plaque (ligne 103) comme sur la borne. Vérifié sous toje aux
 quatre positions, en proportions vraies.
+
+## 11. Le mode invincible et la fin du stage sans tuer le noyau (10/09/2026)
+
+Relu dans Ghidra à la demande de l'auteur, après un film où le noyau
+« explosait tout seul » : cette explosion venait du script de capture
+(`KILL_BOSS=1` dans `tools/warship_video.py`, une exception explicite qui
+pose la boîte du noyau à 0 à sa première ouverture), pas du jeu.
+
+**L'arcade n'a aucune auto-destruction du noyau.** Sa seule mort est
+`de37` : `damage_taken [+0x1f] ≥ HP [+0x2f] = 20`, comptés en phase 3
+seulement (`f7e4`, armes du joueur). Rien d'autre ne l'écrit.
+
+**L'invincibilité arcade est le DIP DSW2 bit 14** (`[0x2044] & 0x4000`),
+lu dans `HitPlayerOne` (`40:227b`) : au lieu de mourir, le joueur dessine
+l'image d'explosion décalée de 24 px (`player_invuln_draw`, `40:2258`) et
+continue. Le DIP ne change rien d'autre — ni les dégâts du joueur, ni le
+noyau, ni la choréographie.
+
+**Ce qui finit le stage sans tuer le noyau : la fin du script de
+choréographie.** `tick_warship_master` (`40:c51a`) : quand
+`warship_inner_script_step` rend CY=1 (entrée `0x80`), le maître entre dans
+le fondu `c55d`, le même point d'entrée que la mort du noyau. Le script
+(`1000:6f8a`, 295 entrées) dure **9 280 trames**. Le noyau est semé à la
+trame 2 086 (seuil 155 px de caméra), dort 1 536 trames, puis cycle
+(36 + 63 + 128 + 63 + 36 + 63 = 389 trames) : **quinze fenêtres ouvertes de
+128 trames**, la première à la trame 3 721, la dernière à 9 167, avant la
+fin de script à 9 280 (186 s à 50 Hz) et le fondu vers le stage 4. Un
+joueur invincible qui ne tire pas voit donc le noyau s'ouvrir et se fermer
+quinze fois, puis le vaisseau partir.
+
+**Chez nous c'est déjà 1:1** : `warship/pilot.asm` lève
+`globals.bossDefeated` à la fin du script (le commentaire cite `0xc55d`),
+`core/obj.asm` ne meurt que sur `AABB.p ≤ 0` en phase ouverte, et
+`cheat.invincible` ne touche que la mort du joueur. Le film fidèle se
+tourne SANS `KILL_BOSS`, avec un budget de trames au-delà de 9 280
+(`STAGE_FRAMES=11500`) : `dist/stage3-arcade-1to1.mp4`.

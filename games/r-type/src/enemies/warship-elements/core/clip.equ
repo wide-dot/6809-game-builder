@@ -1,0 +1,3 @@
+; GENERE par tools/gen_core_clip.py — la coupe du noyau par la coque
+core.H0      equ 0                 ; colonnes cachees au repos
+core.SLIDEPX equ 14                ; la glissade, paire (arcade 13,5)
