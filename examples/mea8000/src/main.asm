@@ -1,13 +1,16 @@
 ; ============================================================================
 ; MEA8000 playback, nothing else
 ; ============================================================================
-; Plays one speech file (Philips / Cedic-Nathan format) over and over on the
-; speech synthesizer at $E7FE/$E7FF, with a pause between plays. No screen, no
-; interrupt, no other sound chip: the smallest program that should talk on a
-; TO8 with the Cedic-Nathan synthesizer (real or emulated).
+; Says one sentence over and over on the speech synthesizer at $E7FE/$E7FF,
+; with a pause between plays. No screen, no interrupt, no other sound chip:
+; the smallest program that should talk on a TO8 with the Cedic-Nathan
+; synthesizer (real or emulated).
 ;
-; The player is written out here in full rather than included from the engine
-; so that the whole program fits on one page.
+; The data and the player are those of the period: the sentence is a sequence
+; of Philips speech files (one per word group, the format of every Cedic-Nathan
+; product), and the player has the shape of the one published with the
+; Cedic-Nathan demonstrations. The player is written out here in full rather
+; than included from the engine so that the whole program fits on one page.
 ; ----------------------------------------------------------------------------
 
         org   $6100
@@ -17,64 +20,69 @@
 main
         orcc  #$50            ; polling only: no interrupt may steal cycles
 
-@play   ldx   #speech         ; the stream is a sequence of speech files
-@next   bsr   play            ; (one per utterance): play them in turn
+@play   ldx   #speech         ; the sentence: speech files one after the other
+@next   bsr   play            ; play one, X moves to the next
         cmpx  #speech.end
         blo   @next
-        ldx   #3              ; about one and a half seconds of silence (no blank
-                              ; line here: lwasm ends the local-label scope on one)
+        ldx   #3              ; about two seconds of silence between plays (no
+                              ; blank line here: lwasm ends the local-label
+                              ; scope on one)
 @pause  ldy   #$FFFF
-@inner  leay  -1,y            ; 8 cycles per turn
+@inner  leay  -1,y            ; 11 cycles per turn
         bne   @inner
         leax  -1,x
         bne   @pause
         bra   @play
 
 ; ----------------------------------------------------------------------------
-; play - play one speech file (TP101 fig. 19-20 and 28)
+; play - play one speech file, the way the period player does
 ; ----------------------------------------------------------------------------
+; STOP once, the starting pitch, then every byte of the frames after a REQ
+; poll. No STOP at the end: the last frame of a file has amplitude 0 (the
+; "dummy frame" of Philips TP101 fig. 19), the chip fades on it and stops by
+; itself; the routine waits for that frame to start and for the chip to fall
+; silent (about 20 ms) before returning, so that the STOP of the next file
+; does not cut the sound short.
 ; File: length (2 bytes, header included), free byte, starting pitch (Hz/2),
-; then frames of 4 bytes; the last frame is the AMPL=0 dummy frame.
-; Protocol: STOP, pitch, every frame, then STOP once the dummy frame has
-; started. REQ (bit 7 of the status) is polled once per frame.
+; then frames of 4 bytes.
 ;
 ; input:  [X] address of the speech file
 ; output: [X] address of the byte after the file (the next file of a stream)
 ; ----------------------------------------------------------------------------
 play
-        pshs  d,u
+        pshs  d,y,u
         ldd   ,x
         leau  d,x             ; U = end of file
+        pshs  u               ; kept on the stack for the end test
         ldb   #map.MEA8000.STOP_SLOW
         stb   map.MEA8000.A   ; $1A: STOP, slow-stop procedure, REQ pin disabled
         ldb   3,x             ; starting pitch (the free byte at 2,x is skipped)
         leax  4,x
-        stb   map.MEA8000.D
-@frame  stu   @end
-        cmpx  #0
-@end    equ   *-2
-        bhs   @last
+        stb   map.MEA8000.D   ; accepted at once: the chip is stopped
+@byte   cmpx  ,s              ; end of the file?
+        bhs   @done
         bsr   @wait
-        ldd   ,x++
+        lda   ,x+
         sta   map.MEA8000.D
-        stb   map.MEA8000.D
-        ldd   ,x++
-        sta   map.MEA8000.D
-        stb   map.MEA8000.D
-        bra   @frame
-@last   bsr   @wait           ; the dummy frame has started: stop now
-        ldb   #map.MEA8000.STOP_SLOW
-        stb   map.MEA8000.A
-        tfr   u,x             ; X = end of the file
-        puls  d,u,pc
+        bra   @byte
+@done   bsr   @wait           ; the dummy frame has started
+        ldy   #1800           ; 20 ms: it plays, the chip fades and stops
+@settle leay  -1,y            ; (11 cycles per turn at 1 MHz)
+        bne   @settle
+        leas  2,s
+        tfr   u,x             ; X = the next file
+        puls  d,y,u,pc
 @wait   tst   map.MEA8000.A   ; REQ: bit 7 set when the chip accepts a byte
         bpl   @wait
         rts
 
 ; ----------------------------------------------------------------------------
-; the speech stream: Philips speech files, one per utterance, back to back
-; (produced by the mea8000 encoder from the Goldorak line, no frame merging)
+; the sentence: "C'est peut-être le moment le plus important de notre débat
+; parlementaire" (Mozilla Common Voice, clip common_voice_fr_17963678, CC0),
+; encoded by the mea8000 encoder with its default thomson profile: eight
+; speech files, 1888 bytes — samples/fr-female.mea of
+; https://github.com/wide-dot/mea8000-encoder
 ; ----------------------------------------------------------------------------
 speech
-        includebin "src/goldorak-01.mea"
+        includebin "src/fr-female.mea"
 speech.end
