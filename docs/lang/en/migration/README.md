@@ -118,6 +118,7 @@ practice; this is a reading order, not a schedule.
     mode binary; in v2 they outlive the pool they name, and a stale priority
     level stays poisoned for good.
 24. [Overlay: erase by omission, not by repaint](overlay-erase-by-omission.md)
+25. [A per-frame loop is a multiply](frame-drop-loops-are-multiplies.md)
     — v1 hid things by painting background patches over them; in overlay the
     canvas is redrawn every frame, so the hidden thing becomes removable
     pieces owned by a manager, and the v1 eraser masks are the cutting guide.

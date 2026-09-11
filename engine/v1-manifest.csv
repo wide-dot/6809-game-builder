@@ -41,7 +41,7 @@ engine/graphics/codec/zx0_mega.asm,engine/graphics/codec/zx0_mega.asm,0b9c7a6af6
 engine/object-management/Obj_Run.macro.asm,engine/object-management/Obj_Run.macro.asm,bc2a6189e4b620af6d2fa9a6bbeee86a850e6dc9,2026-08-01,
 engine/object-management/Obj_Run.asm,engine/object-management/Obj_Run.asm,c70bea19cfcc109fb16ac859f190bca4b8edfd32,2026-08-19,
 engine/object-management/ObjectDp.asm,engine/object-management/ObjectDp.asm,52d62c2aadb0fb157be58ab8abb0d7d9ef02046b,2026-08-01,
-engine/object-management/ObjectMoveSync.asm,engine/object-management/ObjectMoveSync.asm,81383f26717005dd33e49512bf0162bf12d15078,2026-08-01,
+engine/object-management/ObjectMoveSync.asm,engine/object-management/ObjectMoveSync.asm,81383f26717005dd33e49512bf0162bf12d15078,2026-08-01,boucle par trame remplacee par deux mul par axe (memes positions au bit pres) — frame-drop-loops-are-multiplies.md
 engine/object-management/RunPgSubRoutine.asm,engine/object-management/RunPgSubRoutine.asm,c77850234b24ccd95bd2e810e81c8e6cec5b6e80,2026-08-01,
 engine/graphics/animation/AnimateSpriteSync.asm,engine/graphics/animation/AnimateSpriteSync.asm,7c4c3748cc54573908870f522dd84bda52108357,2026-08-01,
 engine/graphics/animation/moveByScript.asm,engine/graphics/animation/moveByScript.asm,73e55ed1510c12f870e8a500b7f020bd70230142,2026-08-19,equates dp deplacees vers constants.asm (frontiere de lien)
