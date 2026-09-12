@@ -40,9 +40,12 @@ main
 ; STOP once, the starting pitch, then every byte of the frames after a REQ
 ; poll. No STOP at the end: the last frame of a file has amplitude 0 (the
 ; "dummy frame" of Philips TP101 fig. 19), the chip fades on it and stops by
-; itself; the routine waits for that frame to start and for the chip to fall
-; silent (about 20 ms) before returning, so that the STOP of the next file
-; does not cut the sound short.
+; itself 16 ms after it started; the routine waits for that before returning,
+; so that the next file finds a chip at rest. A STOP sent at the dummy's
+; start instead would race the chip's own clock: whether it lands before or
+; after the chip's first sample of the frame depends on the CPU's timing, and
+; the sound would differ from one machine to the next by a sample's state.
+; Checked against MAME's synthesizer, sample for sample (2026-09-12).
 ; File: length (2 bytes, header included), free byte, starting pitch (Hz/2),
 ; then frames of 4 bytes.
 ;
@@ -66,8 +69,8 @@ play
         sta   map.MEA8000.D
         bra   @byte
 @done   bsr   @wait           ; the dummy frame has started
-        ldy   #1800           ; 20 ms: it plays, the chip fades and stops
-@settle leay  -1,y            ; (11 cycles per turn at 1 MHz)
+        ldy   #3000           ; 24 ms (8 cycles per turn at 1 MHz): it plays
+@settle leay  -1,y            ; 8 ms, the chip fades 8 ms more and stops
         bne   @settle
         leas  2,s
         tfr   u,x             ; X = the next file
