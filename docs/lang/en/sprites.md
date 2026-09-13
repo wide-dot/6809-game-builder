@@ -58,6 +58,9 @@ palette.
 |---|---|---|
 | `bdraw` | background backup + draw, plus a matching erase routine | moving sprites |
 | `draw` | draw only | overlays, sprites whose background need not survive |
+| `bdraw1` | background backup + draw for 1bpp planes, plus erase | moving sprites on the $26 two-plane mode |
+| `draw1` | draw only for 1bpp planes | overlays on the $26 two-plane mode |
+| `clear1` | draw for 1bpp planes, plus a clearing erase (no backup) | moving sprites on a sprite-only plane |
 | `rle`, `zx0` | compressed image, decompressed to the screen | backgrounds, anything static and large |
 
 The three drawing encoders share one slot in the index. `draw`, `rle` and
@@ -110,6 +113,36 @@ are usually compiled together. Each combination is a
 **variant**, named `<mirror><encoder><shift>` — `NB0` is unmirrored bdraw
 unshifted. That name, v1's, is what the generated symbols carry :
 `adr_shell_NB0`, `adr_shell_NB0_erase`.
+
+#### 1bpp sprites for the $26 two-plane mode
+
+`bdraw1`, `draw1` and `clear1` compile the same PNGs for a 320x200 1bpp plane
+instead of the BM16 nibble planes. Input PNGs stay 8 bit indexed, but only
+colour index 0 (transparent) and 1 (ink) are accepted — a plane shows a
+single colour, so a wider palette would be a lie.
+
+Three deliberate restrictions, all checked at build time with an explicit
+error rather than silent miscompilation :
+
+- only `shift="0"` : 1bpp sprites are byte-aligned, the game draws them at x
+  positions that are multiples of 8 (one screen byte is 8 pixels, bit 7
+  first) ;
+- `planes` must stay `pointer` : the generated code is plane-agnostic, the
+  plane is selected at run time by the screen address the caller passes in U ;
+- images wider than 320 pixels are refused.
+
+The variants keep the `NB0` / `ND0` names, so the imageset index layout is
+unchanged and no game configuration has to learn a new addressing scheme
+(`clear1` answers to `B` like `bdraw1`, and the two must not mix on one
+image). The matching 1bpp runtime (plane selection, `x/8` addressing) is a
+separate phase — 1bpp code drawn by the BM16 runtime would land at the wrong
+addresses.
+
+`clear1` is for planes that hold sprites only : the background is empty by
+design, so its erase routine clears the drawn bytes (`CLR`) instead of
+restoring a backup, and no background cell is ever allocated. The game
+selects it at build time with `CLEAR1BPP equ 1` before including the sprite
+pack ; backup (`bdraw1`) and clear sprites cannot mix in one build.
 
 ## The imageset index
 

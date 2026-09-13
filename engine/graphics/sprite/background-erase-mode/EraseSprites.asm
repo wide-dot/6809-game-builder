@@ -202,6 +202,7 @@ ESP_CheckEraseB0
         bne   ESP_UnsetOnScreenFlagB0
         
 ESP_CallEraseRoutineB0
+ IFNDEF CLEAR1BPP
         lda   rsv_prev_page_erase_routine_0,u
         _SetCartPageA
         ldx   rsv_prev_erase_routine_0,u
@@ -209,8 +210,30 @@ ESP_CallEraseRoutineB0
         ldu   rsv_bgdata_0,u                ; cell_start background data        
         jsr   ,x                            ; erase sprite on working screen buffer
         stu   BBF_cell_end                  ; cell_end background data as parameter to BBF
+ ELSE
+* CLEAR1BPP (clear1 encoder, sprite-only plane) : nothing was saved, the
+* erase routine clears. The screen address is recomputed from the previous
+* position through DRS_XYToAddress (1bpp pack), like the draw computes it.
+* Requires the 1bpp DrawSprites in the link, and sprites that keep their
+* display_plane (the current one is used).
+        lda   rsv_prev_page_erase_routine_0,u
+        _SetCartPageA
+        stu   ESP_CallEraseRoutineB0_00+1   ; backup u (pointer to object)
+        ldd   rsv_prev_xy_pixel_0,u         ; previous byte column + y
+        suba  rsv_image_center_offset,u     ; same address math as the draw
+        tfr   u,x                           ; X carries the object: DRS reads display_plane,x
+        jsr   DRS_XYToAddress
+        ldu   <glb_screen_location_2
+        ldx   ESP_CallEraseRoutineB0_00+1   ; object pointer back
+        ldx   rsv_prev_erase_routine_0,x    ; clear routine
+        jsr   ,x                            ; clear sprite bytes on screen
+ ENDC
 ESP_CallEraseRoutineB0_00        
         ldu   #$0000                        ; restore u (pointer to object)
+ IFDEF CLEAR1BPP
+        bra   ESP_UnsetOnScreenFlagB0       ; no cells were allocated, nothing to free
+ ENDC
+ IFNDEF CLEAR1BPP
         ldd   rsv_bgdata_0,u                ; cell_start
 ; V2-DEVIATION: margin 16 -> 12. The draw code blasts the background through S
 ; with interrupts on, so the margin covers what an interrupt pushes onto the
@@ -231,6 +254,7 @@ ESP_FreeEraseBufferB0
         stu   BBF_SetNewEntryPrevLink+1     ; init prev address destination as Lst_FreeCellFirstEntry                
         ldu   Lst_FreeCellFirstEntry_0      ; load first cell for screen buffer 0
         jsr   BgBufferFree                  ; free background data in memory
+ ENDC
         
 ESP_UnsetOnScreenFlagB0
         lda   rsv_prev_render_flags_0,u
@@ -275,6 +299,7 @@ ESP_CheckEraseB1
         bne   ESP_UnsetOnScreenFlagB1        
         
 ESP_CallEraseRoutineB1
+ IFNDEF CLEAR1BPP
         lda   rsv_prev_page_erase_routine_1,u
         _SetCartPageA
         ldx   rsv_prev_erase_routine_1,u
@@ -282,8 +307,26 @@ ESP_CallEraseRoutineB1
         ldu   rsv_bgdata_1,u                ; cell_start background data        
         jsr   ,x                            ; erase sprite on working screen buffer
         stu   BBF_cell_end                  ; cell_end background data as parameter to BBF
+ ELSE
+* CLEAR1BPP : same clear path as buffer 0, on the buffer 1 snapshots.
+        lda   rsv_prev_page_erase_routine_1,u
+        _SetCartPageA
+        stu   ESP_CallEraseRoutineB1_00+1   ; backup u (pointer to object)
+        ldd   rsv_prev_xy_pixel_1,u         ; previous byte column + y
+        suba  rsv_image_center_offset,u     ; same address math as the draw
+        tfr   u,x                           ; X carries the object: DRS reads display_plane,x
+        jsr   DRS_XYToAddress
+        ldu   <glb_screen_location_2
+        ldx   ESP_CallEraseRoutineB1_00+1   ; object pointer back
+        ldx   rsv_prev_erase_routine_1,x    ; clear routine
+        jsr   ,x                            ; clear sprite bytes on screen
+ ENDC
 ESP_CallEraseRoutineB1_00        
         ldu   #$0000                        ; restore u (pointer to object)
+ IFDEF CLEAR1BPP
+        bra   ESP_UnsetOnScreenFlagB1       ; no cells were allocated, nothing to free
+ ENDC
+ IFNDEF CLEAR1BPP
         ldd   rsv_bgdata_1,u                ; cell_start
 ; V2-DEVIATION: margin 16 -> 12, see the buffer 0 path above
         subd  #12
@@ -300,6 +343,7 @@ ESP_FreeEraseBufferB1
         stu   BBF_SetNewEntryPrevLink+1          
         ldu   Lst_FreeCellFirstEntry_1
         jsr   BgBufferFree                  ; free background data in memory
+ ENDC
         
 ESP_UnsetOnScreenFlagB1
         lda   rsv_prev_render_flags_1,u

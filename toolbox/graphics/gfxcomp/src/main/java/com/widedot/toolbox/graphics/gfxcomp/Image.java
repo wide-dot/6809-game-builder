@@ -28,12 +28,18 @@ public class Image {
 	public static final String TYPE_BDRAW = "bdraw";
 	public static final String TYPE_RLE   = "rle";
 	public static final String TYPE_ZX0   = "zx0";
-	
+	public static final String TYPE_DRAW1  = "draw1";
+	public static final String TYPE_BDRAW1 = "bdraw1";
+	public static final String TYPE_CLEAR1 = "clear1";
+
 	public static final int TYPE_DRAW_INT  = 0;
 	public static final int TYPE_BDRAW_INT = 1;
 	public static final int TYPE_RLE_INT   = 2;
 	public static final int TYPE_ZX0_INT   = 3;
-	
+	public static final int TYPE_DRAW1_INT  = 4;
+	public static final int TYPE_BDRAW1_INT = 5;
+	public static final int TYPE_CLEAR1_INT = 6;
+
 	public static final HashMap<String, Integer> typeId = new HashMap<String, Integer>() {
 		private static final long serialVersionUID = 1L;
 		{
@@ -41,6 +47,9 @@ public class Image {
 			put(TYPE_BDRAW, TYPE_BDRAW_INT);
 			put(TYPE_RLE, TYPE_RLE_INT);
 			put(TYPE_ZX0, TYPE_ZX0_INT);
+			put(TYPE_DRAW1, TYPE_DRAW1_INT);
+			put(TYPE_BDRAW1, TYPE_BDRAW1_INT);
+			put(TYPE_CLEAR1, TYPE_CLEAR1_INT);
 		}
 	};
 	
@@ -51,8 +60,14 @@ public class Image {
 	 * routine, the runtime calls them exactly like a draw variant, and the
 	 * imageset only ever looks up B and D. Giving them a letter of their own
 	 * compiled the image and then left it out of the index, unreachable.
+	 *
+	 * draw1 and bdraw1 answer to D and B for the same reason : a 1bpp routine
+	 * is called exactly like its 4bpp namesake (same index layout, same
+	 * registers in and out), only the pixels it writes differ. clear1
+	 * answers to B as well (same bdraw subset layout, erase routine clears
+	 * instead of restoring) and must not mix with bdraw1 on one image.
 	 */
-	public static final String[] typeLabel = new String[]{"D", "B", "D", "D"};
+	public static final String[] typeLabel = new String[]{"D", "B", "D", "D", "D", "B", "B"};
 
 	// A variant key is the v1 form : mirror letter, encoder letter, shift digit
 	// ("NB0" = no mirror, bdraw, no pre-shift). It names the generated code and
@@ -105,7 +120,14 @@ public class Image {
 	public int x1_offset; // offset from center to the image left position (trimmed of transparent pixels)
 	public int y1_offset; // offset from center to the image top position (trimmed of transparent pixels)	
 	public int x_size;    // image width for non transparent pixels		
-	public int y_size;    // image height for non transparent pixels		
+	public int y_size;    // image height for non transparent pixels
+
+	// 1bpp trimmed box origin in source pixels, read by the onebpp generators
+	private int monoX0;
+	private int monoRowBytes; // screen bytes of a packed row, from monoX0 to the last ink pixel
+	private int monoOrigin;   // offset of the packed box from the canvas reference byte/row, in screen bytes
+	private int monoY0;
+	private boolean monoEmpty = true;
 	
 	// transparency flags
 	public boolean alpha;     // true if at least one pixel is transparent	
@@ -134,7 +156,15 @@ public class Image {
 	public static final String PLANES_POINTER = "pointer";
 	public static final String PLANES_OFFSET  = "offset";
 
+	/** pixels per line of a 1bpp plane buffer : the full 320px $26 line */
+	public static final int MONO_STRIDE = 320;
+
 	public String planes;
+
+	/** true for the 1bpp encoders (draw1, bdraw1, clear1) : one bit per pixel, one plane */
+	public boolean isOneBpp() {
+		return type == TYPE_DRAW1_INT || type == TYPE_BDRAW1_INT || type == TYPE_CLEAR1_INT;
+	}
 
 	public Image(String imageName, Integer imageIndex, String imageFile, String encoderType, String encoderMirror, Integer encoderShift, String encoderPosition) throws Exception {
 		this(imageName, imageIndex, imageFile, encoderType, encoderMirror, encoderShift, encoderPosition, PLANES_POINTER);
@@ -156,7 +186,7 @@ public class Image {
 				throw new Exception("image " + imageName + " : planes must be "
 						+ PLANES_POINTER + " or " + PLANES_OFFSET + ", got '" + planes + "'");
 			}
-			if (PLANES_OFFSET.equals(planes) && type != TYPE_DRAW_INT) {
+			if (PLANES_OFFSET.equals(planes) && type != TYPE_DRAW_INT && !isOneBpp()) {
 				// bdraw saves and restores a background through its own cells,
 				// rle and zx0 stream : none of them addresses the two planes
 				// the way this option describes
@@ -174,16 +204,30 @@ public class Image {
 			index = imageIndex;
 			nb_cell = null;
 
-			// process images
-			if (pixelSize != 8) {
-				throw new Exception("unsupported file format for " + imageFile + ", pixel size: "
-				                    + pixelSize + " (should be 8).");
-			}
-			if (width > 160 || height > 200) {
+		// process images
+		if (pixelSize != 8) {
+			throw new Exception("unsupported file format for " + imageFile + ", pixel size: "
+			                    + pixelSize + " (should be 8).");
+		}
+		if (isOneBpp()) {
+			if (width > 320 || height > 200) {
 				throw new Exception(imageFile + " is " + width + "x" + height
-				                    + ", past the 160x200 screen : the plane rows would overrun.");
+				                    + ", past the 320x200 screen : the plane rows would overrun.");
 			}
-			checkPixelRange(imageFile);
+			if (shift != 0) {
+				throw new Exception("image " + imageName + " : 1bpp sprites are byte-aligned,"
+				                    + " only shift 0 is supported, got shift " + shift);
+			}
+			if (!PLANES_POINTER.equals(planes)) {
+				throw new Exception("image " + imageName + " : 1bpp code is plane-agnostic,"
+				                    + " the plane is selected at run time, planes must be "
+				                    + PLANES_POINTER + ", got '" + planes + "'");
+			}
+		} else if (width > 160 || height > 200) {
+			throw new Exception(imageFile + " is " + width + "x" + height
+			                    + ", past the 160x200 screen : the plane rows would overrun.");
+		}
+		checkPixelRange(imageFile);
 
 			// The pipeline, in the order the two spaces impose : the mirror is
 			// a source transform, the planing measures the geometry, and the
@@ -191,9 +235,13 @@ public class Image {
 			// makes a shifted variant declare the geometry of the unshifted
 			// one, which the imageset needs — it keeps a single x1/y1 for the
 			// whole mirror group.
-			image = Mirror.transform(image, mirror);
+		image = Mirror.transform(image, mirror);
+		if (isOneBpp()) {
+			prepareMono(imageFile);
+		} else {
 			prepareImages();
 			Shift.transform(pixels, data, height, shift);
+		}
 	}
 	
 	// TODO - create n method as transformers
@@ -212,12 +260,116 @@ public class Image {
 	 */
 	private void checkPixelRange(String imageFile) throws Exception {
 		DataBufferByte buffer = (DataBufferByte) image.getRaster().getDataBuffer();
+		if (isOneBpp()) {
+			for (int i = 0; i < buffer.getSize(); i++) {
+				if (buffer.getElem(i) > 1) {
+					throw new Exception(imageFile + " holds colour index " + buffer.getElem(i)
+					                    + " : 1bpp images hold 0 (transparent) and 1 (ink).");
+				}
+			}
+			return;
+		}
 		for (int i = 0; i < buffer.getSize(); i++) {
 			if ((byte) buffer.getElem(i) > 16) {
 				throw new Exception(imageFile + " holds colour index " + buffer.getElem(i)
 				                    + " : 0 is transparent and 1 to 16 are the palette.");
 			}
 		}
+	}
+
+	/**
+	 * Slice a source image into one full-width 1bpp plane : pixels go to
+	 * {@code pixels[0]} one by one, left to right, top to bottom, at a stride
+	 * of {@link #MONO_STRIDE}. There is no even/odd interleaving here — a $26
+	 * plane holds 320 consecutive pixels per line — and no pre-shift : 1bpp
+	 * sprites are byte-aligned, the game draws them at x positions that are
+	 * multiples of 8 (pre-shifted variants give the pixel steps).
+	 *
+	 * Anchor : the generated code is relative to the canvas reference byte and
+	 * row of the position (centre : byte (width-1)/2/8, row (height-1)/2 ;
+	 * top-left : 0,0), NOT to the trimmed box. So x1_offset / y1_offset (ink
+	 * edge, from the reference byte's left pixel and the reference row) are
+	 * exact for the runtime box math whatever the trim, and eight variants of
+	 * one canvas whose ink only moved keep x1_offset(s) = x1_offset(0) + s.
+	 * The packed box starts on the byte boundary at or before the first ink
+	 * pixel ({@link #getMonoX0}), so the ink keeps its bit position.
+	 */
+	public void prepareMono(String imageFile) throws Exception {
+		pixels = new byte[2][MONO_STRIDE * height];
+		data = new byte[2][MONO_STRIDE * height];
+
+		switch (position) {
+			case POSITION_CENTER_INT   : coordinate = (int)((Math.ceil(height/2.0)-1)*40) +  width/8; break;
+			case POSITION_TOP_LEFT_INT : coordinate = 0; break;
+			case POSITION_3QTRC_INT    : coordinate = (int)((Math.ceil(height*3.0/4.0)-1)*40) +  width/8; break;
+		}
+
+		DataBufferByte buffer = (DataBufferByte) image.getRaster().getDataBuffer();
+		int x_Min = 320;
+		int x_Max = -1;
+		int y_Min = 200;
+		int y_Max = -1;
+		boolean firstPixel = true;
+
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				int v = buffer.getElem(y * width + x);
+				pixels[0][y * MONO_STRIDE + x] = (byte) v;
+				data[0][y * MONO_STRIDE + x] = (byte) v;
+				if (v == 0) {
+					alpha = true;
+					continue;
+				}
+				plane0_empty = false;
+				monoEmpty = false;
+				if (firstPixel) {
+					firstPixel = false;
+					switch (position) {
+						case POSITION_CENTER_INT   : y1_offset = y-(height-1)/2; break;
+						case POSITION_TOP_LEFT_INT : y1_offset = 0; break;
+						case POSITION_3QTRC_INT    : y1_offset = y-(height-1)*3/4; break;
+					}
+				}
+				if (x < x_Min) {
+					x_Min = x;
+					switch (position) {
+						case POSITION_CENTER_INT   : x1_offset = x_Min-(((width-1)/2)&~7); break;
+						case POSITION_TOP_LEFT_INT : x1_offset = x_Min; break;
+						case POSITION_3QTRC_INT    : x1_offset = x_Min; break;
+					}
+				}
+				if (x > x_Max) {
+					x_Max = x;
+				}
+				if (y < y_Min) {
+					y_Min = y;
+				}
+				if (y > y_Max) {
+					y_Max = y;
+				}
+				x_size = x_Max-x_Min;
+				y_size = y_Max-y_Min;
+			}
+		}
+		// An empty image is a valid no-op : both generators emit frame code
+		// only, a consistent draw/erase pair that moves no bytes.
+		if (monoEmpty) {
+			return;
+		}
+		monoX0 = x_Min & ~7;
+		monoY0 = y_Min;
+		monoRowBytes = (x_Max - monoX0 + 8) / 8;
+		int refByte = 0;
+		int refRow = 0;
+		switch (position) {
+			case POSITION_CENTER_INT   : refByte = ((width-1)/2)/8; refRow = (height-1)/2; break;
+			case POSITION_TOP_LEFT_INT : break;
+			case POSITION_3QTRC_INT    : refRow = (height-1)*3/4; break;
+		}
+		monoOrigin = (monoY0 - refRow) * 40 + (monoX0 / 8 - refByte);
+		// Row packing reads whole bytes : the trailing bits past the trimmed
+		// box are transparent by construction (the buffer is zeroed), so any
+		// box width is exact, no padding constraint on the asset.
 	}
 
 	public void prepareImages() {
@@ -390,8 +542,15 @@ public class Image {
 	 * Bump when any encoder changes its emitted code : the cache below returns
 	 * the bytes of a previous run, and a stale entry would silently undo the
 	 * encoder change.
+	 *
+	 * History: 1 = initial BM16 port ; 2 = onebpp bdraw pushes the screen base
+	 * last (popped first), so erase restores hit the screen, not the cells ;
+	 * 3 = onebpp code anchored on the canvas reference byte/row, packed box
+	 * byte-aligned (pre-shifted variants keep their bit, exact x1/y1 offsets) ;
+	 * 4 = draw1/clear1 walk U row by row (LEAU, 5-bit offsets, D pairs, no
+	 * redundant AND), clear stores zeros.
 	 */
-	private static final String CACHE_VERSION = "1";
+	private static final String CACHE_VERSION = "4";
 
 	/**
 	 * The finished encodings are kept between runs (see BuildCache). The
@@ -458,6 +617,9 @@ public class Image {
 			case TYPE_BDRAW_INT: e = new AssemblyGenerator(this, outputDir); break;
 			case TYPE_RLE_INT: e = new MapRleEncoder(this, outputDir); break;
 			case TYPE_ZX0_INT: e = new ZX0Encoder(this, outputDir); break;
+			case TYPE_DRAW1_INT: e = new com.widedot.toolbox.graphics.gfxcomp.encoder.onebpp.DrawGenerator(this, outputDir); break;
+			case TYPE_BDRAW1_INT: e = new com.widedot.toolbox.graphics.gfxcomp.encoder.onebpp.BdrawGenerator(this, outputDir); break;
+			case TYPE_CLEAR1_INT: e = new com.widedot.toolbox.graphics.gfxcomp.encoder.onebpp.ClearGenerator(this, outputDir); break;
 			default: log.error("Unrecognized image type: "+type); return;
 		}
 		
@@ -492,6 +654,11 @@ public class Image {
 	 * Width 0 mod 8 gives -1, which is what v1 emits.
 	 */
 	public int getCenterOffset() {
+		// 1bpp sprites ship a single byte-aligned variant : no unshifted /
+		// shifted pair exists, so the runtime has nothing to pick between.
+		if (isOneBpp()) {
+			return 0;
+		}
 		switch (width % 8) {
 			case 0 : return -1;
 			case 1 : return 0;
@@ -507,6 +674,35 @@ public class Image {
 	
 	public byte[] getSubImagePixels(int ramPage) {
 		return pixels[ramPage];
+	}
+
+	/** left edge of the trimmed 1bpp box, in source pixels */
+	public int getMonoX0() {
+		return monoX0;
+	}
+
+	/** top edge of the trimmed 1bpp box, in source pixels */
+	public int getMonoY0() {
+		return monoY0;
+	}
+
+	/** screen bytes of one packed row : from the aligned left edge to the last ink pixel */
+	public int getMonoRowBytes() {
+		return monoRowBytes;
+	}
+
+	/**
+	 * Screen offset of the packed box's first byte from the canvas reference
+	 * byte and row (the position anchor the runtime passes in U), in bytes :
+	 * (monoY0 - refRow) * 40 + (monoX0 / 8 - refByte). May be negative.
+	 */
+	public int getMonoOrigin() {
+		return monoOrigin;
+	}
+
+	/** true when no pixel is opaque : the generators emit frame code only */
+	public boolean isMonoEmpty() {
+		return monoEmpty;
 	}
 
 	public byte[] getSubImageData(int ramPage) {
