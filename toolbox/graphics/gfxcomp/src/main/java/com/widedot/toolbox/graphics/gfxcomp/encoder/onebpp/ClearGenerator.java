@@ -34,6 +34,8 @@ import lombok.extern.slf4j.Slf4j;
  * must not mix on one image.
  */
 @Slf4j
+// getX1_offset and siblings keep the Encoder base class names (v1 API)
+@SuppressWarnings("PMD.MethodNamingConventions")
 public class ClearGenerator extends Encoder {
 
 	public String name;
@@ -60,8 +62,6 @@ public class ClearGenerator extends Encoder {
 	private int cyclesEFrameCode;
 	private int sizeEFrameCode;
 
-	private String asmDrawFileName;
-	private String asmEraseFileName;
 	private Path asmDFile;
 	private Path asmEFile;
 
@@ -79,13 +79,13 @@ public class ClearGenerator extends Encoder {
 		log.debug("\t\t\tXSize: " + getX_size());
 		log.debug("\t\t\tYSize: " + getY_size());
 
-		destDir += "/" + name;
-		asmDrawFileName = destDir + ".asm";
+		String asmDir = destDir + "/" + name;
+		String asmDrawFileName = asmDir + ".asm";
 		File file = new File(asmDrawFileName);
 		file.getParentFile().mkdirs();
 		asmDFile = Paths.get(asmDrawFileName);
 
-		asmEraseFileName = destDir + "_erase.asm";
+		String asmEraseFileName = asmDir + "_erase.asm";
 		asmEFile = Paths.get(asmEraseFileName);
 
 		if (!img.isMonoEmpty()) {
@@ -130,6 +130,8 @@ public class ClearGenerator extends Encoder {
 		sizeSpriteECode += rc.size;
 	}
 
+	// the toolchain signals build errors with plain Exceptions (see Encoder and Image)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 	public void generateCode() {
 		try {
 			Files.deleteIfExists(asmDFile);

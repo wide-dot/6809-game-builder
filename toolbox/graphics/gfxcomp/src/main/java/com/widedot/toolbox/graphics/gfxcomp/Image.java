@@ -69,18 +69,6 @@ public class Image {
 	 */
 	public static final String[] typeLabel = new String[]{"D", "B", "D", "D", "D", "B", "B"};
 
-	// A variant key is the v1 form : mirror letter, encoder letter, shift digit
-	// ("NB0" = no mirror, bdraw, no pre-shift). It names the generated code and
-	// keys the imageset lookups, so both must derive it from here.
-	public static String variantKey(String encoderType, String encoderMirror, String encoderShift) {
-		return variantKey(typeId.get(encoderType), Mirror.getId(encoderMirror),
-		                  Integer.parseInt(encoderShift.substring(Shift.PREFIX.length())));
-	}
-
-	public static String variantKey(int encoderType, int encoderMirror, int encoderShift) {
-		return Mirror.label[encoderMirror] + typeLabel[encoderType] + encoderShift;
-	}
-
 	// center types
 	public static final String POSITION_CENTER   = "center";
 	public static final String POSITION_TOP_LEFT = "top-left";
@@ -159,7 +147,33 @@ public class Image {
 	/** pixels per line of a 1bpp plane buffer : the full 320px $26 line */
 	public static final int MONO_STRIDE = 320;
 
+	/**
+	 * Bump when any encoder changes its emitted code : the cache below returns
+	 * the bytes of a previous run, and a stale entry would silently undo the
+	 * encoder change.
+	 *
+	 * History: 1 = initial BM16 port ; 2 = onebpp bdraw pushes the screen base
+	 * last (popped first), so erase restores hit the screen, not the cells ;
+	 * 3 = onebpp code anchored on the canvas reference byte/row, packed box
+	 * byte-aligned (pre-shifted variants keep their bit, exact x1/y1 offsets) ;
+	 * 4 = draw1/clear1 walk U row by row (LEAU, 5-bit offsets, D pairs, no
+	 * redundant AND), clear stores zeros.
+	 */
+	private static final String CACHE_VERSION = "4";
+
 	public String planes;
+
+	// A variant key is the v1 form : mirror letter, encoder letter, shift digit
+	// ("NB0" = no mirror, bdraw, no pre-shift). It names the generated code and
+	// keys the imageset lookups, so both must derive it from here.
+	public static String variantKey(String encoderType, String encoderMirror, String encoderShift) {
+		return variantKey(typeId.get(encoderType), Mirror.getId(encoderMirror),
+		                  Integer.parseInt(encoderShift.substring(Shift.PREFIX.length())));
+	}
+
+	public static String variantKey(int encoderType, int encoderMirror, int encoderShift) {
+		return Mirror.label[encoderMirror] + typeLabel[encoderType] + encoderShift;
+	}
 
 	/** true for the 1bpp encoders (draw1, bdraw1, clear1) : one bit per pixel, one plane */
 	public boolean isOneBpp() {
@@ -170,6 +184,8 @@ public class Image {
 		this(imageName, imageIndex, imageFile, encoderType, encoderMirror, encoderShift, encoderPosition, PLANES_POINTER);
 	}
 
+	// the toolchain signals build errors with plain Exceptions (48 throw sites)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 	public Image(String imageName, Integer imageIndex, String imageFile, String encoderType, String encoderMirror, Integer encoderShift, String encoderPosition, String encoderPlanes) throws Exception {
 			File file = new File(imageFile);
 			if (!file.isFile()) {
@@ -258,6 +274,8 @@ public class Image {
 	 * mistake in the source image. v1 rejects it ; without the check the code
 	 * generator stores pixel-1 and the extra bits land in the next nibble.
 	 */
+	// the toolchain signals build errors with plain Exceptions (48 throw sites)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 	private void checkPixelRange(String imageFile) throws Exception {
 		DataBufferByte buffer = (DataBufferByte) image.getRaster().getDataBuffer();
 		if (isOneBpp()) {
@@ -298,11 +316,7 @@ public class Image {
 		pixels = new byte[2][MONO_STRIDE * height];
 		data = new byte[2][MONO_STRIDE * height];
 
-		switch (position) {
-			case POSITION_CENTER_INT   : coordinate = (int)((Math.ceil(height/2.0)-1)*40) +  width/8; break;
-			case POSITION_TOP_LEFT_INT : coordinate = 0; break;
-			case POSITION_3QTRC_INT    : coordinate = (int)((Math.ceil(height*3.0/4.0)-1)*40) +  width/8; break;
-		}
+		coordinate = monoCoordinate();
 
 		DataBufferByte buffer = (DataBufferByte) image.getRaster().getDataBuffer();
 		int x_Min = 320;
@@ -324,19 +338,11 @@ public class Image {
 				monoEmpty = false;
 				if (firstPixel) {
 					firstPixel = false;
-					switch (position) {
-						case POSITION_CENTER_INT   : y1_offset = y-(height-1)/2; break;
-						case POSITION_TOP_LEFT_INT : y1_offset = 0; break;
-						case POSITION_3QTRC_INT    : y1_offset = y-(height-1)*3/4; break;
-					}
+					y1_offset = monoFirstRow(y);
 				}
 				if (x < x_Min) {
 					x_Min = x;
-					switch (position) {
-						case POSITION_CENTER_INT   : x1_offset = x_Min-(((width-1)/2)&~7); break;
-						case POSITION_TOP_LEFT_INT : x1_offset = x_Min; break;
-						case POSITION_3QTRC_INT    : x1_offset = x_Min; break;
-					}
+					x1_offset = monoLeftOffset(x_Min);
 				}
 				if (x > x_Max) {
 					x_Max = x;
@@ -359,6 +365,47 @@ public class Image {
 		monoX0 = x_Min & ~7;
 		monoY0 = y_Min;
 		monoRowBytes = (x_Max - monoX0 + 8) / 8;
+		monoOrigin = monoOriginBytes();
+		// Row packing reads whole bytes : the trailing bits past the trimmed
+		// box are transparent by construction (the buffer is zeroed), so any
+		// box width is exact, no padding constraint on the asset.
+	}
+
+	/** screen address of the position, in the same unit as coordinate */
+	private int monoCoordinate() {
+		int coordinate = 0;
+		switch (position) {
+			case POSITION_CENTER_INT   : coordinate = (int)((Math.ceil(height/2.0)-1)*40) +  width/8; break;
+			case POSITION_TOP_LEFT_INT : coordinate = 0; break;
+			case POSITION_3QTRC_INT    : coordinate = (int)((Math.ceil(height*3.0/4.0)-1)*40) +  width/8; break;
+		}
+		return coordinate;
+	}
+
+	/** ink top edge, measured from the position reference row */
+	private int monoFirstRow(int y) {
+		int row = 0;
+		switch (position) {
+			case POSITION_CENTER_INT   : row = y-(height-1)/2; break;
+			case POSITION_TOP_LEFT_INT : row = 0; break;
+			case POSITION_3QTRC_INT    : row = y-(height-1)*3/4; break;
+		}
+		return row;
+	}
+
+	/** ink left edge, measured from the position reference byte */
+	private int monoLeftOffset(int xMin) {
+		int offset = 0;
+		switch (position) {
+			case POSITION_CENTER_INT   : offset = xMin-(((width-1)/2)&~7); break;
+			case POSITION_TOP_LEFT_INT : offset = xMin; break;
+			case POSITION_3QTRC_INT    : offset = xMin; break;
+		}
+		return offset;
+	}
+
+	/** packed box origin, relative to the canvas reference byte and row */
+	private int monoOriginBytes() {
 		int refByte = 0;
 		int refRow = 0;
 		switch (position) {
@@ -366,10 +413,7 @@ public class Image {
 			case POSITION_TOP_LEFT_INT : break;
 			case POSITION_3QTRC_INT    : refRow = (height-1)*3/4; break;
 		}
-		monoOrigin = (monoY0 - refRow) * 40 + (monoX0 / 8 - refByte);
-		// Row packing reads whole bytes : the trailing bits past the trimmed
-		// box are transparent by construction (the buffer is zeroed), so any
-		// box width is exact, no padding constraint on the asset.
+		return (monoY0 - refRow) * 40 + (monoX0 / 8 - refByte);
 	}
 
 	public void prepareImages() {
@@ -538,20 +582,6 @@ public class Image {
 		}
 	}
 	
-	/**
-	 * Bump when any encoder changes its emitted code : the cache below returns
-	 * the bytes of a previous run, and a stale entry would silently undo the
-	 * encoder change.
-	 *
-	 * History: 1 = initial BM16 port ; 2 = onebpp bdraw pushes the screen base
-	 * last (popped first), so erase restores hit the screen, not the cells ;
-	 * 3 = onebpp code anchored on the canvas reference byte/row, packed box
-	 * byte-aligned (pre-shifted variants keep their bit, exact x1/y1 offsets) ;
-	 * 4 = draw1/clear1 walk U row by row (LEAU, 5-bit offsets, D pairs, no
-	 * redundant AND), clear stores zeros.
-	 */
-	private static final String CACHE_VERSION = "4";
-
 	/**
 	 * The finished encodings are kept between runs (see BuildCache). The
 	 * optimizers are seeded, so the same pixels, name and encoder parameters

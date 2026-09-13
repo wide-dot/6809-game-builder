@@ -128,7 +128,6 @@ def main():
     # address table (_vscroll.setTileNb) steps by exactly that. No 16KB pad
     # and no halves swap at this size : the whole set fits one data page and
     # the lookup table never wraps past $A000+$4000.
-    ntiles = len(tiles)
     padded = tiles
     for plane in (0, 1):
         outb = bytearray()

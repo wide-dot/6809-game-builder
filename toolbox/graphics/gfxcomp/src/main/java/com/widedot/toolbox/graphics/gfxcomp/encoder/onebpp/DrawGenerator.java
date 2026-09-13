@@ -27,6 +27,8 @@ import lombok.extern.slf4j.Slf4j;
  * the address the caller passes in U.
  */
 @Slf4j
+// getX1_offset and siblings keep the Encoder base class names (v1 API)
+@SuppressWarnings("PMD.MethodNamingConventions")
 public class DrawGenerator extends Encoder {
 
 	public String name;
@@ -34,7 +36,6 @@ public class DrawGenerator extends Encoder {
 	private int x1_offset;
 	private int y1_offset;
 	private int x_size;
-	private int origin; // packed box offset from the canvas reference byte/row (Image.getMonoOrigin)
 	private int y_size;
 
 	private List<String> spriteCode = new ArrayList<String>();
@@ -44,7 +45,6 @@ public class DrawGenerator extends Encoder {
 	private int cyclesDFrameCode;
 	private int sizeDFrameCode;
 
-	private String asmDrawFileName;
 	private Path asmDFile;
 
 	public DrawGenerator(Image img, String destDir) throws Exception {
@@ -52,7 +52,7 @@ public class DrawGenerator extends Encoder {
 		x1_offset = img.getSubImageX1Offset();
 		y1_offset = img.getSubImageY1Offset();
 		x_size = img.getSubImageXSize();
-		origin = img.getMonoOrigin();
+		int origin = img.getMonoOrigin();
 		y_size = img.getSubImageYSize();
 
 		log.debug("\t\t\tImage:" + name);
@@ -61,8 +61,8 @@ public class DrawGenerator extends Encoder {
 		log.debug("\t\t\tXSize: " + getX_size());
 		log.debug("\t\t\tYSize: " + getY_size());
 
-		destDir += "/" + name;
-		asmDrawFileName = destDir + ".asm";
+		String asmDir = destDir + "/" + name;
+		String asmDrawFileName = asmDir + ".asm";
 		File file = new File(asmDrawFileName);
 		file.getParentFile().mkdirs();
 		asmDFile = Paths.get(asmDrawFileName);
@@ -87,6 +87,8 @@ public class DrawGenerator extends Encoder {
 		sizeDFrameCode = getCodeFrameDrawEndSize();
 	}
 
+	// the toolchain signals build errors with plain Exceptions (see Encoder and Image)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 	public void generateCode() {
 		try {
 			Files.deleteIfExists(asmDFile);
