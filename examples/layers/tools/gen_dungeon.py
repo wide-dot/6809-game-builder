@@ -26,10 +26,12 @@ Left-edge ticks (one per 4 rows) let a screenshot prove scroll position.
 usage : python3 tools/gen_dungeon.py  (from examples/layers)
 """
 import os
+import tempfile
 
 from PIL import Image
 
-SHEET = '/tmp/kenney1bit/Tilesheet/monochrome_transparent_packed.png'
+SHEET = os.path.join(tempfile.gettempdir(), 'kenney1bit', 'Tilesheet',
+                     'monochrome_transparent_packed.png')
 
 MAP_COLS, MAP_ROWS = 20, 40      # tiles ; 320x640 px
 TILE = 16
@@ -74,28 +76,26 @@ T_WALL_TICK = tuple(a | b for a, b in zip(T_WALL_L, _T_TICK))        # overlaid
 
 def motif_tiles():
     """The 8 seamless motif rows : (empty A, B tile) per cell, 20 cells."""
-    F, W, P = T_FLOOR_A, T_WALL_L, T_PILLAR
-    FB = T_FLOOR_B
-    WR = T_WALL_R
-    C, S, WT = T_CRYSTAL, T_SKULL, T_WALL_TICK
-    E = EMPTY
+    fa, wl, pi = T_FLOOR_A, T_WALL_L, T_PILLAR
+    fb = T_FLOOR_B
+    wr = T_WALL_R
+    cr, sk, wt = T_CRYSTAL, T_SKULL, T_WALL_TICK
+    e = EMPTY
     rows = []
-    rows.append([(E, WT)] + [(E, F)] * 18 + [(E, WR)])               # 0 tick row base
-    rows.append([(E, W)] + [(E, FB)] * 8 + [(E, P)] + [(E, FB)] * 9 + [(E, WR)])
-    rows.append([(E, W)] + [(E, F)] * 5 + [(E, C)] + [(E, F)] * 12 + [(E, WR)])
-    rows.append([(E, W)] + [(E, P)] + [(E, FB)] * 16 + [(E, P)] + [(E, WR)])
-    rows.append([(E, WT)] + [(E, F)] * 11 + [(E, S)] + [(E, F)] * 6 + [(E, WR)])
-    rows.append([(E, W)] + [(E, FB)] * 18 + [(E, WR)])
-    rows.append([(E, W)] + [(E, F)] * 3 + [(E, C)] + [(E, F)] * 14 + [(E, WR)])
-    rows.append([(E, W)] + [(E, FB)] * 7 + [(E, P)] + [(E, FB)] * 10 + [(E, WR)])
+    rows.append([(e, wt)] + [(e, fa)] * 18 + [(e, wr)])               # 0 tick row base
+    rows.append([(e, wl)] + [(e, fb)] * 8 + [(e, pi)] + [(e, fb)] * 9 + [(e, wr)])
+    rows.append([(e, wl)] + [(e, fa)] * 5 + [(e, cr)] + [(e, fa)] * 12 + [(e, wr)])
+    rows.append([(e, wl)] + [(e, pi)] + [(e, fb)] * 16 + [(e, pi)] + [(e, wr)])
+    rows.append([(e, wt)] + [(e, fa)] * 11 + [(e, sk)] + [(e, fa)] * 6 + [(e, wr)])
+    rows.append([(e, wl)] + [(e, fb)] * 18 + [(e, wr)])
+    rows.append([(e, wl)] + [(e, fa)] * 3 + [(e, cr)] + [(e, fa)] * 14 + [(e, wr)])
+    rows.append([(e, wl)] + [(e, fb)] * 7 + [(e, pi)] + [(e, fb)] * 10 + [(e, wr)])
     return rows
 
 
-def main():
-    motif = motif_tiles()
+def build_index(motif):
+    """Dedupe the motif grid into a tileset (tile 0 empty) and an id grid."""
     grid = [motif[r % MOTIF] for r in range(MAP_ROWS)]
-
-    # dedupe into tileset, tile 0 empty
     tiles, ids = [(EMPTY, EMPTY)], {}
     index = []
     for row in grid:
@@ -109,8 +109,11 @@ def main():
     print('%d unique tiles (max %d)' % (len(tiles), MAX_TILES))
     if len(tiles) > MAX_TILES:
         raise SystemExit('tile budget blown')
+    return tiles, index
 
-    # ---- map.bin : same v1 packing as gen_ship (20 cols) ----
+
+def write_map(index):
+    """map.bin : tile ids, v1 12-bit pair packing (ids pre-doubled)."""
     mapdata = bytearray()
     for pair in range(0, len(index), 2):
         for row in (index[pair], index[pair + 1]):
@@ -122,26 +125,31 @@ def main():
     os.makedirs('assets/scroll', exist_ok=True)
     with open('assets/scroll/map.bin', 'wb') as f:
         f.write(mapdata)
+    return mapdata
 
-    # ---- tiles.<p>.bin : 2 bytes per tile line (16px 1bpp), line-major ----
+
+def write_tiles(tiles):
+    """tiles.<p>.bin : 2 bytes per tile line (16px 1bpp), line-major."""
     # Blocks are N*2 bytes wide where N is the REAL tile count : the runtime
     # address table (_vscroll.setTileNb) steps by exactly that. No 16KB pad
     # and no halves swap at this size : the whole set fits one data page and
     # the lookup table never wraps past $A000+$4000.
-    padded = tiles
+    outb = bytearray()
     for plane in (0, 1):
-        outb = bytearray()
-        for l in range(16):
-            for (ta, tb) in padded:
+        for ln in range(16):
+            for (ta, tb) in tiles:
                 t = ta if plane == 0 else tb
-                px = t[l * 16:(l + 1) * 16]
+                px = t[ln * 16:(ln + 1) * 16]
                 outb.append(sum(v << (7 - b) for b, v in enumerate(px[:8])))
                 outb.append(sum(v << (7 - b) for b, v in enumerate(px[8:])))
         with open('assets/scroll/tiles.%d.bin' % plane, 'wb') as f:
             f.write(outb)
+    return outb
 
-    # ---- start.1.vscroll : camera view as code buffer (plane 1 only : no
-    # bufA file anymore, RAMA holds sprites and never scrolls) ----
+
+def write_start(tiles, index):
+    """start.1.vscroll : camera view as code buffer (plane 1 only)."""
+    # No bufA file anymore, RAMA holds sprites and never scrolls.
     for plane in (1,):
         raw = bytearray()
         for y in range(CAMERA_Y, CAMERA_Y + VIEW_H):
@@ -162,7 +170,9 @@ def main():
         with open('assets/scroll/start.%d.vscroll' % plane, 'wb') as f:
             f.write(chunks)
 
-    # ---- preview : plane 1 in green on black (RAMA empty by design) ----
+
+def write_preview(tiles, index):
+    """map_preview.png : plane 1 in green on black, visual control."""
     prev = Image.new('RGB', (320, 640))
     pp = prev.load()
     for y in range(640):
@@ -175,6 +185,15 @@ def main():
                 b = tb[ty * 16 + x]
                 pp[col * 16 + x, y] = (0, 255, 0) if b else (0, 0, 0)
     prev.save('assets/scroll/map_preview.png')
+
+
+def main():
+    """Write all layers scroll assets from the motif grid."""
+    tiles, index = build_index(motif_tiles())
+    mapdata = write_map(index)
+    outb = write_tiles(tiles)
+    write_start(tiles, index)
+    write_preview(tiles, index)
     print('map %d bytes, tiles 2x%d, preview saved' % (len(mapdata), len(outb)))
     return 0
 

@@ -24,6 +24,7 @@ PAD = 8
 
 
 def main():
+    """Write the eight pre-shifted variants of each source sprite."""
     os.makedirs(SRC, exist_ok=True)
     for name in NAMES:
         src = Image.open(os.path.join(SRC, name + '.png'))
