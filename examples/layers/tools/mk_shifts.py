@@ -43,8 +43,8 @@ def main():
                     v = data[y * w + x]
                     if v:
                         px[x + s, y] = v
-            out.save(os.path.join(SRC, '%s_s%d.png' % (name, s)))
-        print('%s : 8 variants, canvas %dx%d' % (name, w + PAD, h))
+            out.save(os.path.join(SRC, f'{name}_s{s}.png'))
+        print(f'{name} : 8 variants, canvas {w + PAD}x{h}')
     return 0
 
 

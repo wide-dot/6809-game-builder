@@ -67,7 +67,13 @@ T_FLOOR_B = grab(3, 0)           # other noise
 T_WALL_L = grab(8, 1)            # wall with window, left edge
 T_WALL_R = grab(8, 1, mirror=True)
 T_PILLAR = grab(1, 3)            # fence block
-T_BORDER = hand(lambda x, y: (x // 2 + y // 2) & 1 == 0)
+def _border(x, y):
+    """Checkerboard border : dark on even 2px block sums."""
+    block = x // 2 + y // 2
+    return not block & 1
+
+
+T_BORDER = hand(_border)
 T_CRYSTAL = hand(lambda x, y: abs(x - 7) + abs(y - 7) <= 5)          # diamond
 T_SKULL = grab(26, 9)            # skull face
 _T_TICK = hand(lambda x, y: y == 15 or (1 <= x <= 5 and y >= 12))    # edge tick
@@ -106,7 +112,7 @@ def build_index(motif):
                 tiles.append(cell)
             line.append(ids[cell])
         index.append(line)
-    print('%d unique tiles (max %d)' % (len(tiles), MAX_TILES))
+    print(f'{len(tiles)} unique tiles (max {MAX_TILES})')
     if len(tiles) > MAX_TILES:
         raise SystemExit('tile budget blown')
     return tiles, index
@@ -138,11 +144,11 @@ def write_tiles(tiles):
     for plane in (0, 1):
         for ln in range(16):
             for (ta, tb) in tiles:
-                t = ta if plane == 0 else tb
+                t = ta if not plane else tb
                 px = t[ln * 16:(ln + 1) * 16]
                 outb.append(sum(v << (7 - b) for b, v in enumerate(px[:8])))
                 outb.append(sum(v << (7 - b) for b, v in enumerate(px[8:])))
-        with open('assets/scroll/tiles.%d.bin' % plane, 'wb') as f:
+        with open(f'assets/scroll/tiles.{plane}.bin', 'wb') as f:
             f.write(outb)
     return outb
 
@@ -167,7 +173,7 @@ def write_start(tiles, index):
                              0x10, 0x8E, raw[i + 4], raw[i + 5],
                              0xCE, raw[i + 6], raw[i + 7],
                              0x34, 0x76))
-        with open('assets/scroll/start.%d.vscroll' % plane, 'wb') as f:
+        with open(f'assets/scroll/start.{plane}.vscroll', 'wb') as f:
             f.write(chunks)
 
 
@@ -194,7 +200,7 @@ def main():
     outb = write_tiles(tiles)
     write_start(tiles, index)
     write_preview(tiles, index)
-    print('map %d bytes, tiles 2x%d, preview saved' % (len(mapdata), len(outb)))
+    print(f'map {len(mapdata)} bytes, tiles 2x{len(outb)}, preview saved')
     return 0
 
 

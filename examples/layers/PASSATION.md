@@ -242,6 +242,7 @@ prev, XYToAddress avec MUL). 25 fps (40 k) est hors de portée avec un
 scroll plein écran ; 20 fps (50 k) demande le viewport réduit + (2)-(4).
 
 ## 5. Théories écartées AVANT la résolution du hang (historique, ne pas refaire)
+
 1. `render_flags` garbage → objets auto-supprimés (8/32). **Vrai bug, fixé**
    par wipe (Engram #140). Non lié au hang actuel.
 2. Objet `object_size`/base pool : vérifié lwmap (`$75`=117,
