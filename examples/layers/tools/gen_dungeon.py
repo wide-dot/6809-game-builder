@@ -1,31 +1,29 @@
 #!/usr/bin/env python3
-"""
-examples/layers dungeon generator (vscroll data, 1bpp $26 flavour).
-
-Produces the vertically scrolling decor for the layers demo : a 320x640
-dungeon shaft (20x40 tiles of 16x16), everything on RAMB (plane 1, scrolled
-alone, vscroll.planes = 2), RAMA left empty for the sprites ($26 shows RAMA
-in front, so sprites cover the scroll). Same v1 binary layouts as
-examples/vscroll (the engine moves 2 bytes per tile line either way, so only
-the contents are 1bpp) :
-
-  assets/scroll/map.bin          tile ids, v1 packing (ids pre-doubled,
-                                   12-bit pairs, rows by pairs, 60 bytes/pair)
-  assets/scroll/tiles.0.bin      RAMA tileset, all zeros (kept : the id stays
-                                   wired, the bytes never scroll)
-  assets/scroll/tiles.1.bin      RAMB tileset, line-major
-  assets/scroll/start.1.vscroll  initial code buffer (ldd/ldx/ldy/ldu/pshs
-                                   chunks, reverse order), view at camera 440
-  assets/scroll/map_preview.png  visual control (320x640, green on black)
-
-Tile sources : Kenney 1-Bit Pack (CC0) cells for stone/props (see
-ATTRIBUTION.txt), hand-drawn ticks and borders. Tile 0 stays empty.
-
-The 8 motif rows repeat 5 times, so the wrap is seamless by construction.
-Left-edge ticks (one per 4 rows) let a screenshot prove scroll position.
-
-usage : python3 tools/gen_dungeon.py  (from examples/layers)
-"""
+"""Generate the layers dungeon (vscroll data, 1bpp flavour)."""
+#
+# Produces the vertically scrolling decor for the layers demo : a 320x640
+# dungeon shaft (20x40 tiles of 16x16), everything on RAMB (plane 1, scrolled
+# alone, vscroll.planes = 2), RAMA left empty for the sprites ($26 shows RAMA
+# in front, so sprites cover the scroll). Same v1 binary layouts as
+# examples/vscroll (the engine moves 2 bytes per tile line either way, so only
+# the contents are 1bpp) :
+#
+#   assets/scroll/map.bin          tile ids, v1 packing (ids pre-doubled,
+#                                    12-bit pairs, rows by pairs, 60 bytes/pair)
+#   assets/scroll/tiles.0.bin      RAMA tileset, all zeros (kept : the id stays
+#                                    wired, the bytes never scroll)
+#   assets/scroll/tiles.1.bin      RAMB tileset, line-major
+#   assets/scroll/start.1.vscroll  initial code buffer (ldd/ldx/ldy/ldu/pshs
+#                                    chunks, reverse order), view at camera 440
+#   assets/scroll/map_preview.png  visual control (320x640, green on black)
+#
+# Tile sources : Kenney 1-Bit Pack (CC0) cells for stone/props (see
+# ATTRIBUTION.txt), hand-drawn ticks and borders. Tile 0 stays empty.
+#
+# The 8 motif rows repeat 5 times, so the wrap is seamless by construction.
+# Left-edge ticks (one per 4 rows) let a screenshot prove scroll position.
+#
+# usage : python3 tools/gen_dungeon.py  (from examples/layers)
 import os
 import tempfile
 

@@ -1,20 +1,18 @@
 #!/usr/bin/env python3
-"""
-Pre-shifted 1bpp sprite variants for examples/layers.
-
-The 1bpp compiled sprites are byte-aligned : one variant can only draw at
-x positions that are multiples of 8, so a byte-stepping sprite jumps 8
-pixels per move. Eight pre-shifted variants (shift 0..7 inside a canvas
-padded by 8 on the right, zero-filled so nothing clips) let the game draw
-at any pixel : variant s = (X - x1_0) & 7, byte column = (X - x1_s) >> 3,
-with x1_s = x1_0 + s exactly (same canvas, same trim, ink only moved).
-
-Each variant is a standalone shift-0 bdraw1 image : the engine, the
-imageset layout and CSR/Draw/Erase are untouched. A mapping_frame change
-(byte crossing) is already an erase+draw refresh by construction.
-
-usage : python3 tools/mk_shifts.py  (from examples/layers)
-"""
+"""Generate pre-shifted 1bpp sprite variants."""
+#
+# The 1bpp compiled sprites are byte-aligned : one variant can only draw at
+# x positions that are multiples of 8, so a byte-stepping sprite jumps 8
+# pixels per move. Eight pre-shifted variants (shift 0..7 inside a canvas
+# padded by 8 on the right, zero-filled so nothing clips) let the game draw
+# at any pixel : variant s = (X - x1_0) & 7, byte column = (X - x1_s) >> 3,
+# with x1_s = x1_0 + s exactly (same canvas, same trim, ink only moved).
+#
+# Each variant is a standalone shift-0 bdraw1 image : the engine, the
+# imageset layout and CSR/Draw/Erase are untouched. A mapping_frame change
+# (byte crossing) is already an erase+draw refresh by construction.
+#
+# usage : python3 tools/mk_shifts.py  (from examples/layers)
 import os
 
 from PIL import Image
