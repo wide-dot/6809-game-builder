@@ -55,7 +55,7 @@ def grab(col, row, mirror=False):
 
 
 def hand(fn):
-    """A 16x16 hand tile from a pixel predicate."""
+    """Build a 16x16 hand tile from a pixel predicate."""
     return tuple(1 if fn(x, y) else 0
                  for y in range(16) for x in range(16))
 
@@ -67,6 +67,8 @@ T_FLOOR_B = grab(3, 0)           # other noise
 T_WALL_L = grab(8, 1)            # wall with window, left edge
 T_WALL_R = grab(8, 1, mirror=True)
 T_PILLAR = grab(1, 3)            # fence block
+
+
 def _border(x, y):
     """Checkerboard border : dark on even 2px block sums."""
     block = x // 2 + y // 2
@@ -81,7 +83,7 @@ T_WALL_TICK = tuple(a | b for a, b in zip(T_WALL_L, _T_TICK))        # overlaid
 
 
 def motif_tiles():
-    """The 8 seamless motif rows : (empty A, B tile) per cell, 20 cells."""
+    """Return the 8 seamless motif rows : (empty A, B tile) per cell, 20 cells."""
     fa, wl, pi = T_FLOOR_A, T_WALL_L, T_PILLAR
     fb = T_FLOOR_B
     wr = T_WALL_R
