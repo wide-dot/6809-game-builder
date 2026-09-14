@@ -291,21 +291,21 @@ scroll plein écran ; 20 fps (50 k) demande le viewport réduit + (2)-(4).
 ## 7. Commandes et repères
 
 ```bash
-# build jeu (froid obligatoire : rm -rf dist gen, le incrémental donne des
-# "Undefined symbol" fantômes sur entries.asm périmé)
+ # build jeu (froid obligatoire : rm -rf dist gen, le incrémental donne des
+ # "Undefined symbol" fantômes sur entries.asm périmé)
 java -Dbasedir=/home/robin/github/wide-dot/6809-game-builder \
   -cp "/home/robin/github/wide-dot/6809-game-builder/repo/*" \
   com.widedot.m6809.gamebuilder.MainCommand -f to8.config.xml
 #bucket: workdir examples/layers. Après modif Java : mvn -q
-# -pl toolbox/graphics/gfxcomp -am package -DskipTests PUIS
-# cp target/gfxcomp-0.0.1.jar repo/ (sinon NPE encoder inconnu).
+ # -pl toolbox/graphics/gfxcomp -am package -DskipTests PUIS
+ # cp target/gfxcomp-0.0.1.jar repo/ (sinon NPE encoder inconnu).
 # Tests : mvn -q -pl toolbox/graphics/gfxcomp -am test (31 tests,
 # tous verts le 10/09 02:52).
 ```
 
 ```bash
-# analyse lossless : extraire l'AVI (jamais le mp4) puis
-# composantes/trajectoires
+ # analyse lossless : extraire l'AVI (jamais le mp4) puis
+ # composantes/trajectoires
 ffmpeg -y -v error -i /tmp/layers_16.avi -vf "fps=5" /tmp/dbg16/f%02d.png
 ```
 
