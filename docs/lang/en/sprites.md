@@ -58,9 +58,9 @@ palette.
 |---|---|---|
 | `bdraw` | background backup + draw, plus a matching erase routine | moving sprites |
 | `draw` | draw only | overlays, sprites whose background need not survive |
-| `bdraw1` | background backup + draw for 1bpp planes, plus erase | moving sprites on the $26 two-plane mode |
+| `bdraw1` | backup + draw, 1bpp planes, plus erase | moving sprites, $26 mode |
 | `draw1` | draw only for 1bpp planes | overlays on the $26 two-plane mode |
-| `clear1` | draw for 1bpp planes, plus a clearing erase (no backup) | moving sprites on a sprite-only plane |
+| `clear1` | draw for 1bpp, clearing erase | moving sprites, sprite-only plane |
 | `rle`, `zx0` | compressed image, decompressed to the screen | backgrounds, anything static and large |
 
 The three drawing encoders share one slot in the index. `draw`, `rle` and

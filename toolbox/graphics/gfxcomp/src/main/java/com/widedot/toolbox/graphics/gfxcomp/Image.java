@@ -13,6 +13,9 @@ import javax.imageio.ImageIO;
 import com.widedot.toolbox.graphics.gfxcomp.encoder.Encoder;
 import com.widedot.toolbox.graphics.gfxcomp.encoder.bdraw.AssemblyGenerator;
 import com.widedot.toolbox.graphics.gfxcomp.encoder.draw.SimpleAssemblyGenerator;
+import com.widedot.toolbox.graphics.gfxcomp.encoder.onebpp.BdrawGenerator;
+import com.widedot.toolbox.graphics.gfxcomp.encoder.onebpp.ClearGenerator;
+import com.widedot.toolbox.graphics.gfxcomp.encoder.onebpp.DrawGenerator;
 import com.widedot.toolbox.graphics.gfxcomp.encoder.rle.MapRleEncoder;
 import com.widedot.toolbox.graphics.gfxcomp.encoder.zx0.ZX0Encoder;
 import com.widedot.toolbox.graphics.gfxcomp.transformer.mirror.Mirror;
@@ -647,9 +650,9 @@ public class Image {
 			case TYPE_BDRAW_INT: e = new AssemblyGenerator(this, outputDir); break;
 			case TYPE_RLE_INT: e = new MapRleEncoder(this, outputDir); break;
 			case TYPE_ZX0_INT: e = new ZX0Encoder(this, outputDir); break;
-			case TYPE_DRAW1_INT: e = new com.widedot.toolbox.graphics.gfxcomp.encoder.onebpp.DrawGenerator(this, outputDir); break;
-			case TYPE_BDRAW1_INT: e = new com.widedot.toolbox.graphics.gfxcomp.encoder.onebpp.BdrawGenerator(this, outputDir); break;
-			case TYPE_CLEAR1_INT: e = new com.widedot.toolbox.graphics.gfxcomp.encoder.onebpp.ClearGenerator(this, outputDir); break;
+			case TYPE_DRAW1_INT: e = new DrawGenerator(this, outputDir); break;
+			case TYPE_BDRAW1_INT: e = new BdrawGenerator(this, outputDir); break;
+			case TYPE_CLEAR1_INT: e = new ClearGenerator(this, outputDir); break;
 			default: log.error("Unrecognized image type: "+type); return;
 		}
 		

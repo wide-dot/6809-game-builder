@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Pre-shifted 1bpp sprite variants for examples/layers.
+"""
+Pre-shifted 1bpp sprite variants for examples/layers.
 
 The 1bpp compiled sprites are byte-aligned : one variant can only draw at
 x positions that are multiples of 8, so a byte-stepping sprite jumps 8

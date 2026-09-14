@@ -27,9 +27,11 @@ rouge — les vieux commentaires "expect" avaient faux, corrigés dans main.asm)
   +4 sanity imageset (`$01`), +5 frame counter, +6 tête free-cell,
   +9 scroll LSB.
 - État stable courant (3e session) : **16 sprites, 14 fps, zéro morsure,
-  bitmap de cellules sales, déplacements 1 px, 15,9 fps** ; film `/tmp/layers_defer.avi` ; détecteur
+  bitmap de cellules sales, déplacements 1 px, 15,9 fps** ;
+  film `/tmp/layers_defer.avi` ; détecteur
   `tools/bites.py <avi>` (les pistes à longue « chute » sont des fusions).
-  Avant la two-phase : 20 fps avec morsures, film `/tmp/layers_16.mp4`. Mémoires Engram : #139 (bitmask vscroll),
+  Avant la two-phase : 20 fps avec morsures,
+  film `/tmp/layers_16.mp4`. Mémoires Engram : #139 (bitmask vscroll),
   #140 (bug render_flags), #141 (pré-shift), #142 (clear1).
 
 ## 2. Le problème d'origine : flicker par "bites" d'overlap
@@ -88,7 +90,7 @@ complètes (avant : seulement les entrées « derrière »). À 32 sprites :
 ~40 k = 2 trames. Note : à 1 px/itération TOUS les objets non gated
 changent de variante pré-shiftée → E=1 D=1 partout, listes pleines.
 
-## 4. FAIT (10/09/2026, 3e session) : bitmap de cellules sales + bug des boîtes X
+## 4. FAIT (10/09) : bitmap de cellules sales + bug des boîtes X
 
 `CheckSpritesRefresh.asm` (1bpp) n'a plus de listes erase/draw : une **grille
 de 40 colonnes × 13 lignes de 16 px** (80 o, un mot par colonne, bit 15 =
@@ -131,7 +133,7 @@ bitmap peuplée. 16/16 dessinés.
 | Étape | Cycles |
 |---|---|
 | RunObjects | 4,6 k |
-| CheckSpritesRefresh | 19,9 k (géométrie phase 0 ~11 k, bitmap 5,4 k, drapeaux ~3,5 k) |
+| CheckSpritesRefresh | 19,9 k (géométrie ~11 k, bitmap 5,4 k, flags ~3,5 k) |
 | attente swap | 0 |
 | vscroll.do | **26,7 k** (blast d'un plan entier) |
 | vscroll.move | 2,9 k |
@@ -179,8 +181,8 @@ bit dans l'octet, `x1_offset(s) = x1_offset(0) + s` pour huit variantes d'un
 même canvas, et les boîtes CSR sont **exactes** (`x_pixel*8 + x1_offset` =
 pixel d'encre gauche). La sémantique runtime devient : `x_pixel` = colonne
 octet du centre du canvas, `y_pixel` = ligne du centre (avant : coin haut
-gauche de la boîte rognée). Test `OneBppTest.preShiftedVariantsKeepTheirBitAndShareTheAnchor`
-(32 tests verts).
+gauche de la boîte rognée) ; test
+`OneBppTest.preShiftedVariantsKeepTheirBitAndShareTheAnchor` (32 tests verts).
 
 Piège : le **BuildCache gfxcomp** (`.builder-cache/`, clé sans version du
 jar) a resservi les anciennes sorties après le premier repackage (« 72
@@ -291,12 +293,19 @@ scroll plein écran ; 20 fps (50 k) demande le viewport réduit + (2)-(4).
 ```bash
 # build jeu (froid obligatoire : rm -rf dist gen, le incrémental donne des
 # "Undefined symbol" fantômes sur entries.asm périmé)
-java -Dbasedir=/home/robin/github/wide-dot/6809-game-builder -cp "/home/robin/github/wide-dot/6809-game-builder/repo/*" com.widedot.m6809.gamebuilder.MainCommand -f to8.config.xml
-#bucket: workdir examples/layers. Après modif Java : mvn -q -pl toolbox/graphics/gfxcomp -am package -DskipTests PUIS cp target/gfxcomp-0.0.1.jar repo/ (sinon NPE encoder inconnu). Tests : mvn -q -pl toolbox/graphics/gfxcomp -am test (31 tests, tous verts le 10/09 02:52).
+java -Dbasedir=/home/robin/github/wide-dot/6809-game-builder \
+  -cp "/home/robin/github/wide-dot/6809-game-builder/repo/*" \
+  com.widedot.m6809.gamebuilder.MainCommand -f to8.config.xml
+#bucket: workdir examples/layers. Après modif Java : mvn -q
+# -pl toolbox/graphics/gfxcomp -am package -DskipTests PUIS
+# cp target/gfxcomp-0.0.1.jar repo/ (sinon NPE encoder inconnu).
+# Tests : mvn -q -pl toolbox/graphics/gfxcomp -am test (31 tests,
+# tous verts le 10/09 02:52).
 ```
 
 ```bash
-# analyse lossless : extraire l'AVI (jamais le mp4) puis composantes/trajectoires
+# analyse lossless : extraire l'AVI (jamais le mp4) puis
+# composantes/trajectoires
 ffmpeg -y -v error -i /tmp/layers_16.avi -vf "fps=5" /tmp/dbg16/f%02d.png
 ```
 

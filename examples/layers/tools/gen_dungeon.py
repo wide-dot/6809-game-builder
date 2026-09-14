@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""examples/layers dungeon generator (vscroll data, 1bpp $26 flavour).
+"""
+examples/layers dungeon generator (vscroll data, 1bpp $26 flavour).
 
 Produces the vertically scrolling decor for the layers demo : a 320x640
 dungeon shaft (20x40 tiles of 16x16), everything on RAMB (plane 1, scrolled
