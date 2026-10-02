@@ -134,9 +134,12 @@ pixels au lieu de copier des octets :
 - **`ClearInterlacedDataMemory`** : ne remplit les deux plans avec le même mot
   qu'avec la couleur 0, comme en BM16.
 
-**Statut : déduit, pas encore vu sur machine.** C'est le premier
-travail à faire (§6, étape 1) : une expérience courte au résultat
-binaire.
+**Statut : vérifié sur machine le 02/10/2026** (`examples/bm4s`, sous
+toje). La bande de 320 px et ses colonnes d'un pixel sont exactes au pixel
+près (0 écart sur 7 680), le glyphe l'est sur ses deux variantes
+pré-décalées, son trou transparent laisse voir le fond, et l'effacement ne
+laisse aucune traînée. Seuls le registre de mode et la palette diffèrent
+d'`examples/sprites`.
 
 ### Et `$21` ?
 
@@ -236,7 +239,7 @@ copie triplerait la maintenance des correctifs.
 restaurée, `examples/vscroll` revalidé sous toje, corpus rejoué — seules
 `vscroll` et `layers` changent). Restent les dettes #4 et #7.
 
-**Étape 1 — preuve `$41`** : prendre `examples/sprites`, convertir
+**Étape 1 — preuve `$41`** (FAITE le 02/10/2026, `examples/bm4s`) : prendre `examples/sprites`, convertir
 ses PNG par un script Python (320×h 4 couleurs → 160×h, index `4a+b+1`),
 remplacer `setBM16` par un `$41` écrit à la main et la palette par 4 entrées,
 rebuild, capture toje. Attendu : sprites nets à 320 de large, déplacements par
