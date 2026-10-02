@@ -11,7 +11,8 @@ Méthode : lecture de la PR #46 (mode $26, fusionnée en `1be31e24c`) comme
 gabarit, inventaire des hypothèses BM16 du moteur, de la chaîne d'outils et
 des exemples, et vérification des faits matériels contre deux émulateurs
 (toje `VideoModeDecoder`, MAME `thomson/to_video.cpp`). Rien n'a été modifié
-dans le code. Une régression de la PR #46 a été constatée sous toje (§2.1).
+dans le code. Une régression de la PR #46 a été constatée sous toje (§2.1),
+puis corrigée par la PR #47.
 
 ## 1. Faits matériels établis
 
@@ -77,8 +78,8 @@ cellules sales au lieu des listes O(n²).
 
 | # | Défaut | Constat | Où |
 |---|---|---|---|
-| 1 | **Régression BM16 : `examples/vscroll` n'affiche plus ses tuiles** | Vu sous toje : l'image d'avant la PR montre les tuiles qui défilent ; après rebuild, écran noir à la même trame. La nouvelle table d'adresses suppose un tileset linéaire ; ceux de `png2bin -vst` ont leurs moitiés de 8 Ko permutées (`tiles.0.bin` : premier octet non nul à 8192) | `vscroll.macro.asm` `_vscroll.setTileNb` ; `VerticalScrollTile.java:51-76` |
-| 2 | `gen_dungeon.py` ne remet pas `outb` à zéro entre les plans : relancé, il produirait un `tiles.1.bin` faux | lecture | `examples/layers/tools/gen_dungeon.py:142-156` |
+| 1 | ~~**Régression BM16 : `examples/vscroll` n'affiche plus ses tuiles**~~ — **corrigée par #47** (table v1 restaurée, `layers` charge son tileset en `$2000`) | Vu sous toje : l'image d'avant la PR montre les tuiles qui défilent ; après rebuild, écran noir à la même trame. La nouvelle table d'adresses suppose un tileset linéaire ; ceux de `png2bin -vst` ont leurs moitiés de 8 Ko permutées (`tiles.0.bin` : premier octet non nul à 8192) | `vscroll.macro.asm` `_vscroll.setTileNb` ; `VerticalScrollTile.java:51-76` |
+| 2 | ~~`gen_dungeon.py` ne remet pas `outb` à zéro entre les plans : relancé, il produirait un `tiles.1.bin` faux~~ — **corrigé par #47** | lecture | `examples/layers/tools/gen_dungeon.py:142-156` |
 | 3 | `bdraw1` et `draw1` ne sont utilisés par aucune config : jamais exécutés sur machine | lecture | `examples/layers/to8.config.xml` (seul `clear1`) |
 | 4 | L'index range `x_size` et `x1_offset` sur un octet, alors que le 1bpp accepte 320 px : aucun contrôle | lecture | `ImageSet.java:378-388` |
 | 5 | Conversion « coordonnées de jeu → écran » recopiée en pixels dans un espace en octets (latent, non utilisé par la démo) | lecture | `CheckSpritesRefresh.asm` 1bpp `:263-276` |
@@ -231,9 +232,9 @@ copie triplerait la maintenance des correctifs.
 
 ## 6. Programme de travail proposé
 
-**Étape 0 — solder la PR #46** : dette #1 (choisir : générateur linéaire, ou
-table d'adresses sélectionnable) et re-valider `examples/vscroll` sous toje ;
-dettes #2, #4, #7 ; rejouer `ci/build-corpus.sh` pour acter l'identité BM16.
+**Étape 0 — solder la PR #46** : dettes #1 et #2 faites (#47 : table v1
+restaurée, `examples/vscroll` revalidé sous toje, corpus rejoué — seules
+`vscroll` et `layers` changent). Restent les dettes #4 et #7.
 
 **Étape 1 — preuve `$41`** : prendre `examples/sprites`, convertir
 ses PNG par un script Python (320×h 4 couleurs → 160×h, index `4a+b+1`),
