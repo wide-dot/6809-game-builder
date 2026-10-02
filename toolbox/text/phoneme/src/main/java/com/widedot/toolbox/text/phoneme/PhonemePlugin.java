@@ -4,10 +4,10 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.spi.Binary;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
+import com.widedot.m6809.gamebuilder.spi.cache.BuildCache;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -23,7 +23,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,6 +39,9 @@ public class PhonemePlugin {
 	public static String filename;
 	public static String genbinary;
 	public static String lang;
+
+	/** bump when the converter's output changes : the cache would replay the old one */
+	private static final String CACHE_VERSION = "1";
 	
 	public static List<String> INPUT_EXT;
 	public static String OUTPUT_EXT = ".asm";
@@ -125,27 +127,20 @@ public class PhonemePlugin {
 			throw new Exception(m);
 		}
 		
-		// skip processing if input file is older than output file
-		long inputLastModified = file.lastModified();
-		long outputLastModified = outFile.lastModified();
-		
-		if (inputLastModified > outputLastModified) {
-		
+		// the output is a pure function of the input bytes and the language,
+		// replayed from the build cache : never guessed from file dates, which a
+		// fresh clone sets to the checkout time in no defined order
+		BuildCache.Entry entry = BuildCache.entry("phoneme", CACHE_VERSION)
+				.keyString(String.valueOf(lang))
+				.keyBytes(Files.readAllBytes(file.toPath()));
+		byte[] result = entry.findBlob();
+		if (result == null) {
 			log.debug("Generating: {}", outFileName);
-			
-			ByteArrayOutputStream outputStream = write(file);	
-			
-			Files.createDirectories(Paths.get(FileUtil.getDir(outFileName)));
-			OutputStream fileStream = new FileOutputStream(outFileName);
-			outputStream.writeTo(fileStream);
-			outputStream.close();
-			
-			return outputStream.toByteArray();
-			
-		} else {
-			log.debug("Build cache for {}", outFileName);
-			return Files.readAllBytes(Paths.get(outFileName));
+			result = write(file).toByteArray();
+			entry.storeBlob(result);
 		}
+		FileUtil.writeIfChanged(Paths.get(outFileName), result);
+		return result;
 	}
 	
     public static ByteArrayOutputStream write(File file) throws Exception { 

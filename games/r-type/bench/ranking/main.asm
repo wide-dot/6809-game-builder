@@ -28,6 +28,11 @@ main.endstage.rallyX  EXPORT
 main.endstage.rallyY  EXPORT
 main.endstage.scoreArmed EXPORT
 main.endstage.scoreDone  EXPORT
+main.endstage.duration   EXPORT
+main.endstage.fadeMode   EXPORT
+; le verrou de tir (09/09) : stage-main l'heberge, player1 le lit
+joypad.taps              EXPORT
+joypad.taps.count        EXPORT
 
  SECTION code
 
@@ -186,6 +191,10 @@ main.endstage.rallyX  fdb 0
 main.endstage.rallyY  fdb 0
 main.endstage.scoreArmed fcb 0
 main.endstage.scoreDone  fcb 0
+main.endstage.duration   fdb 0
+main.endstage.fadeMode   fcb 0
+joypad.taps              fill 0,8   ; joypad.taps.MAX de joypad.latch.asm
+joypad.taps.count        fcb 0
 bench.wait     fcb 0
 
 ; L'INDEX D'OBJETS DU BANC — la numerotation du stage 1 (objid.const.asm), les

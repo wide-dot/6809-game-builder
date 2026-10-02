@@ -32,7 +32,7 @@
                 <!-- $1A : bloc musical en $1C9B-$3C00 — lecteur YMM (résident) puis
                      les musiques communes (résidentes) puis la piste du stage
                      (alternative). Deux fenetres libres de part et d'autre. -->
-                <zone page="$1A" address="$1FCF" size="$2031"/>
+                <zone page="$1A" address="$2020" size="$1FE0"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -44,7 +44,7 @@
             <arena name="stage2.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <zone page="$1A" address="$1FCF" size="$2031"/>
+                <zone page="$1A" address="$2020" size="$1FE0"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -54,15 +54,16 @@
             <arena name="stage3.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <zone page="$1A" address="$1FCF" size="$2031"/>
-                <zone page="$1B" address="$0000" size="$4000"/>
-                <!-- $1C-$1F : la couche battleship (mscroll) est POSEE en dur —
+                <zone page="$1A" address="$2020" size="$1FE0"/>
+                <!-- $1B-$1F : la couche battleship (mscroll) est POSEE en dur —
                      les tilesets doivent partager la meme adresse dans leurs
                      pages (le LUT de lignes est commun aux deux plans) et les
-                     buffers de code sont pleine page. L'arene garde les
-                     queues. -->
-                <zone page="$1C" address="$0000" size="$2000"/>
+                     buffers de code sont pleine page. Depuis les epaves
+                     (10/09/2026) le jeu depasse 256 tuiles : les deux tilesets
+                     sont au format pleine page ($1B et $1C, a $0000). L'arene
+                     garde les queues de $1D. -->
                 <zone page="$1D" address="$1800" size="$0800"/>
+                <zone page="$1D" address="$2000" size="$2000"/>
                 <zone page="$1E" address="$38A0" size="$0760"/>
                 <zone page="$1F" address="$38A0" size="$0760"/>
             </arena>
@@ -128,7 +129,7 @@
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
                 <!-- $1A : fenetre de tete seule (queue laissee au bloc musical) -->
-                <zone page="$1A" address="$1FCF" size="$2031"/>
+                <zone page="$1A" address="$2020" size="$1FE0"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <!-- $1D RETIREE (28/08/2026) : c'est pscroll.buf3, le quatrieme
@@ -144,7 +145,7 @@
             <arena name="stage5.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <zone page="$1A" address="$1FCF" size="$2031"/>
+                <zone page="$1A" address="$2020" size="$1FE0"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -154,7 +155,7 @@
             <arena name="stage6.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <zone page="$1A" address="$1FCF" size="$2031"/>
+                <zone page="$1A" address="$2020" size="$1FE0"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -164,7 +165,7 @@
             <arena name="stage7.gfx">
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
-                <zone page="$1A" address="$1FCF" size="$2031"/>
+                <zone page="$1A" address="$2020" size="$1FE0"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -175,7 +176,7 @@
                 <zone page="$18" address="$0000" size="$4000"/>
                 <zone page="$19" address="$0000" size="$4000"/>
                 <!-- $1A : fenetre de tete seule (queue laissee au bloc musical) -->
-                <zone page="$1A" address="$1FCF" size="$2031"/>
+                <zone page="$1A" address="$2020" size="$1FE0"/>
                 <zone page="$1B" address="$0000" size="$4000"/>
                 <zone page="$1C" address="$0000" size="$4000"/>
                 <zone page="$1D" address="$0000" size="$4000"/>
@@ -492,8 +493,12 @@
                  missileTgtTop/Bot vont a +147 — le layout dit ce que les equates font.
                  25/08/2026 : +5 octets pour l'ARMEMENT PERSISTANT (pod, bits,
                  vitesse), qui quitte la page directe parce qu'elle est balayee a
-                 chaque entree de stage — voir variables.asm. Pris a la pile. -->
-            <reserved name="globals"      page="$01" address="$9DCB" size="$009B"/>
+                 chaque entree de stage — voir variables.asm. Pris a la pile.
+                 08/09/2026 : $A3 = 163 octets, jusqu'a +162 (globals.tilesDrop).
+                 Les six globales +155..+160 (foeBgSolid .. cplWavePair) avaient
+                 ete ajoutees SANS agrandir le bloc : elles vivaient dans le
+                 plancher de la pile, que le pic mesure (84) n'atteignait pas. -->
+            <reserved name="globals"      page="$01" address="$9DCB" size="$00A3"/>
             <!-- La pile S plonge depuis $9EF0 (glb_system_stack = dp-16). 143 octets ;
                  profondeur mesuree au pic : 84 (2026-08-15, cf. ram.const.asm). Les
                  trois ancres (layout, GLOBALS_BASE, GLOBAL_VARIABLES) bougent ENSEMBLE.
@@ -501,8 +506,11 @@
                  le crochet de couche destructible (stage.gum.hook).
                  25/08/2026 : le plancher monte de cinq octets de plus, `globals`
                  ayant pris l'armement persistant. 138 octets, il reste 54 de marge
-                 sur le pic mesure — a re-mesurer avec les casts d'ennemis reels. -->
-            <reserved name="stack"        page="$01" address="$9E66" size="$008A"/>
+                 sur le pic mesure — a re-mesurer avec les casts d'ennemis reels.
+                 08/09/2026 : le plancher monte de huit octets ($9E6E), `globals`
+                 ayant repris ses six debordements plus tilesBehind et tilesDrop.
+                 130 octets. -->
+            <reserved name="stack"        page="$01" address="$9E6E" size="$0082"/>
             <!-- Le bloc log : contrat de sondes de engine/log/, lu sur watchpoint. -->
             <reserved name="log.block"    page="$01" address="$9EF0" size="$0010"/>
             <reserved name="dp"           page="$01" address="$9F00" size="$0100"/>
@@ -667,11 +675,12 @@
                 <scene name="scenes.fade" section="DATA" gensource="gen/scenes/fade-scene.asm">
                     <load name="boot.fade"/>
                 </scene>
-                <!-- « WIDE DOT presents » : l'image en page 3 (les deux plans bm16, vue
-                     cartouche), son code a la place du fondu, qui l'a chargee ; elle
-                     chargera le moteur a son tour. Image generee par
-                     tools/gen_splash_logo.py depuis le logo source (splash/source),
-                     couleurs aux memes index que Pal_title. -->
+                <!-- L'ecran LOADING du boot : l'image en page 3 (les deux plans bm16,
+                     vue cartouche), son code a la place du fondu, qui l'a chargee ;
+                     elle chargera le moteur a son tour. Image generee par
+                     tools/gen_splash_loading.py depuis l'image LOADING du title
+                     (flow/loading/images), a la place ou le title la montre — le
+                     meme ecran de chargement partout (08/09/2026). -->
                 <file name="boot.splash.a" bake="all" region="framebuffer.3.form">
                     <png2bin filename="src/common/flow/splash/images/00.png" gendir="gen/boot/splash"
                              videomode="bm16" plane="0"/>
@@ -1067,14 +1076,18 @@
 
                 <!-- La musique de la SAISIE DES INITIALES, PERMANENTE (04/09/2026,
                      plan de l'auteur) : le bloc musical de la page 26 est cale en
-                     TETE de page — musiques communes $0000-$0B4D, creneau
-                     de stage $0B4D-$1B0D dimensionne sur la plus grosse (stage 1,
-                     4032 octets), puis cette piste $1B0D-$1FCF — et les tuiles
-                     coulent dans l'unique zone qui reste, $1FCF-$4000. Chargee au
+                     TETE de page — musiques communes $0000-$0B62, creneau
+                     de stage $0B70-$1B50 dimensionne sur la plus grosse (stage 1,
+                     4052 octets), puis cette piste $1B50-$2011 — et les tuiles
+                     coulent dans l'unique zone qui reste, $2020-$4000. (Le
+                     09/09/2026 les pistes a point de bouclage ont grossi d'un
+                     instantane des registres — boss +21, stage 1 +20 — et tout
+                     le bloc a glisse, avec une marge d'une douzaine d'octets
+                     entre chaque piece.) Chargee au
                      boot, jamais echangee : plus aucun chargement au game over ni au
                      continue. Si une musique de stage depasse le creneau, elle
                      recouvre celle-ci et le build refuse. -->
-<file name="common.nameentry.ymm" linkdata="DATA" page="$1A" address="$1B0D">
+<file name="common.nameentry.ymm" linkdata="DATA" page="$1A" address="$1B50">
                     <lwasm gensource="gen/sound/nameentry-ymm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
                         <asm filename="src/common/music/nameentry.unit.asm"/>

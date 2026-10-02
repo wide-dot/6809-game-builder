@@ -8,6 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeSet;
 import javax.imageio.ImageIO;
 
 import com.widedot.toolbox.graphics.gfxcomp.encoder.Encoder;
@@ -187,6 +189,21 @@ public class Image {
 		this(imageName, imageIndex, imageFile, encoderType, encoderMirror, encoderShift, encoderPosition, PLANES_POINTER);
 	}
 
+	/**
+	 * A named build error for a value outside an attribute's table, instead of
+	 * the NullPointerException its unboxing used to raise far from the cause.
+	 */
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	private static int known(String imageName, String attribute, String value,
+			Map<String, Integer> table, String hint) throws Exception {
+		Integer id = table.get(value);
+		if (id == null) {
+			throw new Exception("image " + imageName + " : unknown " + attribute + " '" + value
+					+ "', expected one of " + new TreeSet<String>(table.keySet()) + hint);
+		}
+		return id;
+	}
+
 	// the toolchain signals build errors with plain Exceptions (48 throw sites)
 	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 	public Image(String imageName, Integer imageIndex, String imageFile, String encoderType, String encoderMirror, Integer encoderShift, String encoderPosition, String encoderPlanes) throws Exception {
@@ -196,10 +213,11 @@ public class Image {
 			}
 			image = ImageIO.read(file);
 			name = imageName;
-			type = typeId.get(encoderType);
-			mirror = Mirror.getId(encoderMirror);
+			type = known(imageName, "encoder", encoderType, typeId,
+					" (an encoder the build names but this gfxcomp lacks : the jars in repo/ may predate it, rebuild them)");
+			mirror = known(imageName, "mirror", encoderMirror, Mirror.id, "");
 			shift = encoderShift;
-			position = positionId.get(encoderPosition);
+			position = known(imageName, "position", encoderPosition, positionId, "");
 			planes = encoderPlanes;
 			if (!PLANES_POINTER.equals(planes) && !PLANES_OFFSET.equals(planes)) {
 				throw new Exception("image " + imageName + " : planes must be "

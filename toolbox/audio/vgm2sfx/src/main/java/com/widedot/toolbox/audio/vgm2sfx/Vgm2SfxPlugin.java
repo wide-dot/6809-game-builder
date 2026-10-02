@@ -4,13 +4,11 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.spi.Binary;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
+import com.widedot.m6809.gamebuilder.spi.cache.BuildCache;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -29,6 +27,9 @@ public class Vgm2SfxPlugin {
 	
 	public static String filename;
 	public static String gensource;
+
+	/** bump when the converter's output changes : the cache would replay the old one */
+	private static final String CACHE_VERSION = "1";
 
 	public static byte[] run() throws Exception {
 		
@@ -62,7 +63,7 @@ public class Vgm2SfxPlugin {
 	}
 	
 	
-	private static void processDirectory(ByteArrayOutputStream outputStream, File file, String fileExt) throws IOException {
+	private static void processDirectory(ByteArrayOutputStream outputStream, File file, String fileExt) throws Exception {
 		
 		log.debug("Process each {} file of the directory: {}", fileExt, file.getAbsolutePath());
 
@@ -72,7 +73,7 @@ public class Vgm2SfxPlugin {
 		}
 	}
 	
-	private static byte[] convertFile(File file) throws IOException {
+	private static byte[] convertFile(File file) throws Exception {
 	
 		String outFileName;
 		if (gensource == null || gensource.equals(""))
@@ -91,26 +92,19 @@ public class Vgm2SfxPlugin {
 		
 		Files.createDirectories(Paths.get(FileUtil.getDir(outFileName)));
 		
-		// skip processing if input file is older than output file
-		long inputLastModified = file.lastModified();
-		long outputLastModified = (new File(outFileName)).lastModified();
-		
-		if (inputLastModified > outputLastModified) {
-		
+		// the output is a pure function of the input bytes, replayed from the
+		// build cache : never guessed from file dates, which a fresh clone sets
+		// to the checkout time in no defined order
+		BuildCache.Entry entry = BuildCache.entry("vgm2sfx", CACHE_VERSION)
+				.keyBytes(Files.readAllBytes(file.toPath()));
+		byte[] result = entry.findBlob();
+		if (result == null) {
 			log.debug("Generating: {}", outFileName);
-			VGMInterpreter vGMInterpreter = new VGMInterpreter(file);
-	
-			byte[] result = vGMInterpreter.getBytes();
-			OutputStream outputStream = new FileOutputStream(outFileName);
-			outputStream.write(result);
-			outputStream.close();
-			
-			return result;
-			
-		} else {
-			log.debug("Build cache for {}", outFileName);
-			return Files.readAllBytes(Paths.get(outFileName));
+			result = new VGMInterpreter(file).getBytes();
+			entry.storeBlob(result);
 		}
+		FileUtil.writeIfChanged(Paths.get(outFileName), result);
+		return result;
 	}
 	
 
