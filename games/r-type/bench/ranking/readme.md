@@ -13,9 +13,10 @@ boot, sans title ni mort à jouer.
   jeu (même carte mémoire, mêmes fichiers communs, neuf compositions
   identiques parce que le moteur les nomme). Le rejouer après tout
   changement du config du jeu : `python3 gen-config.py`.
-- `engine`, `src`, `reference` : des liens vers les sources du jeu
-  (gitignorés, à recréer dans un clone : `ln -s ../../../../engine engine ;
-  ln -s ../../src src ; ln -s ../../reference reference`).
+- `src`, `reference` : des liens vers les sources du jeu, suivis par git
+  (`reference` porte les bruitages Master System que `soundFX.asm` inclut).
+  `engine`, gitignoré, est à recréer dans un clone :
+  `ln -s ../../../../engine engine`.
 
 Build, depuis ce répertoire :
 
