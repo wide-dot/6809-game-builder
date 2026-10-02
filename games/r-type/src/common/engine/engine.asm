@@ -575,6 +575,7 @@ terrainCollision.init.do
 ; Priorite 0 : le coup est une texture de fond, il cede a une explosion.
         INCLUDE "src/common/fx/soundfx/soundFX.const.asm"
         INCLUDE "engine/sound/soundFX.macro.asm"
+        INCLUDE "src/common/fx/explosion/explosion.const.asm"   ; le flash de coup
 ; Le crochet tient en un jsr : le noyau est tisse de branchements courts et
 ; une expansion en ligne les fait deborder. La routine suit l'include.
 _Collision_OnLoose MACRO
@@ -587,6 +588,21 @@ COLLISION_ON_LOOSE equ 1
 ; libre (le noyau le recharge apres le crochet).
 Collision_OnLoose
         _soundFX.play soundFX.HitSound,0
+        ; LE FLASH DE COUP (11/09/2026) : un objet explosion de sous-type
+        ; hit par coup encaisse, qui porte la boite touchee (X) ; l'unite
+        ; explosion choisit l'image blanche a la taille de la boite, ou se
+        ; retire. Aucune ligne chez les ennemis. Pool plein : pas de flash.
+        pshs  x,u
+        jsr   LoadObject_x
+        beq   @plein
+        lda   #ObjID_explosion
+        sta   id,x
+        lda   #explosion.subtype.hit
+        sta   subtype,x
+        clr   routine,x
+        ldd   ,s                       ; la boite
+        std   hitflash.box,x
+@plein  puls  x,u
         rts
 ; OVERLAY : le pack de sprites est celui de l'overlay (BuildSprites — dessin
 ; seul, pas de sauvegarde de fond, pas d'effacement). L'ancien pack

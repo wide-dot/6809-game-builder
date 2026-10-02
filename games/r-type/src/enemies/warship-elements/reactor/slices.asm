@@ -33,3 +33,15 @@ react.sl.small_escape_capsule.0
 react.sl.falling_triangle.0
         fcb   4,-10,15,15,-11,12,12
         fdb   set_falling_triangle_0,set_falling_triangle_1,set_falling_triangle_2,set_falling_triangle_3
+react.sl.rear_reactor_hit.0
+        fcb   6,-17,16,32,-11,12,12
+        fdb   set_rear_reactor_hit_0,set_rear_reactor_hit_1,set_rear_reactor_hit_2,set_rear_reactor_hit_3,set_rear_reactor_hit_4,set_rear_reactor_hit_5
+react.sl.escape_capsule_hit.0
+        fcb   8,-29,16,48,-11,12,12
+        fdb   set_escape_capsule_hit_0,set_escape_capsule_hit_1,set_escape_capsule_hit_2,set_escape_capsule_hit_3,set_escape_capsule_hit_4,set_escape_capsule_hit_5,set_escape_capsule_hit_6,set_escape_capsule_hit_7
+react.sl.small_escape_capsule_hit.0
+        fcb   4,-11,16,16,-11,12,12
+        fdb   set_small_escape_capsule_hit_0,set_small_escape_capsule_hit_1,set_small_escape_capsule_hit_2,set_small_escape_capsule_hit_3
+react.sl.falling_triangle_hit.0
+        fcb   4,-11,16,16,-11,12,12
+        fdb   set_falling_triangle_hit_0,set_falling_triangle_hit_1,set_falling_triangle_hit_2,set_falling_triangle_hit_3

@@ -61,8 +61,54 @@ Img_expBig_1   equ set_expBig_1
 Img_expBig_3   equ set_expBig_3
 Img_expBig_5   equ set_expBig_5
 Img_expBig_7   equ set_expBig_7
+        INCLUDE "engine/collision/struct_AABB.equ"
 
+; LE FLASH DE COUP partage l'objet (11/09/2026, doc/inventaire-flash-de-coup
+; -2026-09.md) : sous-type a bit 7. L'entree reste le premier octet de l'unite
+; et tombe dans le code v1 (obj.asm commence par des equates puis `Onject`).
 explosion.Object
+        lda   subtype,u
+        lbmi  hitflash.Object          ; (obj.asm est long : branchement long)
         INCLUDE "src/common/fx/explosion/obj.asm"
 
+; -----------------------------------------------------------------------------
+; hitflash — le manager du flash de coup, greffe sur Collision_OnLoose (engine)
+;
+; L'arcade echange la palette de tout acteur a PV multiples au coup encaisse
+; ([+0x3d] = 5, palette 0x55 une trame sur deux). Notre palette est globale :
+; ici UNE trame de blanc, une image par TAILLE DE BOITE (hitflash.Sizes,
+; generee par tools/gen_hitflash_manager.py : une ellipse ajustee aux poses de la
+; famille, ou la silhouette d'une pose unique), dessinee devant tout, centree
+; sur la boite relue AU DESSIN — l'objet est ajoute en queue de liste, il
+; tourne apres l'ennemi qui a deja fait son pas de la trame. Une taille
+; inconnue (les 27 sous-parties de coque, le noyau qui a son propre flash)
+; ne dessine rien.
+; -----------------------------------------------------------------------------
+hitflash.Object
+        lda   routine,u
+        bne   hitflash.Delete          ; le rendu suivant : deja vu une fois
+        ldx   hitflash.box,u
+        ldd   AABB.rx,x                ; D = rx:ry, la cle
+        ldy   #hitflash.Sizes
+@find   cmpd  ,y
+        beq   @found
+        leay  4,y
+        tst   ,y
+        bne   @find
+hitflash.Delete
+        jmp   DeleteObject             ; taille inconnue : pas de flash
+@found  ldd   2,y
+        std   image_set,u
+        clr   render_flags,u           ; coordonnees ECRAN, celles de la boite
+        lda   #1
+        sta   priority,u               ; devant tout, comme l'explosion
+        inc   routine,u
+        lda   AABB.cx,x
+        adda  #screen_left
+        ldb   AABB.cy,x
+        addb  #screen_top
+        std   xy_pixel,u
+        jmp   DisplaySprite
+
+        INCLUDE "src/common/fx/explosion/hitflash.tables.asm"
  ENDSECTION

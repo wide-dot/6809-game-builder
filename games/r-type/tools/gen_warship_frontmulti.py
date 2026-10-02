@@ -8,8 +8,8 @@ La correspondance sprite arcade -> PNG converti se lit dans les NOMS des
 exports de re.arcade, qui portent l'adresse de la recette (`NNN_01xxxx.png`).
 
 Ce que ca produit :
-  - front-turret-{a..e}-wheel/  les poses UNIQUES par variante (les tables de
-    16 sont palindromiques, comme les petites tourelles)
+  - front-turret-wheel/         les poses UNIQUES des cinq variantes, UN jeu
+    partage (11 silhouettes pour 30 images, memes ancres — 11/09/2026)
   - warship-elements/frontturret/tables.asm  roues + tables de tir + boites
   - warship-elements/multiturret/tables.asm  cadences + boites
   - warship-elements/fireball/tables.asm     dissipations + eclat de bouche
@@ -94,39 +94,63 @@ def main():
         "; partagent le 3e) et six tables de tir.",
         "",
     ]
+    # UNE SEULE ROUE POUR LES CINQ VARIANTES (decision auteur, 11/09/2026) :
+    # les cinq jeux de poses arcade se recoupent — 30 images, 11 silhouettes
+    # distinctes, chacune A LA MEME PLACE par rapport a l'ancre d'une variante
+    # a l'autre (seule la hauteur du canevas differait, 24/30/36 : l'encodeur
+    # rogne et ancre au centre, l'image compilee est la meme). Les poses sont
+    # dedoublonnees par (pixels rognes, position relative a l'ancre) et posees
+    # sur un canevas uniforme ; les roues des variantes ne sont plus que des
+    # tables d'index dans ce jeu partage. imgFront : 9 677 -> ~3 550 octets.
+    from PIL import Image
+    CANVAS = (18, 36)
+    dst = os.path.join(base, 'images', 'front-turret-wheel')
+    os.makedirs(dst, exist_ok=True)
+    for f in os.listdir(dst):
+        if f.endswith('.png'):
+            os.remove(os.path.join(dst, f))
+    partagees = {}
+
+    def pose_partagee(png):
+        im = Image.open(png)
+        assert im.mode == 'P' and im.size[0] == CANVAS[0], png
+        px = im.load()
+        w, h = im.size
+        xs = [x for y in range(h) for x in range(w) if px[x, y]]
+        ys = [y for y in range(h) for x in range(w) if px[x, y]]
+        x0, x1, y0, y1 = min(xs), max(xs) + 1, min(ys), max(ys) + 1
+        rel = (x0 - (w - 1) // 2, y0 - (h - 1) // 2)
+        cle = (bytes(px[x, y] for y in range(y0, y1) for x in range(x0, x1)), rel)
+        if cle in partagees:
+            return partagees[cle]
+        k = len(partagees)
+        out = Image.new('P', CANVAS, 0)
+        out.putpalette(im.getpalette())
+        out.paste(im.crop((x0, y0, x1, y1)),
+                  (rel[0] + (CANVAS[0] - 1) // 2, rel[1] + (CANVAS[1] - 1) // 2))
+        out.save(os.path.join(dst, '%02d.png' % k))
+        partagees[cle] = k
+        return k
+
     wheels_emises = {}
     for v, (ptbl, ftbl, dossier) in enumerate(FRONT):
         ordi = ordinaux(dossier)
         sym = dossier.replace('-', '_')
-        # la roue : dedupliquer et copier les poses uniques
+        src = os.path.join(base, 'images', dossier)
         if ptbl not in wheels_emises:
-            uniques, rang = [], {}
-            for i in range(16):
-                a = w(ptbl + 2 * i)
-                if a not in rang:
-                    rang[a] = len(uniques)
-                    uniques.append(a)
-            dst = os.path.join(base, 'images', dossier + '-wheel')
-            os.makedirs(dst, exist_ok=True)
-            for f in os.listdir(dst):
-                if f.endswith('.png'):
-                    os.remove(os.path.join(dst, f))
-            src = os.path.join(base, 'images', dossier)
-            for k, a in enumerate(uniques):
-                shutil.copyfile(os.path.join(src, '%02d.png' % ordi[a]),
-                                os.path.join(dst, '%02d.png' % k))
-            geo = os.path.join(src, 'geometrie.txt')
-            if os.path.exists(geo):
-                shutil.copyfile(geo, os.path.join(dst, 'geometrie.txt'))
-            lignes.append('; roue %s : %d poses uniques (table %04X)'
-                          % (dossier, len(uniques), ptbl))
+            rang = [pose_partagee(os.path.join(src, '%02d.png' % ordi[w(ptbl + 2 * i)]))
+                    for i in range(16)]
+            lignes.append('; roue %s (table %04X) : les poses du jeu partage'
+                          % (dossier, ptbl))
             lignes.append('fturret.wheel.%s' % sym)
             for bloc in range(4):
-                mots = ['set_%s_%d' % (sym, rang[w(ptbl + 2 * i)])
-                        for i in range(bloc * 4, bloc * 4 + 4)]
+                mots = ['set_front_turret_%d' % rang[i] for i in range(bloc * 4, bloc * 4 + 4)]
                 lignes.append('        fdb   ' + ','.join(mots))
             lignes.append('')
             wheels_emises[ptbl] = sym
+            geo = os.path.join(src, 'geometrie.txt')
+            if os.path.exists(geo) and not os.path.exists(os.path.join(dst, 'geometrie.txt')):
+                shutil.copyfile(geo, os.path.join(dst, 'geometrie.txt'))
         # la table de tir : 16 directions, 6 octets par entree
         ball = ordinaux('fire-ball')
         lignes.append('; tir variante %d (table %04X) : fdb vx,vy puis fcb pose,alt'
@@ -145,6 +169,7 @@ def main():
                 lignes.append('        fcb   %d,%d ; dir %d (record %04X)'
                               % (ball[paire], ball[paire + 6], i, ptr))
         lignes.append('')
+    lignes.append('; %d poses partagees : set_front_turret_0..%d' % (len(partagees), len(partagees) - 1))
     lignes.append('fturret.Wheels')
     for ptbl, _f, _d in FRONT:
         lignes.append('        fdb   fturret.wheel.%s' % wheels_emises[ptbl])
@@ -212,6 +237,11 @@ def main():
     lignes.append('multi.Fires')
     for sym in MULTI_SYM:
         lignes.append('        fdb   multi.fire.%s' % sym)
+    # la pose blanche de coup par montage (gen_warship_hit.py), dessinee a la
+    # place du barillet un rendu (decision auteur, 12/09/2026)
+    lignes.append('multi.Hits')
+    for sym in MULTI_SYM:
+        lignes.append('        fdb   set_%s_hit_0' % sym)
     rx, ry, cx, cy = boite(AABB_MULTI)
     lignes += ['', '; la boite (1000:%04X), partagee par les quatre montages' % AABB_MULTI,
                'multi.BOX equ $%02X%02X' % (rx, ry),

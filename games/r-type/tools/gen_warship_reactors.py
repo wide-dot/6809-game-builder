@@ -94,6 +94,11 @@ def main():
             "breactor.Sets"]
     for k in range(6):
         out.append('        fdb   set_%s_0 ; %d' % (POSES[w(DIRS + 2 * k)], k))
+    # la pose blanche de coup de chaque direction (gen_warship_hit.py),
+    # dessinee a la place de la pose un rendu (decision auteur, 12/09/2026)
+    out.append("breactor.HitSets")
+    for k in range(6):
+        out.append('        fdb   set_%s_hit_0 ; %d' % (POSES[w(DIRS + 2 * k)], k))
     out.append("")
     for nomb, nomc, adr, libelle in BOITES:
         x0, x1, y0, y1 = sw(adr), sw(adr + 2), sw(adr + 4), sw(adr + 6)

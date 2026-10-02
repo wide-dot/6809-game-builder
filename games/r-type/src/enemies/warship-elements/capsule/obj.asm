@@ -32,6 +32,7 @@ capsule.y0      equ ext_variables+11   ; 11,12
 capsule.cam0    equ ext_variables+13   ; 13,14
 capsule.clock   equ ext_variables+15   ; 15,16 le compte de phase
 capsule.fire    equ ext_variables+17   ; 17    la cadence de laser
+capsule.prevP   equ ext_variables+18   ; 18    le potentiel au tick d'avant (flash)
 
 capsule.HP      equ 20                 ; 40:d3a6
 capsule.PHASE0  equ 1056               ; 40:d3a2 : 0x420 trames en place
@@ -69,6 +70,7 @@ capsule.Init
         _Collision_AddAABB capsule.AABB,AABB_list_ennemy
         lda   #capsule.HP
         sta   capsule.AABB+AABB.p,u
+        sta   capsule.prevP,u
         ldd   #capsule.BOX
         std   capsule.AABB+AABB.rx,u
         ldd   #capsule.PHASE0
@@ -126,7 +128,15 @@ capsule.InPlace
 ; l'ancre de sa boite (capsule.Box vient de la poser).
 capsule.Show
         ldx   #react.sl.escape_capsule.0
+        lda   capsule.AABB+AABB.p,u    ; LE FLASH DE COUP : la pose blanche a la
+        cmpa  capsule.prevP,u          ; place de la capsule quand p a baisse
+        sta   capsule.prevP,u
+        bhs   >
+        ldx   #react.sl.escape_capsule_hit.0
         lda   capsule.AABB+AABB.cx,u
+        ldb   capsule.AABB+AABB.cy,u
+        jmp   react.ShowWhite
+!       lda   capsule.AABB+AABB.cx,u
         ldb   capsule.AABB+AABB.cy,u
         jmp   react.Show
 
@@ -160,6 +170,7 @@ capsule.Laser
 capsule.Detach
         lda   #capsule.HP
         sta   capsule.AABB+AABB.p,u
+        sta   capsule.prevP,u
         ldd   #capsule.EJECT
         std   capsule.clock,u
         lda   #2
@@ -325,6 +336,7 @@ detach.mapX     equ ext_variables+9    ; 9,10
 detach.y0       equ ext_variables+11   ; 11,12
 detach.cam0     equ ext_variables+13   ; 13,14
 detach.kind     equ ext_variables+15   ; 15    0 = petite capsule, 1 = triangle
+detach.prevP    equ ext_variables+16   ; 16    le potentiel au tick d'avant (flash)
                                        ;       (subtype porte la famille)
 
 detach.HP       equ 10
@@ -358,6 +370,7 @@ detach.Init
         _Collision_AddAABB detach.AABB,AABB_list_ennemy
         lda   #detach.HP
         sta   detach.AABB+AABB.p,u
+        sta   detach.prevP,u
         ldd   #detach.BOX
         std   detach.AABB+AABB.rx,u
         lda   subtype,u                ; le creneau de famille distingue
@@ -398,7 +411,16 @@ detach.Live
         lda   detach.kind,u
         asla
         ldx   #detach.Sets
+        ldb   detach.AABB+AABB.p,u     ; LE FLASH DE COUP : la pose blanche a la
+        cmpb  detach.prevP,u           ; place de la piece quand p a baisse
+        stb   detach.prevP,u
+        bhs   >
+        ldx   #detach.HitSets
         ldx   a,x
+        lda   detach.AABB+AABB.cx,u
+        ldb   detach.AABB+AABB.cy,u
+        jmp   react.ShowWhite
+!       ldx   a,x
         lda   detach.AABB+AABB.cx,u
         ldb   detach.AABB+AABB.cy,u
         jmp   react.Show
@@ -424,3 +446,5 @@ detach.Deleted
 
 detach.Sets                            ; les listes de tranches des deux poses
         fdb   react.sl.small_escape_capsule.0,react.sl.falling_triangle.0
+detach.HitSets                         ; ... et de leurs poses blanches de coup
+        fdb   react.sl.small_escape_capsule_hit.0,react.sl.falling_triangle_hit.0
