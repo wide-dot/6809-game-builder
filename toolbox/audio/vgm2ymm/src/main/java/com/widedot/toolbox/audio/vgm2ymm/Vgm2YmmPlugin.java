@@ -132,67 +132,62 @@ public class Vgm2YmmPlugin {
 
 	private static byte[] convert(File file) throws Exception {
 		VGMInterpreter vGMInterpreter = new VGMInterpreter(file, drum);
+		int[] stream = vGMInterpreter.getArrayOfInt();
+		int loopAt = vGMInterpreter.loopMarkerHit;
+		int end = vGMInterpreter.getLastIndex();
 
-		int[] paramArrayOfint = vGMInterpreter.getArrayOfInt();
-		
-		byte[] intro = null;
-		if (vGMInterpreter.loopMarkerHit > 0) {
-			intro = new byte[vGMInterpreter.loopMarkerHit+1]; // make room for end marker
-			int b;
-			for (b = 0; b < vGMInterpreter.loopMarkerHit; b++)
-				intro[b] = (byte)paramArrayOfint[b];
-			intro[b] = 0x39;
-		}
-		
-		byte[] loop = null;
-		if (vGMInterpreter.getLastIndex()-vGMInterpreter.loopMarkerHit > 0) {
-			loop = new byte[vGMInterpreter.getLastIndex()-vGMInterpreter.loopMarkerHit];
-			int i = 0;
-			for (int b = vGMInterpreter.loopMarkerHit; b < vGMInterpreter.getLastIndex(); b++)
-				loop[i++] = (byte)paramArrayOfint[b];
-		}
-		
+		byte[] intro = loopAt > 0 ? slice(stream, 0, loopAt, true) : null;
+		byte[] loop = end - loopAt > 0 ? slice(stream, loopAt, end, false) : null;
 		if (codec.equals(CODEC_ZX0)) {
-			if (intro != null) {
-				log.debug("Compress intro data with zx0.");
-				int originalSize = intro.length;
-				int[] delta = { 0 };			
-				intro = new Compressor().compress(new Optimizer().optimize(intro, 0, MAX_OFFSET_YMM, 8, false), intro, 0, false, false, delta);
-				log.debug("Original size: {}, Packed size: {}, Delta: {}", originalSize, intro.length, delta[0]);
-			}
-			
-			if (loop != null) {
-				log.debug("Compress loop data with zx0.");
-				int originalSize = loop.length;
-				int[] delta = { 0 };			
-				loop = new Compressor().compress(new Optimizer().optimize(loop, 0, MAX_OFFSET_YMM, 8, false), loop, 0, false, false, delta);
-				log.debug("Original size: {}, Packed size: {}, Delta: {}", originalSize, loop.length, delta[0]);
-			}
+			intro = zx0("intro", intro);
+			loop = zx0("loop", loop);
 		}
+		byte[] output = assemble(intro, loop);
 
+		// Check if the final output size exceeds the maximum allowed size
+		if (output.length > MAX_OUTPUT_SIZE) {
+			String errorMsg = String.format("Compressed output size (%d bytes) exceeds maximum allowed size (%d bytes) for file: %s", 
+				output.length, MAX_OUTPUT_SIZE, file.getName());
+			log.error(errorMsg);
+			throw new IOException(errorMsg);
+		}
+		return output;
+	}
+
+	/** stream[from, to[ as bytes ; an intro also carries the 0x39 end marker */
+	private static byte[] slice(int[] stream, int from, int to, boolean endMarker) {
+		byte[] part = new byte[to - from + (endMarker ? 1 : 0)];
+		for (int b = from; b < to; b++)
+			part[b - from] = (byte) stream[b];
+		if (endMarker)
+			part[to - from] = 0x39;
+		return part;
+	}
+
+	private static byte[] zx0(String name, byte[] data) {
+		if (data == null)
+			return null;
+		log.debug("Compress {} data with zx0.", name);
+		int[] delta = { 0 };
+		byte[] packed = new Compressor().compress(new Optimizer().optimize(data, 0, MAX_OFFSET_YMM, 8, false), data, 0, false, false, delta);
+		log.debug("Original size: {}, Packed size: {}, Delta: {}", data.length, packed.length, delta[0]);
+		return packed;
+	}
+
+	/** the intro offset (+2 places the cursor on the entry point), the intro, then the loop */
+	private static byte[] assemble(byte[] intro, byte[] loop) throws IOException {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		if (intro != null) {
-			outputStream.write(((intro.length+2) >> 8) & 0xff); // +2 will place the cursor to entry point
+			outputStream.write(((intro.length+2) >> 8) & 0xff);
 			outputStream.write((intro.length+2) & 0xff);
 			outputStream.write(intro);
 		} else {
 			outputStream.write(0);
 			outputStream.write(2);
 		}
-		
 		if (loop != null) {
 			outputStream.write(loop);
 		}
-		
-		// Check if the final output size exceeds the maximum allowed size
-		int finalOutputSize = outputStream.size();
-		if (finalOutputSize > MAX_OUTPUT_SIZE) {
-			String errorMsg = String.format("Compressed output size (%d bytes) exceeds maximum allowed size (%d bytes) for file: %s", 
-				finalOutputSize, MAX_OUTPUT_SIZE, file.getName());
-			log.error(errorMsg);
-			throw new IOException(errorMsg);
-		}
-
 		return outputStream.toByteArray();
 	}
 	

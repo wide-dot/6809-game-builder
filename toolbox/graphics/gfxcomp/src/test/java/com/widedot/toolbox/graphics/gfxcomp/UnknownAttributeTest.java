@@ -25,7 +25,9 @@ import com.widedot.toolbox.graphics.gfxcomp.transformer.mirror.Mirror;
 public class UnknownAttributeTest {
 
 	private static String sprite(Path dir) throws Exception {
-		byte[] r = new byte[2], g = new byte[2], b = new byte[2];
+		byte[] r = new byte[2];
+		byte[] g = new byte[2];
+		byte[] b = new byte[2];
 		IndexColorModel cm = new IndexColorModel(8, 2, r, g, b, 0);
 		BufferedImage img = new BufferedImage(8, 8, BufferedImage.TYPE_BYTE_INDEXED, cm);
 		File file = dir.resolve("hero.png").toFile();
