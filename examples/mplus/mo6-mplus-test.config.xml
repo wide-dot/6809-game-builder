@@ -109,6 +109,15 @@
                     </lwasm>
                 </file>
 
+                <!-- Test - mea8000 speech files (Philips / Cedic-Nathan vocabulary image) -->
+                <!-- ******************************************************* -->
+
+                <file name="assets.sounds.mea8000.vocabulary" linkdata="LINK" arena="sound.data">
+                    <lwasm gensource="gen/assets/sounds/mea/vocabulary.asm">
+                        <label name="sounds.mea8000.vocabulary"/><includebin filename="src/assets/sounds/mea/vocabulary.mea" />
+                    </lwasm>
+                </file>
+
                 <!-- Test - sound player dynamic port -->
                 <!-- ******************************************************* -->
                 <file name="engine.system.mo6.sound.mplus.const" linkdata="LINK" arena="sound.data">
@@ -129,6 +138,7 @@
                     <load name="assets.sounds.ym.rythm"/>
                     <load name="engine.system.mo6.sound.mplus.const"/>
                     <load name="assets.sounds.mea8000"/>
+                    <load name="assets.sounds.mea8000.vocabulary"/>
                     <load name="assets.sounds.sn.music"/>
                     <load name="assets.sounds.ym.music"/>
                 </scene>
