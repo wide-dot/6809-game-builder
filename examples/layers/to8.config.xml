@@ -29,13 +29,16 @@
                     </lwasm>
                 </file>
 
-                <file name="assets.tilesA" page="$08" address="$0000">
+                <!-- tilesets at offset $2000 of their page : the data window
+                     shows that half at $A000, where the v1 vscroll lookup
+                     table starts (a set under 8KB needs no halves swap) -->
+                <file name="assets.tilesA" page="$08" address="$2000">
                     <lwasm format="raw" gensource="gen/assets/scroll/tilesA.asm">
                         <asm xml:space="preserve">        INCLUDEBIN "assets/scroll/tiles.0.bin"</asm>
                     </lwasm>
                 </file>
 
-                <file name="assets.tilesB" page="$09" address="$0000">
+                <file name="assets.tilesB" page="$09" address="$2000">
                     <lwasm format="raw" gensource="gen/assets/scroll/tilesB.asm">
                         <asm xml:space="preserve">        INCLUDEBIN "assets/scroll/tiles.1.bin"</asm>
                     </lwasm>

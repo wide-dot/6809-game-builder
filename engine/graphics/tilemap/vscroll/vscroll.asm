@@ -37,6 +37,8 @@ vscroll.obj.bufferA.end     fdb   0
 vscroll.obj.bufferB.page    fcb   0
 vscroll.obj.bufferB.address fdb   0
 vscroll.obj.bufferB.end     fdb   0
+; V2-DEVIATION: vscroll.planes (PR #46, $26 two-plane mode) selects the
+; buffers move fills and do blasts. The default 3 draws as v1 does.
 vscroll.planes              fcb   3    ; bitmask : 1 = blast A (RAMA), 2 = blast B (RAMB), 3 = both (default)
 vscroll.camera.speed        fdb   0    ; (signed 8.8 fixed point) nb of pixels/50hz
 
