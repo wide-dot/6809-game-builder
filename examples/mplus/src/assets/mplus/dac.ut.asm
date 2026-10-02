@@ -196,10 +196,10 @@ firq.pcm.sample.play
                                        ; [8]  ROM jmp to user address
         sta   firq.pcm.regBackup       ; [5]  backup register value
         lda   map.MPLUS.CTRL           ; [5]  FIRQ acknowledge by reading ctrl register
-        ;bpl   firq.pcm.trapError1     ; [3]
+        bpl   firq.pcm.trapError1     ; [3]
 firq.pcm.trap   
-        ;lda   map.MPLUS.CTRL          ; [5]  OK, 1 for int_timer_ack at first read
-        ;bmi   firq.pcm.trapError2     ; [3]  new test
+        lda   map.MPLUS.CTRL          ; [5]  Read again after acknowledge
+        bmi   firq.pcm.trapError2     ; [3]  new test
                                        ;      OK, 0 for int_timer_ack
         lda   >$0000                   ; [5]  read sample byte
 firq.pcm.sample equ *-2
