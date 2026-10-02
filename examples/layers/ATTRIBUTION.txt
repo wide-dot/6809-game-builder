@@ -1,0 +1,3 @@
+Sprites: Kenney 1-Bit Pack (https://kenney.nl/assets/1-bit-pack), CC0 1.0 Universal.
+ knight.png: sheet cell (26,0) / ghost.png: (27,8) / dragon.png: (28,8).
+ Converted to 2-color indexed PNGs (0 transparent, 1 ink) for the 1bpp toolchain.

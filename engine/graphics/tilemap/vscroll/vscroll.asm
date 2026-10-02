@@ -37,6 +37,7 @@ vscroll.obj.bufferA.end     fdb   0
 vscroll.obj.bufferB.page    fcb   0
 vscroll.obj.bufferB.address fdb   0
 vscroll.obj.bufferB.end     fdb   0
+vscroll.planes              fcb   3    ; bitmask : 1 = blast A (RAMA), 2 = blast B (RAMB), 3 = both (default)
 vscroll.camera.speed        fdb   0    ; (signed 8.8 fixed point) nb of pixels/50hz
 
 ; private variables
@@ -218,7 +219,10 @@ vscroll.updategfx
 ;
         ldd   <vscroll.camera.currentY
         jsr   vscroll.updateTileCache        ; check cache for this line number (in d)
-!       lda   vscroll.obj.bufferA.page
+!       lda   vscroll.planes
+        bita  #1                       ; bit0 = fill the A buffer (RAMA)
+        beq   @skipAfill
+        lda   vscroll.obj.bufferA.page
         _SetCartPageA                        ; mount in cartridge space
         lda   <vscroll.tileset.line
         lsla
@@ -240,9 +244,12 @@ vscroll.updategfx
         blt   >
         leau  -vscroll.BUFFER_LINES*vscroll.LINE_SIZE,u
 !       stu   <vscroll.buffer.wAddressA
-;
+@skipAfill
 ; PROCESS BUFFER B
 ; ----------------
+        lda   vscroll.planes
+        bita  #2                       ; bit1 = fill the B buffer (RAMB), keep line stepping below
+        beq   @skipBfill
         lda   vscroll.obj.bufferB.page
         _SetCartPageA                        ; mount in cartridge space
         lda   <vscroll.tileset.line
@@ -255,6 +262,7 @@ vscroll.updategfx
         ldu   <vscroll.buffer.wAddressB
         ldx   vscroll.map.cache.cursor
         jsr   vscroll.copyBitmap             ; copy bitmap for buffer B
+@skipBfill
         lda   <vscroll.buffer.line
         inca
 @direction6 equ *-1
@@ -453,7 +461,14 @@ vscroll.computeBufferWAddress
 ; unsed
 ; -----------------------------------------------------------------------------
 vscroll.do
-        lda   vscroll.obj.bufferB.page
+        lda   vscroll.planes
+        bita  #2                         ; bit1 = blast the B pass (RAMB)
+        bne   @doB
+        lda   vscroll.viewport.ram       ; B skipped : same B->A transition, the A pass targets RAMA
+        adda  #$20
+        sta   vscroll.viewport.ram
+        bra   @mountA
+@doB    lda   vscroll.obj.bufferB.page
         ldx   vscroll.obj.bufferB.address
 @loop   _SetCartPageA                  ; mount page that contain buffer code
         ldb   vscroll.cursor           ; screen start line (0-199)
@@ -486,15 +501,20 @@ vscroll.viewport.ram equ *-2
 @save_u equ   *-2
         puls  a,x
         pshu  a,x                      ; restore 3 bytes in buffer
+        lda   vscroll.planes
+        bita  #1                       ; bit0 = follow with the A pass (RAMA)
+        beq   @exitDirect              ; B only : RAMB already targeted, return as is
         lda   vscroll.viewport.ram
         cmpa  #$C0
         bhs   >                        ; exit if second buffer code as been executed
         adda  #$20                     ; else execute second buffer code
         sta   vscroll.viewport.ram
-        lda   vscroll.obj.bufferA.page
+@mountA lda   vscroll.obj.bufferA.page
         ldx   vscroll.obj.bufferA.address
         bra   @loop
 !       lda   vscroll.viewport.ram
         suba  #$20
         sta   vscroll.viewport.ram     ; restore to first buffer
+        rts
+@exitDirect
         rts
