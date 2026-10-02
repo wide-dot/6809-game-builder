@@ -39,36 +39,17 @@ set_big_turret_5  EXTERNAL
 set_big_turret_6  EXTERNAL
 set_big_turret_7  EXTERNAL
 set_big_turret_8  EXTERNAL
-set_front_turret_a_0  EXTERNAL
-set_front_turret_a_1  EXTERNAL
-set_front_turret_a_2  EXTERNAL
-set_front_turret_a_3  EXTERNAL
-set_front_turret_a_4  EXTERNAL
-set_front_turret_a_5  EXTERNAL
-set_front_turret_a_6  EXTERNAL
-set_front_turret_b_0  EXTERNAL
-set_front_turret_b_1  EXTERNAL
-set_front_turret_b_2  EXTERNAL
-set_front_turret_b_3  EXTERNAL
-set_front_turret_b_4  EXTERNAL
-set_front_turret_c_0  EXTERNAL
-set_front_turret_c_1  EXTERNAL
-set_front_turret_c_2  EXTERNAL
-set_front_turret_c_3  EXTERNAL
-set_front_turret_c_4  EXTERNAL
-set_front_turret_c_5  EXTERNAL
-set_front_turret_c_6  EXTERNAL
-set_front_turret_d_0  EXTERNAL
-set_front_turret_d_1  EXTERNAL
-set_front_turret_d_2  EXTERNAL
-set_front_turret_d_3  EXTERNAL
-set_front_turret_d_4  EXTERNAL
-set_front_turret_e_0  EXTERNAL
-set_front_turret_e_1  EXTERNAL
-set_front_turret_e_2  EXTERNAL
-set_front_turret_e_3  EXTERNAL
-set_front_turret_e_4  EXTERNAL
-set_front_turret_e_5  EXTERNAL
+set_front_turret_0  EXTERNAL
+set_front_turret_1  EXTERNAL
+set_front_turret_2  EXTERNAL
+set_front_turret_3  EXTERNAL
+set_front_turret_4  EXTERNAL
+set_front_turret_5  EXTERNAL
+set_front_turret_6  EXTERNAL
+set_front_turret_7  EXTERNAL
+set_front_turret_8  EXTERNAL
+set_front_turret_9  EXTERNAL
+set_front_turret_10  EXTERNAL
 set_multi_tl_0  EXTERNAL
 set_multi_tl_1  EXTERNAL
 set_multi_tl_2  EXTERNAL
@@ -85,6 +66,10 @@ set_multi_br_0  EXTERNAL
 set_multi_br_1  EXTERNAL
 set_multi_br_2  EXTERNAL
 set_multi_br_3  EXTERNAL
+set_multi_tl_hit_0  EXTERNAL
+set_multi_bl_hit_0  EXTERNAL
+set_multi_tr_hit_0  EXTERNAL
+set_multi_br_hit_0  EXTERNAL
 set_fire_ball_0  EXTERNAL
 set_fire_ball_1  EXTERNAL
 set_fire_ball_2  EXTERNAL
@@ -125,6 +110,11 @@ set_bottom_reactor_bottom_left_0  EXTERNAL
 set_bottom_reactor_bottom_right_0  EXTERNAL
 set_bottom_reactor_bottom_left_full_0  EXTERNAL
 set_bottom_reactor_bottom_right_full_0  EXTERNAL
+set_bottom_reactor_bottom_hit_0  EXTERNAL
+set_bottom_reactor_bottom_left_hit_0  EXTERNAL
+set_bottom_reactor_bottom_right_hit_0  EXTERNAL
+set_bottom_reactor_bottom_left_full_hit_0  EXTERNAL
+set_bottom_reactor_bottom_right_full_hit_0  EXTERNAL
 ; Les GROS sprites mobiles (decision auteur, 09/09/2026) sont TRANCHES en
 ; 16x12 par gen_warship_slices.py et gen_warship_flames.py ; les pieces
 ; inscrivent la liste des tranches d'une pose chez le manager wsmgr, qui les
@@ -185,6 +175,7 @@ Obj_Index_Address EXTERNAL
  SECTION code
 
         INCLUDE "engine/system/to8/memory-map.equ"
+        INCLUDE "gen/layout.asm"       ; stage3.cast.imgWhite.page (react.ShowWhite)
         INCLUDE "src/common/engine/ram.const.asm"
         INCLUDE "engine/constants.asm"
         INCLUDE "engine/macros.asm"

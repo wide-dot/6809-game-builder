@@ -28,5 +28,10 @@ explosion.sfx.wick     equ $40  ; borne $54
 explosion.sfx.cascade  equ $50  ; boss : $51/$52/$53 au sort, une chance sur quatre de silence
 explosion.sfx.cascade2 equ $60  ; compiler : $52/$53 au sort
 explosion.sfx.none     equ $70  ; muet
+; LE FLASH DE COUP (11/09/2026) : sous-type a bit 7 — pas une explosion, mais
+; l'objet est le meme (un identifiant commun ne coute rien de plus). Il porte
+; la boite touchee et se dessine UN rendu en blanc, cale sur elle.
+explosion.subtype.hit  equ $80
+hitflash.box           equ ext_variables ; fdb : la boite AABB de l'ennemi touche
 
  ENDC

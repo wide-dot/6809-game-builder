@@ -2,12 +2,12 @@
 ; depuis le dump arcade. Six variantes : cinq jeux de poses (c et e
 ; partagent le 3e) et six tables de tir.
 
-; roue front-turret-a : 7 poses uniques (table 7B4E)
+; roue front-turret-a (table 7B4E) : les poses du jeu partage
 fturret.wheel.front_turret_a
-        fdb   set_front_turret_a_0,set_front_turret_a_1,set_front_turret_a_2,set_front_turret_a_3
-        fdb   set_front_turret_a_4,set_front_turret_a_5,set_front_turret_a_5,set_front_turret_a_5
-        fdb   set_front_turret_a_4,set_front_turret_a_4,set_front_turret_a_3,set_front_turret_a_2
-        fdb   set_front_turret_a_1,set_front_turret_a_0,set_front_turret_a_6,set_front_turret_a_6
+        fdb   set_front_turret_0,set_front_turret_1,set_front_turret_2,set_front_turret_3
+        fdb   set_front_turret_4,set_front_turret_5,set_front_turret_5,set_front_turret_5
+        fdb   set_front_turret_4,set_front_turret_4,set_front_turret_3,set_front_turret_2
+        fdb   set_front_turret_1,set_front_turret_0,set_front_turret_6,set_front_turret_6
 
 ; tir variante 0 (table 7C30) : fdb vx,vy puis fcb pose,alt
 ; de la boule ($FF = direction sans tir, la porte d arc)
@@ -45,12 +45,12 @@ fturret.fire.0
         fdb   -72,-288
         fcb   20,21 ; dir 15 (record 7D2C)
 
-; roue front-turret-b : 5 poses uniques (table 7B6E)
+; roue front-turret-b (table 7B6E) : les poses du jeu partage
 fturret.wheel.front_turret_b
-        fdb   set_front_turret_b_0,set_front_turret_b_1,set_front_turret_b_1,set_front_turret_b_0
-        fdb   set_front_turret_b_2,set_front_turret_b_3,set_front_turret_b_4,set_front_turret_b_4
-        fdb   set_front_turret_b_4,set_front_turret_b_3,set_front_turret_b_2,set_front_turret_b_2
-        fdb   set_front_turret_b_2,set_front_turret_b_2,set_front_turret_b_0,set_front_turret_b_0
+        fdb   set_front_turret_3,set_front_turret_2,set_front_turret_2,set_front_turret_3
+        fdb   set_front_turret_4,set_front_turret_5,set_front_turret_7,set_front_turret_7
+        fdb   set_front_turret_7,set_front_turret_5,set_front_turret_4,set_front_turret_4
+        fdb   set_front_turret_4,set_front_turret_4,set_front_turret_3,set_front_turret_3
 
 ; tir variante 1 (table 7C50) : fdb vx,vy puis fcb pose,alt
 ; de la boule ($FF = direction sans tir, la porte d arc)
@@ -88,12 +88,12 @@ fturret.fire.1
         fdb   0,0
         fcb   $FF,$FF ; dir 15 : pas de tir
 
-; roue front-turret-c : 7 poses uniques (table 7B8E)
+; roue front-turret-c (table 7B8E) : les poses du jeu partage
 fturret.wheel.front_turret_c
-        fdb   set_front_turret_c_0,set_front_turret_c_1,set_front_turret_c_1,set_front_turret_c_1
-        fdb   set_front_turret_c_0,set_front_turret_c_2,set_front_turret_c_3,set_front_turret_c_4
-        fdb   set_front_turret_c_5,set_front_turret_c_6,set_front_turret_c_6,set_front_turret_c_5
-        fdb   set_front_turret_c_4,set_front_turret_c_3,set_front_turret_c_2,set_front_turret_c_0
+        fdb   set_front_turret_4,set_front_turret_3,set_front_turret_3,set_front_turret_3
+        fdb   set_front_turret_4,set_front_turret_5,set_front_turret_7,set_front_turret_8
+        fdb   set_front_turret_9,set_front_turret_10,set_front_turret_10,set_front_turret_9
+        fdb   set_front_turret_8,set_front_turret_7,set_front_turret_5,set_front_turret_4
 
 ; tir variante 2 (table 7C70) : fdb vx,vy puis fcb pose,alt
 ; de la boule ($FF = direction sans tir, la porte d arc)
@@ -131,12 +131,12 @@ fturret.fire.2
         fdb   0,0
         fcb   $FF,$FF ; dir 15 : pas de tir
 
-; roue front-turret-d : 5 poses uniques (table 7BAE)
+; roue front-turret-d (table 7BAE) : les poses du jeu partage
 fturret.wheel.front_turret_d
-        fdb   set_front_turret_d_0,set_front_turret_d_1,set_front_turret_d_1,set_front_turret_d_1
-        fdb   set_front_turret_d_0,set_front_turret_d_2,set_front_turret_d_3,set_front_turret_d_4
-        fdb   set_front_turret_d_4,set_front_turret_d_4,set_front_turret_d_3,set_front_turret_d_2
-        fdb   set_front_turret_d_0,set_front_turret_d_0,set_front_turret_d_2,set_front_turret_d_2
+        fdb   set_front_turret_4,set_front_turret_3,set_front_turret_3,set_front_turret_3
+        fdb   set_front_turret_4,set_front_turret_5,set_front_turret_7,set_front_turret_8
+        fdb   set_front_turret_8,set_front_turret_8,set_front_turret_7,set_front_turret_5
+        fdb   set_front_turret_4,set_front_turret_4,set_front_turret_5,set_front_turret_5
 
 ; tir variante 3 (table 7C90) : fdb vx,vy puis fcb pose,alt
 ; de la boule ($FF = direction sans tir, la porte d arc)
@@ -210,12 +210,12 @@ fturret.fire.4
         fdb   0,0
         fcb   $FF,$FF ; dir 15 : pas de tir
 
-; roue front-turret-e : 6 poses uniques (table 7BCE)
+; roue front-turret-e (table 7BCE) : les poses du jeu partage
 fturret.wheel.front_turret_e
-        fdb   set_front_turret_e_0,set_front_turret_e_0,set_front_turret_e_0,set_front_turret_e_0
-        fdb   set_front_turret_e_0,set_front_turret_e_1,set_front_turret_e_2,set_front_turret_e_3
-        fdb   set_front_turret_e_4,set_front_turret_e_5,set_front_turret_e_5,set_front_turret_e_5
-        fdb   set_front_turret_e_4,set_front_turret_e_3,set_front_turret_e_2,set_front_turret_e_1
+        fdb   set_front_turret_4,set_front_turret_4,set_front_turret_4,set_front_turret_4
+        fdb   set_front_turret_4,set_front_turret_5,set_front_turret_7,set_front_turret_8
+        fdb   set_front_turret_9,set_front_turret_10,set_front_turret_10,set_front_turret_10
+        fdb   set_front_turret_9,set_front_turret_8,set_front_turret_7,set_front_turret_5
 
 ; tir variante 5 (table 7CD0) : fdb vx,vy puis fcb pose,alt
 ; de la boule ($FF = direction sans tir, la porte d arc)
@@ -253,6 +253,7 @@ fturret.fire.5
         fdb   0,0
         fcb   $FF,$FF ; dir 15 : pas de tir
 
+; 11 poses partagees : set_front_turret_0..10
 fturret.Wheels
         fdb   fturret.wheel.front_turret_a
         fdb   fturret.wheel.front_turret_b

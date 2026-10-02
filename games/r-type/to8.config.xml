@@ -288,6 +288,11 @@
                      s'additionnent pas — il manquait 152 octets et 512 de zone
                      n'ont deplace l'echec que d'un fichier. -->
                 <zone page="$0C" address="$0000" size="$1C00"/>
+                <!-- La queue de $0C (11/09/2026, les images du flash de coup) :
+                     l'arene des lots n'y place que lib.cancer (7 234 o depuis
+                     $1C00, jusqu'a $3842) dans tous les etats ; sa zone est
+                     bornee a $3850 et le commun prend la queue. -->
+                <zone page="$0C" address="$3850" size="$07B0"/>
                 <!-- La queue de la page collision ($17) : les collisions des huit
                      stages sont des ALTERNATIVES a $0000. La borne n'est plus
                      ecrite ici : depuis que le packer place CONTRE les etats de
@@ -328,7 +333,7 @@
                      plus petit dans l'ordre des zones, une page entiere en premier
                      evite d'eclater un lot. -->
                 <zone page="$0B" address="$0000" size="$4000"/>
-                <zone page="$0C" address="$1C00" size="$2400"/>
+                <zone page="$0C" address="$1C00" size="$1C50"/>
                 <zone page="$0D" address="$0000" size="$4000"/>
                 <zone page="$0E" address="$0000" size="$4000"/>
                 <zone page="$0F" address="$0000" size="$4000"/>
@@ -1053,6 +1058,29 @@
                     </lwasm>
                 </file>
 
+                <!-- Le flash de coup : les images blanches par taille de boite
+                     (tools/gen_hit_flash.py), une 4e tranche du meme imageset. -->
+                <file name="common.explosion.imgHit" linkdata="DATA" arena="objects">
+                    <lwasm gensource="gen/fx/explosion-imghit.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <gfxcomp imageset="explosion" gendir="gen/fx/explosion"
+                                 gensource="gen/fx/explosion/includesHit.asm">
+                            <image name="expHit_0" filename="src/common/fx/explosion/images/hitflash/00.png" index="13">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="expHit_1" filename="src/common/fx/explosion/images/hitflash/01.png" index="14">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="expHit_2" filename="src/common/fx/explosion/images/hitflash/02.png" index="15">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="expHit_3" filename="src/common/fx/explosion/images/hitflash/03.png" index="16">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
                 <file name="common.explosion" linkdata="DATA" arena="objects">
                     <lwasm gensource="gen/fx/explosion.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -1900,6 +1928,7 @@
                     <load name="common.explosion.imgSmall"/>
                     <load name="common.explosion.imgFwk"/>
                     <load name="common.explosion.imgBig"/>
+                    <load name="common.explosion.imgHit"/>
                     <load name="common.explosion"/>
                     <load name="common.fade"/>
                     <load name="common.engineflames"/>
@@ -4313,6 +4342,25 @@
                     </lwasm>
                 </file>
 
+                <!-- Les poses BLANCHES de coup des pieces wsmgr (reacteur arriere, capsules,
+                     triangle) : inscrites a la place de la pose un rendu, leurs tranches
+                     vivent dans leur propre page — wsmgr prend la page par slot
+                     (react.ShowWhite). gen_warship_hit.py puis gen_warship_slices.py. -->
+                <file name="stage3.cast.imgWhite" linkdata="DATA" arena="stage3.foes">
+                    <lwasm gensource="gen/enemies/stage3-cast-imgwhite.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <gfxcomp file="stage3.cast.imgWhite" gendir="gen/enemies/stage3-cast-imgwhite"
+                                 gensource="gen/enemies/stage3-cast-imgwhite/includes.asm"
+                                 genindex="gen/enemies/stage3-cast-imgwhite/index.asm">
+                            <images dir="src/enemies/warship-elements/images/rear-reactor-hit-slices" names="rear_reactor_hit"/>
+                            <images dir="src/enemies/warship-elements/images/escape-capsule-hit-slices" names="escape_capsule_hit"/>
+                            <images dir="src/enemies/warship-elements/images/small-escape-capsule-hit-slices" names="small_escape_capsule_hit"/>
+                            <images dir="src/enemies/warship-elements/images/falling-triangle-hit-slices" names="falling_triangle_hit"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <!-- Les poses de la PROUE : cinq roues dedupliquees (c et e
                      partagent leurs poses — voir gen_warship_frontmulti.py). -->
                 <file name="stage3.cast.imgFront" linkdata="DATA" arena="stage3.foes">
@@ -4322,11 +4370,7 @@
                         <gfxcomp file="stage3.cast.imgFront" gendir="gen/enemies/stage3-cast-imgfront"
                                  gensource="gen/enemies/stage3-cast-imgfront/includes.asm"
                                  genindex="gen/enemies/stage3-cast-imgfront/index.asm">
-                            <images dir="src/enemies/warship-elements/images/front-turret-a-wheel" names="front_turret_a"/>
-                            <images dir="src/enemies/warship-elements/images/front-turret-b-wheel" names="front_turret_b"/>
-                            <images dir="src/enemies/warship-elements/images/front-turret-c-wheel" names="front_turret_c"/>
-                            <images dir="src/enemies/warship-elements/images/front-turret-d-wheel" names="front_turret_d"/>
-                            <images dir="src/enemies/warship-elements/images/front-turret-e-wheel" names="front_turret_e"/>
+                            <images dir="src/enemies/warship-elements/images/front-turret-wheel" names="front_turret"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
@@ -4345,6 +4389,10 @@
                             <images dir="src/enemies/warship-elements/images/multi-turret-bottom-left" names="multi_bl"/>
                             <images dir="src/enemies/warship-elements/images/multi-turret-top-right" names="multi_tr"/>
                             <images dir="src/enemies/warship-elements/images/multi-turret-bottom-right" names="multi_br"/>
+                            <images dir="src/enemies/warship-elements/images/multi-turret-top-left-hit" names="multi_tl_hit"/>
+                            <images dir="src/enemies/warship-elements/images/multi-turret-bottom-left-hit" names="multi_bl_hit"/>
+                            <images dir="src/enemies/warship-elements/images/multi-turret-top-right-hit" names="multi_tr_hit"/>
+                            <images dir="src/enemies/warship-elements/images/multi-turret-bottom-right-hit" names="multi_br_hit"/>
                             <images dir="src/enemies/warship-elements/images/fire-ball" names="fire_ball"/>
                             <images dir="src/enemies/warship-elements/images/fireball-flash" names="fireball_flash"/>
                         </gfxcomp>
@@ -4375,6 +4423,12 @@
                             <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-right" names="bottom_reactor_bottom_right"/>
                             <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-left-full" names="bottom_reactor_bottom_left_full"/>
                             <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-right-full" names="bottom_reactor_bottom_right_full"/>
+                            <!-- leurs poses blanches de coup (gen_warship_hit.py) -->
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-hit" names="bottom_reactor_bottom_hit"/>
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-left-hit" names="bottom_reactor_bottom_left_hit"/>
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-right-hit" names="bottom_reactor_bottom_right_hit"/>
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-left-full-hit" names="bottom_reactor_bottom_left_full_hit"/>
+                            <images dir="src/enemies/warship-elements/images/bottom-reactor-bottom-right-full-hit" names="bottom_reactor_bottom_right_full_hit"/>
                             <images dir="src/enemies/warship-elements/images/escape-capsule-slices" names="escape_capsule"/>
                             <images dir="src/enemies/warship-elements/images/small-escape-capsule-slices" names="small_escape_capsule"/>
                             <images dir="src/enemies/warship-elements/images/falling-triangle-slices" names="falling_triangle"/>
@@ -4559,6 +4613,7 @@
                     <load name="stage3.spawnscript"/>
                     <load name="stage3.cast.imgTurret"/>
                     <load name="stage3.cast.imgFront"/>
+                    <load name="stage3.cast.imgWhite"/>
                     <load name="stage3.cast.imgFire"/>
                     <load name="stage3.cast.imgReactor"/>
                     <load name="stage3.cast.imgFlame"/>

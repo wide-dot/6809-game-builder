@@ -56,6 +56,11 @@ multi.Fires
         fdb   multi.fire.multi_bl
         fdb   multi.fire.multi_tr
         fdb   multi.fire.multi_br
+multi.Hits
+        fdb   set_multi_tl_hit_0
+        fdb   set_multi_bl_hit_0
+        fdb   set_multi_tr_hit_0
+        fdb   set_multi_br_hit_0
 
 ; la boite (1000:80C6), partagee par les quatre montages
 multi.BOX equ $0306

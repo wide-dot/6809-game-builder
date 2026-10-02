@@ -66,6 +66,13 @@ breactor.Sets
         fdb   set_bottom_reactor_bottom_right_0 ; 3
         fdb   set_bottom_reactor_bottom_left_full_0 ; 4
         fdb   set_bottom_reactor_bottom_left_0 ; 5
+breactor.HitSets
+        fdb   set_bottom_reactor_bottom_hit_0 ; 0
+        fdb   set_bottom_reactor_bottom_hit_0 ; 1
+        fdb   set_bottom_reactor_bottom_right_full_hit_0 ; 2
+        fdb   set_bottom_reactor_bottom_right_hit_0 ; 3
+        fdb   set_bottom_reactor_bottom_left_full_hit_0 ; 4
+        fdb   set_bottom_reactor_bottom_left_hit_0 ; 5
 
 ; corps du reacteur arriere (1000:7A3C) arcade x[-40..32] y[-15..15]
 rreactor.BODYBOX equ $0E0B

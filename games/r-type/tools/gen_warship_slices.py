@@ -53,7 +53,11 @@ JEUX = [
     (('rear-reactor', 'rear_reactor'), ('reactor-startup', 'reactor_startup'),
      ('reactor-flame-0', 'reactor_flame_0'), ('reactor-flame-1', 'reactor_flame_1'),
      ('escape-capsule', 'escape_capsule'), ('small-escape-capsule', 'small_escape_capsule'),
-     ('falling-triangle', 'falling_triangle')),
+     ('falling-triangle', 'falling_triangle'),
+     # les poses BLANCHES de coup (gen_warship_hit.py), inscrites a la place de
+     # la pose un rendu ; leurs tranches vivent dans une page a part (imgWhite)
+     ('rear-reactor-hit', 'rear_reactor_hit'), ('escape-capsule-hit', 'escape_capsule_hit'),
+     ('small-escape-capsule-hit', 'small_escape_capsule_hit'), ('falling-triangle-hit', 'falling_triangle_hit')),
     # le NOYAU (le boss, 09/09/2026) : 24x24 comme la petite capsule et le
     # triangle, il glisse de 13 px en s'ouvrant et suit la coque — chez wsmgr
     # ROGNE par la coque (gen_core_clip.py, 11/09/2026) : le repos et la glissade

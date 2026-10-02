@@ -39,6 +39,8 @@ rreactor.mapX   equ ext_variables+9    ; 9,10
 rreactor.y0     equ ext_variables+11   ; 11,12
 rreactor.cam0   equ ext_variables+13   ; 13,14
 rreactor.cycle  equ ext_variables+15   ; 15  le compteur de cycle (256)
+rreactor.prevP  equ ext_variables+16   ; 16  le potentiel au tick d'avant : une
+                                       ;     baisse = un coup, la pose blanche
 
 rreactor.HP     equ 20                 ; 40:cbf3 : 20 PV (250 au second tour)
 
@@ -50,6 +52,18 @@ rreactor.HP     equ 20                 ; 40:cbf3 : 20 PV (250 au second tour)
 react.Show
         pshs  a
         lda   Img_Page_Index+ObjID_warship_react
+        sta   wsmgr.page
+        puls  a
+        jmp   wsmgr.Draw
+
+; react.ShowWhite — la meme inscription, mais la liste est une POSE BLANCHE DE
+; COUP (decision auteur, 12/09/2026 : les pieces wsmgr dessinent leur
+; silhouette blanche A LA PLACE de la pose, un rendu, quand leur potentiel a
+; baisse). Ces tranches vivent dans leur propre page, stage3.cast.imgWhite :
+; wsmgr prend la page par slot.
+react.ShowWhite
+        pshs  a
+        lda   #map.RAM_OVER_CART+stage3.cast.imgWhite.page
         sta   wsmgr.page
         puls  a
         jmp   wsmgr.Draw
@@ -83,6 +97,7 @@ rreactor.Init
         _Collision_AddAABB rreactor.AABB,AABB_list_ennemy
         lda   #rreactor.HP
         sta   rreactor.AABB+AABB.p,u
+        sta   rreactor.prevP,u
         ldd   #rreactor.BODYBOX
         std   rreactor.AABB+AABB.rx,u
         clr   rreactor.cycle,u
@@ -148,7 +163,15 @@ rreactor.Live
         ; PLUS DE SPRITE A LUI (09/09/2026) : 36x24, six tranches chez wsmgr.
         ; Le corps ne change jamais de pose.
         ldx   #react.sl.rear_reactor.0
+        lda   rreactor.AABB+AABB.p,u   ; LE FLASH DE COUP : la pose blanche a la
+        cmpa  rreactor.prevP,u         ; place du corps quand p a baisse
+        sta   rreactor.prevP,u
+        bhs   >
+        ldx   #react.sl.rear_reactor_hit.0
         lda   rreactor.AABB+AABB.cx,u
+        ldb   rreactor.AABB+AABB.cy,u
+        jmp   react.ShowWhite
+!       lda   rreactor.AABB+AABB.cx,u
         ldb   rreactor.AABB+AABB.cy,u
         jmp   react.Show
 
@@ -282,6 +305,7 @@ breactor.mapX   equ ext_variables+9    ; 9,10
 breactor.y0     equ ext_variables+11   ; 11,12
 breactor.cam0   equ ext_variables+13   ; 13,14
 breactor.cur    equ ext_variables+15   ; 15,16 le curseur dans le script
+breactor.prevP  equ ext_variables+18   ; 18    le potentiel au tick d'avant (flash)
 breactor.orient equ ext_variables+17   ; 17    l'orientation courante — PAS
                                        ;       dans subtype : celui-ci porte
                                        ;       la famille du groupe
@@ -327,6 +351,7 @@ breactor.Init
         _Collision_AddAABB breactor.AABB,AABB_list_ennemy
         lda   #breactor.HP
         sta   breactor.AABB+AABB.p,u
+        sta   breactor.prevP,u
         ldd   #breactor.BOX
         std   breactor.AABB+AABB.rx,u
         ldd   #breactor.script         ; le curseur, au debut du script commun
@@ -370,7 +395,12 @@ breactor.Live
 @pose   lda   breactor.orient,u
         asla
         ldx   #breactor.Sets
-        ldx   a,x
+        ldb   breactor.AABB+AABB.p,u   ; LE FLASH DE COUP : la pose blanche a la
+        cmpb  breactor.prevP,u         ; place de l'orientation quand p a baisse
+        stb   breactor.prevP,u
+        bhs   >
+        ldx   #breactor.HitSets
+!       ldx   a,x
         stx   image_set,u
         jmp   DisplaySprite
 

@@ -25,6 +25,7 @@ multi.y0        equ ext_variables+11   ; 11,12
 multi.cam0      equ ext_variables+13   ; 13,14
 multi.acc       equ ext_variables+15   ; 15  l'accumulateur de cadence (16)
 multi.phase     equ ext_variables+16   ; 16  la phase du patron, 0..3
+multi.prevP     equ ext_variables+18   ; 18  le potentiel au tick d'avant (flash)
 multi.mount     equ ext_variables+17   ; 17  le montage — PAS dans subtype,
                                        ;     qui porte la famille du groupe
 
@@ -58,6 +59,7 @@ multi.Init
         _Collision_AddAABB multi.AABB,AABB_list_ennemy
         lda   #multi.HP
         sta   multi.AABB+AABB.p,u
+        sta   multi.prevP,u
         ldd   #multi.BOX
         std   multi.AABB+AABB.rx,u
         clr   multi.acc,u
@@ -120,6 +122,18 @@ multi.Live
         ldx   a,x
         ldd   b,x
         std   image_set,u
+        ; LE FLASH DE COUP (12/09/2026) : la pose blanche du montage a la
+        ; place du barillet quand le potentiel a baisse
+        ldb   multi.AABB+AABB.p,u
+        cmpb  multi.prevP,u
+        stb   multi.prevP,u
+        bhs   >
+        lda   multi.mount,u
+        asla
+        ldx   #multi.Hits
+        ldx   a,x
+        stx   image_set,u
+!
 
         ; --- le patron de tir : une phase toutes les seize trames ------------
         lda   multi.acc,u
