@@ -139,10 +139,11 @@ def write_tiles(tiles):
     """tiles.<p>.bin : 2 bytes per tile line (16px 1bpp), line-major."""
     # Blocks are N*2 bytes wide where N is the REAL tile count : the runtime
     # address table (_vscroll.setTileNb) steps by exactly that. No 16KB pad
-    # and no halves swap at this size : the whole set fits one data page and
-    # the lookup table never wraps past $A000+$4000.
-    outb = bytearray()
+    # and no halves swap at this size : the set is smaller than 8KB, so the
+    # config loads it at offset $2000 of its page, which the data window shows
+    # at $A000, where the v1 lookup table starts.
     for plane in (0, 1):
+        outb = bytearray()
         for ln in range(16):
             for (ta, tb) in tiles:
                 t = ta if not plane else tb

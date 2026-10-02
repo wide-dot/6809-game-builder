@@ -164,43 +164,22 @@ _vscroll.setTileNb MACRO
         std vscroll.tiles.nb.neg.x2.1110
         std vscroll.tiles.nb.neg.x2.1111
  ENDC
-        ; compute lut for each starting address of the 16 line tilesets.
-        ; Tilesets load at cart-window addresses (linear physical layout),
-        ; but copyBitmap reads them through the DATA window, which permutes
-        ; 4K slices (C,D,A,B order) : file offset O shows at sliceBase[O>>12]
-        ; + (O&$FFF). The lut stores those distorted addresses, not $A000+O.
+        addd  #$A000+$4000
+        std   @test
+        ; compute lut for each starting address of the 16 line tilesets
         lda   #16
-        sta   <dp_extreg                 ; lines left
+        sta   <dp_extreg
         ldx   #vscroll.obj.tile.adresses
-        ldu   #0                        ; file offset O, kept under $1000
-        lda   #$C0
-        sta   <dp_extreg+2               ; current slice window high byte
-        ldb   #0
-        stb   <dp_extreg+1               ; slice index into @slicetab
+        ldd   #$A000
 @loop   equ   *
-        tfr   u,d
-        ora   <dp_extreg+2               ; A = slice base | O high
-        sta   ,x+
-        stb   ,x+                       ; B = O low, entry complete
-        tfr   u,d
-        addd  vscroll.obj.tile.nbx2     ; O += line stride
-        tfr   d,u
-        cmpu  #$1000
-        blo   @noswitch                 ; still in this 4K slice
-        leau  -$1000,u                  ; next slice, O back under $1000
-        ldb   <dp_extreg+1
-        incb
-        andb  #3
-        stb   <dp_extreg+1
-        ldy   #@slicetab
-        lda   b,y
-        sta   <dp_extreg+2
-@noswitch
-        dec   <dp_extreg
+        std   ,x++
+        addd  vscroll.obj.tile.nbx2
+        cmpd  #$A000+4000
+@test   equ   *-2
+        bls   >
+        ldd   #$A000
+!       dec   <dp_extreg
         bne   @loop
-        bra   @done
-@slicetab fcb   $C0,$D0,$A0,$B0
-@done   equ   *
 
  ENDM
 
@@ -235,6 +214,7 @@ _vscroll.setBuffer MACRO
 ; -----------------------------------------------------------------------------
 ; input : bitmask 1 = RAMA, 2 = RAMB, 3 = both (default)
 ; move only fills the selected buffers, do only blasts them
+; V2-DEVIATION: no v1 counterpart (PR #46, $26 two-plane mode)
 ; -----------------------------------------------------------------------------
 _vscroll.setPlanes MACRO
         lda   \1
