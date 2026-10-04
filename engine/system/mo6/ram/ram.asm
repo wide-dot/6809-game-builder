@@ -14,8 +14,8 @@ ram.set
         cmpu  #map.ram.DATA_START ; Skip if not data space
         blo   >
         lda   #$10
-        ora   <map.CF74021.SYS1.R ; Set RAM
-        sta   <map.CF74021.SYS1.R ; over data
+        ora   >map.CF74021.SYS1.R ; Set RAM
+        sta   >map.CF74021.SYS1.R ; over data
         sta   >map.CF74021.SYS1   ; space
         stb   >map.CF74021.DATA   ; Switch RAM page
         rts
