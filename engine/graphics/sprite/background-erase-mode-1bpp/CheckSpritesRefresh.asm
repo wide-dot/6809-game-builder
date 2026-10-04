@@ -276,9 +276,9 @@ CSR_CheckPlayFieldCoord
         stb   y_pixel,u
         bra   CSR_ComputeMappingFrame
 CSR_DoNotDisplaySprite
-        lda   priority,u
-        cmpa  cur_priority
-        bne   CSR_NextObject                ; next object if this one is a new priority record (no need to erase)
+        lda   buf_priority,x                ; the level it is linked at in this buffer, as
+        cmpa  cur_priority                  ; the visible path (see background-erase-mode)
+        bne   CSR_NextObject                ; not that level (a priority change pending)
         lda   rsv_render_flags,u
         anda  #^rsv_render_erasesprite_mask&^rsv_render_displaysprite_mask ; set erase and display flag to false
         sta   rsv_render_flags,u

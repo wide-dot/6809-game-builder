@@ -207,9 +207,19 @@ CSR_CheckPlayFieldCoord
         bra   CSR_ComputeMappingFrame
         
 CSR_DoNotDisplaySprite
-        lda   priority,u                     
+; V2-DEVIATION (05/10/2026, bugfix - v1 has it too): the erase of a hidden or
+; deleted object was decided where priority,u matched the walked level, i.e.
+; at its NEW priority. A hidden object is never being relinked (DisplaySprite
+; clears the hide flag), so in this buffer it is linked only at its old level
+; when its priority changed on the other buffer's loop : it was skipped there,
+; never erased in this buffer, and the erase/display bits of rsv_render_flags
+; (shared) kept the other buffer's decisions for EraseSprites/DrawSprites.
+; The test now reads buf_priority,x, the level the object is linked at in
+; this buffer, as the visible path does (CSR_CheckErase). A deleted object
+; relinked on this very loop is still walked once : at its old level.
+        lda   buf_priority,x
         cmpa  cur_priority 
-        bne   CSR_NextObject                ; next object if this one is a new priority record (no need to erase) 
+        bne   CSR_NextObject                ; not the level it is linked at in this buffer (a priority change pending) 
         
         lda   rsv_render_flags,u
         anda  #^rsv_render_erasesprite_mask&^rsv_render_displaysprite_mask ; set erase and display flag to false
