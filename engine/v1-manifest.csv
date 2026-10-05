@@ -97,10 +97,10 @@ engine/sound/SmpsObj.asm,engine/sound/SmpsObj.asm,386f887c06f65a99a96bf7a2f35736
 engine/irq/IrqObjSmps.asm,engine/irq/IrqObjSmps.asm,ec0fdcdcde5ca5769dc56ebed5d1f7ba5cfb5067,2026-10-05,setdp neutralized (obj target) ; SmpsVar instance as an equate on its fill (`org` does not rewind an obj section)
 engine/irq/IrqSecond.asm,engine/irq/IrqSecond.asm,ec0fdcdcde5ca5769dc56ebed5d1f7ba5cfb5067,2026-10-05,setdp neutralized (obj target)
 engine/sound/PlayDPCM16kHz.asm,engine/sound/PlayDPCM16kHz.asm,f873642ee58b8c6d294d174a68d1124392daf3ae,2026-10-05,
-engine/joypad/InitJoypads.asm,engine/joypad/InitJoypads.asm,5501a8c72342c6c2c3ac250d8dfc111af3717c79,2026-10-05,
-engine/joypad/ReadJoypads.asm,engine/joypad/ReadJoypads.asm,bc2a6189e4b620af6d2fa9a6bbeee86a850e6dc9,2026-10-05,
+engine/system/to8/controller/joypad.asm,engine/joypad/InitJoypads.asm,5501a8c72342c6c2c3ac250d8dfc111af3717c79,2026-10-05,KEPT-V2: joypad.init is v1's InitJoypads under the v2 names (plus the edge detector priming) ; watch v1 - manual resync (migration/kept-v2-api.md)
+engine/system/to8/controller/joypad.asm,engine/joypad/ReadJoypads.asm,bc2a6189e4b620af6d2fa9a6bbeee86a850e6dc9,2026-10-05,KEPT-V2: joypad.read is v1's ReadJoypads under the v2 names ; watch v1 - manual resync (migration/kept-v2-api.md)
 engine/joypad/ReadJoypads2.asm,engine/joypad/ReadJoypads2.asm,f873642ee58b8c6d294d174a68d1124392daf3ae,2026-10-05,
-engine/joypad/joypad.const.asm,engine/joypad/joypad.const.asm,bc2a6189e4b620af6d2fa9a6bbeee86a850e6dc9,2026-10-05,
+engine/system/to8/controller/joypad.const.asm,engine/joypad/joypad.const.asm,bc2a6189e4b620af6d2fa9a6bbeee86a850e6dc9,2026-10-05,KEPT-V2: v1's masks under the v2 names (joypad.0.A...) ; the joypad state lives in joypad.asm ; watch v1 - manual resync (migration/kept-v2-api.md)
 engine/palette/PalCycling.asm,engine/palette/PalCycling.asm,ec0fdcdcde5ca5769dc56ebed5d1f7ba5cfb5067,2026-10-05,setdp neutralized (obj target)
 engine/palette/PalRaster_1c.asm,engine/palette/PalRaster_1c.asm,ec0fdcdcde5ca5769dc56ebed5d1f7ba5cfb5067,2026-10-05,setdp neutralized (obj target ; explicit < operands stay direct)
 engine/palette/color/Pal_black.asm,engine/palette/color/Pal_black.asm,ec0fdcdcde5ca5769dc56ebed5d1f7ba5cfb5067,2026-10-05,
