@@ -892,6 +892,22 @@ répertoire, le `<data>` du loader doit venir APRÈS les répertoires (sinon
 `ERROR` à l'assemblage, nommant le répertoire). Modèle et mesures :
 `docs/lang/fr/etude-chargement-2026-09.md` §12, manuel `config.md`.
 
+## mscroll1 : le scroll multidirectionnel en 1 bpp (05/10/2026)
+
+`engine/graphics/tilemap/mscroll1/` est le fork 1 bpp de mscroll (mode
+`$24`, un plan, pas de 8 px, carte à deux niveaux layout → chunk 128×128 →
+bloc 16×16, colonnes 16 bits, init par le feed), pour le clone Sonic 2
+mono (`wide-dot/sonic-2-mono`, privé). Démonstrateur `examples/mscroll1` :
+`tools/check.py` (écran relu et comparé à l'octet, `--random N` pour une
+marche aléatoire), `tools/fps.py`, `tools/profile.py`. Plein écran
+320×200 : 25 i/s caméra arrêtée, ~16 i/s à 6 px + 3 lignes par trame.
+**Deux défauts du mécanisme de couture hérités de mscroll y sont
+corrigés** (biais du curseur `−ceil(window/10)` et cisaillement relatif ;
+la rangée découverte quand le biais bouge) — le BM16 les porte
+probablement, non vérifié (son banc ne franchit aucune couture et échoue
+aujourd'hui dès x = 0). Étude et mesures :
+[`etude-mscroll1-2026-10.md`](docs/lang/fr/etude-mscroll1-2026-10.md).
+
 ## Dettes / pièges connus
 
 - `engine/pack/mub.asm` : chemins d'INCLUDE invalides (fichiers dans `sound/mucom88/`).
