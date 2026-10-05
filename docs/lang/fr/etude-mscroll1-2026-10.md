@@ -23,8 +23,9 @@ des colonnes sur 16 bits, une carte à deux niveaux comme sur Mega Drive
 (layout → chunk 128×128 → bloc 16×16), et l'initialisation par le feed (plus
 de buffer de départ généré).
 
-Validé **à l'octet** sous toje sur 288 px de large (les 16 px de chaque bord
-sont la zone de masquage) : 9 trajets scriptés (diagonales, demi-vitesse,
+Validé **à l'octet** sous toje sur tout l'écran, les deux tampons :
+312 × 199 px exacts, les deux masques de `mscroll1.mask` (l'octet de
+recouvrement à droite, la ligne du haut — §5) noirs. 9 trajets scriptés (diagonales, demi-vitesse,
 16 px/trame, 12 lignes/trame) et une marche aléatoire de 200 trajets.
 Mesuré : **25 i/s caméra arrêtée** (blast ≈ 31 k cycles pour 200 lignes),
 **15,6 i/s en diagonale** à 6 px + 3 lignes par trame 50 Hz.
@@ -57,7 +58,7 @@ couture de 160 px.
 | colonnes | octet (carte ≤ 2048 px) | mot (`divmod20` : slot = c mod 20, couture = c / 20) |
 | carte | plate, ids 16 bits, stride puissance de 2 | **deux niveaux** : layout d'octets (stride ≤ 255) + table de chunks (128 o/chunk) |
 | départ | buffer généré par le builder (`<mscroll output="start">`) | squelette + `mscroll1.init` (20 colonnes alimentées) |
-| bords masqués | 8 px | 16 px (le débordement de S se compte en octets) |
+| masques | 8 px de chaque bord | `mscroll1.mask` : l'octet 39 de chaque ligne (8 px) et la ligne du haut (§5) |
 
 Le sous-octet n'existe pas en 1 bpp sur un plan : un octet couvre 8 px et
 rien ne s'échange. Des pas de 4, 2 ou 1 px demanderaient 2, 4 ou 8 buffers de
@@ -154,17 +155,46 @@ couture (carte de 256 px), et il échoue aujourd'hui dès la caméra x = 0
 (7 764 cellules sur 8 000, rejoué le 05/10/2026 sur `master`), donc pour une
 autre raison. À trancher avec l'auteur avant de toucher au BM16.
 
-## 5. Validation
+## 5. Validation et masques
 
-- `tools/check.py dist/to8.fd` : 9 trajets scriptés, l'écran entier relu
-  après chaque arrêt et comparé au modèle `pixel(xr + p, y + s)` calculé par
-  `gen_mire.py` — **centre (octets 2 à 37) exact partout** ; les écarts
-  restants sont tous dans les bords masqués (l'octet de droite quand
-  x mod 16 ≥ 8, la tranche de slots s'arrêtant avant le bord ; un octet
-  isolé à gauche).
-- `--random 200` : marche aléatoire graînée, vitesses jusqu'à 16 px et
+Relevé sur tout l'écran (EHZ, 40 trajets aléatoires et un balayage fin
+de x), les octets faux tombent dans **deux zones, et deux seulement** :
+
+- **le recouvrement, à cheval sur le retour de ligne** : quand
+  x mod 16 ≥ 8, la fenêtre couvre 21 colonnes de blocs pour 20 slots ; un
+  slot est montré aux deux bords. Dans le flux, ses deux octets se
+  suivent : l'octet de gauche ferme la ligne d'écran n (octet 39), l'octet
+  de droite ouvre la ligne n+1 (octet 0). Le slot tient la colonne
+  `edge-1`, celle de gauche : l'octet 0 est juste, l'octet 39 montre la
+  mauvaise colonne (il faudrait celle 320 px plus loin). Quand
+  x mod 16 < 8, le retour de ligne tombe entre deux slots, rien n'est faux.
+- **le trou du début du ruban** : le décalage d'octet de S (`D = −bo`)
+  laisse les `D` premiers octets de la bande non écrits (D = 1 ou 2,
+  x mod 32 dans 16..31) : octets 0-1 de la ligne du haut, restes du blast
+  précédent dans ce tampon. À l'autre bout, D = −1 laisse l'octet 39 de la
+  dernière ligne (déjà dans le masque de droite).
+
+`mscroll1.mask` (après `mscroll1.do` et ce que le jeu dessine dans la
+bande) noircit l'**octet 39 de chaque ligne** (une bande de 8 px, à
+droite) et la **ligne du haut de la bande** (la zone tampon du ruban,
+comme la ligne trash du stage 3 de R-Type, cachée là sous le HUD) :
+reste une image de 312 × (hauteur − 1) px, exacte. ≈ 1,7 k cycles pour
+200 lignes, sans effet mesurable sur la cadence (25,0 i/s à l'arrêt).
+Le blast déborde aussi HORS de la bande, de 2 octets au plus (l'octet 39
+de la ligne au-dessus si D = −1, les octets 0-1 de la ligne au-dessous si
+D = 2) : invisibles avec une bande en ligne 0 (`$BFFF`, zone RAMB) qui
+finit en ligne 199 (au-delà des 8000 octets affichés), à couvrir par le
+jeu ailleurs.
+
+- `tools/check.py dist/to8.fd` : 9 trajets scriptés, les **deux tampons**
+  relus en tête de boucle principale (ailleurs le tampon arrière peut être
+  à moitié dessiné, blasté mais pas encore masqué) et comparés au modèle
+  `pixel(xr + p, y + s)` calculé par `gen_mire.py` : masques noirs, le
+  reste exact partout. La sonde rend la fenêtre data à sa page d'origine
+  après lecture : le jeu est arrêté n'importe où dans sa trame.
+- `--random 80` : marche aléatoire graînée, vitesses jusqu'à 16 px et
   12 lignes par trame dans les deux sens, coutures franchies dans les deux
-  sens, bouclage vertical, butées : centre exact.
+  sens, bouclage vertical, butées : exact.
 
 ## 6. Mesures (toje, 05/10/2026, sans sprite ni logique de jeu)
 
@@ -202,5 +232,5 @@ Pistes d'optimisation, dans l'ordre du gain attendu :
   et piloter la caméra par la trajectoire de la démo EHZ pour mesurer aux
   vraies vitesses de Sonic.
 - Côté engine : les sprites 1 bpp opaques (masque + encre), dessinés sans
-  effacement puisque le blast repeint tout ; le masquage des bords ; un
-  manuel `docs/lang/en/mscroll1.md` une fois l'API stabilisée.
+  effacement puisque le blast repeint tout (à dessiner AVANT
+  `mscroll1.mask`) ; un manuel `docs/lang/en/mscroll1.md` une fois l'API stabilisée.

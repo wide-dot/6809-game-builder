@@ -10,11 +10,12 @@ expected image comes from tools/gen_mire.py's own pixel function : screen
 row s, column p shows map pixel (xr + p, camera.y + s), xr being camera.x
 rounded down to a multiple of 8 (the 8 px step).
 
-The 16 px at each side are the masked edges (the S byte offset spills up to
-2 bytes there, the slot set stops short of the right edge) : they are
-reported apart, and only the 288 px between them must match. Prints the
-first mismatching bytes and a per-byte-column count, exits non-zero when a
-centre byte mismatches.
+mscroll1.mask blacks the two zones the blast cannot get right : byte 39 of
+every line (the overlap slot's wrong half, when x mod 16 >= 8) and the top
+line (the hole the S byte offset leaves at the start of the band). Both
+must read zero, and the 312 x 199 px left must match the map exactly.
+Prints the first mismatching bytes and a per-byte-column count, exits
+non-zero on any mismatch.
 """
 import os
 import re
@@ -42,6 +43,7 @@ def symbol(name):
 SPEEDS = symbol('mscroll1.camera.speed')   # y then x, 4 contiguous bytes
 CAMX = symbol('mscroll1.camera.x')
 CAMY = symbol('mscroll1.camera.y')
+MAINLOOP = symbol('mainLoop')
 
 
 def word(t, addr):
@@ -64,33 +66,47 @@ def expected_byte(x, y):
     return v
 
 
+def screens(t):
+    """Both screen buffers (pages 2 and 3, RAMA), read at the top of the
+    main loop : there both hold a finished frame (anywhere else the back
+    buffer may be half drawn — blasted but not yet masked). The data window
+    is switched to read them, then given back."""
+    t.call('run_until_pc', {'pc': '%04X' % MAINLOOP, 'max_instructions': 2000000})
+    page = t.call('read_page_map')['data_page']
+    out = []
+    for p in (2, 3):
+        t.call('write_memory', {'addr': '0xE7E5', 'bytes': ['%02X' % p]})
+        data = []
+        for off in range(0, 8000, 1000):
+            data += t.read(hex(0xC000 + off), 1000)
+        out.append(data)
+    t.call('write_memory', {'addr': '0xE7E5', 'bytes': ['%02X' % page]})
+    return out
+
+
 def check(t, tag):
     cx, cy = word(t, CAMX), word(t, CAMY)
     xr = cx & ~7
-    t.call('write_memory', {'addr': '0xE7E5', 'bytes': ['02']})   # screen buffer 0
-    data = []
-    for off in range(0, 8000, 1000):
-        data += t.read(hex(0xC000 + off), 1000)
-    bad_centre = bad_edge = 0
+    bad = 0
     percol = {}
-    for s in range(200):
-        y = cy + s
-        for col in range(40):
-            got = data[s * 40 + col]
-            want = expected_byte(xr + col * 8, y)
-            if got != want:
-                percol[col] = percol.get(col, 0) + 1
-                if 2 <= col < 38:
-                    bad_centre += 1
-                    if bad_centre <= 8:
-                        print('%s : line %3d byte %2d : got %02X want %02X' % (tag, s, col, got, want))
-                else:
-                    bad_edge += 1
+    for buf, data in enumerate(screens(t)):
+        for s in range(200):
+            y = cy + s
+            for col in range(40):
+                got = data[s * 40 + col]
+                masked = s == 0 or col == 39
+                want = 0 if masked else expected_byte(xr + col * 8, y)
+                if got != want:
+                    percol[col] = percol.get(col, 0) + 1
+                    bad += 1
+                    if bad <= 8:
+                        print('%s : buffer %d line %3d byte %2d : got %02X want %02X%s'
+                              % (tag, buf, s, col, got, want, ' (mask)' if masked else ''))
     cols = ' '.join('%d:%d' % (c, n) for c, n in sorted(percol.items()))
-    print('%s : camera=(%d,%d) centre %s, edges %d bad bytes%s'
-          % (tag, cx, cy, 'OK' if bad_centre == 0 else '%d BAD' % bad_centre, bad_edge,
+    print('%s : camera=(%d,%d) %s%s'
+          % (tag, cx, cy, 'OK' if bad == 0 else '%d BAD' % bad,
              (' [' + cols + ']') if percol else ''))
-    return bad_centre
+    return bad
 
 
 def main():
@@ -134,7 +150,7 @@ def main():
     for tag, sy, sx, n in legs:
         drive(t, sy, sx, n)
         bad += check(t, tag)
-    print('RESULT', 'OK' if bad == 0 else 'FAIL (%d centre bytes)' % bad)
+    print('RESULT', 'OK' if bad == 0 else 'FAIL (%d bytes)' % bad)
     sys.exit(1 if bad else 0)
 
 

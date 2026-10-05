@@ -13,6 +13,9 @@
 ; own until the first input. The map wraps vertically and clamps
 ; horizontally at its edges.
 ;
+; mscroll1.mask blacks what the blast cannot get right : the overlap byte at
+; the right of every line and the band's top line — 312 x 199 px are shown.
+;
 ; Witnesses at $9C00 : +0 frame counter (a stall is visible).
 ;*******************************************************************************
 
@@ -143,6 +146,7 @@ mainLoop
 @run
         _gfxlock.on
         jsr   mscroll1.do                  ; blast the buffer where the camera is
+        jsr   mscroll1.mask                ; black the overlap byte and the top line
         jsr   mscroll1.move                ; advance the camera, feed new lines
         _gfxlock.off
 

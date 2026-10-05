@@ -1151,3 +1151,62 @@ mscroll1.runBuffer
         puls  a,x
         pshu  a,x                      ; restore 3 bytes in buffer
         rts
+
+; -----------------------------------------------------------------------------
+; mscroll1.mask
+; -----------------------------------------------------------------------------
+; input  REG : none
+; -----------------------------------------------------------------------------
+; black the two zones of the band the blast cannot get right, in the back
+; buffer (call after mscroll1.do and after whatever the game draws in the
+; band, between _gfxlock.on and _gfxlock.off). The picture left is
+; 312 x (height-1) px. ~1.7 k cycles for 200 lines.
+;
+; - the OVERLAP band : byte 39 of every band line (8 px on the right). When
+;   x mod 16 >= 8 the window spans 21 block columns for 20 slots, so one
+;   slot is shown at both edges, straddling the line wrap : its right byte
+;   opens line n+1 (right), its left byte closes line n, where it is wrong
+;   (the slot holds the left column, edge-1, not the one 320 px further).
+; - the TOP LINE of the band, the buffer zone of the ribbon : the S byte
+;   offset leaves up to 2 bytes at its start unwritten (D = 1, 2 :
+;   x mod 32 in 16..31), stale from the previous blast in this buffer.
+;
+; The blast also spills OUTSIDE the band by up to 2 bytes : byte 39 of the
+; line above (D = -1) and bytes 0-1 of the line below (D = 2). Out of sight
+; with a band starting at line 0 ($BFFF, the unused RAMB zone) or ending at
+; line 199 (past the 8000 displayed bytes) ; anywhere else the game covers
+; them (R-Type stage 3 : its HUD).
+; -----------------------------------------------------------------------------
+mscroll1.mask
+        ldx   mscroll1.viewport.ram
+        leax  $2000-1,x                ; byte 39 of the last band line (RAMA zone)
+        clra
+        ldb   mscroll1.viewport.height
+@one    bitb  #3                       ; height mod 4 lines one by one,
+        beq   @four                    ; then four lines per pass
+        sta   ,x
+        leax  -40,x
+        decb
+        bra   @one
+@four   lsrb
+        lsrb
+        beq   @top
+@loop   sta   ,x
+        sta   -40,x
+        sta   -80,x
+        sta   -120,x
+        leax  -160,x
+        decb
+        bne   @loop
+@top    leau  41,x                     ; x is byte 39 of the line above the
+        clrb                           ; band : u is one past the top line
+        ldx   #0
+        ldy   #0
+        pshu  d,x,y                    ; 40 bytes, 6 at a time
+        pshu  d,x,y
+        pshu  d,x,y
+        pshu  d,x,y
+        pshu  d,x,y
+        pshu  d,x,y
+        pshu  d,x
+        rts

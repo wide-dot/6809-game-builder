@@ -905,8 +905,13 @@ marche aléatoire), `tools/fps.py`, `tools/profile.py`. Plein écran
 corrigés** (biais du curseur `−ceil(window/10)` et cisaillement relatif ;
 la rangée découverte quand le biais bouge) — le BM16 les porte
 probablement, non vérifié (son banc ne franchit aucune couture et échoue
-aujourd'hui dès x = 0). Étude et mesures :
-[`etude-mscroll1-2026-10.md`](docs/lang/fr/etude-mscroll1-2026-10.md).
+aujourd'hui dès x = 0). `mscroll1.mask` (après le blast et les sprites)
+noircit les deux seules zones fausses : l'octet de recouvrement à droite
+(le slot à cheval sur le retour de ligne quand x mod 16 ≥ 8) et la ligne
+du haut (le trou du début du ruban) — image exacte de 312 × 199 px. Piège
+de sonde : lire les tampons en tête de boucle (ailleurs le tampon arrière
+est à moitié dessiné) et rendre la page data après lecture. Étude et
+mesures : [`etude-mscroll1-2026-10.md`](docs/lang/fr/etude-mscroll1-2026-10.md).
 
 ## Dettes / pièges connus
 
