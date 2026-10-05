@@ -12,7 +12,9 @@
 * of RAM
 *
 * ---------------------------------------------------------------------------
-        setdp $E7
+        ;setdp $E7 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm
+                  ; obj target) ; the one direct operand below is an explicit <, still assembled direct
+                  ; (migration/setdp-obj-target.md)
 IrqObjSmps
         lda   Obj_Index_Page+ObjID_Smps
         sta   <$E6                                    ; mount Smps page in RAM
@@ -48,4 +50,4 @@ Smps          SmpsVar
         org   SmpsStructStart                
         fill  0,sizeof{SmpsVar}
 
-        setdp dp/256
+        ;setdp dp/256 ; V2-DEVIATION: setdp neutralized (see above)

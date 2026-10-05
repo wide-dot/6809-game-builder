@@ -9,7 +9,9 @@ PalRas_page   fdb $00   ; raster data page
 PalRas_start  fdb $0000 ; raster data start address (data is $0bgr b=blue g=green r=red)
 PalRas_end    fdb $0000 ; raster data end address                           
 
-        setdp $E7
+        ;setdp $E7 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm
+                  ; obj target) ; every direct operand below is an explicit <,
+                  ; still assembled direct (migration/setdp-obj-target.md)
 
 PalRaster_1c 
         lda   PalRas_page
@@ -39,4 +41,4 @@ PalRaster_1c
         bne   <
         rts
 
-        setdp dp/256
+        ;setdp dp/256 ; V2-DEVIATION: setdp neutralized (see above)

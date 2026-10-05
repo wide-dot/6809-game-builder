@@ -4,7 +4,9 @@
 * IRQ Subroutine to count elapsed seconds
 * ---------------------------------------------------------------------------
 
-        setdp $E7
+        ;setdp $E7 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm
+                  ; obj target) ; no direct operand below
+                  ; (migration/setdp-obj-target.md)
 IrqSecond
         lda   glb_timer_frame
         inca
@@ -21,4 +23,4 @@ IrqSecond
 @skip   sta   glb_timer_frame
 	rts
 
-        setdp dp/256
+        ;setdp dp/256 ; V2-DEVIATION: setdp neutralized (see above)

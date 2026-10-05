@@ -47,12 +47,25 @@ RunObjects
         abx
         lda   ,x              
         _SetCartPageA         
+; V2-DEVIATION: v1 reaches Obj_Index_Address by its offset from Obj_Index_Page,
+; a difference of two symbols the v2 link data cannot carry when the tables
+; live in another unit (r-type : the stage). A game mode that assembles them
+; in the same unit as this routine defines OBJ_INDEX_LOCAL and gets v1's form,
+; four cycles cheaper per object.
+ IFDEF OBJ_INDEX_LOCAL
+        abx
+ ELSE
         aslb                  
         ldx   #Obj_Index_Address
         abx
+ ENDC
         ldd   run_object_next,u        ; in case of self-deletion by current object
         std   object_list_next         ; we need to save the next object in run list
+ IFDEF OBJ_INDEX_LOCAL
+        jsr   [<Obj_Index_Address-Obj_Index_Page,x]        
+ ELSE
         jsr   [,x]        
+ ENDC
         ldu   run_object_next,u        ; do not remove: child object created by last object
         bne   <                        ; have been added to the list
         ldu   #0

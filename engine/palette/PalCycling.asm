@@ -13,7 +13,9 @@
 PalCyc_frames      fcb 0 ; countdown variable
 PalCyc_frames_init fcb 0 ; nb of frames to wait for a refresh
 
-        setdp $E7
+        ;setdp $E7 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm
+                  ; obj target) ; no direct operand below
+                  ; (migration/setdp-obj-target.md)
 PalCycling
  	dec   PalCyc_frames
 	bne   >
@@ -29,4 +31,4 @@ PalCycling
 	stu   ,x
 !       jmp   PalUpdateNow
 
-        setdp dp/256
+        ;setdp dp/256 ; V2-DEVIATION: setdp neutralized (see above)

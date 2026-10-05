@@ -190,50 +190,116 @@ _60HzData                      equ   21
 
 ******************************************************************************
 
+; V2-DEVIATION: in the lwasm obj target `org` does not rewind a section. v1
+; declared the struct instances below (a reservation, which an obj section
+; emits as zeros), then went back with `org StructStart` to write their initial
+; values : in a section the values were appended after the zeros, and every
+; byte that followed moved 820 bytes away from its symbol. The instances are
+; equates on the initial values instead, emitted once, and the member symbols
+; a struct instance would have defined are spelled out by the two macros
+; (migration/org-does-not-rewind-a-section.md).
+_smps.at.here MACRO
+\1              equ   StructStart+smps.var.size+(\2)*smps.track.size
+ ENDM
+_smps.var MACRO
+\1              equ   StructStart
+\1.SFXPriorityVal equ   \1+SFXPriorityVal
+\1.TempoTimeout   equ   \1+TempoTimeout
+\1.CurrentTempo   equ   \1+CurrentTempo
+\1.StopMusic      equ   \1+StopMusic
+\1.FadeOutCounter equ   \1+FadeOutCounter
+\1.FadeOutDelay   equ   \1+FadeOutDelay
+\1.QueueToPlay    equ   \1+QueueToPlay
+\1.SFXToPlay      equ   \1+SFXToPlay
+\1.VoiceTblPtr    equ   \1+VoiceTblPtr
+\1.SFXVoiceTblPtr equ   \1+SFXVoiceTblPtr
+\1.FadeInFlag     equ   \1+FadeInFlag
+\1.FadeInDelay    equ   \1+FadeInDelay
+\1.FadeInCounter  equ   \1+FadeInCounter
+\1.1upPlaying     equ   \1+_1upPlaying
+\1.TempoMod       equ   \1+TempoMod
+\1.TempoTurbo     equ   \1+TempoTurbo
+\1.SpeedUpFlag    equ   \1+SpeedUpFlag
+\1.DACEnabled     equ   \1+DACEnabled
+\1.60HzData       equ   \1+_60HzData
+ ENDM
+_smps.track MACRO
+\1              equ   StructStart+smps.var.size+(\2)*smps.track.size
+\1.PlaybackControl equ   \1+PlaybackControl
+\1.VoiceControl   equ   \1+VoiceControl
+\1.NoteControl    equ   \1+NoteControl
+\1.TempoDivider   equ   \1+TempoDivider
+\1.DataPointer    equ   \1+DataPointer
+\1.Transpose      equ   \1+Transpose
+\1.Volume         equ   \1+Volume
+\1.VoiceIndex     equ   \1+VoiceIndex
+\1.VolFlutter     equ   \1+VolFlutter
+\1.StackPointer   equ   \1+StackPointer
+\1.DurationTimeout equ   \1+DurationTimeout
+\1.SavedDuration  equ   \1+SavedDuration
+\1.NextData       equ   \1+NextData
+\1.NoteFillTimeout equ   \1+NoteFillTimeout
+\1.NoteFillMaster equ   \1+NoteFillMaster
+\1.ModulationPtr  equ   \1+ModulationPtr
+\1.ModulationWait equ   \1+ModulationWait
+\1.ModulationSpeed equ   \1+ModulationSpeed
+\1.ModulationDelta equ   \1+ModulationDelta
+\1.ModulationSteps equ   \1+ModulationSteps
+\1.ModulationVal  equ   \1+ModulationVal
+\1.Detune         equ   \1+Detune
+\1.VolTLMask      equ   \1+VolTLMask
+\1.PSGNoise       equ   \1+PSGNoise
+\1.TLPtr          equ   \1+TLPtr
+\1.InstrTranspose equ   \1+InstrTranspose
+\1.InstrAndVolume equ   \1+InstrAndVolume
+\1.LoopCounters   equ   \1+LoopCounters
+ ENDM
+
+smps.var.size   equ   sizeof{SmpsVar}
+smps.track.size equ   sizeof{Track}
 StructStart
-Smps          SmpsVar
+        _smps.var    Smps
 
-tracksStart                ; This is the beginning of all BGM track memory
-SongDACFMStart
-SongDAC         Track
-SongFMStart
-SongFM1         Track
-SongFM2         Track
-SongFM3         Track
-SongFM4         Track
-SongFM5         Track
-SongFM6         Track
-SongFM7         Track
-SongFM8         Track
-SongFM9         Track
-SongFMEnd
-SongDACFMEnd
-SongPSGStart
-SongPSG1        Track
-SongPSG2        Track
-SongPSG3        Track
+        _smps.at.here tracksStart,0                ; This is the beginning of all BGM track memory
+        _smps.at.here SongDACFMStart,0
+        _smps.track  SongDAC,0
+        _smps.at.here SongFMStart,1
+        _smps.track  SongFM1,1
+        _smps.track  SongFM2,2
+        _smps.track  SongFM3,3
+        _smps.track  SongFM4,4
+        _smps.track  SongFM5,5
+        _smps.track  SongFM6,6
+        _smps.track  SongFM7,7
+        _smps.track  SongFM8,8
+        _smps.track  SongFM9,9
+        _smps.at.here SongFMEnd,10
+        _smps.at.here SongDACFMEnd,10
+        _smps.at.here SongPSGStart,10
+        _smps.track  SongPSG1,10
+        _smps.track  SongPSG2,11
+        _smps.track  SongPSG3,12
 ;SongPSG4        Track
-SongPSGEnd
-tracksEnd
+        _smps.at.here SongPSGEnd,13
+        _smps.at.here tracksEnd,13
 
-tracksSFXStart
-SFXFMStart
-SFXFM3          Track
-SFXFM4          Track
-SFXFM5          Track
-SFXFMEnd
-SFXPSGStart
-SFXPSG1         Track
-SFXPSG2         Track
-SFXPSG3         Track
-SFXPSGEnd
-tracksSFXEnd
-StructEnd
+        _smps.at.here tracksSFXStart,13
+        _smps.at.here SFXFMStart,13
+        _smps.track  SFXFM3,13
+        _smps.track  SFXFM4,14
+        _smps.track  SFXFM5,15
+        _smps.at.here SFXFMEnd,16
+        _smps.at.here SFXPSGStart,16
+        _smps.track  SFXPSG1,16
+        _smps.track  SFXPSG2,17
+        _smps.track  SFXPSG3,18
+        _smps.at.here SFXPSGEnd,19
+        _smps.at.here tracksSFXEnd,19
 
         ; I want struct data to be in binary please ...
         ; VoiceControl is hardcoded
         
-        org   StructStart                
+        ;org   StructStart ; V2-DEVIATION: see above, the values follow StructStart
         fill  0,sizeof{SmpsVar}
         fdb   $0006
         fill  0,sizeof{Track}-2
@@ -275,6 +341,7 @@ StructEnd
         fill  0,sizeof{Track}-2
         fdb   $00C0
         fill  0,sizeof{Track}-2
+StructEnd                          ; V2-DEVIATION: after the values (see above)
                 
 ******************************************************************************
 

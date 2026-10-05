@@ -23,138 +23,170 @@ Tbl_Sub_Object_Draw           fill  0,nb_graphical_objects*2    ; entries of obj
 
 ; V2-DEVIATION: setdp neutralized, the obj target rejects it. Extended
 ; addressing stays correct, and operands explicitly forced with < are unaffected.
+; The dp_engine variables and the two camera offsets of the playfield path are
+; forced direct (<) : v1's speed rework (b548b310) sized its short branches on
+; direct operands, extended ones push three of them out of range (and cost a
+; cycle each).
 ;       setdp dp/256
 
 CheckSpritesRefresh
 
 CSR_Start
         ldd   #Tbl_Sub_Object_Erase
-        std   cur_ptr_sub_obj_erase
+        std   <cur_ptr_sub_obj_erase
         ldd   #Tbl_Sub_Object_Draw
-        std   cur_ptr_sub_obj_draw
+        std   <cur_ptr_sub_obj_draw
         lda   gfxlock.backBuffer.id         ; read current screen buffer for write operations
         bne   CSR_SetBuffer1
         
 CSR_SetBuffer0        
         lda   #rsv_buffer_0                 ; set offset to object variables that belongs to screen buffer 0
-        sta   CSR_ProcessEachPriorityLevel+2    
+
+* set up tyhe various U offst in code        
+        sta   CSR_PEPL_LeaxB
+        adda  #buf_prev_render_flags
+        sta   CSR_PEPL_LeaxC
+        adda  #buf_priority_next_obj-buf_prev_render_flags
+        sta   CSR_PEPL_LeaxA
+
 CSR_P8B0
         ldu   DPS_buffer_0+buf_Tbl_Priority_First_Entry+16 ; read DPS from priority 8 to priority 1
         beq   CSR_P7B0
         lda   #$08
-        sta   cur_priority        
+        sta   <cur_priority        
         jsr   CSR_ProcessEachPriorityLevel   
 CSR_P7B0
         ldu   DPS_buffer_0+buf_Tbl_Priority_First_Entry+14
         beq   CSR_P6B0
         lda   #$07
-        sta   cur_priority        
+        sta   <cur_priority        
         jsr   CSR_ProcessEachPriorityLevel   
 CSR_P6B0
         ldu   DPS_buffer_0+buf_Tbl_Priority_First_Entry+12
         beq   CSR_P5B0
         lda   #$06
-        sta   cur_priority        
+        sta   <cur_priority        
         jsr   CSR_ProcessEachPriorityLevel   
 CSR_P5B0
         ldu   DPS_buffer_0+buf_Tbl_Priority_First_Entry+10
         beq   CSR_P4B0
         lda   #$05
-        sta   cur_priority                       
+        sta   <cur_priority                       
         jsr   CSR_ProcessEachPriorityLevel   
 CSR_P4B0
         ldu   DPS_buffer_0+buf_Tbl_Priority_First_Entry+8
         beq   CSR_P3B0
         lda   #$04
-        sta   cur_priority                       
+        sta   <cur_priority                       
         jsr   CSR_ProcessEachPriorityLevel               
 CSR_P3B0
         ldu   DPS_buffer_0+buf_Tbl_Priority_First_Entry+6
         beq   CSR_P2B0
         lda   #$03
-        sta   cur_priority                       
-        jsr   CSR_ProcessEachPriorityLevel      
+        sta   <cur_priority                       
+        bsr   CSR_ProcessEachPriorityLevel      
 CSR_P2B0
         ldu   DPS_buffer_0+buf_Tbl_Priority_First_Entry+4
         beq   CSR_P1B0
         lda   #$02
-        sta   cur_priority                       
-        jsr   CSR_ProcessEachPriorityLevel  
+        sta   <cur_priority                       
+        bsr   CSR_ProcessEachPriorityLevel  
 CSR_P1B0
         ldu   DPS_buffer_0+buf_Tbl_Priority_First_Entry+2
-        beq   CSR_rtsB0
-        lda   #$01
-        sta   cur_priority                       
-        jsr   CSR_ProcessEachPriorityLevel
-CSR_rtsB0        
+        bne   CSR_rtsB0
         rts
+CSR_rtsB0
+        lda   #$01
+        sta   <cur_priority                       
+        bra   CSR_ProcessEachPriorityLevel
         
 CSR_SetBuffer1       
         lda   #rsv_buffer_1                 ; set offset to object variables that belongs to screen buffer 1
-        sta   CSR_ProcessEachPriorityLevel+2        
+
+* set up tyhe variosu U offst in code        
+        sta   CSR_PEPL_LeaxB
+        adda  #buf_prev_render_flags
+        sta   CSR_PEPL_LeaxC
+        adda  #buf_priority_next_obj-buf_prev_render_flags
+        sta   CSR_PEPL_LeaxA
 CSR_P8B1
         ldu   DPS_buffer_1+buf_Tbl_Priority_First_Entry+16 ; read DPS from priority 8 to priority 1
         beq   CSR_P7B1
         lda   #$08
-        sta   cur_priority        
-        jsr   CSR_ProcessEachPriorityLevel   
+        sta   <cur_priority        
+        bsr   CSR_ProcessEachPriorityLevel   
 CSR_P7B1
         ldu   DPS_buffer_1+buf_Tbl_Priority_First_Entry+14
         beq   CSR_P6B1
         lda   #$07
-        sta   cur_priority                       
-        jsr   CSR_ProcessEachPriorityLevel   
+        sta   <cur_priority                       
+        bsr   CSR_ProcessEachPriorityLevel   
 CSR_P6B1
         ldu   DPS_buffer_1+buf_Tbl_Priority_First_Entry+12
         beq   CSR_P5B1
         lda   #$06
-        sta   cur_priority                       
-        jsr   CSR_ProcessEachPriorityLevel   
+        sta   <cur_priority                       
+        bsr   CSR_ProcessEachPriorityLevel   
 CSR_P5B1
         ldu   DPS_buffer_1+buf_Tbl_Priority_First_Entry+10
         beq   CSR_P4B1
         lda   #$05
-        sta   cur_priority                       
-        jsr   CSR_ProcessEachPriorityLevel   
+        sta   <cur_priority                       
+        bsr   CSR_ProcessEachPriorityLevel   
 CSR_P4B1
         ldu   DPS_buffer_1+buf_Tbl_Priority_First_Entry+8
         beq   CSR_P3B1
         lda   #$04
-        sta   cur_priority
-        jsr   CSR_ProcessEachPriorityLevel               
+        sta   <cur_priority
+        bsr   CSR_ProcessEachPriorityLevel               
 CSR_P3B1
         ldu   DPS_buffer_1+buf_Tbl_Priority_First_Entry+6
         beq   CSR_P2B1
         lda   #$03
-        sta   cur_priority                       
-        jsr   CSR_ProcessEachPriorityLevel      
+        sta   <cur_priority                       
+        bsr   CSR_ProcessEachPriorityLevel      
 CSR_P2B1
         ldu   DPS_buffer_1+buf_Tbl_Priority_First_Entry+4
         beq   CSR_P1B1
         lda   #$02
-        sta   cur_priority                       
-        jsr   CSR_ProcessEachPriorityLevel  
+        sta   <cur_priority                       
+        bsr   CSR_ProcessEachPriorityLevel  
 CSR_P1B1
         ldu   DPS_buffer_1+buf_Tbl_Priority_First_Entry+2
-        beq   CSR_rtsB1
-        lda   #$01
-        sta   cur_priority                       
-        jsr   CSR_ProcessEachPriorityLevel
-CSR_rtsB1        
+        bne   CSR_rtsB1
         rts
+CSR_rtsB1        
+        lda   #$01
+        sta   <cur_priority                       
+*        jsr   CSR_ProcessEachPriorityLevel
+*CSR_rtsB1        
+*        rts
 
 CSR_ProcessEachPriorityLevel
-        leax  16,u                          ; dynamic offset, x point to object variables relative to current writable buffer (beware that rsv_buffer_0 and rsv_buffer_1 should be equ >=16)
+* delayed
+*        leax  16,u                          ; dynamic offset, x point to object variables relative to current writable buffer (beware that rsv_buffer_0 and rsv_buffer_1 should be equ >=16)
         
 CSR_CheckDelHide
         lda   render_flags,u
         anda  #render_hide_mask|render_todelete_mask
-        lbne  CSR_DoNotDisplaySprite      
+        bne   CSR_DoNotDisplaySprite      
+        ; BUGFIX (2026-08-23) : image_set==0 means "no image" (see constants.asm).
+        ; DisplaySprite returns early in that case and therefore never unregisters
+        ; an object that was registered while it still had an image, so a stale
+        ; entry stays in the DPS. Treat it like a hidden sprite: erase what was
+        ; drawn before, draw nothing new. Without this guard the null pointer is
+        ; dereferenced against whatever sits at offset $0000 of the object image
+        ; page: harmless zeros on a RAM page (.fd/.sd), but the cartridge header
+        ; on a T2/ROM build, which sends the engine into an erased flash bank.
+        ldx   image_set,u
+        beq   CSR_DoNotDisplaySprite
 
-CSR_CheckRefresh        
-        lda   rsv_render_flags,u
-        anda  #rsv_render_checkrefresh_mask ; branch if checkrefresh is true
-        lbne  CSR_CheckErase
+CSR_CheckRefresh  
+        lda   rsv_render_flags,u      
+        bita  #rsv_render_checkrefresh_mask ; branch if checkrefresh is true
+        beq   >
+        jmp   CSR_CheckErase
+!
 
 CSR_UpdSpriteImageBasedOnMirror
 
@@ -162,24 +194,24 @@ CSR_UpdSpriteImageBasedOnMirror
         ; each subset represent a mirrored version of the image (N: normal, X: x mirror, Y: y mirror, XY: xy mirror)
         ; this code set the active image subset based on mirror flags
 
-        lda   rsv_render_flags,u
+*        lda   rsv_render_flags,u
         ora   #rsv_render_checkrefresh_mask
         sta   rsv_render_flags,u            ; set checkrefresh flag to true
         
-        ldy   #Img_Page_Index               ; call page that store imageset for this object
-        lda   #$00
+        ldx   #Img_Page_Index               ; call page that store imageset for this object
         ldb   id,u
-        lda   d,y
+        lda   b,x
         _SetCartPageA        
+        
+        ldx   image_set,u
+        ldb   image_center_offset,x
+        stb   rsv_image_center_offset,u        
         
         lda   render_flags,u                ; set image to display based on x and y mirror flags
         anda  #render_xmirror_mask|render_ymirror_mask
-        ldy   image_set,u
-        ldb   image_center_offset,y
-        stb   rsv_image_center_offset,u        
-        ldb   a,y
-        leay  b,y                           ; read image set index
-        sty   rsv_image_subset,u
+        ldb   a,x
+        abx                                 ; read image set index
+        stx   rsv_image_subset,u
         
 CSR_CheckPlayFieldCoord
         lda   render_flags,u
@@ -191,18 +223,22 @@ CSR_CheckPlayFieldCoord
 
         ldd   x_pos,u
         subd  <glb_camera_x_pos
-        lblo  CSR_SetOutOfRange             ; out of range if x_pos < glb_camera_x_pos
-        tsta 
-        lbne  CSR_SetOutOfRange             ; out of range if x_pos + 256 > glb_camera_x_pos
-        addb  glb_camera_x_offset+1
-        stb   x_pixel,u
+*        adca  #0
+*        adca  #0
+        tsta
+        bne   CSR_oor                       ; out of range if x_pos<glb_camera_x_pos or x_pos + 256 > glb_camera_x_pos
 
+!       addb  <glb_camera_x_offset+1
+        stb   x_pixel,u
+;
         ldd   y_pos,u
         subd  <glb_camera_y_pos
-        lblo  CSR_SetOutOfRange             ; out of range if y_pos < glb_camera_y_pos
-        tsta 
-        lbne  CSR_SetOutOfRange             ; out of range if y_pos + 256 > glb_camera_y_pos
-        addb  glb_camera_y_offset+1
+*        adca  #0
+*        adca  #0
+        tsta
+        bne   CSR_oor                       ; out of range if ypos<glb_camera_y_pos or y_pos + 256 > glb_camera_y_pos
+        
+        addb  <glb_camera_y_offset+1
         stb   y_pixel,u
         bra   CSR_ComputeMappingFrame
         
@@ -214,31 +250,37 @@ CSR_DoNotDisplaySprite
 ; when its priority changed on the other buffer's loop : it was skipped there,
 ; never erased in this buffer, and the erase/display bits of rsv_render_flags
 ; (shared) kept the other buffer's decisions for EraseSprites/DrawSprites.
-; The test now reads buf_priority,x, the level the object is linked at in
-; this buffer, as the visible path does (CSR_CheckErase). A deleted object
-; relinked on this very loop is still walked once : at its old level.
-        lda   buf_priority,x
-        cmpa  cur_priority 
+; The test now reads buf_priority in this buffer's variables (the offset
+; CSR_PEPL_LeaxB carries), the level the object is linked at, as the visible
+; path does (CSR_CheckErase). A deleted object relinked on this very loop is
+; still walked once : at its old level.
+        ldb   CSR_PEPL_LeaxB                ; this buffer's variables offset
+        lda   b,u                           ; + buf_priority (0)
+        cmpa  <cur_priority 
         bne   CSR_NextObject                ; not the level it is linked at in this buffer (a priority change pending) 
         
         lda   rsv_render_flags,u
         anda  #^rsv_render_erasesprite_mask&^rsv_render_displaysprite_mask ; set erase and display flag to false
         sta   rsv_render_flags,u
-                
-        ldb   buf_prev_render_flags,x
+
+        ldb   CSR_PEPL_LeaxC                ; cas rare on réutilise un offset modifie ailleurs
+        ldb   b,u
         bpl   CSR_NextObject                ; branch if not on screen
         
         ora   #rsv_render_erasesprite_mask  ; set erase flag to true if on screen                  
         sta   rsv_render_flags,u
         
-        ldy   cur_ptr_sub_obj_erase         ; maintain list of changing sprites to erase
-        stu   ,y++
-        sty   cur_ptr_sub_obj_erase 
+        ldx   <cur_ptr_sub_obj_erase         ; maintain list of changing sprites to erase
+        stu   ,x++
+        stx   <cur_ptr_sub_obj_erase 
         
 CSR_NextObject
-        ldu   buf_priority_next_obj,x
-        lbne  CSR_ProcessEachPriorityLevel   
+        ldu   16,u                          ; inclue buf_priority_next_obj a l'init
+CSR_PEPL_LeaxA set *-1    
+        bne   CSR_ProcessEachPriorityLevel   
         rts
+
+CSR_oor jmp   CSR_SetOutOfRange             ; out of range if x_pos + 256 > glb_camera_x_pos
 
 CSR_ComputeMappingFrame
 
@@ -249,70 +291,65 @@ CSR_ComputeMappingFrame
         ; and select the appropriate routine. If no routine is found, it will select the avaible routine.
         ; The selected image will also be based on image type overlay or not (Simple Draw or Draw/Erase)
 
-@a      ldb   x_pixel,u                     ; compute mapping_frame 
-@b      eorb  rsv_image_center_offset,u     ; case of odd image center switch shifted image with normal
-        andb  #1                            ; index of sub image is encoded in two bits: 00|B0, 01|D0, 10|B1, 11|D1         
-        aslb                                ; set bit2 for 1px shifted image  
-        lda   render_flags,u            
-        anda  #render_overlay_mask          ; set bit1 for normal (background save) or overlay sprite (no background save)
+@a      lda   x_pixel,u                     ; compute mapping_frame 
+@b      eora  rsv_image_center_offset,u     ; case of odd image center switch shifted image with normal
+        anda  #1                            ; index of sub image is encoded in two bits: 00|B0, 01|D0, 10|B1, 11|D1         
+        asla                                ; set bit2 for 1px shifted image  
+        ldb   render_flags,u            
+        andb  #render_overlay_mask          ; set bit1 for normal (background save) or overlay sprite (no background save)
         beq   @c
-        incb
+        inca
 @c
-        lda   b,y
+        ldb   a,x
         beq   CSR_NoDefinedFrame
-        leay  a,y                           ; read image subset index
-        sty   rsv_mapping_frame,u
+@d      abx                                 ; read image subset index
+        stx   rsv_mapping_frame,u
         bra   CSR_UpdateMetadata
 CSR_NoDefinedFrame
-        eorb  #%00000010                    ; check if there is an alternate shifted image available
-        ; V2-DEVIATION (20/08/2026, bugfix - v1 has it too, dormant): the
-        ; fallback direction was tested on Z, which NEVER comes with draw
-        ; variants (bit0 always set): the shifted -> non-shifted fallback
-        ; took inc instead of dec - any draw sprite missing its shifted
-        ; variant landed 2 px left at odd positions. The test now reads the
-        ; shift BIT, same fix as overlay-mode/BuildSprites.asm (20/08/2026).
-        ; The second BuildSprites defect (low-byte inc/dec of a signed word)
-        ; has no equivalent here: rsv_image_center_offset is a lone byte
-        ; consumed byte-wide (suba in DrawSpritesExtEnc), where $FF is a
-        ; correct -1 modulo 256, so inc/dec stay as they are.
-        bitb  #%00000010
+        eora  #%00000010                    ; check if there is an alternate shifted image available
+        ; BUGFIX (2026-08-20, found on the v2 port) : the fallback direction
+        ; was tested on Z, which never comes with draw variants (bit0 set by
+        ; render_overlay_mask) — the shifted -> unshifted fallback took inc
+        ; instead of dec, 2px left. Test the shift bit itself. (The 8-bit
+        ; adjust is sound here : suba applies the offset modulo 256.)
+        bita  #%00000010
         beq   @e
-        inc   rsv_image_center_offset,u     ; alternate is the SHIFTED one: step back one more pixel
+        inc   rsv_image_center_offset,u     ; ajust offset for alternate
         bra   @f
-@e      dec   rsv_image_center_offset,u     ; alternate is the NON-shifted one: step forward one pixel
-@f      tst   b,y
-        bne   @c        
-
-        ldy   #0                            ; no defined frame, nothing will be displayed
-        sty   rsv_mapping_frame,u
+@e      dec   rsv_image_center_offset,u
+@f      ldb   a,x
+        bne   @d        
+; ici b=0 donc clra suffit
+        clra                                ; no defined frame, nothing will be displayed
+        std   rsv_mapping_frame,u
         lda   render_flags,u
         ora   #render_hide_mask             ; set hide flag
         sta   render_flags,u
         jmp   CSR_CheckErase
                 
 CSR_UpdateMetadata
-        lda   erase_nb_cell,y               ; copy current image metadata into object data
+        lda   erase_nb_cell,x               ; copy current image metadata into object data
         sta   rsv_erase_nb_cell,u           ; this is needed to avoid a lot of page switch 
-        lda   page_draw_routine,y           ; during following routines
+        lda   page_draw_routine,x           ; during following routines
         sta   rsv_page_draw_routine,u
-        ldd   draw_routine,y
+        ldd   draw_routine,x
         std   rsv_draw_routine,u
-        lda   page_erase_routine,y
+        lda   page_erase_routine,x
         sta   rsv_page_erase_routine,u
-        ldd   erase_routine,y
+        ldd   erase_routine,x
         std   rsv_erase_routine,u
         
 CSR_CheckPosition        
         ldb   y_pixel,u                     ; check if sprite is fully in screen vertical range
-        ldy   rsv_image_subset,u
-        addb  image_subset_y1_offset,y
+        ldx   rsv_image_subset,u
+        addb  image_subset_y1_offset,x
         cmpb  #screen_bottom
         bhi   CSR_SetOutOfRange
         cmpb  #screen_top
         blo   CSR_SetOutOfRange        
         stb   rsv_y1_pixel,u
-        ldy   image_set,u
-        addb  image_y_size,y
+        ldx   image_set,u
+        addb  image_y_size,x
         cmpb  #screen_bottom
         bhi   CSR_SetOutOfRange
         cmpb  #screen_top
@@ -326,8 +363,8 @@ CSR_CheckPosition
         bne   CSR_DontCheckXFrontier   
         
         ldb   x_pixel,u
-        ldy   rsv_image_subset,u
-        addb  image_subset_x1_offset,y
+        ldx   rsv_image_subset,u
+        addb  image_subset_x1_offset,x
         cmpb  #screen_right
         bhi   CSR_SetOutOfRange
         cmpb  #screen_left
@@ -335,31 +372,29 @@ CSR_CheckPosition
         tfr   b,a
         andb  #%11111110                    ; lower round for background save (byte step)
         stb   rsv_x1_pixel,u
-        ldy   image_set,u
-        adda  image_x_size,y
+        ldx   image_set,u
+        adda  image_x_size,x
         cmpa  #screen_right
         bhi   CSR_SetOutOfRange
         cmpa  #screen_left
         blo   CSR_SetOutOfRange
-        anda  #%11111110                    ; upper round for background save (byte step)
-        inca
+        ora   #1                            ; upper round for background save (byte step)
         sta   rsv_x2_pixel,u
         cmpa  rsv_x1_pixel,u                ; check wrapping
-        blo   CSR_SetOutOfRange 
+        bhs   CSR_DontCheckXFrontier_end        
+        bra   CSR_SetOutOfRange 
                 
-        bra   CSR_DontCheckXFrontier_end        
         
 CSR_DontCheckXFrontier  
         ldb   x_pixel,u
-        ldy   rsv_image_subset,u
-        addb  image_subset_x1_offset,y
+        ldx   rsv_image_subset,u
+        addb  image_subset_x1_offset,x
         tfr   b,a
         andb  #%11111110                    ; lower round for background save (byte step)
         stb   rsv_x1_pixel,u
-        ldy   image_set,u
-        adda  image_x_size,y
-        anda  #%11111110                    ; upper round for background save (byte step)
-        inca
+        ldx   image_set,u
+        adda  image_x_size,x
+        ora   #1
         sta   rsv_x2_pixel,u
 
 CSR_DontCheckXFrontier_end        
@@ -374,46 +409,48 @@ CSR_SetOutOfRange
         sta   rsv_render_flags,u
 
 CSR_CheckErase
-        stx   CSR_CheckDraw+1
-        lda   buf_priority,x
-        cmpa  cur_priority 
-        lbne  CSR_CheckDraw
-        
-        ldy   cur_ptr_sub_obj_erase
-        
+        leay  16,u
+CSR_PEPL_LeaxB set *-1
+        lda   buf_priority,y
+        cmpa  <cur_priority 
+        beq   >
+        jmp   CSR_CheckDraw
+!        
         lda   rsv_render_flags,u
         anda  #rsv_render_outofrange_mask
         beq   CSR_CheckErase_InRange
-        lda   buf_prev_render_flags,x
-        lbpl  CSR_SetEraseDrawFalse         ; branch if object is not on screen    
-        bra   CSR_SetEraseTrue
+        lda   buf_prev_render_flags,y
+        bmi   CSR_SetEraseTrue
+        jmp   CSR_SetEraseDrawFalse         ; branch if object is not on screen    
                 
 CSR_CheckErase_InRange        
-        lda   buf_prev_render_flags,x
-        lbpl  CSR_SetEraseFalse             ; branch if object is not on screen
-	lda   <glb_force_sprite_refresh
+        lda   buf_prev_render_flags,y
+        bmi   >
+        jmp   CSR_SetEraseFalse             ; branch if object is not on screen
+!	lda   <glb_force_sprite_refresh
 	bne   CSR_SetEraseTrue
         ldd   xy_pixel,u
         lsra                                ; x position precision is x_pixel/2 and mapping_frame with or without 1px shit, y position precision is y_pixel  
-        cmpd  buf_prev_xy_pixel,x
+        subd  buf_prev_xy_pixel,y
         bne   CSR_SetEraseTrue              ; branch if object moved since last frame
         ldd   rsv_mapping_frame,u
-        cmpd  buf_prev_mapping_frame,x
+        subd  buf_prev_mapping_frame,y
         bne   CSR_SetEraseTrue              ; branch if object image changed since last frame
         lda   priority,u
-        cmpa  buf_priority,x
-        bne   CSR_SetEraseTrue              ; branch if object priority changed since last frame
-        bra   CSR_SubEraseSpriteSearchInit  ; branch if object is on screen but unchanged since last frame
+        cmpa  buf_priority,y
+*       bne   CSR_SetEraseTrue              ; branch if object priority changed since last frame
+        beq   CSR_SubEraseSpriteSearchInit  ; branch if object is on screen but unchanged since last frame
         
 CSR_SetEraseTrue        
         lda   rsv_render_flags,u
         ora   #rsv_render_erasesprite_mask
         sta   rsv_render_flags,u
         
-        stu   ,y++
-        sty   cur_ptr_sub_obj_erase
+        ldx   <cur_ptr_sub_obj_erase
+        stu   ,x++
+        stx   <cur_ptr_sub_obj_erase
                 
-        jmp   CSR_CheckDraw
+        bra   CSR_CheckDraw
         
 CSR_SubEraseSpriteSearchInit
 
@@ -424,7 +461,7 @@ CSR_SubEraseSpriteSearchInit
         * there are two lists because a sprite can be erased at a position
         * and displayed at another position : both cases should be tested !
 
-        ldx   cur_ptr_sub_obj_erase       
+        ldx   <cur_ptr_sub_obj_erase       
         lda   gfxlock.backBuffer.id         ; read current screen buffer for write operations
         bne   CSR_SubEraseSearchB1
         
@@ -445,7 +482,6 @@ CSR_SubEraseCheckCollisionB0
         cmpb  rsv_y1_pixel,u                ;     entry : y_pixel
         blo   CSR_SubEraseSearchB0
         
-        ldy   cur_ptr_sub_obj_erase
         bra   CSR_SetEraseTrue              ; found a collision
 
 CSR_SubEraseSearchB1
@@ -465,11 +501,10 @@ CSR_SubEraseCheckCollisionB1
         cmpb  rsv_y1_pixel,u                ;     entry : y_pixel
         blo   CSR_SubEraseSearchB1
         
-        ldy   cur_ptr_sub_obj_erase
         bra   CSR_SetEraseTrue              ; found a collision
 
 CSR_SubDrawSpriteSearchInit
-        ldx   cur_ptr_sub_obj_draw
+        ldx   <cur_ptr_sub_obj_draw
         
 CSR_SubDrawSearch
         cmpx  #Tbl_Sub_Object_Draw
@@ -488,7 +523,6 @@ CSR_SubDrawCheckCollision
         cmpb  rsv_y1_pixel,u                ;     entry : y_pixel
         blo   CSR_SubDrawSearch
         
-        ldy   cur_ptr_sub_obj_erase
         jmp   CSR_SetEraseTrue              ; found a collision
 
 CSR_SetEraseFalse
@@ -497,13 +531,11 @@ CSR_SetEraseFalse
         sta   rsv_render_flags,u        
                
 CSR_CheckDraw
-        ldx   #$FFFF                        ; dynamic restore x
         lda   priority,u
-        cmpa  cur_priority 
-        lbne  CSR_NextObject
-        
-        ldy   cur_ptr_sub_obj_draw
-        
+        cmpa  <cur_priority 
+        beq   >
+        jmp   CSR_NextObject
+!        
         lda   rsv_render_flags,u
         anda  #rsv_render_outofrange_mask
         bne   CSR_SetDrawFalse              ; branch if object image is out of range
@@ -514,32 +546,33 @@ CSR_CheckDraw
         bne   CSR_SetDrawFalse              ; branch if object is hidden
         
 CSR_SetDrawTrue 
+        ldb   16,u                          ; dynamic restore x
+CSR_PEPL_LeaxC set *-1
         lda   rsv_render_flags,u
         ora   #rsv_render_displaysprite_mask ; set displaysprite flag   
         sta   rsv_render_flags,u         
         
         bita  #rsv_render_erasesprite_mask
-        beq   CSR_SDT1
-        bra   CSR_SDT2
+        bne   CSR_SDT2
 CSR_SDT1                      
-        ldb   buf_prev_render_flags,x
-        bmi   CSR_SetHide
-        bra   CSR_SDT3      
+        tstb
+        bpl   CSR_SDT3
+        bra   CSR_SetHide
+         
 CSR_SDT2                      
-        ldb   buf_prev_render_flags,x
+        tstb
         bpl   CSR_SetHide
 CSR_SDT3
-        stu   ,y++
-        sty   cur_ptr_sub_obj_draw          ; maintain list of changing sprites to draw, should be to draw and ((on screen and to erase) or (not on screen and not to erase)) 
+        ldx   <cur_ptr_sub_obj_draw
+        stu   ,x++
+        stx   <cur_ptr_sub_obj_draw          ; maintain list of changing sprites to draw, should be to draw and ((on screen and to erase) or (not on screen and not to erase)) 
 
 CSR_SetHide        
         lda   render_flags,u
         ora   #render_hide_mask             ; set hide flag
         sta   render_flags,u        
         
-        ldu   buf_priority_next_obj,x
-        lbne  CSR_ProcessEachPriorityLevel   
-        rts
+        jmp   CSR_NextObject
 
 CSR_SetEraseDrawFalse 
         lda   rsv_render_flags,u 
@@ -551,6 +584,4 @@ CSR_SetDrawFalse
         anda  #^rsv_render_displaysprite_mask
         sta   rsv_render_flags,u
         
-        ldu   buf_priority_next_obj,x
-        lbne   CSR_ProcessEachPriorityLevel   
-        rts      
+        jmp   CSR_NextObject
