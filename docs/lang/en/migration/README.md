@@ -123,6 +123,10 @@ practice; this is a reading order, not a schedule.
     them](resident-render-structures.md) — v1 reloaded them with its game
     mode binary; in v2 they outlive the pool they name, and a stale priority
     level stays poisoned for good.
+23b. [A game mode that loads the next one drops itself first, and returns
+    into it](game-mode-change.md) — v1's `LoadGameMode` without a resident
+    engine : `scene.unload` then `scene.load` with the new entry point as the
+    return address, one region per game mode.
 24. [Overlay: erase by omission, not by repaint](overlay-erase-by-omission.md)
 25. [A per-frame loop is a multiply](frame-drop-loops-are-multiplies.md)
     — v1 hid things by painting background patches over them; in overlay the
