@@ -906,6 +906,26 @@ couture (carte de 256 px). Étude §10 de
 [`etude-mscroll-2026-08.md`](docs/lang/fr/etude-mscroll-2026-08.md).
 `common.mscroll` de R-Type : 2 677 octets, sous les arènes de stage.
 
+## mscroll1 : le scroll multidirectionnel en 1 bpp (05/10/2026)
+
+`engine/graphics/tilemap/mscroll1/` est le fork 1 bpp de mscroll (mode
+`$24`, un plan, pas de 8 px, carte à deux niveaux layout → chunk 128×128 →
+bloc 16×16, colonnes 16 bits, init par le feed), pour le clone Sonic 2
+mono (`wide-dot/sonic-2-mono`, privé). Démonstrateur `examples/mscroll1` :
+`tools/check.py` (écran relu et comparé à l'octet, `--random N` pour une
+marche aléatoire), `tools/fps.py`, `tools/profile.py`. Plein écran
+320×200 : 25 i/s caméra arrêtée, ~16 i/s à 6 px + 3 lignes par trame.
+**Deux défauts du mécanisme de couture hérités de mscroll y sont
+corrigés** (biais du curseur `−ceil(window/10)` et cisaillement relatif ;
+la rangée découverte quand le biais bouge) — corrigés aussi dans le BM16,
+section suivante. `mscroll1.mask` (après le blast et les sprites)
+noircit les deux seules zones fausses : l'octet de recouvrement à droite
+(le slot à cheval sur le retour de ligne quand x mod 16 ≥ 8) et la ligne
+du haut (le trou du début du ruban) — image exacte de 312 × 199 px. Piège
+de sonde : lire les tampons en tête de boucle (ailleurs le tampon arrière
+est à moitié dessiné) et rendre la page data après lecture. Étude et
+mesures : [`etude-mscroll1-2026-10.md`](docs/lang/fr/etude-mscroll1-2026-10.md).
+
 ## Dettes / pièges connus
 
 - `engine/pack/mub.asm` : chemins d'INCLUDE invalides (fichiers dans `sound/mucom88/`).
