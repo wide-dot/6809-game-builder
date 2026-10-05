@@ -892,6 +892,20 @@ répertoire, le `<data>` du loader doit venir APRÈS les répertoires (sinon
 `ERROR` à l'assemblage, nommant le répertoire). Modèle et mesures :
 `docs/lang/fr/etude-chargement-2026-09.md` §12, manuel `config.md`.
 
+## mscroll : la couture corrigée (05/10/2026)
+
+Trois défauts trouvés en portant mscroll en 1 bpp, corrigés et validés à
+l'octet par `examples/mscroll/tools/diag_check.py` (8 trajets scriptés +
+150 aléatoires, coutures franchies dans les deux sens) : `h` valait 10 au
+lieu de 0 quand la fenêtre est un multiple de 10 (bande une ligne trop
+bas) ; le biais de curseur de la couture (`1 − ceil(fenêtre/10)`, avec un
+cisaillement relatif à la caméra, et `mscroll.feedLine` pour la rangée que
+le glissement du biais découvre) ; et le tileset de l'exemple chargé en
+`$0000` au lieu de `$2000`. Le banc d'origine ne franchissait aucune
+couture (carte de 256 px). Étude §10 de
+[`etude-mscroll-2026-08.md`](docs/lang/fr/etude-mscroll-2026-08.md).
+`common.mscroll` de R-Type : 2 677 octets, sous les arènes de stage.
+
 ## Dettes / pièges connus
 
 - `engine/pack/mub.asm` : chemins d'INCLUDE invalides (fichiers dans `sound/mucom88/`).
