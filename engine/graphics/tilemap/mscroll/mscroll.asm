@@ -35,6 +35,12 @@
 ;        premultiplied by 32 : the feed's inner loop is ldd ,y++ / std ,u —
 ;        no table, no page traffic per line. Measured : the inner line cost
 ;        fell from 117 to ~37 cycles.
+;   Seam (05/10/2026, study §10) : h was 10 instead of 0 for a window
+;        multiple of 10 ; the cursor bias is 1 - ceil(window/10) with a shear
+;        RELATIVE to the camera (it was +floor(x/160) with an absolute one,
+;        wrong past the first seam) ; mscroll.feedLine feeds the row the
+;        bias move uncovers. Checked byte for byte across the seams by
+;        examples/mscroll/tools/diag_check.py.
 ; -----------------------------------------------------------------------------
 ; - use a cycling code buffer to render the scroll
 ; - buffer use stack blasting (pshs d,x)
@@ -89,14 +95,15 @@ mscroll.camera.x            fdb   0                                ; camera posi
 mscroll.camera.x.max        fdb   0                                ; camera x cap : map width − 160
 mscroll.window              fcb   0                                ; 16px window base : (camera.x+8)>>4
 mscroll.edge8               fcb   0                                ; 8px feed edge : (camera.x+8)>>3
-mscroll.stretch             fcb   0                                ; camera.x/160 : index of the map seam the camera sits in
-mscroll.seam.slots          fcb   0                                ; nb of window columns beyond the next seam (0-19, contiguous from slot 0)
+mscroll.stretch             fcb   0                                ; S = ceil(window/10) : the ribbon's seam index (see move)
+mscroll.seam.slots          fcb   0                                ; nb of slice columns past the next seam (0-20, contiguous from slot 0)
 mscroll.col.cache           fill  0,32                             ; tile feed : one id per tile row (16 rows max)
 mscroll.map.cache.LINE_SIZE equ   20*2
 mscroll.map.cache.NB_LINES  equ   13
 mscroll.map.cache.SIZE      equ   mscroll.map.cache.LINE_SIZE*mscroll.map.cache.NB_LINES
 mscroll.map.cache.y         fdb   -1                               ; camera range for the current cached tile line
-mscroll.map.cache.cursor    fdb   0                                ; position in cache buffer (adress)
+mscroll.map.cache.cursor    fdb   mscroll.map.cache                ; position in cache buffer (adress) — valid
+                                                                   ; from the start : feedLine borrows its row
 mscroll.map.cache.line      fcb   0                                ; position in cache buffer (in lines)
 mscroll.map.cache           fill  0,mscroll.map.cache.SIZE         ; tile ids reflecting scroll buffer
 mscroll.map.cache.END       equ   *
@@ -202,23 +209,41 @@ mscroll.move
         bra   @xtail
 !       clrb
 @xtail  stb   mscroll.speedx
-        ; map-fixed seam : the ribbon split always falls on map columns that
-        ; are multiples of 160 px. Content is written pre-sheared (one line
-        ; up per seam left of the column — feedTile and the row cache), and
-        ; the cycling cursor carries the camera's own seam index as a bias :
-        ; it moves by one here when the camera crosses a seam, which happens
-        ; while the boundary is hidden under the edge mask — nothing is ever
-        ; re-fed for the seam, the image does not move
-        ldx   #0
+        ; refresh the 16px window (blast decomposition) and the 8px feed edge
         ldd   mscroll.camera.x
-@stret  subd  #160
-        blo   >
-        leax  1,x
-        bra   @stret
-!       tfr   x,d
-        cmpb  mscroll.stretch
-        beq   @snone
-        subb  mscroll.stretch
+        addd  #8
+        _lsrd
+        _lsrd
+        _lsrd
+        stb   <mscroll.fc.newedge
+        _lsrd
+        stb   mscroll.window
+        ; map-fixed seam : the ribbon split always falls on map columns that
+        ; are multiples of 160 px. A buffer slot lands on its screen line, or
+        ; on the line below when the line it belongs to wraps : the carry is
+        ; ceil(window/10) - shear(column), shear = column/20. So a column is
+        ; written pre-sheared RELATIVE to the camera (shear(c) - S + 1 lines
+        ; up, 0 or 1 for the slice — feedTile and the row cache) and the
+        ; cycling cursor carries 1 - S as a bias, S = ceil(window/10) : it
+        ; moves by one here when the window crosses 10k -> 10k+1 (x = 160k+8)
+        ; — nothing is ever re-fed for the seam, the image does not move.
+        ; S is updated BEFORE the column feeds : they must see the S of the
+        ; slice they fill (the relative shear of an entering column is then
+        ; 0 or 1). Study : docs/lang/fr/etude-mscroll-2026-08.md §10.
+        addb  #9
+        clra
+!       subb  #10
+        bcs   >
+        inca
+        bra   <
+!       tfr   a,b                      ; a = b = S = ceil(window/10)
+        suba  mscroll.stretch
+        stb   mscroll.stretch
+        pshs  a                        ; dS, for the uncovered row below
+        tsta                           ; (the stb above set Z from S, not dS)
+        beq   @floop
+        nega                           ; the bias moves by -dS
+        tfr   a,b
         sex
         addd  mscroll.cursor.w
         bmi   @sup
@@ -229,18 +254,6 @@ mscroll.move
 @sup    addd  #mscroll.BUFFER_LINES
         bmi   @sup
 @sok    std   mscroll.cursor.w
-        tfr   x,d
-        stb   mscroll.stretch
-@snone  equ   *
-        ; refresh the 16px window (blast decomposition) and the 8px feed edge
-        ldd   mscroll.camera.x
-        addd  #8
-        _lsrd
-        _lsrd
-        _lsrd
-        stb   <mscroll.fc.newedge
-        _lsrd
-        stb   mscroll.window
         ; feed the tiles that enter, one 8px column per edge step : moving
         ; right a tile is fed when it comes under the RIGHT mask (edge+18),
         ; moving left when it comes under the LEFT mask (edge-1) — both are
@@ -260,22 +273,47 @@ mscroll.move
         jsr   mscroll.feedTile
         bra   @floop
 @xdone  equ   *
-        ; how many window columns sit beyond the next seam : those are the
-        ; sheared ones, and they occupy slots 0..n-1 (a seam is a multiple
-        ; of 20 columns, so they wrap to the start of the slot space).
-        ; updateTileCache bakes their cache entries one tile line up.
+        ; the slice columns past the next seam (column 20*S) : the sheared
+        ; ones, slots 0..n-1 (a seam is a multiple of 20 columns, so they
+        ; wrap to the start of the slot space) ; updateTileCache bakes their
+        ; cache entries one tile line up
         ldb   mscroll.stretch
-        incb
         lda   #20
         mul                            ; d = first column past the seam
         std   <mscroll.fc.row          ; (x-part scratch, dead after)
         ldb   mscroll.edge8
         clra
-        addd  #19                      ; last column of the window
+        addd  #19                      ; one past the last column of the slice
         subd  <mscroll.fc.row
         bpl   >
-        ldd   #0
+        clrb
 !       stb   mscroll.seam.slots
+        ; the cursor bias moved : the BUFFER_LINES rows the buffer holds
+        ; slid by one for every column, and one buffer line now pairs with
+        ; a row nobody fed. S up (cursor -1) : line cursor, the row
+        ; y + BUFFER_LINES-1 (the hidden one below). S down (cursor +1) :
+        ; line cursor-1, the row y (the visible top line). One row feed.
+        puls  b
+        tstb
+        beq   @nomove
+        ldx   mscroll.camera.y
+        lda   mscroll.cursor
+        tstb
+        bpl   @sup2
+        tsta                           ; S down : line cursor-1 (only 0 wraps :
+        bne   >                        ; a deca/bpl test would also fire for
+        lda   #mscroll.BUFFER_LINES    ; cursor 129..200), row y
+!       deca
+        bra   @feedl
+@sup2   leax  mscroll.BUFFER_LINES-1,x ; S up : line cursor, row y+N-1
+        cmpx  mscroll.map.height
+        blo   @feedl
+        tfr   x,d
+        subd  mscroll.map.height
+        tfr   d,x
+        lda   mscroll.cursor
+@feedl  jsr   mscroll.feedLine
+@nomove equ   *
 
 ; update vertical position in map and buffer (v1 vscroll.move, unchanged)
 ; ------------------------------------------------------------------------
@@ -390,12 +428,9 @@ mscroll.updategfx
         ldx   #-mscroll.LINE_SIZE
         ldy   #1
 @mod
-        suba  mscroll.stretch                ; map-fixed shear : the camera's own
-                                             ; columns are written one line up per
-                                             ; seam left of the camera — exact mod
-                                             ; 16 because the map height is a
-                                             ; multiple of 16
-        anda  #$0f                           ; modulo to keep 0-15
+        anda  #$0f                           ; modulo to keep 0-15 (the shear is
+                                             ; relative : the camera's own columns
+                                             ; are not sheared, see move)
         sta   <mscroll.tileset.line
         ; setup dynamic code in main scroll loop
         sty   @direction
@@ -419,11 +454,8 @@ mscroll.updategfx
         bra   @end1
 !       subd  mscroll.map.height
 @end1   std   <mscroll.camera.currentY
-        subb  mscroll.stretch                ; sheared row space (see @mod above)
-        sbca  #0
-        bpl   @shok
-        addd  mscroll.map.height
-@shok   std   <mscroll.currentYs
+        std   <mscroll.currentYs             ; (the row space is not sheared for
+                                             ; the camera's own columns)
 ;
 ; PROCESS BUFFER A
 ; ----------------
@@ -447,17 +479,9 @@ mscroll.updategfx
         ldd   <mscroll.currentYs
         jsr   mscroll.updateTileCache        ; check cache for this line number (in d)
 !       lda   mscroll.obj.bufferA.page
-        _SetCartPageA                        ; mount in cartridge space
-        lda   <mscroll.tileset.line
-        lsla
-        ldx   #mscroll.obj.tile.adresses     ; load A tileset addr
-        ldy   a,x
-        ldx   #mscroll.obj.tile.pages        ; load A tileset page
-        lda   a,x
-        sta   map.CF74021.DATA               ; mount in data space
         ldu   <mscroll.buffer.wAddressA
-        ldx   mscroll.map.cache.cursor
-        jsr   mscroll.copyBitmap             ; copy bitmap for buffer A
+        clrb                                 ; plane A
+        jsr   mscroll.copyPlane              ; copy bitmap for buffer A
         leau  1234,u
 @direction4 equ *-2
         cmpu  mscroll.obj.bufferA.address
@@ -472,17 +496,9 @@ mscroll.updategfx
 ; PROCESS BUFFER B
 ; ----------------
         lda   mscroll.obj.bufferB.page
-        _SetCartPageA                        ; mount in cartridge space
-        lda   <mscroll.tileset.line
-        lsla
-        ldx   #mscroll.obj.tile.adresses     ; load B tileset addr
-        ldy   a,x
-        ldx   #mscroll.obj.tile.pages+1      ; load B tileset page
-        lda   a,x
-        sta   map.CF74021.DATA               ; mount in data space
         ldu   <mscroll.buffer.wAddressB
-        ldx   mscroll.map.cache.cursor
-        jsr   mscroll.copyBitmap             ; copy bitmap for buffer B
+        ldb   #1                             ; plane B
+        jsr   mscroll.copyPlane              ; copy bitmap for buffer B
         lda   <mscroll.buffer.line
         inca
 @direction6 equ *-1
@@ -519,6 +535,60 @@ mscroll.updategfx
         ldb   <mscroll.backBuffer            ; restore back video buffer
         stb   map.CF74021.DATA
         rts
+
+; copy one cached row into one buffer line of one plane
+; -------------------------------------------------------
+; input REG : [a] code buffer page, [u] buffer line, [b] plane (0 A, 1 B)
+; input VAR : [tileset.line], [map.cache.cursor]
+mscroll.copyPlane
+        _SetCartPageA                        ; mount in cartridge space
+        lda   <mscroll.tileset.line
+        lsla
+        ldx   #mscroll.obj.tile.adresses     ; the tileset line base
+        ldy   a,x
+        ldx   #mscroll.obj.tile.pages
+        abx                                  ; + plane, + 2*line : the pages
+        lda   a,x                            ; interleave A, B per line
+        sta   map.CF74021.DATA               ; mount in data space
+        ldx   mscroll.map.cache.cursor
+        jmp   mscroll.copyBitmap
+
+; feed one whole buffer line, both planes
+; ---------------------------------------
+; input REG : [x] map row (pixels), [a] buffer line (0..BUFFER_LINES-1)
+; the row feed for a single line chosen by the caller (the row the seam
+; bias uncovers, see move), through the same cache, bake and fixup as
+; updategfx — the current cache row is borrowed and the cache invalidated
+mscroll.feedLine
+        stx   <mscroll.currentYs
+        ldb   #mscroll.LINE_SIZE
+        mul
+        pshs  d                              ; the line's offset in a buffer
+        lda   map.CF74021.DATA
+        sta   <mscroll.backBuffer            ; backup back video buffer
+        ldy   mscroll.map.cache.cursor       ; borrow the current cache row
+        ldd   <mscroll.currentYs
+        jsr   mscroll.updateTileCache        ; row ids, baked, and the row above
+        ldb   <mscroll.currentYs+1
+        andb  #$0f
+        stb   <mscroll.tileset.line
+        ldd   ,s
+        addd  mscroll.obj.bufferA.address
+        tfr   d,u
+        lda   mscroll.obj.bufferA.page
+        clrb
+        jsr   mscroll.copyPlane
+        ldd   ,s
+        addd  mscroll.obj.bufferB.address
+        tfr   d,u
+        lda   mscroll.obj.bufferB.page
+        ldb   #1
+        jsr   mscroll.copyPlane
+        lda   #$FF                           ; the borrowed cache row is stale :
+        sta   mscroll.map.cache.y            ; $FFxx matches no row
+        ldb   <mscroll.backBuffer            ; restore back video buffer
+        stb   map.CF74021.DATA
+        puls  d,pc
 
 ; update the horizontal line of tile id in map cache
 ; --------------------------------------------------
@@ -647,7 +717,10 @@ mscroll.feedTile
         subb  #20
         inca
         bra   @shear
-!       sta   <mscroll.fc.tl
+!       inca                           ; relative to the camera : column/20
+        suba  mscroll.stretch          ; minus S-1 — 0 or 1 for a column that
+        sta   <mscroll.fc.tl           ; stays in the slice ; one fed then left
+                                       ; behind within a move is overwritten
         ; operand code offset of the slot : chunk 9-(p/2), D if even, X if odd
         ldb   <mscroll.tmp2
 @mod    cmpb  #20
@@ -982,10 +1055,11 @@ mscroll.do
         blo   @modok
         subb  #10
         bra   @mod
-@modok  beq   >
-        subb  #10
-        negb                           ; h = (10 − window mod 10) mod 10
-!       stb   <mscroll.h
+@modok  tstb                           ; (the Z of cmpb #10 is never set here :
+        beq   >                        ; without the tstb, window mod 10 = 0
+        subb  #10                      ; gave h = 10, the whole band one line
+        negb                           ; down — study §10)
+!       stb   <mscroll.h               ; h = (10 − window mod 10) mod 10
         ldb   mscroll.camera.x+1       ; low byte of the pixel position
         addb  #8
         andb  #$0F

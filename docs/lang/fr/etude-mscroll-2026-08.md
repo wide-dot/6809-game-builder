@@ -634,3 +634,106 @@ ici — le commentaire de `main.asm` détaille.
 > identique à l'état M3-opt d'avant compensation ; le vertical à la butée
 > reste à 12,50 (12,55 avant). Le surcoût du cisaillement est invisible
 > sous la quantification gfxlock.
+
+## 10. La couture corrigée, et le banc qui la franchit (05/10/2026)
+
+Le portage 1 bpp de mscroll (`mscroll1`, pour le clone Sonic 2 mono) a fait
+apparaître un défaut de la compensation de couture du §9 ; la même mesure,
+refaite ici en BM16, en a montré un second, propre au BM16. Le banc du §9 ne
+pouvait voir ni l'un ni l'autre : sa carte faisait 256 px, la caméra
+plafonnait à x = 96 et ne franchissait **aucune** couture (la première est à
+160 px).
+
+**État constaté sur `master` (toje, par groupe de 4 px, x de 2 en 2)** :
+juste jusqu'à x = 151 ; tout l'écran une ligne trop haut de x = 152 à 159 ;
+deux lignes de x = 160 à 167 ; puis −2 pour le contenu déjà présent et −1
+pour les colonnes alimentées ensuite ; −3 après la deuxième couture. Le banc
+d'origine échouait en outre dès x = 0, pour une troisième raison, propre à
+l'exemple.
+
+### 10.1 `h` = 10 au lieu de 0
+
+`mscroll.do` calcule `h = (10 − fenêtre mod 10) mod 10` ; le `beq` qui doit
+traiter le cas « fenêtre mod 10 = 0 » lisait le drapeau Z de `cmpb #10`, qui
+n'est jamais posé à cet endroit (on n'y arrive que si B < 10). Pour une
+fenêtre multiple de 10, `h` valait donc 10 : entrée et sortie un chunk de
+ligne plus loin, toute la bande une ligne plus bas (mesuré au point d'arrêt
+sur le `jmp ,x` du blast : entrée ligne 199 chunk 0 au lieu de ligne 198).
+C'est aussi ce qui masquait le défaut suivant à x < 8 (fenêtre 0). Un `tstb`.
+
+### 10.2 Le biais du curseur : quand et dans quel sens
+
+En comptant les octets poussés depuis la fin de bande, le slot `p` d'une
+ligne de buffer tombe à la colonne d'octet `2p + 4h + D` (D = −bo, et −1 de
+plus pour le plan A en phase w = 1) ; quand ce nombre dépasse 40 il passe à
+la ligne d'écran suivante. Comme `4h + xr/4 = 4(h + fenêtre)` et
+`h + fenêtre = 10·ceil(fenêtre/10)`, cette **retenue** vaut, pour une
+colonne visible :
+
+    retenue(c) = ceil(fenêtre/10) − couture(c)        couture(c) = c / 20
+
+Une colonne écrite avec un biais de curseur `B_f` et une rangée de départ
+`y − couture(c) + F_f`, affichée avec le biais `B_d`, montre la rangée
+`y + s + 1 + B_f + F_f − B_d − ceil(fenêtre/10)`. Le schéma du §9
+(`F = 0`, `B = +floor(x/160)`) ne la rend juste que dans la première bande.
+Le schéma juste, avec `S = ceil(fenêtre/10)` :
+
+- le curseur porte le biais **`1 − S`** : il recule d'une ligne quand la
+  fenêtre passe de `10k` à `10k+1`, soit à **x = 160k + 8** (et non à
+  x = 160k) — la base 1 est celle qu'attend le buffer de départ généré à
+  x = 0 ;
+- les colonnes sont cisaillées **relativement à la caméra** :
+  `couture(c) − S + 1` lignes, 0 ou 1 pour toute colonne de la tranche
+  (`feedTile`) ; le feed de rangées ne retranche plus rien et cuit les
+  `seam.slots` colonnes au-delà de la couture `20·S` ;
+- `S` est mis à jour **avant** les feeds de colonne d'un même `move` : une
+  colonne qui entre doit voir le `S` de la tranche qu'elle remplit, sinon
+  son cisaillement relatif peut valoir −1, que le chemin non signé de
+  `feedTile` ne sait pas écrire (vu en allant vers la gauche).
+
+### 10.3 La rangée que personne n'alimente
+
+Le buffer tient `BUFFER_LINES` = hauteur + 1 rangées. Déplacer le biais fait
+glisser d'une rangée l'ensemble couvert, pour toutes les colonnes : une
+ligne de buffer se retrouve appariée à une rangée jamais écrite. `S` monte
+(curseur −1) : la ligne `cursor` doit porter `y + BUFFER_LINES − 1`, la
+rangée cachée du bas, révélée au premier pas vers le bas. `S` descend
+(curseur +1) : la ligne `cursor − 1` doit porter `y`, la ligne visible du
+haut. `mscroll.feedLine` la réécrit, dans les deux plans, par la même
+mécanique que le feed de rangées (cache, cuisson, retouche) : un feed de
+rangée par couture franchie. Les deux passes de plan de `updategfx` et
+celles de `feedLine` partagent désormais `mscroll.copyPlane`.
+
+### 10.4 L'exemple
+
+- **Le tileset était chargé au mauvais endroit** : jusqu'à 256 tuiles, le
+  générateur n'écrit que les octets utiles, à charger à l'offset `$2000` de
+  la page (la moitié que la fenêtre data montre en `$A000`) ; la config les
+  chargeait en `$0000`. D'où l'échec dès x = 0 sur `master`.
+- **La mire** est remplacée : 1024×240 px, chaque tuile porte son id en deux
+  pastilles de couleur, ids disposés pseudo-aléatoirement (256 tuiles
+  distinctes), règles et hachure conservées pour l'œil. L'ancienne mire
+  « visual » n'avait que 8 tuiles distinctes et une période de 64 px : un
+  décalage de 64 px, une colonne dans le mauvais slot y étaient invisibles.
+  `--coded` reste disponible.
+- **`tools/diag_check.py`** lit la géométrie du `.equ`, modélise l'écran au
+  groupe de 4 px pour toute position paire (plus de contrainte x mod 8),
+  juge les 144 px du centre (les 8 px de chaque bord sont les bandes de
+  masquage), et ses trajets franchissent les coutures dans les deux sens ;
+  `--random N` ajoute une marche aléatoire graînée. Vitesses ≤ 4 px par
+  trame : à 8 px le blast plein écran BM16 (~3 trames) fait diverger la
+  compensation de frame-drop (la somme 8.8 déborde).
+
+**Validation** (toje) : 8 trajets scriptés et une marche aléatoire de
+150 trajets, coutures franchies dans les deux sens jusqu'à x = 864, butées
+comprises : **centre exact partout**.
+
+**Taille** : `common.mscroll` de R-Type passe de 2 603 à 2 677 octets ; il
+finit en `$92D5`, sous les arènes de stage (`$92DB`) — la première version
+du correctif (229 octets de plus) débordait sur l'arène du stage 5.
+
+**R-Type** : construit, stage 3 joué jusqu'à la trame 5 500 sous toje
+(caméra de la couche au-delà de x = 260). Les positions des pièces du
+vaisseau (tourelles, coque, épaves) ont été réglées sur l'affichage
+d'avant : elles sont à revoir à l'œil sur le stage 3 maintenant que la
+couche est à la bonne ligne.

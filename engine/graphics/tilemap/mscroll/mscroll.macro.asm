@@ -230,23 +230,20 @@ _mscroll.setCameraSpeed MACRO
 ; -----------------------------------------------------------------------------
 _mscroll.setCameraPosX MACRO
         ; must be 0 : the generated start buffer holds the camera (0, y0)
-        ; view (with the map-fixed seam shear baked for every column), and
-        ; the seam state below is initialized for the first stretch
+        ; view. It pairs with a cursor biased by 1 - S, S = ceil(window/10)
+        ; = 0 at x = 0 (see mscroll.move) : call after _mscroll.setCameraPos
         ldd   \1
         std   mscroll.camera.x
-        addd  #8
-        _lsrd
-        _lsrd
-        _lsrd
-        stb   mscroll.edge8
-        _lsrd
-        stb   mscroll.window
-        clr   mscroll.stretch
-        ldb   mscroll.edge8
-        subb  #1                       ; window columns beyond the first seam
-        bpl   @sm                      ; (edge8+19-20, clamped at zero)
+        ldd   #$0001                   ; window 0, edge8 1
+        std   mscroll.window
+        ldd   #$0014                   ; S 0, the 20 slice columns past the
+        std   mscroll.stretch          ; seam (all sheared at S = 0)
+        ldb   mscroll.cursor           ; the bias 1 - S = +1
+        incb
+        cmpb  #mscroll.BUFFER_LINES
+        blo   @c
         clrb
-@sm     stb   mscroll.seam.slots
+@c      stb   mscroll.cursor
  ENDM
 
 ; -----------------------------------------------------------------------------

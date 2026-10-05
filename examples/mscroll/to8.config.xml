@@ -29,12 +29,16 @@
                     <mscroll filename="mire.png" gendir="gen/mire" output="map"/>
                 </file>
 
-                <!-- tilesets, one per plane, tile-major -->
-                <file name="assets.tilesA" page="$08" address="$0000">
+                <!-- tilesets, one per plane, tile-major. Up to 256 tiles
+                     the generator writes the used bytes only, to load at
+                     page offset $2000 : the half the data window shows at
+                     $A000 (past 256 tiles : a whole page, halves swapped,
+                     at $0000) -->
+                <file name="assets.tilesA" page="$08" address="$2000">
                     <mscroll filename="mire.png" gendir="gen/mire" output="tiles" plane="0"/>
                 </file>
 
-                <file name="assets.tilesB" page="$09" address="$0000">
+                <file name="assets.tilesB" page="$09" address="$2000">
                     <mscroll filename="mire.png" gendir="gen/mire" output="tiles" plane="1"/>
                 </file>
 
