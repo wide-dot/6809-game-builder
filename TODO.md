@@ -1224,3 +1224,20 @@ En veille sur décision (31/07/2026) :
       structure `system/<machine>/` est censée éliminer. Ne pas entamer
       avant migration complète : le doublon générique/spécifique de gfxlock
       juste au-dessus est le même chantier, à traiter ensemble.
+  - [ ] **Les jumelles `DrawSprites` / `DrawSpritesExtEnc` — même chantier**
+        (décision auteur, 05/10/2026 : garder les deux d'ici là). Deux copies
+        complètes de la routine de dessin du mode background-erase (261 et
+        282 lignes, ~250 identiques), importées 1:1 de la v1 qui les
+        entretient en parallèle : sa passe de vitesse du 04/08/2026 y a été
+        faite deux fois (`a42a43e8`, `b734eb09`), et leurs en-têtes ont déjà
+        divergé sur la priorité 1. Les seules différences : l'aiguillage
+        vers `DecMapAlpha` / `zx0_6809_mega_wrap` après
+        `jsr [rsv_draw_routine,x]` (4 lignes, par tampon B0 et B1), le
+        `beq DRS_NextObjectBx` devenu `bne >` + `jmp` faute de portée, et
+        les talons `ifndef` de fin. Cible : un seul fichier, ces trois
+        morceaux sous un interrupteur que `sprite-background-erase-ext-pack`
+        définit avant l'inclusion — un `IFDEF` plutôt qu'un `lbeq` commun,
+        pour que la variante normale garde ses cycles. Les deux packs
+        partagent déjà tout le reste. Utilisateurs : ext = r-type,
+        `examples/sprites` ; normale = wide-dot/sonic-2 (titre, aucune
+        image `rle`/`zx0`).
