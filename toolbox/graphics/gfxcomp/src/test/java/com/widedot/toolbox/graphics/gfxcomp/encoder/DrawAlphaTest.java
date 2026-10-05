@@ -33,7 +33,9 @@ public class DrawAlphaTest {
 
 	/** an 8x16 tile ; inked on every row, or on rows 1, 3, 5... only (v1's even lines) */
 	private static File tile(Path dir, String name, boolean oddLinesInked) throws Exception {
-		byte[] r = new byte[17], g = new byte[17], b = new byte[17];
+		byte[] r = new byte[17];
+		byte[] g = new byte[17];
+		byte[] b = new byte[17];
 		for (int i = 1; i < 17; i++) { r[i] = (byte) (i * 8); g[i] = (byte) (i * 4); b[i] = (byte) (i * 2); }
 		IndexColorModel cm = new IndexColorModel(8, 17, r, g, b, 0);
 		BufferedImage img = new BufferedImage(8, 16, BufferedImage.TYPE_BYTE_INDEXED, cm);
