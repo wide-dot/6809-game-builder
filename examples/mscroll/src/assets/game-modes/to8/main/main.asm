@@ -3,16 +3,17 @@
 ;
 ; mscroll is a v2 fork of the v1 vertical scroll (the pristine import lives
 ; in engine/graphics/tilemap/vscroll/). The example scrolls a generated test
-; pattern — every tile of the map is unique and every pixel line encodes its
-; own (column, row, line) coordinates as nibbles, see tools/gen_mire.py —
-; through a cycling code buffer of stack pushes. Vertically, only the lines
-; that enter the screen are rewritten in the buffer ; horizontally the
-; window rotates hscroll-style (entry chunk + S offset + RAMA/RAMB swap,
-; 2px steps, ribbon seam assumed) and the entering 8px tile columns are fed
-; into their buffer slot — the map is wider AND taller than the screen,
-; scrolled freely on both axes. The map geometry comes from the .equ written
-; by the builder's <mscroll> element.
-; See docs/lang/fr/etude-mscroll-2026-08.md.
+; pattern — 1024x240 px, every tile showing its own id, laid out
+; pseudo-randomly, see tools/gen_mire.py — through a cycling code buffer of
+; stack pushes. Vertically, only the lines that enter the screen are
+; rewritten in the buffer ; horizontally the window rotates hscroll-style
+; (entry chunk + S offset + RAMA/RAMB swap, 2px steps) and the entering 8px
+; tile columns are fed into their buffer slot — the map is wider AND taller
+; than the screen, scrolled freely on both axes, across the ribbon's
+; map-fixed seams (every 160 px). The map geometry comes from the .equ
+; written by the builder's <mscroll> element. tools/diag_check.py checks the
+; screen byte for byte under toje.
+; See docs/lang/fr/etude-mscroll-2026-08.md (§10 : the seam, corrected).
 ;
 ; Direct controls : a held direction moves the camera at constant speed,
 ; releasing stops dead — no inertia. Button A held = fast (2 px/frame),

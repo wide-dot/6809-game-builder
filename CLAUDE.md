@@ -892,6 +892,20 @@ répertoire, le `<data>` du loader doit venir APRÈS les répertoires (sinon
 `ERROR` à l'assemblage, nommant le répertoire). Modèle et mesures :
 `docs/lang/fr/etude-chargement-2026-09.md` §12, manuel `config.md`.
 
+## mscroll : la couture corrigée (05/10/2026)
+
+Trois défauts trouvés en portant mscroll en 1 bpp, corrigés et validés à
+l'octet par `examples/mscroll/tools/diag_check.py` (8 trajets scriptés +
+150 aléatoires, coutures franchies dans les deux sens) : `h` valait 10 au
+lieu de 0 quand la fenêtre est un multiple de 10 (bande une ligne trop
+bas) ; le biais de curseur de la couture (`1 − ceil(fenêtre/10)`, avec un
+cisaillement relatif à la caméra, et `mscroll.feedLine` pour la rangée que
+le glissement du biais découvre) ; et le tileset de l'exemple chargé en
+`$0000` au lieu de `$2000`. Le banc d'origine ne franchissait aucune
+couture (carte de 256 px). Étude §10 de
+[`etude-mscroll-2026-08.md`](docs/lang/fr/etude-mscroll-2026-08.md).
+`common.mscroll` de R-Type : 2 677 octets, sous les arènes de stage.
+
 ## mscroll1 : le scroll multidirectionnel en 1 bpp (05/10/2026)
 
 `engine/graphics/tilemap/mscroll1/` est le fork 1 bpp de mscroll (mode
@@ -903,9 +917,8 @@ marche aléatoire), `tools/fps.py`, `tools/profile.py`. Plein écran
 320×200 : 25 i/s caméra arrêtée, ~16 i/s à 6 px + 3 lignes par trame.
 **Deux défauts du mécanisme de couture hérités de mscroll y sont
 corrigés** (biais du curseur `−ceil(window/10)` et cisaillement relatif ;
-la rangée découverte quand le biais bouge) — le BM16 les porte
-probablement, non vérifié (son banc ne franchit aucune couture et échoue
-aujourd'hui dès x = 0). `mscroll1.mask` (après le blast et les sprites)
+la rangée découverte quand le biais bouge) — corrigés aussi dans le BM16,
+section suivante. `mscroll1.mask` (après le blast et les sprites)
 noircit les deux seules zones fausses : l'octet de recouvrement à droite
 (le slot à cheval sur le retour de ligne quand x mod 16 ≥ 8) et la ligne
 du haut (le trou du début du ruban) — image exacte de 312 × 199 px. Piège

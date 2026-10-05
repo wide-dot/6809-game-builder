@@ -147,13 +147,16 @@ un feed de rangée par couture franchie.
 
 ### 4.3 Et le BM16 ?
 
-Les deux défauts sont dans la logique commune. Le mscroll BM16 (et donc la
-couche cuirassé du stage 3 de R-Type) les porte probablement : un
-franchissement de couture de 160 px y donnerait un décalage d'une ligne. **Non
-vérifié ici** : `examples/mscroll/tools/diag_check.py` ne franchit jamais de
-couture (carte de 256 px), et il échoue aujourd'hui dès la caméra x = 0
-(7 764 cellules sur 8 000, rejoué le 05/10/2026 sur `master`), donc pour une
-autre raison. À trancher avec l'auteur avant de toucher au BM16.
+Les deux défauts sont dans la logique commune : le mscroll BM16 (la couche
+cuirassé du stage 3 de R-Type) les portait. **Vérifié et corrigé le même
+jour** (PR #55, étude mscroll §10), avec un troisième défaut propre au BM16
+que ce port avait évité sans le savoir : `h` valait 10 au lieu de 0 quand la
+fenêtre est un multiple de 10 (le `beq` lisait le Z de `cmpb #10` ; ici un
+`tstb` explicite). Le banc BM16 ne pouvait rien en voir : sa carte de 256 px
+ne franchissait aucune couture, et il échouait dès x = 0 parce que l'exemple
+chargeait son tileset en `$0000` au lieu de `$2000`. En BM16 le biais vaut
+`1 − S` (la base attendue par le buffer de départ généré) et `S` doit être mis
+à jour avant les feeds de colonne d'un même `move`.
 
 ## 5. Validation et masques
 
