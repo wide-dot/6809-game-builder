@@ -390,7 +390,8 @@ public class GfxcompPlugin {
 					Attribute.getString(child, ctx, "mirror", Mirror.NONE),
 					String.valueOf(Attribute.getInteger(child, ctx, "shift", 0)),
 					Attribute.getString(child, ctx, "position", Image.POSITION_CENTER),
-					Attribute.getString(child, ctx, "planes", Image.PLANES_POINTER) });
+					Attribute.getString(child, ctx, "planes", Image.PLANES_POINTER),
+					Attribute.getString(child, ctx, "alpha", Image.ALPHA_NONE) });
 		}
 		if (specs.isEmpty()) {
 			throw new Exception("tileset has no <encoder>");
@@ -408,6 +409,7 @@ public class GfxcompPlugin {
 					for (String[] spec : specs) {
 						Image image = new Image(t[0], null, t[1], spec[0], spec[1],
 								Integer.valueOf(spec[2]), spec[3], spec[4]);
+						image.setAlphaMode(spec[5]);
 						image.encode(gendir);
 						images.add(image);
 						produced.add(gendir + File.separator + image.getFullName() + ".asm");
@@ -455,8 +457,10 @@ public class GfxcompPlugin {
 			Integer shift   = Attribute.getInteger(child, ctx, "shift", 0);
 			String position = Attribute.getString(child, ctx, "position", Image.POSITION_CENTER);
 			String planes   = Attribute.getString(child, ctx, "planes", Image.PLANES_POINTER);
+			String alpha    = Attribute.getString(child, ctx, "alpha", Image.ALPHA_NONE);
 
 			Image image = new Image(name, index, filename, encoder, mirror, shift, position, planes);
+			image.setAlphaMode(alpha);
 			image.encode(gendir);
 			if (imageset != null) {
 				imageset.addImage(image);

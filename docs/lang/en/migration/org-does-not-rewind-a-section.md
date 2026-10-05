@@ -87,9 +87,12 @@ The game mode shrank by exactly 820 bytes, `lwobjdump` and the listing agree
 again, and the SMPS state read under toje at the same frame is the v1 one
 byte for byte (docs/migration.md §7 of wide-dot/sonic-2) : the music plays.
 
-The same idiom is still in `sound/SmpsObj.asm` (`org tracksStart`) and
-`irq/IrqObjSmps.asm` (`org SmpsStructStart`) ; they get the same treatment
-when a game uses them.
+The same idiom was in `sound/SmpsObj.asm` (`org tracksStart`, the tracks of
+the SMPS object) and `irq/IrqObjSmps.asm` (`org SmpsStructStart`, a lone
+`SmpsVar`) ; both got the same treatment for Sonic 2's Emerald Hill, the
+members spelled from the structs' own field offsets (`\1+Track.NoteControl`,
+lwasm defines `Struct.field`). Note that `sizeof{}` is refused inside a macro
+(`Bad operand`) : take it into an equate first.
 
 ## Met in
 

@@ -45,9 +45,33 @@ DACEnabled                     rmb   1
 60HzData                       rmb   1                ; 1: play 60hz track at 50hz, 0: do not skip frames
  ENDSTRUCT
 
+; V2-DEVIATION: in the lwasm obj target `org` does not rewind a section : the
+; instance reserved its bytes, then the fill was appended after them, and
+; every later byte of the game mode moved away from its symbol. The instance
+; is an equate on the fill instead, its members spelled out from the struct's
+; field offsets (migration/org-does-not-rewind-a-section.md).
 SmpsStructStart
-Smps          SmpsVar
-        org   SmpsStructStart                
+Smps          equ   SmpsStructStart
+Smps.SFXPriorityVal           equ   Smps+SmpsVar.SFXPriorityVal
+Smps.TempoTimeout             equ   Smps+SmpsVar.TempoTimeout
+Smps.CurrentTempo             equ   Smps+SmpsVar.CurrentTempo
+Smps.StopMusic                equ   Smps+SmpsVar.StopMusic
+Smps.FadeOutCounter           equ   Smps+SmpsVar.FadeOutCounter
+Smps.FadeOutDelay             equ   Smps+SmpsVar.FadeOutDelay
+Smps.QueueToPlay              equ   Smps+SmpsVar.QueueToPlay
+Smps.SFXToPlay                equ   Smps+SmpsVar.SFXToPlay
+Smps.VoiceTblPtr              equ   Smps+SmpsVar.VoiceTblPtr
+Smps.SFXVoiceTblPtr           equ   Smps+SmpsVar.SFXVoiceTblPtr
+Smps.FadeInFlag               equ   Smps+SmpsVar.FadeInFlag
+Smps.FadeInDelay              equ   Smps+SmpsVar.FadeInDelay
+Smps.FadeInCounter            equ   Smps+SmpsVar.FadeInCounter
+Smps.1upPlaying               equ   Smps+SmpsVar.1upPlaying
+Smps.TempoMod                 equ   Smps+SmpsVar.TempoMod
+Smps.TempoTurbo               equ   Smps+SmpsVar.TempoTurbo
+Smps.SpeedUpFlag              equ   Smps+SmpsVar.SpeedUpFlag
+Smps.DACEnabled               equ   Smps+SmpsVar.DACEnabled
+Smps.60HzData                 equ   Smps+SmpsVar.60HzData
+        ;org   SmpsStructStart ; V2-DEVIATION: see above
         fill  0,sizeof{SmpsVar}
 
         ;setdp dp/256 ; V2-DEVIATION: setdp neutralized (see above)

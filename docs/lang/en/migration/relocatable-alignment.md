@@ -93,3 +93,10 @@ which is the other place that knows addresses.
   seen from the link data side.
 - [Met in](#) `games/r-type`, 2026-08-05, importing the force pod's rebound
   laser and its three cyclic buffers.
+- Met again in wide-dot/sonic-2, 2026-10-05, in a form `ALIGN` does not cure :
+  `engine/graphics/tilemap/TilemapBuffer.asm` aligns its tile buffer properly
+  (`align 2048`), then takes its address **by its high byte**
+  (`adda #tile_buffer/256`). A division of a relocated label is no relocation
+  either. The buffer became the game's : `TMB_TILE_BUFFER`, a fixed 2048
+  aligned address the game reserves in its layout and clears at start (v1's
+  fill was loaded zeros), the v1 form kept when it is not defined.

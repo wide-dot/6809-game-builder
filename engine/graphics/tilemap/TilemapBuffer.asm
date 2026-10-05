@@ -3,7 +3,8 @@
 * ---------------------------------------------------------------------------
 
         INCLUDE "./engine/graphics/tilemap/data-types/map-16bits.equ"
-        SETDP   dp/256
+        ;SETDP   dp/256 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm
+                         ; obj target ; migration/setdp-obj-target.md)
 
 ; data structure for current loaded map
 ; -------------------------------------
@@ -742,10 +743,25 @@ DrawHighPriorityBufferedTile
         bne   @loop
         rts
 
+ IFDEF TMB_TILE_BUFFER
+; V2-DEVIATION: the code takes the buffer's address by its high byte
+; (#tile_buffer/256), which a relocatable unit cannot give : a division of a
+; relocated label is not a relocation (migration/relocatable-alignment.md). A
+; v2 game declares the buffer at a fixed 2048 aligned address, reserved in its
+; layout, and clears it before InitTileBuffer : v1's fill was loaded zeros.
+tile_buffer equ TMB_TILE_BUFFER
+ ELSE
         align 2048
 tile_buffer
         fill  0,16*128
+ ENDC
 
+ IFDEF TMB_HPRIO_TILES
+; V2-DEVIATION: the game may keep the queue out of its unit too, at a fixed
+; address it reserves and clears (the zeros v1's fill loaded)
+tmb_hprio_tiles equ TMB_HPRIO_TILES
+ ELSE
 tmb_hprio_tiles
         fill  0,tmb_vp_h_tiles*tmb_vp_v_tiles*7 ; in case all tiles are in high priority ... that's crazy ... you can lower that if you know what you are doing
         fcb   0 ; end marker
+ ENDC

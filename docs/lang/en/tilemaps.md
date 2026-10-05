@@ -91,6 +91,14 @@ compiled by the sprite encoder :
    generated block, since a tileset has no imageset index. Nothing imports
    them through the loader, so pruning keeps them out of the link data.
 
+   v1's `TILE8x16` tilesets (Sonic 2) are compiled with
+   `position="3qtr-center"` and `alpha="odd"` : the anchor v1 gave those
+   tiles, and the `stb <glb_alphaTiles` a half-line tile opens with when one
+   of its odd lines shows the background (v1's `_ODD_ALPHA`, BuildDisk's
+   choice for every tileset ; v1 counts lines from 1, its odd lines are
+   rows 0, 2, 4... of the tile). `alpha` is `none` by default, also `even` or
+   `all` ; draw encoder only.
+
    Two ways to get the odd map's tiles : compile the normal strip twice
    (`shift="1"` for the second encoder, variant `ND1`), or compile
    leanscroll's pre-shifted strip as its own `<image>` (v1's way — its `_s`

@@ -18,7 +18,8 @@
 ; (a)  20 }
 ; (b)  00 } 2000 is product/256
 
-        SETDP   dp/256
+        ;SETDP   dp/256 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm
+                         ; obj target ; migration/setdp-obj-target.md)
 
 @m      equ dp_engine
 @m_h    equ dp_engine+1

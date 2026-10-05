@@ -168,6 +168,43 @@ public class Image {
 
 	public String planes;
 
+	/**
+	 * Which transparency the draw encoder announces to its caller, v1's tile
+	 * option. NONE is the sprite case and the default. ODD is v1's TILE8x16
+	 * half-line tiles : a tile whose odd lines hold a transparent pixel opens
+	 * with `stb <glb_alphaTiles`, so the tile renderer knows the background
+	 * shows through (v1 SimpleAssemblyGenerator._ODD_ALPHA). EVEN and ALL are
+	 * the generator's two other modes, exposed alike. v1 counts lines from 1 :
+	 * its odd lines are rows 0, 2, 4... of the picture.
+	 */
+	public static final String ALPHA_NONE = "none";
+	public static final String ALPHA_ALL  = "all";
+	public static final String ALPHA_ODD  = "odd";
+	public static final String ALPHA_EVEN = "even";
+	public static final HashMap<String, Integer> alphaId = new HashMap<String, Integer>() {
+		private static final long serialVersionUID = 1L;
+		{
+			put(ALPHA_NONE, SimpleAssemblyGenerator._NO_ALPHA);
+			put(ALPHA_ALL, SimpleAssemblyGenerator._ALPHA);
+			put(ALPHA_ODD, SimpleAssemblyGenerator._ODD_ALPHA);
+			put(ALPHA_EVEN, SimpleAssemblyGenerator._EVEN_ALPHA);
+		}
+	};
+	public String alphaMode = ALPHA_NONE;
+
+	/** the draw encoder's transparency announcement, see ALPHA_NONE */
+	// the toolchain signals build errors with plain Exceptions (48 throw sites)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	public void setAlphaMode(String value) throws Exception {
+		String v = value == null ? ALPHA_NONE : value;
+		known(name, "alpha", v, alphaId, "");
+		if (!ALPHA_NONE.equals(v) && type != TYPE_DRAW_INT) {
+			throw new Exception("image " + name + " : alpha=" + v
+					+ " only applies to the draw encoder");
+		}
+		alphaMode = v;
+	}
+
 	// A variant key is the v1 form : mirror letter, encoder letter, shift digit
 	// ("NB0" = no mirror, bdraw, no pre-shift). It names the generated code and
 	// keys the imageset lookups, so both must derive it from here.
@@ -614,7 +651,7 @@ public class Image {
 	private com.widedot.m6809.gamebuilder.spi.cache.BuildCache.Entry cacheEntry() throws Exception {
 		return com.widedot.m6809.gamebuilder.spi.cache.BuildCache.entry("gfxcomp", CACHE_VERSION)
 				.keyString(name + "|" + type + "|" + mirror + "|" + shift
-						+ "|" + position + "|" + planes + "|" + width + "x" + height
+						+ "|" + position + "|" + planes + "|" + alphaMode + "|" + width + "x" + height
 						// the video memory model changes the emitted code as
 						// surely as the pixels do — same image, another plane
 						// distance, another LEAU (caught by DrawPlanesTest)
@@ -664,7 +701,7 @@ public class Image {
 
 		Encoder e;
 		switch (type) {
-			case TYPE_DRAW_INT: e = new SimpleAssemblyGenerator(this, outputDir, SimpleAssemblyGenerator._NO_ALPHA); break;
+			case TYPE_DRAW_INT: e = new SimpleAssemblyGenerator(this, outputDir, alphaId.get(alphaMode)); break;
 			case TYPE_BDRAW_INT: e = new AssemblyGenerator(this, outputDir); break;
 			case TYPE_RLE_INT: e = new MapRleEncoder(this, outputDir); break;
 			case TYPE_ZX0_INT: e = new ZX0Encoder(this, outputDir); break;

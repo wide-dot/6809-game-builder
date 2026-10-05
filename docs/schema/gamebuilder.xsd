@@ -798,6 +798,9 @@
       <xs:attribute name="planes" type="xs:string">
         <xs:annotation><xs:documentation>how the code reaches the second video plane : pointer (default, from glb_screen_location_1, U consumed) or offset (at planedistance from U, U given back — for a caller drawing a row of sprites). draw encoder only</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="alpha" type="xs:string">
+        <xs:annotation><xs:documentation>what transparency the draw code announces : none (default), odd (v1 TILE8x16 half-line tiles : stb &lt;glb_alphaTiles when an odd line shows the background), even or all. draw encoder only</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 
@@ -2025,6 +2028,12 @@
       </xs:attribute>
       <xs:attribute name="shiftcolors" type="xs:boolean">
         <xs:annotation><xs:documentation>index 0 is transparency and 1..16 are colours 0..15</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="patches" type="xs:string">
+        <xs:annotation><xs:documentation>csv of patch rectangles (name,x,y,w,h in map pixels) : their tiles join the set, &lt;gendir&gt;/&lt;name&gt;.patches.asm lists the cells to rewrite</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="patchimage" type="xs:string">
+        <xs:annotation><xs:documentation>the map with the patches painted in place, same size — goes with patches</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>

@@ -55,3 +55,13 @@ the runtime `DP` — `DE F0` with `DP = $9F` is `$9FF0`, not `$00F0`.
 Recorded from the `sound/to8` pilot, 2026-07-31. Three files carry the
 deviation: `engine/irq/Irq.asm`, `engine/palette/PalUpdateNow.asm`,
 `engine/palette/PalUpdateNowLean.asm`.
+
+Met again in wide-dot/sonic-2 (2026-10-05), where the extended operands
+mattered : Emerald Hill's parity bench compares Sonic's trajectory with v1
+loop for loop, and v1's physics, collision and HUD code leant on `setdp` for
+some 1 200 operands. That game restores them with a tool rather than by hand
+(`tools/force_direct.py` there) : it reads v1's listings, finds each
+instruction v1 assembled direct without a `<` in its source, and adds the `<`
+to the same line of the game's copy — game code only, the engine files keep
+this case's rule.
+
