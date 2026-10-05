@@ -129,6 +129,9 @@ practice; this is a reading order, not a schedule.
     return address, one region per game mode.
 24. [Overlay: erase by omission, not by repaint](overlay-erase-by-omission.md)
 25. [A per-frame loop is a multiply](frame-drop-loops-are-multiplies.md)
+25b. [A frame-drop timer carries its overshoot](frame-drop-timer-carry.md) —
+    the original reloads on reaching -1 : D + 1 + c', clamped at 0 ; v1's
+    `AnimateSpriteSync` took the drop twice.
     — v1 hid things by painting background patches over them; in overlay the
     canvas is redrawn every frame, so the hidden thing becomes removable
     pieces owned by a manager, and the v1 eraser masks are the cutting guide.

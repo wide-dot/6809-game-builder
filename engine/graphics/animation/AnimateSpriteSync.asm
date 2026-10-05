@@ -41,7 +41,13 @@ AnimateSpriteSync                           *AnimateSprite:
         bne   @Anim_Reload                  ; will skip frame and duration reinit
         ldb   #0                            
         stb   anim_frame,u                  *    move.b  #0,anim_frame(a0)          ; reset animation
-        bra   @b                            *    move.b  #0,anim_frame_duration(a0) ; reset frame duration
+        ; V2-DEVIATION (05/10/2026) : a new animation starts on this frame, its
+        ; first image lasting the script's D+1 frames counting it - s2's reset
+        ; to 0 then decrement. v1 reloaded D + the previous animation's leftover
+        ; duration - the frame drop. Casebook : migration/frame-drop-timer-carry.md
+        ldb   -1,x                          *    move.b  #0,anim_frame_duration(a0) ; reset frame duration
+        stb   anim_frame_duration,u
+        bra   @Anim_Reload
                                             *; loc_16560:
 @Anim_Run                                   *Anim_Run:
         ldb   anim_frame_duration,u
@@ -51,12 +57,15 @@ AnimateSpriteSync                           *AnimateSprite:
         bpl   @Anim_Rts                     *    bpl.s   Anim_Wait                    ; if time remains, branch
         * no offset table                   *    add.w   d0,d0
         * anim is the address of anim       *    adda.w  (a1,d0.w),a1                 ; calculate address of appropriate animation script
-@b      ldb   -1,x                            
-        addb  anim_frame_duration,u         *    move.b  (a1),anim_frame_duration(a0) ; load frame duration
-        subb  gfxlock.frameDrop.count
-        stb   anim_frame_duration,u
-        bpl   @Anim_Reload             ; apply skipped frames unless frame drop is too high (cap to zero)
-        clr   anim_frame_duration,u
+        ; V2-DEVIATION (05/10/2026) : the overshoot c' (B, the frames elapsed
+        ; past -1) is carried as D + 1 + c', s2's image of D+1 frames. v1
+        ; reloaded D + c' - n, the frame drop taken twice : every image short
+        ; of n+1 frames. Clamped at 0 : one image per call at most.
+        addb  -1,x                          *    move.b  (a1),anim_frame_duration(a0) ; load frame duration
+        incb
+        bpl   >
+        clrb
+!       stb   anim_frame_duration,u
 @Anim_Reload                                *    moveq   #0,d1
         ldb   anim_frame,u                  *    move.b  anim_frame(a0),d1 ; load current frame number
         clra

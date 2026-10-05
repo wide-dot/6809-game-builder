@@ -30,6 +30,8 @@
 ;   +17 : T16 AABB collision : the potential matrix, and the list surgery
 ;   +18 : T17 ObjectWave spawns on the game clock, with frame drop carried
 ;   +19 : T18 AutoScroll moves the camera in 8.8, stops at its limit
+;   +20 : T19 AnimateSpriteSync is AnimateSprite once per elapsed frame
+;   +21 : T20 ObjectMoveAndFallSync is k frames of a move then a fall
 ;   +31 : $00 running, $0D all passed, $E0+n : n test(s) failed
 ;*******************************************************************************
 
@@ -362,9 +364,9 @@ t12ko
 ; is what keeps r-type's waves and boss in step with the arcade timings they
 ; were measured against.
 ;
-; Both are primed with a drop of zero first. The call that loads an animation
-; is not comparable between the two regimes : it consumes its own frame drop
-; on the spot, so a regime reporting two starts one frame further along.
+; Both are primed with a load first : the call that loads an animation counts
+; one frame, the current one, whatever the drop (the frames before it belong
+; to the previous animation), so the regimes are compared past it.
 ;
 ; The animation table is a fake : AnimateSprite stores a frame's value into
 ; image_set,u and never dereferences it, so recognisable numbers say more here
@@ -711,6 +713,88 @@ t17ko
 t18ko
 
 ; ---------------------------------------------------------------------------
+; T19 : AnimateSpriteSync is AnimateSprite once per elapsed frame. At one frame
+; per call the two are the same routine ; at two frames per call the overshoot
+; is carried, each image lasting the script's D+1 frames, as on the Mega
+; Drive. Ten frames of the fake animation (D = 4, an image every five frames) :
+; AnimateSprite ten calls, AnimateSpriteSync ten calls of one frame and five
+; calls of two, each after a call of its own that loads the animation.
+; ---------------------------------------------------------------------------
+        jsr   bench.reset
+        lda   #objid.tracer
+        ldb   #$11
+        jsr   bench.newObject
+        stu   t19a
+        jsr   bench.animReset
+        ldb   #1
+        jsr   bench.animStepsPlain         ; load
+        ldb   #10
+        jsr   bench.animStepsPlain         ; ten frames
+
+        lda   #objid.tracer
+        ldb   #$22
+        jsr   bench.newObject
+        stu   t19b
+        jsr   bench.animReset
+        lda   #1
+        sta   gfxlock.frameDrop.count
+        ldb   #1
+        jsr   bench.animSteps              ; load
+        ldb   #10
+        jsr   bench.animSteps              ; ten calls x 1 frame
+
+        lda   #objid.tracer
+        ldb   #$33
+        jsr   bench.newObject
+        stu   t19c
+        jsr   bench.animReset
+        lda   #2
+        sta   gfxlock.frameDrop.count
+        ldb   #1
+        jsr   bench.animSteps              ; load : the drop before it is not its own
+        ldb   #5
+        jsr   bench.animSteps              ; five calls x 2 frames
+        clr   gfxlock.frameDrop.count
+
+        ldu   t19a
+        ldd   image_set,u
+        cmpd  #$3333                       ; ten frames past the load : the third image
+        lbne  t19ko
+        lda   anim_frame_duration,u
+        cmpa  #4                           ; just loaded, its D+1 frames ahead
+        lbne  t19ko
+        ldx   t19b
+        jsr   t19same
+        lbne  t19ko
+        ldx   t19c
+        jsr   t19same
+        lbne  t19ko
+        lda   #$01
+        sta   result+20
+t19ko
+
+; ---------------------------------------------------------------------------
+; T20 : ObjectMoveAndFallSync over k elapsed frames is k frames of Sonic 2's
+; ObjectMoveAndFall : the position takes the velocity, then the velocity the
+; acceleration. Per case, k frames in one call against k calls of one frame,
+; to the subpixel, then against the values worked out by hand : a fall
+; (g = $38, k = 3), a negative acceleration (g = -$18), and seven frames.
+; ObjectMoveSync then the acceleration added k times would miss g*k(k-1)/2.
+; ---------------------------------------------------------------------------
+        ldx   #t20case1
+        jsr   t20run
+        lbne  t20ko
+        ldx   #t20case2
+        jsr   t20run
+        lbne  t20ko
+        ldx   #t20case3
+        jsr   t20run
+        lbne  t20ko
+        lda   #$01
+        sta   result+21
+t20ko
+
+; ---------------------------------------------------------------------------
 ; verdict
 ; ---------------------------------------------------------------------------
         ldx   #result+1
@@ -724,7 +808,7 @@ verdict.loop
         incb
 verdict.next
         leax  1,x
-        cmpx  #result+20
+        cmpx  #result+22
         bne   verdict.loop
         tstb
         bne   verdict.failed
@@ -835,6 +919,94 @@ bench.animStepsPlain
         bne   <
         puls  u,pc
 
+; u, x = two animated objects -> z set if they show the same image, at the
+; same frame of the script, with the same time left on it
+t19same
+        lda   anim_frame,u
+        cmpa  anim_frame,x
+        bne   >
+        lda   anim_frame_duration,u
+        cmpa  anim_frame_duration,x
+        bne   >
+        ldd   image_set,u
+        cmpd  image_set,x
+!       rts
+
+; x = a T20 case -> z set if it passed
+t20run
+        stx   t20case
+        jsr   bench.reset
+        lda   #objid.tracer
+        ldb   #$11
+        jsr   bench.newObject
+        stu   t20a
+        ldx   t20case
+        jsr   t20init
+        lda   #objid.tracer
+        ldb   #$22
+        jsr   bench.newObject
+        stu   t20b
+        ldx   t20case
+        jsr   t20init
+        ldx   t20case                      ; a : k frames in one call
+        lda   10,x
+        sta   gfxlock.frameDrop.count
+        sta   t20n
+        ldd   8,x
+        ldu   t20a
+        jsr   ObjectMoveAndFallSync
+        lda   #1                           ; b : k calls of one frame
+        sta   gfxlock.frameDrop.count
+!       ldx   t20case
+        ldd   8,x
+        ldu   t20b
+        jsr   ObjectMoveAndFallSync
+        dec   t20n
+        bne   <
+        clr   gfxlock.frameDrop.count
+        ldu   t20a                         ; a = b, from x_pos to y_vel
+        ldx   t20b
+        leau  x_pos,u
+        leax  x_pos,x
+        ldb   #y_vel+2-x_pos
+!       lda   ,u+
+        cmpa  ,x+
+        bne   t20run.rts
+        decb
+        bne   <
+        ldu   t20a                         ; a = the values worked out by hand
+        ldx   t20case
+        ldd   x_pos,u
+        cmpd  12,x
+        bne   t20run.rts
+        lda   x_sub,u
+        cmpa  14,x
+        bne   t20run.rts
+        ldd   y_pos,u
+        cmpd  15,x
+        bne   t20run.rts
+        lda   y_sub,u
+        cmpa  17,x
+        bne   t20run.rts
+        ldd   y_vel,u
+        cmpd  18,x
+t20run.rts
+        rts
+
+; u = object, x = T20 case : its position, subpixels cleared, and velocity
+t20init
+        ldd   ,x
+        std   x_pos,u
+        clr   x_sub,u
+        ldd   2,x
+        std   x_vel,u
+        ldd   4,x
+        std   y_pos,u
+        clr   y_sub,u
+        ldd   6,x
+        std   y_vel,u
+        rts
+
 ; put the object on the bench script, at its first segment.
 ; moveByScript.initialize would do this through a per object LUT ; v2 can name
 ; the script directly, which is what its own comment says to expect.
@@ -932,6 +1104,37 @@ trace.ptr  fdb   trace
 bench.animN fcb  0
 t13a       fdb   0
 t13b       fdb   0
+t19a       fdb   0
+t19b       fdb   0
+t19c       fdb   0
+t20a       fdb   0
+t20b       fdb   0
+t20case    fdb   0
+t20n       fcb   0
+
+; T20 cases : x_pos, x_vel, y_pos, y_vel, g, k, a pad byte, then what k
+; frames of ObjectMoveAndFall leave : x_pos, x_sub, y_pos, y_sub, y_vel
+t20case1   fdb   $0050,$0123,$0100,$FC00,$0038 ; y : $0100.00 -3*$400 +3*$38
+           fcb   3,0
+           fdb   $0053
+           fcb   $69
+           fdb   $00F4
+           fcb   $A8
+           fdb   $FCA8
+t20case2   fdb   $0010,$FF80,$0080,$0200,$FFE8 ; g < 0 : the velocity falls upwards
+           fcb   3,0
+           fdb   $000E
+           fcb   $80
+           fdb   $0085
+           fcb   $B8
+           fdb   $01B8
+t20case3   fdb   $0000,$0000,$0200,$FB00,$0038 ; seven frames : 7*-$500 + 21*$38
+           fcb   7,0
+           fdb   $0000
+           fcb   $00
+           fdb   $01E1
+           fcb   $98
+           fdb   $FC88
 
 ; a fake animation : three frames of four elapsed frames each, then reset.
 ; The duration byte sits before the label because AnimateSprite reads it at
@@ -1034,6 +1237,7 @@ moveByScript.NEGYSTEP equ -$0100
         INCLUDE "engine/graphics/camera/CheckCameraMove.asm"
         INCLUDE "engine/object-management/RunObjects.asm"
         INCLUDE "engine/object-management/ObjectMoveSync.asm"
+        INCLUDE "engine/object-management/ObjectMoveAndFallSync.asm"
         INCLUDE "engine/object-management/ObjectDp.asm"
         INCLUDE "engine/object-management/RunPgSubRoutine.asm"
 
