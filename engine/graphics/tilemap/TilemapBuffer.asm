@@ -41,6 +41,8 @@ tmb_x                 equ   dp_engine+19
 tmb_y                 equ   dp_engine+21
 DBT_lcpt              equ   dp_engine+23
 DBT_ccpt              equ   dp_engine+24
+DBT_left              equ   dp_engine+25 ; cells of a row after the ring's end
+DBT_ncol              equ   dp_engine+26 ; cells of a row
 
 ; persistant variables
 tmb_old_camera_x      fdb   0 ; last camera position (x axis)
@@ -495,9 +497,25 @@ cpt_x fcb 0
 
 ; 29ms on avg
 DrawBufferedTile
+; V2-DEVIATION (06/10/2026) : the loop rewritten for speed (sonic-2 measures
+; it with tools/ehz_perf.py). X walks the tile buffer, so U no longer goes
+; through a save and a restore around each call (the tile routines use D and
+; U only) ; LDD sets Z for an empty cell (a zero word) and N for the high
+; priority bit, the page is written only for a cell drawn now ; each row is
+; cut where the 32 cell ring comes back to its start, once per frame, instead
+; of a compare per cell ; the last cell of a row is no longer a case apart
+; (it did not queue a high priority tile). The high priority queue lives on
+; S : PSHS of the page, the cell and the screen address (13 cycles a tile
+; against 51), popped with PULS by DrawHighPriorityBufferedTile. An IRQ or a
+; call pushes below S, where the queue is free (filling) or consumed
+; (popping) ; the queue's end is an entry of page 0, pushed first.
 
         lda   glb_camera_move
         bne   @a
+        ; nothing drawn : an empty queue for the high priority pass
+        clr   tmb_hprio_top-5
+        ldd   #tmb_hprio_top-5
+        std   DBT_hiptr
         rts
 @a
 
@@ -509,20 +527,19 @@ DrawBufferedTile
         ; compute number of tiles to render
         ; saves one tile row or col when camera pos is a multiple of tile size
         ; ---------------------------------------------------------------------
-        ldb   #tmb_vp_h_tiles-1               ; nb of tile in screen width
+        ldb   #tmb_vp_h_tiles               ; nb of tile in screen width
         lda   <glb_camera_x_pos+1
         anda  #%00000111
         bne   @skip
         decb
-@skip   stb   DBT_ccpt
-        stb   DBT_ccpt_bck
+@skip   stb   <DBT_ncol
 
         ldb   #tmb_vp_v_tiles               ; nb of tile in screen height
         lda   <glb_camera_y_pos+1
         anda  #%00001111
         bne   @skip
         decb
-@skip   stb   DBT_lcpt
+@skip   stb   <DBT_lcpt
 
         ; compute top left tile position on screen
         ; position is rounder to 2 px horizontally beacuse of 2px per byte
@@ -562,164 +579,102 @@ DrawBufferedTile
         std   <glb_screen_location_2
         addd  #$2001
         std   <glb_screen_location_1
-@end    std   s_loc1
+@end    std   DBT_rowy
 
         ldd   <glb_screen_location_2
         subd  <glb_screen_location_1
-        std   delta
-        std   delta2
-        std   delta3
+        std   DBT_delta
+        std   DBT_delta2
 
         ; compute position in cycling buffer
         ; ---------------------------------------------------------------------
-
-; OPTIM SAM
         ldb   <glb_camera_y_pos+1                     ; each 16px steps in y add $80
         lda   #%00010000
         mul
         ldb   <glb_camera_x_pos+1                     ; each 8px steps in x add $04
         andb  #%11111000
         _lsrd
-
         addd  #tile_buffer
+        std   DBT_row
 
-        ldu   #tmb_hprio_tiles+5                      ; high priority tiles queue
-        stu   hi_ptr
+        ; a buffer row is a ring of 32 cells : from the first column, the row
+        ; reaches the ring's end at most once, at the same column for all
+        andb  #%01111111
+        lsrb
+        lsrb                                          ; first column
+        negb
+        addb  #32                                     ; cells up to the ring's end
+        cmpb  <DBT_ncol
+        blo   @a
+        ldb   <DBT_ncol
+@a      stb   DBT_run1
+        negb
+        addb  <DBT_ncol
+        stb   DBT_run2                                ; cells after it (0 : none)
 
-; **************************************
-; * Tile rendering Loop
-; **************************************
-
-        ; OPTIM SAM: ici l'idée est de garder le maximum de trucs dans les registres
-        ; car les accès mémoire sont couteux. U contient alors les données sur le
-        ; tile_buffer. Le PULU effectue le +4, et le modulo (buffer 128 octets)
-        ; se fait par CMPU/BNE qui est finalement le plus rapide (8 cycles l'essentiel
-        ; du temps) car on accède pas à la mémoire. Y contient glb_screeb_location_1
-        ; lequel n'est mis à jour que lorsque c'est necessaire (paresseusement). Ainsi
-        ; sur les tiles vide on va très très vite. La variable glb_screeb_location_2
-        ; est elle aussi mise à jour que lorsque c'est nécéssaire, sa valeur étant
-        ; déduite de glb_screen_location_1 par un offset constant pré-calculé. Donc au
-        ; final sur les tiles vides (au moins la moitié des cas), la boucle revient
-        ; à faire PULU et LEAY. C'est très très rapide, et tout tient dans 128 octets
-        ; ce qui permet d'utiliser des sauts 8 bits.
-
-        ldy   <glb_screen_location_1
+        sts   DBT_sys
+        lds   #tmb_hprio_top
+        clrb                                          ; the queue's end : page 0
+        pshs  b,x,y
 
 DBT_lloop
-        ; tiles in col
-        ; ****************
-        tfr   d,u
-        std   ls_pos
-        andb  #%10000000
-        std   l_pos2
-        std   l_pos4
-        addd  #%10000000
-        std   l_pos
-        std   l_pos3
+        ldx   #0                                      ; the row's first cell
+DBT_row equ   *-2
+        ldy   #0                                      ; and screen address
+DBT_rowy equ  *-2
+        lda   #0
+DBT_run1 equ  *-1
+        sta   <DBT_ccpt
+        lda   #0
+DBT_run2 equ  *-1
+        sta   <DBT_left
 
 DBT_cloop
-        pulu  d,x                       ; get a: b:draw routine page, x:draw routine addr
-        cmpu  #0
-l_pos   set   *-2
-        bne   @c
-        ldu   #0
-l_pos2  set   *-2
-@c      stb   $E7E6
-        beq   empty_tile
-        tsta
-        bmi   highpri
-loc_tmp equ   glb_screen_location_2
-        stu   <loc_tmp                  ; saves U
-        sty   <glb_screen_location_1    ; sets location_1 for draw routine
-        leau  $1234,y                   ; load location_2 for draw routine
-delta   set   *-2
-        jsr   ,x                        ; call tile draw routine (glb_screen_location_1 will be used in this routine)
-        ldu   <loc_tmp                  ; restore U
-NXT_cloop
-        leay  2,y                       ; advances glb_screen_location_1
-
-        dec   DBT_ccpt
-        bne   DBT_cloop
-
-        lda   #0
-DBT_ccpt_bck equ   *-1
-        sta   DBT_ccpt
-
-        ; last tile in col
-        ; ****************
-
-        pulu  d,x                       ; get a: b:draw routine page, y:draw routine addr
+        ldd   ,x                                      ; a : flags, b : page (0 : empty)
+        beq   DBT_empty
+        bmi   DBT_high                                ; a's bit 7 : high priority
         stb   $E7E6
-        bne   @a
-        inc   glb_alphaTiles            ; if a tile contains transparency, set the tag
-        bra   @skip
-@a      sty   <glb_screen_location_1    ; sets location_1 for draw routine
-        leau  $1234,y                   ; load location_2 for draw routine
-delta2  set   *-2
-        jsr   ,x
-@skip
-
-        ; next line
-        ; ****************
-
-        ldy   #0
-s_loc1  equ   *-2
-        leay  40*16,y
-        sty   s_loc1
-
-        ldd   #0
-ls_pos  equ   *-2               ; line start pos
+        sty   <glb_screen_location_1                  ; plane 1, read by the routine
+        leau  $1234,y                                 ; plane 2
+DBT_delta equ *-2
+        jsr   [2,x]
+DBT_next
+        leax  4,x
+        leay  2,y
+        dec   <DBT_ccpt
+        bne   DBT_cloop
+        lda   <DBT_left                               ; the row goes on from the ring's start
+        beq   @row
+        sta   <DBT_ccpt
+        clr   <DBT_left
+        leax  -128,x
+        bra   DBT_cloop
+@row    ldd   DBT_rowy                                ; next row : 16 lines down
+        addd  #40*16
+        std   DBT_rowy
+        ldd   DBT_row                                 ; and the buffer's next row
         addd  #128
         anda  #%00000111
-        adda  #tile_buffer/256  ; add base address
-
-        dec   DBT_lcpt
+        adda  #tile_buffer/256
+        std   DBT_row
+        dec   <DBT_lcpt
         bne   DBT_lloop
-@rts    ldx   hi_ptr
-        clr   -5,x              ; end marker for high priority tiles
+        sts   DBT_hiptr
+        lds   #0
+DBT_sys equ   *-2
         rts
 
-highpri stu   <loc_tmp
-        ldu   #0
-hi_ptr  set   *-2
-        pshu  b,x,y                     ; saves prio,draw routine addr,location_1
-        leax  $1234,y                   ; compute location_2
-delta3  set   *-2
-        stx   5,u                       ; save in high prio queue
-        leau  7+5,u
-        stu   hi_ptr
-        ldu   <loc_tmp
-        bra   NXT_cloop
+DBT_high
+        pshs  b,x,y                                   ; page, cell, screen address
+        bra   DBT_next
 
-empty_tile
-        inc   glb_alphaTiles
-        lda   DBT_ccpt
-@a      leay  2,y
-        deca
-        beq   DBT_ccpt_bck-1
-        ldb   1,u
-        beq   @b
-        sta   DBT_ccpt
-        jmp   DBT_cloop
-@b      leau  4,u
-        cmpu  #0
-l_pos3  set   *-2
-        bne   @a
-        ldu   #0
-l_pos4  set   *-2
-        bra   @a
+DBT_empty
+        inc   <glb_alphaTiles                         ; the background shows : redraw it
+        bra   DBT_next
 
 ; ****************************************************************************************************************************
 ; *
-; *
-; *
-; *
-; *
-; *
-; *
-; *
-; *
-; *
+; * DrawHighPriorityBufferedTile : the queue DrawBufferedTile pushed on S, popped
 ; *
 ; ****************************************************************************************************************************
 
@@ -728,19 +683,19 @@ DrawHighPriorityBufferedTile
         ; mandatory if using T2 and direct access to E7E6
         anda  #0
         sta   glb_Page
-
-        ldy   #tmb_hprio_tiles
+        sts   @sys
+        lds   #tmb_hprio_tiles                        ; zeroed by the game : an empty queue
+DBT_hiptr equ *-2
         bra   @entry
-@loop
-        ldu   3,y
-        stu   <glb_screen_location_1
-        ldu   5,y
-        leay  7,y
-        jsr   [-6,y]  ; y register should be saved and restored (it works without, only for small tiles)
-@entry
-        ldb   ,y
+@loop   sty   <glb_screen_location_1
+        leau  $1234,y
+DBT_delta2 equ *-2
+        jsr   [2,x]
+@entry  puls  b,x,y
         stb   $E7E6
         bne   @loop
+        lds   #0
+@sys    equ   *-2
         rts
 
  IFDEF TMB_TILE_BUFFER
@@ -765,3 +720,6 @@ tmb_hprio_tiles
         fill  0,tmb_vp_h_tiles*tmb_vp_v_tiles*7 ; in case all tiles are in high priority ... that's crazy ... you can lower that if you know what you are doing
         fcb   0 ; end marker
  ENDC
+; the queue grows down from its top, 5 bytes a tile : 990 at most, the
+; room below for an IRQ (12 bytes) and a call (2) is ample
+tmb_hprio_top equ tmb_hprio_tiles+tmb_vp_h_tiles*tmb_vp_v_tiles*7
