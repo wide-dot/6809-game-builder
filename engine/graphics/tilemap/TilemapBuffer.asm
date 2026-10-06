@@ -405,11 +405,23 @@ DrawTile
         jmp   NextCol
 @a      stu   @dyn2
         sta   @dyn0
+ IFDEF TilemapBuffer.OPAQUE
+        ; V2-DEVIATION (06/10/2026) : bit 10 of a chunk entry marks a tile
+        ; that covers its whole cell (sonic-2's tools/ehz_opaque.py) ; it is
+        ; kept in the flags byte (bit 2) for a background routine that skips
+        ; the rows such tiles cover. The tile index is then bits 0-9.
+        anda  #%11111100                              ; save priority, solidity and opacity on first byte
+ ELSE
         anda  #%11111000                              ; save priority and solidity on first byte
+ ENDC
         sta   ,y
         lda   #0
 @dyn0   equ   *-1
+ IFDEF TilemapBuffer.OPAQUE
+        anda  #%00000011                              ; remove priority, solidity and opacity to get tile index
+ ELSE
         anda  #%00000111                              ; remove priority and solidity to get tile index
+ ENDC
         std   @dyn1                                   ; multiply tile index by 3 to load tile page and addr
         _lsld
         addd  #0                                      ; (dynamic)
