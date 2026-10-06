@@ -76,7 +76,9 @@ Each encoder declaration will run a encoding process for the image or group of i
 - name: encoding type (**draw**, bdraw, rle, zx0)
 - mirror: pre process image by mirroring it (**none**, x, y, xy)
 - shift: pre process image by shifting n pixels to the right (**0**, 1, 2, 3, 4, 5, 6, 7)
-- position: image coordinate (**center**, top-left, 3qtr-center)
+- position: image coordinate (**center**, center-w2, top-left, 3qtr-center) ;
+  center anchors at column (w-1)/2 and row (h-1)/2, center-w2 at w/2 and h/2,
+  the Mega Drive art origin (they differ on an even size only)
 
 Default value are in bold.
 

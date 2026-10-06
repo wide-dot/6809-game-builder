@@ -396,6 +396,14 @@ Setting `render_playfieldcoord` in `render_flags` switches the object to
 playfield coordinates (`x_pos` / `y_pos`), which the engine converts through
 the camera offsets. Without that flag `x_pos` is never read.
 
+The position names one pixel of the image, its anchor, chosen per encoder
+by `position`. `center` (the default, v1's) is column `(w-1)/2`, row
+`(h-1)/2` ; `center-w2` is `w/2`, `h/2`, the origin of art converted from
+the Mega Drive (an even image's middle, a mirror taking dx to -1-dx). The
+two differ on an even size only, by one pixel and one row : a game whose
+positions come from the original's code takes `center-w2`, and its
+positions need no correction.
+
 ### Backgrounds
 
 A `bdraw` sprite saves what it covers before drawing, into cells allocated by

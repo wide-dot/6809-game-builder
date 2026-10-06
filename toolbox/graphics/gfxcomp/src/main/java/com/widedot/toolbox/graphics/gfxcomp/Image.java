@@ -78,10 +78,20 @@ public class Image {
 	public static final String POSITION_CENTER   = "center";
 	public static final String POSITION_TOP_LEFT = "top-left";
 	public static final String POSITION_3QTRC    = "3qtr-center";	
+	/**
+	 * The anchor at column w/2 and row h/2 (integer halves), where "center"
+	 * anchors at (w-1)/2 and (h-1)/2. Both agree on an odd size ; on an even
+	 * one, center-w2 is one pixel right and one row down. It is the Mega
+	 * Drive's sprite origin as the art converters export it (the origin in
+	 * the middle of an even canvas, a mirror mapping dx to -1-dx), so a
+	 * position taken from the original game lands on the same pixel.
+	 */
+	public static final String POSITION_CENTER_W2 = "center-w2";
 	
 	public static final int POSITION_CENTER_INT   = 0;
 	public static final int POSITION_TOP_LEFT_INT = 1;
 	public static final int POSITION_3QTRC_INT    = 2;	
+	public static final int POSITION_CENTER_W2_INT = 3;
 	
 	public static final HashMap<String, Integer> positionId = new HashMap<String, Integer>() {
 		private static final long serialVersionUID = 1L;
@@ -89,6 +99,7 @@ public class Image {
 			put(POSITION_CENTER, POSITION_CENTER_INT);
 			put(POSITION_TOP_LEFT, POSITION_TOP_LEFT_INT);
 			put(POSITION_3QTRC, POSITION_3QTRC_INT);
+			put(POSITION_CENTER_W2, POSITION_CENTER_W2_INT);
 		}
 	};
 	
@@ -436,6 +447,7 @@ public class Image {
 			case POSITION_CENTER_INT   : coordinate = (int)((Math.ceil(height/2.0)-1)*40) +  width/8; break;
 			case POSITION_TOP_LEFT_INT : coordinate = 0; break;
 			case POSITION_3QTRC_INT    : coordinate = (int)((Math.ceil(height*3.0/4.0)-1)*40) +  width/8; break;
+			case POSITION_CENTER_W2_INT: coordinate = (height/2)*40 + width/8; break;
 		}
 		return coordinate;
 	}
@@ -447,6 +459,7 @@ public class Image {
 			case POSITION_CENTER_INT   : row = y-(height-1)/2; break;
 			case POSITION_TOP_LEFT_INT : row = 0; break;
 			case POSITION_3QTRC_INT    : row = y-(height-1)*3/4; break;
+			case POSITION_CENTER_W2_INT: row = y-height/2; break;
 		}
 		return row;
 	}
@@ -458,6 +471,7 @@ public class Image {
 			case POSITION_CENTER_INT   : offset = xMin-(((width-1)/2)&~7); break;
 			case POSITION_TOP_LEFT_INT : offset = xMin; break;
 			case POSITION_3QTRC_INT    : offset = xMin; break;
+			case POSITION_CENTER_W2_INT: offset = xMin-((width/2)&~7); break;
 		}
 		return offset;
 	}
@@ -470,6 +484,7 @@ public class Image {
 			case POSITION_CENTER_INT   : refByte = ((width-1)/2)/8; refRow = (height-1)/2; break;
 			case POSITION_TOP_LEFT_INT : break;
 			case POSITION_3QTRC_INT    : refRow = (height-1)*3/4; break;
+			case POSITION_CENTER_W2_INT: refByte = (width/2)/8; refRow = height/2; break;
 		}
 		return (monoY0 - refRow) * 40 + (monoX0 / 8 - refByte);
 	}
@@ -488,6 +503,7 @@ public class Image {
 			case POSITION_CENTER_INT   : coordinate = (int)((Math.ceil(height/2.0)-1)*40) +  width/8; break;
 			case POSITION_TOP_LEFT_INT : coordinate = 0; break;
 			case POSITION_3QTRC_INT    : coordinate = (int)((Math.ceil(height*3.0/4.0)-1)*40) +  width/8; break; 
+			case POSITION_CENTER_W2_INT: coordinate = (height/2)*40 + width/8; break;
 		}	
 		
 		// Position de début et de fin de chaque sous-image
@@ -539,6 +555,7 @@ public class Image {
 						case POSITION_CENTER_INT   : y1_offset = curLine-(height-1)/2; break;
 						case POSITION_TOP_LEFT_INT : y1_offset = 0; break;
 						case POSITION_3QTRC_INT    : y1_offset = curLine-(height-1)*3/4; break;
+						case POSITION_CENTER_W2_INT: y1_offset = curLine-height/2; break;
 					}						
 				}
 				if (indexDest*2+page*2-(160*curLine) < x_Min) {
@@ -547,6 +564,7 @@ public class Image {
 						case POSITION_CENTER_INT   : x1_offset = x_Min-((width-1)/2); break;
 						case POSITION_TOP_LEFT_INT : x1_offset = 0; break;
 						case POSITION_3QTRC_INT    : x1_offset = 0; break;
+						case POSITION_CENTER_W2_INT: x1_offset = x_Min-width/2; break;
 					}						
 				}
 				if (indexDest*2+page*2-(160*curLine) > x_Max) {
@@ -596,6 +614,7 @@ public class Image {
 							case POSITION_CENTER_INT   : y1_offset = curLine-(height-1)/2; break;
 							case POSITION_TOP_LEFT_INT : y1_offset = 0; break;
 							case POSITION_3QTRC_INT    : y1_offset = curLine-(height-1)*3/4; break;
+							case POSITION_CENTER_W2_INT: y1_offset = curLine-height/2; break;
 						}							
 					}
 					if (indexDest*2+page*2+1-(160*curLine) < x_Min) {
@@ -604,6 +623,7 @@ public class Image {
 							case POSITION_CENTER_INT   : x1_offset = x_Min-((width-1)/2); break;
 							case POSITION_TOP_LEFT_INT : x1_offset = 0; break;
 							case POSITION_3QTRC_INT    : x1_offset = 0; break;
+							case POSITION_CENTER_W2_INT: x1_offset = x_Min-width/2; break;
 						}					
 					}
 					if (indexDest*2+page*2+1-(160*curLine) > x_Max) {
@@ -747,7 +767,8 @@ public class Image {
 		if (isOneBpp()) {
 			return 0;
 		}
-		switch (width % 8) {
+		// center-w2 anchors at w/2, which is (w-1)/2 of a width made odd
+		switch ((position == POSITION_CENTER_W2_INT ? width | 1 : width) % 8) {
 			case 0 : return -1;
 			case 1 : return 0;
 			case 2 : return 0;
