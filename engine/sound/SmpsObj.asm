@@ -257,7 +257,27 @@ YM2413_DrumModeOn
 InitMusicPlayback
         jsr   FMSilenceAll
         jsr   PSGSilenceAll
-        rts
+        ; V2-DEVIATION (06/10/2026) : the music tracks are cleared, as the
+        ; Z80 driver's zInitMusicPlayback does. v1 only set the fields the
+        ; new song's header gives : a song started over another one (the
+        ; invincibility's, the act's again after it or after a death) kept
+        ; the previous loop counters (F7 loops a number of times of its own
+        ; on each track : the tracks drift apart), its note fill, detune and
+        ; modulation, and the tracks it does not use went on playing the
+        ; previous song. The channel (VoiceControl) and its note control
+        ; (the drum mode's block and fnum on FM7-9) stay.
+        pshs  x                        ; the song (PlayMusic)
+        ldx   #tracksStart
+@track  ldu   VoiceControl,x           ; VoiceControl and NoteControl
+        ldd   #0
+        ldy   #smps.track.size/2
+@clear  std   ,x++
+        leay  -1,y
+        bne   @clear
+        stu   VoiceControl-smps.track.size,x
+        cmpx  #tracksEnd
+        bne   @track
+        puls  x,pc
 
 ******************************************************************************
 * FMSilenceAll
@@ -423,16 +443,45 @@ _UpdateTrack MACRO
 a@      equ   *        
  ENDM
         
-MusicFrame 
-        
-        ; simple sound fx implementation with no priority
-        ; TODO upgrade to a queue system like original code
-        ldb   Smps.SFXToPlay           ; get last requested sound effect to play
-        beq   @a                       ; 0 means no sound effect to play
+MusicFrame
+
+        ; V2-DEVIATION (06/10/2026) : s2's sound queue. The game's two slots
+        ; (SFXToPlay : PlaySound's SFX0, SFXToPlay2 : PlaySound2's and
+        ; PlaySoundStereo's SFX1) are read and cleared every frame ; of the
+        ; two, the effect of higher priority plays, unless the effect playing
+        ; has a higher one (the Z80 driver's zCycleQueue, zSFXPriority).
+        ; v1 played the last request, whatever was playing.
+        clra                           ; the effect chosen (0 : none)
+        ldb   Smps.SFXPriorityVal
+        stb   @prio
+        ldb   Smps.SFXToPlay
+        bsr   @pick
+        ldb   Smps.SFXToPlay2
+        bsr   @pick
+        clr   Smps.SFXToPlay           ; the request not chosen is dropped, as s2's
+        clr   Smps.SFXToPlay2
+        tsta
+        beq   @a
+        ldb   @prio
+        bmi   >                        ; the jump's priority (80h) is never kept
+        stb   Smps.SFXPriorityVal
+!       tfr   a,b
         jsr   PlaySound
-        ldb   #0                       ; reset to be able to play another effect from now
-        stb   Smps.SFXToPlay
-@a       
+        bra   @a
+@pick   tstb
+        beq   @rts
+        pshs  b
+        lsrb                           ; Sound_Index offset / 2 : 1 for the first effect
+        ldx   #SFXPriority-1
+        ldb   b,x
+        cmpb  @prio
+        blo   @low                     ; below the effect playing or the other request
+        stb   @prio
+        puls  a,pc                     ; chosen
+@low    puls  b,pc
+@prio   fcb   0
+@rts    rts
+@a
         ldd   MusicData
         lbeq  UpdateSound              ; no music to play
         clr   DoSFXFlag
@@ -446,14 +495,29 @@ UpdateEverything
         sta   PALUpdTick
         jsr   UpdateMusic              ; play 2 frames in one to keep original speed
 @a      jsr   UpdateMusic              ; play 2 frames in one to keep original speed
-        bra   UpdateSound
+        lbra  UpdateSound
 
 UpdateMusic
-        * jsr   TempoWait              ; optim : do not call TempoWait, instead skip update
+        ; V2-DEVIATION (06/10/2026) : the Z80 driver's TempoWait. The tracks
+        ; are updated every frame ; when the tempo does not overflow, every
+        ; duration is one longer first, so the notes do not move on but the
+        ; note fill, the modulation and the PSG volume envelopes run their
+        ; frame. v1 skipped the whole update instead : those ran at the
+        ; tempo's rate (EHZ's 9Eh : 62 % of their speed).
         lda   Smps.CurrentTempo        ; tempo value
         adda  Smps.TempoTimeout        ; Adds previous value to
         sta   Smps.TempoTimeout        ; Store this as new
-        bcc   @rts                     ; skip update if tempo need more waits
+        bcs   @update                  ; overflow : the tracks move on
+        inc   SongDAC.DurationTimeout
+        inc   SongFM1.DurationTimeout
+        inc   SongFM2.DurationTimeout
+        inc   SongFM3.DurationTimeout
+        inc   SongFM4.DurationTimeout
+        inc   SongFM5.DurationTimeout
+        inc   SongPSG1.DurationTimeout
+        inc   SongPSG2.DurationTimeout
+        inc   SongPSG3.DurationTimeout
+@update
         _UpdateTrack SongDAC,DACUpdateTrack
         _UpdateTrack SongFM1,FMUpdateTrack
         _UpdateTrack SongFM2,FMUpdateTrack
@@ -893,9 +957,10 @@ PSGFinishTrackUpdate
         
 PSGDoNoteOn
         lda   PlaybackControl,y
-        bita  #$06                     ; If either bit 1 ("track in rest") and 2 ("SFX overriding this track"), quit!
-        beq   PSGUpdateFreq                       
-        rts                            ; If so, quit
+        bita  #$06                     ; If either bit 1 ("track in rest") and 2 ("SFX overriding this track"), no frequency
+        beq   PSGUpdateFreq
+        bra   PSGDoVolFX               ; V2-DEVIATION (06/10/2026) : the volume envelope and the modulation still run their
+                                       ; frame (the Z80 driver's zPSGUpdateTrack ; they write nothing) ; v1 returned
 PSGUpdateFreq
         ldb   Detune,y
         sex
@@ -914,6 +979,7 @@ PSGUpdateFreq
         _lsrd
         _lsrd
         _lsrd              
+        andb  #$3F                     ; V2-DEVIATION (06/10/2026) : d4-d9 only, as the Z80 driver : a byte with bit 7 set is a latch to another register
         stb   <SN76489.D
         bra   PSGDoVolFX
         
@@ -1000,6 +1066,12 @@ PSGDoModulation
         std   ModulationVal,y        
               
 PSGUpdateFreq2
+        ; V2-DEVIATION (06/10/2026) : the Z80 driver's zPSGUpdateFreq quits
+        ; when the track rests or an SFX overrides it ; v1 wrote the music
+        ; track's modulated frequency over the SFX playing on its channel.
+        lda   PlaybackControl,y
+        bita  #$06
+        bne   @rts
         ldb   Detune,y
         sex
         addd  NextData,y               ; apply detune but don't update stored frequency
@@ -1018,8 +1090,9 @@ PSGUpdateFreq2
         _lsrd
         _lsrd
         _lsrd              
+        andb  #$3F                     ; V2-DEVIATION (06/10/2026) : d4-d9 only (see PSGUpdateFreq)
         stb   <SN76489.D
-        rts        
+@rts    rts        
  
 ; 70 notes (Note value $81=C3 $C7=G#8) with direct access
 ; (Note value $C8 is reserved for PSG3 to drive noise PSG4)
@@ -1108,11 +1181,18 @@ SFXTrackOffs
         fdb   SFXPSG3                  ; identified by Track id 80C0 in smps sfx file
         fdb   SFXPSG3                  ; identified by Track id 80E0 in smps sfx file
 
+; V2-DEVIATION (06/10/2026) : as the Z80 driver's zMusicTrackOffs, s2's
+; FM3, FM4 and FM5 (SFX channel ids 2, 4, 5) override SongFM3, SongFM4 and
+; SongFM5 ; the SFX track takes the music track's YM2413 channel (2, 3, 4,
+; PlaySound). v1 listed SongFM2 first and kept the header's channel id : an
+; SFX on 2 silenced SongFM2 but played over SongFM3 (channel 2), whose
+; instrument was never given back ; one on 4 silenced SongFM4 and played
+; over SongFM5.
 MusicTrackOffs
-        fdb   SongFM2
-        fdb   SongFM3        
-        fdb   SongFM4        
-        fdb   SongFM5
+        fdb   SongFM3                  ; 2 : FM3
+        fdb   SongFM3                  ; 3 : (no SFX on FM4's id 3)
+        fdb   SongFM4                  ; 4 : FM4
+        fdb   SongFM5                  ; 5 : FM5
         fdb   SongPSG1
         fdb   SongPSG2
         fdb   SongPSG3
@@ -1130,6 +1210,20 @@ PlaySound
         ; Check Spin Dash
         lda   #0
         sta   zSpindashActiveFlag
+        ; V2-DEVIATION (06/10/2026) : the Z80 driver's zPlaySound_CheckRing :
+        ; the ring sound alternates with its left speaker version (another
+        ; channel, so two rings in a row do not cut each other)
+        cmpb  #SndID_Ring
+        bne   @spindash
+        com   zRingSpeaker
+        beq   @spindash          ; was FFh : the right one, as asked
+        ldb   #SndID_RingLeft    ; was 0 : the left one
+        ldx   #Sound_Index
+        abx
+        ldx   ,x
+        stx   SoundData
+        bra   PlaySound_main
+@spindash
         cmpb  #SndID_SpindashRev ; is this the spindash rev sound playing?
         bne   PlaySound_main     ; if not, branch
 
@@ -1139,7 +1233,7 @@ PlaySound
         lda   #-1                ; reset the extra frequency (becomes 0 on the next line)
 !
         inca                     ; increase the frequency
-        cmpa  #$05
+        cmpa  #$0C               ; V2-DEVIATION (06/10/2026) : 12 steps, the Z80 driver's (v1 : 5)
         bhs   >
         sta   zSpindashExtraFrequencyIndex
 !
@@ -1210,6 +1304,11 @@ PlaySound_main
 @dynb   ldd   #0                       ; (dynamic)
         sta   PlaybackControl,u
         stb   VoiceControl,u
+        tstb
+        bmi   >                        ; PSG : the header's channel is the chip's
+        lda   VoiceControl,y           ; FM : the overridden music track's YM2413 channel (MusicTrackOffs)
+        sta   VoiceControl,u
+!
         ldb   #GoSubStack
         stb   StackPointer,u           ; Reset track "gosub" stack
         ldd   SMPS_SFX_TRK_DATA_PTR,x 
@@ -1253,7 +1352,7 @@ CoordFlagLookup
         fdb   cfSetTempo            ; EA -- done
         fdb   cfSetTempoMod         ; EB -- done
         fdb   cfChangePSGVolume     ; EC -- done
-        fdb   cfNop                 ; ED -- unsupported
+        fdb   cfSkip1               ; ED -- V2-DEVIATION (06/10/2026) : s2's cfClearPush is a bare ret after the dispatcher's read : 1 byte (v1 : none)
         fdb   cfNop                 ; EE -- unsupported
         fdb   cfSetVoice            ; EF -- done
         fdb   cfModulation          ; F0 -- done
@@ -1317,6 +1416,8 @@ cfChangeFMVolume
         lda   Volume,y                 ; apply volume attenuation change
         adda  ,x+
         sta   Volume,y
+        ldb   VoiceControl,y           ; V2-DEVIATION (06/10/2026) : a PSG track only keeps the volume
+        bmi   @rts                     ; (the Z80 driver's zSetChanVol ; v1 wrote YM2413 register 30h+80h+)
         ldb   PlaybackControl,y
         bitb  #$04                     ; Is bit 2 (04h) Is SFX overriding this track?
         bne   @rts        
@@ -1472,6 +1573,8 @@ cfStopTrack
         anda  #$6F                     ; clear playback byte bit 7 (80h) -- currently playing (not anymore)
         sta   PlaybackControl,y        ; clear playback byte bit 4 (10h) -- do not attack
         
+        cmpy  #SongDAC                 ; V2-DEVIATION (06/10/2026) : the DAC track has no FM note
+        beq   @b                       ; (its channel 6 is the drum mode's : the Z80 driver's zDACStopTrack)
         ldb   VoiceControl,y           ; read channel nb
         bmi   @a                       ; Is voice control bit 7 (80h) a PSG track set?
         _FMNoteOff                     ; (dependency) should be preceded by A loaded with PlaybackControl,y and B with VoiceControl,y               
@@ -1481,12 +1584,13 @@ cfStopTrack
         bmi   @d
 @rts    puls  u                        ; removing return address from stack; will not return to coord flag loop
         rts
-@d      lda   VoiceControl,y           ; this is SFX Track
+@d      clr   Smps.SFXPriorityVal      ; V2-DEVIATION (06/10/2026) : an SFX track ends, any effect may play (the Z80 driver's)
+        lda   VoiceControl,y           ; this is SFX Track
         lbmi  @psgsfx
-        ldu   #MusicTrackOffs          ; get back the overriden music track
-        suba  #2
-        asla                           ; transform track ref to an index: $02,$04,$05 => 0,4,6
-        ldu   a,u                      ; U ptr to same FM track ID than SFX but for Music, Y still for FM SFX Track
+        ldb   #smps.track.size         ; V2-DEVIATION (06/10/2026) : the music track on the SFX's YM2413
+        mul                            ; channel (SongFM1 + channel, see MusicTrackOffs)
+        addd  #SongFM1
+        tfr   d,u                      ; U ptr to the music track, Y still the FM SFX track
         lda   PlaybackControl,u
         bita  #$04                     ; Is bit 2 (04h) Is SFX overriding this track?
         beq   @rts                     ; if not skip this part (i.e. if SFX was not overriding this track, then nothing to restore)
@@ -1734,6 +1838,7 @@ tracksStart                ; This is the beginning of all BGM track memory
         fill  0,sizeof{Track}-2
 StructEnd                          ; V2-DEVIATION: after the values (see above)
 
+zRingSpeaker                 fcb 0 ; the Z80 driver's : 0 plays the left ring sound next
 zSpindashPlayingCounter      fcb 0
 zSpindashExtraFrequencyIndex fcb 0
 zSpindashActiveFlag          fcb 0 ; -1 if spindash charge was the last sound that played
