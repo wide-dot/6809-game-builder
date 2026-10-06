@@ -280,51 +280,19 @@ public class Image {
 			shift = encoderShift;
 			position = known(imageName, "position", encoderPosition, positionId, "");
 			planes = encoderPlanes;
-			if (!PLANES_POINTER.equals(planes) && !PLANES_OFFSET.equals(planes)) {
-				throw new Exception("image " + imageName + " : planes must be "
-						+ PLANES_POINTER + " or " + PLANES_OFFSET + ", got '" + planes + "'");
-			}
-			if (PLANES_OFFSET.equals(planes) && type != TYPE_DRAW_INT && !isOneBpp()) {
-				// bdraw saves and restores a background through its own cells,
-				// rle and zx0 stream : none of them addresses the two planes
-				// the way this option describes
-				throw new Exception("image " + imageName + " : planes=" + PLANES_OFFSET
-						+ " only applies to the draw encoder, not to " + encoderType);
-			}
+			checkPlanes(imageName, encoderType);
 			
 			variant = variantKey(type, mirror, shift);
 			width = image.getWidth();
 			height = image.getHeight();
 			colorModel = image.getColorModel();
-			int pixelSize = colorModel.getPixelSize();
 			plane0_empty = true;
 			plane1_empty = true;
 			index = imageIndex;
 			nb_cell = null;
 
 		// process images
-		if (pixelSize != 8) {
-			throw new Exception("unsupported file format for " + imageFile + ", pixel size: "
-			                    + pixelSize + " (should be 8).");
-		}
-		if (isOneBpp()) {
-			if (width > 320 || height > 200) {
-				throw new Exception(imageFile + " is " + width + "x" + height
-				                    + ", past the 320x200 screen : the plane rows would overrun.");
-			}
-			if (shift != 0) {
-				throw new Exception("image " + imageName + " : 1bpp sprites are byte-aligned,"
-				                    + " only shift 0 is supported, got shift " + shift);
-			}
-			if (!PLANES_POINTER.equals(planes)) {
-				throw new Exception("image " + imageName + " : 1bpp code is plane-agnostic,"
-				                    + " the plane is selected at run time, planes must be "
-				                    + PLANES_POINTER + ", got '" + planes + "'");
-			}
-		} else if (width > 160 || height > 200) {
-			throw new Exception(imageFile + " is " + width + "x" + height
-			                    + ", past the 160x200 screen : the plane rows would overrun.");
-		}
+		checkGeometry(imageName, imageFile);
 		checkPixelRange(imageFile);
 
 			// The pipeline, in the order the two spaces impose : the mirror is
@@ -354,6 +322,52 @@ public class Image {
 	// calcul des flags transparency, odd et even
 	// calcul x et y offset en fonction du type de positionnement (centre, top left ...)		
 	
+	/** the planes option : a known value, and the offset form for the draw encoder only */
+	// the toolchain signals build errors with plain Exceptions (48 throw sites)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	private void checkPlanes(String imageName, String encoderType) throws Exception {
+		if (!PLANES_POINTER.equals(planes) && !PLANES_OFFSET.equals(planes)) {
+			throw new Exception("image " + imageName + " : planes must be "
+					+ PLANES_POINTER + " or " + PLANES_OFFSET + ", got '" + planes + "'");
+		}
+		if (PLANES_OFFSET.equals(planes) && type != TYPE_DRAW_INT && !isOneBpp()) {
+			// bdraw saves and restores a background through its own cells,
+			// rle and zx0 stream : none of them addresses the two planes
+			// the way this option describes
+			throw new Exception("image " + imageName + " : planes=" + PLANES_OFFSET
+					+ " only applies to the draw encoder, not to " + encoderType);
+		}
+	}
+
+	/** an 8 bit image that fits the screen, and the 1bpp encoders' own limits */
+	// the toolchain signals build errors with plain Exceptions (48 throw sites)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	private void checkGeometry(String imageName, String imageFile) throws Exception {
+		int pixelSize = colorModel.getPixelSize();
+		if (pixelSize != 8) {
+			throw new Exception("unsupported file format for " + imageFile + ", pixel size: "
+			                    + pixelSize + " (should be 8).");
+		}
+		if (isOneBpp()) {
+			if (width > 320 || height > 200) {
+				throw new Exception(imageFile + " is " + width + "x" + height
+				                    + ", past the 320x200 screen : the plane rows would overrun.");
+			}
+			if (shift != 0) {
+				throw new Exception("image " + imageName + " : 1bpp sprites are byte-aligned,"
+				                    + " only shift 0 is supported, got shift " + shift);
+			}
+			if (!PLANES_POINTER.equals(planes)) {
+				throw new Exception("image " + imageName + " : 1bpp code is plane-agnostic,"
+				                    + " the plane is selected at run time, planes must be "
+				                    + PLANES_POINTER + ", got '" + planes + "'");
+			}
+		} else if (width > 160 || height > 200) {
+			throw new Exception(imageFile + " is " + width + "x" + height
+			                    + ", past the 160x200 screen : the plane rows would overrun.");
+		}
+	}
+
 	/** the halfline option : the rows at an odd distance from the anchor row made transparent */
 	private void clearOddRows() {
 		int anchorRow;
