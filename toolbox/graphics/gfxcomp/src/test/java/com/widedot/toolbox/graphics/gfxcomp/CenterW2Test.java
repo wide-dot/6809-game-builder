@@ -23,7 +23,9 @@ public class CenterW2Test {
 
 	/** an 8 bit indexed w x h canvas, colour 0 transparent, one pixel of colour 1 at (x, y) */
 	private static File canvas(Path dir, String name, int w, int h, int x, int y) throws Exception {
-		byte[] r = new byte[17], g = new byte[17], b = new byte[17];
+		byte[] r = new byte[17];
+		byte[] g = new byte[17];
+		byte[] b = new byte[17];
 		for (int i = 1; i < 17; i++) { r[i] = (byte) (i * 8); g[i] = (byte) (i * 4); b[i] = (byte) (i * 2); }
 		IndexColorModel cm = new IndexColorModel(8, 17, r, g, b, 0);
 		BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_INDEXED, cm);

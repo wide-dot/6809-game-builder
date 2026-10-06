@@ -777,8 +777,8 @@ public class Image {
 			case 5 : return 2;
 			case 6 : return 2;
 			case 7 : return 3;
+			default : return 0;  // unreachable, a % 8 of a non negative width
 		}
-		return 0;
 	}
 	
 	public byte[] getSubImagePixels(int ramPage) {
