@@ -643,18 +643,35 @@ DBT_run2 equ  *-1
 
 DBT_cloop
         ldd   ,x                                      ; a : flags, b : page (0 : empty)
+ IFDEF TilemapBuffer.OPAQUE
+        beq   DBT_next                                ; empty : the background routine reads the opacity bit
+ ELSE
         beq   DBT_empty
+ ENDC
         bmi   DBT_high                                ; a's bit 7 : high priority
         stb   $E7E6
+ IFDEF TilemapBuffer.PLANES_CURSOR
+        ; V2-DEVIATION (06/10/2026) : the routine (gfxcomp planes="cursor") draws
+        ; plane 1 through Y and leaves Y on the next cell
+        leau  $1234,y                                 ; plane 2
+DBT_delta equ *-2
+        jsr   [2,x]
+        leax  4,x
+        dec   <DBT_ccpt
+        bne   DBT_cloop
+        bra   DBT_rowend
+ ELSE
         sty   <glb_screen_location_1                  ; plane 1, read by the routine
         leau  $1234,y                                 ; plane 2
 DBT_delta equ *-2
         jsr   [2,x]
+ ENDC
 DBT_next
         leax  4,x
         leay  2,y
         dec   <DBT_ccpt
         bne   DBT_cloop
+DBT_rowend
         lda   <DBT_left                               ; the row goes on from the ring's start
         beq   @row
         sta   <DBT_ccpt
@@ -680,9 +697,11 @@ DBT_high
         pshs  b,x,y                                   ; page, cell, screen address
         bra   DBT_next
 
+ IFNDEF TilemapBuffer.OPAQUE
 DBT_empty
         inc   <glb_alphaTiles                         ; the background shows : redraw it
         bra   DBT_next
+ ENDC
 
 ; ****************************************************************************************************************************
 ; *
@@ -699,7 +718,10 @@ DrawHighPriorityBufferedTile
         lds   #tmb_hprio_tiles                        ; zeroed by the game : an empty queue
 DBT_hiptr equ *-2
         bra   @entry
-@loop   sty   <glb_screen_location_1
+@loop
+ IFNDEF TilemapBuffer.PLANES_CURSOR
+        sty   <glb_screen_location_1
+ ENDC
         leau  $1234,y
 DBT_delta2 equ *-2
         jsr   [2,x]

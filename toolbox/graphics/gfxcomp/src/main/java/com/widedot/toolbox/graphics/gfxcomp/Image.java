@@ -157,9 +157,16 @@ public class Image {
 	 * U back untouched, so a caller can draw a ROW of sprites — advance U,
 	 * call, advance U again. It is what the v1 HUD needed and hand-wrote : its
 	 * twelve digits could not afford to reload the plane pointer twelve times.
+	 *
+	 * CURSOR takes the second plane from the caller's cursor over a row of
+	 * cells, in Y, and leaves Y on the next cell (the image's width further,
+	 * in plane bytes) : a tile loop then neither stores its cursor for the
+	 * routine nor advances it after the call (TilemapBuffer.PLANES_CURSOR).
+	 * The caller's X and Y are live, so the code may use neither as data.
 	 */
 	public static final String PLANES_POINTER = "pointer";
 	public static final String PLANES_OFFSET  = "offset";
+	public static final String PLANES_CURSOR  = "cursor";
 
 	/** pixels per line of a 1bpp plane buffer : the full 320px $26 line */
 	public static final int MONO_STRIDE = 320;
@@ -326,15 +333,15 @@ public class Image {
 	// the toolchain signals build errors with plain Exceptions (48 throw sites)
 	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 	private void checkPlanes(String imageName, String encoderType) throws Exception {
-		if (!PLANES_POINTER.equals(planes) && !PLANES_OFFSET.equals(planes)) {
+		if (!PLANES_POINTER.equals(planes) && !PLANES_OFFSET.equals(planes) && !PLANES_CURSOR.equals(planes)) {
 			throw new Exception("image " + imageName + " : planes must be "
-					+ PLANES_POINTER + " or " + PLANES_OFFSET + ", got '" + planes + "'");
+					+ PLANES_POINTER + ", " + PLANES_OFFSET + " or " + PLANES_CURSOR + ", got '" + planes + "'");
 		}
-		if (PLANES_OFFSET.equals(planes) && type != TYPE_DRAW_INT && !isOneBpp()) {
+		if (!PLANES_POINTER.equals(planes) && type != TYPE_DRAW_INT && !isOneBpp()) {
 			// bdraw saves and restores a background through its own cells,
 			// rle and zx0 stream : none of them addresses the two planes
-			// the way this option describes
-			throw new Exception("image " + imageName + " : planes=" + PLANES_OFFSET
+			// the way these options describe
+			throw new Exception("image " + imageName + " : planes=" + planes
 					+ " only applies to the draw encoder, not to " + encoderType);
 		}
 	}
@@ -905,6 +912,10 @@ public class Image {
 		return evenAlpha;
 	}		
 	
+	public int getWidth() {
+		return width;
+	}
+
 	public int getCoordinate() {
 		return coordinate;
 	}

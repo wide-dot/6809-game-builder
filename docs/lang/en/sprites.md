@@ -206,6 +206,7 @@ is the **caller's** business, not the image's :
 |---|---|---|
 | `pointer` *(default)* | `glb_screen_location_1` | consumed |
 | `offset` | `U − planedistance` | **given back** |
+| `cursor` | the caller's cursor, in `Y` | consumed ; **Y left on the next cell** |
 
 The default suits a sprite drawn once at a computed position. `offset` suits a
 caller drawing a **row** of them — a HUD advancing U by one byte between digits
@@ -213,6 +214,13 @@ caller drawing a **row** of them — a HUD advancing U by one byte between digit
 to the `draw` encoder only : `bdraw` restores a background through its own
 cells and the compressed encoders stream, so neither addresses the planes this
 way, and asking for it there is an error rather than a silent no-op.
+
+`cursor` is a tile loop's : the loop walks a row of cells with Y on the first
+plane and points U at the second, the routine draws the second plane through
+Y and ends with Y one cell further (the image's width in plane bytes, 2 for
+an 8 pixel tile) — the loop neither stores its cursor for the routine nor
+advances it after the call (`TilemapBuffer.PLANES_CURSOR`). The caller's X and Y
+are live : a routine whose code would use either is refused at build time.
 
 `planedistance` is a `<gfxcomp>` attribute, 8192 by default : the distance
 between the two halves of the TO8 video window. A machine constant, not a

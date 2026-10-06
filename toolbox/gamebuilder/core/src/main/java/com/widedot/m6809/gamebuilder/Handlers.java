@@ -236,13 +236,13 @@ public final class Handlers {
 			.opt("names", STRING, "symbol base, <base>_<n> ; derived from the series directory if omitted (its parent when the directory is a plain images/)")
 			.opt("index", STRING, "none : the images are reached by name only — no imageset index is assigned, no idx byte grows the descriptors. Default auto : indexes continue when the gfxcomp carries genindex or imageset")
 			.opt("position", STRING, "center, center-w2, top-left or 3qtr-center, forwarded to every encoder of the row")
-			.opt("planes", STRING, "pointer or offset, forwarded to every encoder of the row"));
+			.opt("planes", STRING, "pointer, offset or cursor, forwarded to every encoder of the row"));
 		spec(element("encoder").doc("one compiled rendering of an image")
 			.opt("name", STRING, "draw, bdraw, rle or zx0")
 			.opt("mirror", STRING, "none, x, y or xy")
 			.opt("shift", INT, "pre shift in pixels")
 			.opt("position", STRING, "center (anchor (w-1)/2, (h-1)/2), center-w2 (w/2, h/2 : the Mega Drive art origin), top-left or 3qtr-center")
-			.opt("planes", STRING, "how the code reaches the second video plane : pointer (default, from glb_screen_location_1, U consumed) or offset (at planedistance from U, U given back — for a caller drawing a row of sprites). draw encoder only")
+			.opt("planes", STRING, "how the code reaches the second video plane : pointer (default, from glb_screen_location_1, U consumed), offset (at planedistance from U, U given back — for a caller drawing a row of sprites) or cursor (the caller's cursor in Y, left on the next cell — a tile loop's, TilemapBuffer.PLANES_CURSOR). draw encoder only")
 			.opt("alpha", STRING, "what transparency the draw code announces : none (default), odd (v1 TILE8x16 half-line tiles : stb <glb_alphaTiles when an odd line shows the background), even or all. draw encoder only")
 			.opt("halfline", BOOL, "true : only the rows at an even distance from the anchor row are drawn (after the mirror), for a game drawing its sprites on every other line (BuildSprites.HALFLINE). false by default"));
 

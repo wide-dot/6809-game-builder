@@ -1,5 +1,6 @@
 package com.widedot.toolbox.graphics.gfxcomp.encoder;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -9,6 +10,8 @@ import java.awt.image.IndexColorModel;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 
@@ -108,6 +111,34 @@ public class DrawPlanesTest {
 		File png = sprite(dir, "hero");
 		assertThrows(Exception.class, () -> new Image("hero", 0, png.getAbsolutePath(),
 				Image.TYPE_BDRAW, Mirror.NONE, 0, Image.POSITION_CENTER, Image.PLANES_OFFSET));
+	}
+
+	/**
+	 * The cursor form is a tile loop's : the second plane is drawn through the
+	 * loop's Y, which must come back exactly one cell further (8 pixels, 2
+	 * bytes a plane), however the code walked it ; U is never reloaded.
+	 */
+	@Test
+	void theCursorFormLeavesYOnTheNextCell(@TempDir Path dir) throws Exception {
+		String asm = compile(dir, "tile", Image.PLANES_CURSOR);
+
+		assertFalse(asm.contains("glb_screen_location_1"), asm);
+		assertTrue(asm.contains(",Y"), asm);
+		String second = asm.substring(asm.lastIndexOf('\n', asm.indexOf(",Y")));
+		assertFalse(second.matches("(?s).*,U\\s.*"), "the second plane is Y's only\n" + asm);
+		int moved = 0;
+		Matcher m = Pattern.compile("LEAY\\s+(-?\\d+),Y").matcher(asm);
+		while (m.find()) {
+			moved += Integer.parseInt(m.group(1));
+		}
+		assertEquals(2, moved, asm);
+	}
+
+	@Test
+	void theCursorFormIsRefusedOnTheOtherEncoders(@TempDir Path dir) throws Exception {
+		File png = sprite(dir, "tile");
+		assertThrows(Exception.class, () -> new Image("tile", 0, png.getAbsolutePath(),
+				Image.TYPE_BDRAW, Mirror.NONE, 0, Image.POSITION_CENTER, Image.PLANES_CURSOR));
 	}
 
 	@Test
