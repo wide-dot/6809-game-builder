@@ -404,6 +404,13 @@ two differ on an even size only, by one pixel and one row : a game whose
 positions come from the original's code takes `center-w2`, and its
 positions need no correction.
 
+A game that draws its screen on every other line (Sonic 2's half-line
+Emerald Hill) compiles its sprites with `halfline="true"` : only the rows at
+an even distance from the anchor row are kept, after the mirror, and the
+others become transparent. The engine define `BuildSprites.HALFLINE` rounds
+the screen row down to even in the playfield and `xy_pixel` paths, so the
+anchor row, hence every drawn row, falls on an even line.
+
 ### Backgrounds
 
 A `bdraw` sprite saves what it covers before drawing, into cells allocated by

@@ -26,12 +26,18 @@ public class HalflineTest {
 		byte[] r = new byte[17];
 		byte[] g = new byte[17];
 		byte[] b = new byte[17];
-		for (int i = 1; i < 17; i++) { r[i] = (byte) (i * 8); g[i] = (byte) (i * 4); b[i] = (byte) (i * 2); }
+		for (int i = 1; i < 17; i++) {
+			r[i] = (byte) (i * 8);
+			g[i] = (byte) (i * 4);
+			b[i] = (byte) (i * 2);
+		}
 		IndexColorModel cm = new IndexColorModel(8, 17, r, g, b, 0);
 		BufferedImage img = new BufferedImage(8, 8, BufferedImage.TYPE_BYTE_INDEXED, cm);
-		for (int y = y0; y <= y1; y++)
-			for (int x = 0; x < 8; x++)
+		for (int y = y0; y <= y1; y++) {
+			for (int x = 0; x < 8; x++) {
 				img.getRaster().setSample(x, y, 0, 1);
+			}
+		}
 		File file = dir.resolve("rows" + y0 + y1 + ".png").toFile();
 		ImageIO.write(img, "png", file);
 		return file;

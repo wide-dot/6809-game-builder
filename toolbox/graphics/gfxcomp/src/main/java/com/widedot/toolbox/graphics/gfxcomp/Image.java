@@ -3,6 +3,7 @@ package com.widedot.toolbox.graphics.gfxcomp;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.awt.image.ColorModel;
+import java.awt.image.WritableRaster;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -355,14 +356,14 @@ public class Image {
 	
 	/** the halfline option : the rows at an odd distance from the anchor row made transparent */
 	private void clearOddRows() {
-		int anchorRow = 0;
+		int anchorRow;
 		switch (position) {
-			case POSITION_CENTER_INT   : anchorRow = (height-1)/2; break;
 			case POSITION_TOP_LEFT_INT : anchorRow = 0; break;
 			case POSITION_3QTRC_INT    : anchorRow = (height-1)*3/4; break;
 			case POSITION_CENTER_W2_INT: anchorRow = height/2; break;
+			default                    : anchorRow = (height-1)/2; break;   // center
 		}
-		java.awt.image.WritableRaster raster = image.getRaster();
+		WritableRaster raster = image.getRaster();
 		for (int y = (anchorRow + 1) % 2; y < height; y += 2) {
 			for (int x = 0; x < width; x++) {
 				raster.setSample(x, y, 0, 0);

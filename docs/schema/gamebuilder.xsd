@@ -801,6 +801,9 @@
       <xs:attribute name="alpha" type="xs:string">
         <xs:annotation><xs:documentation>what transparency the draw code announces : none (default), odd (v1 TILE8x16 half-line tiles : stb &lt;glb_alphaTiles when an odd line shows the background), even or all. draw encoder only</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="halfline" type="xs:boolean">
+        <xs:annotation><xs:documentation>true : only the rows at an even distance from the anchor row are drawn (after the mirror), for a game drawing its sprites on every other line (BuildSprites.HALFLINE). false by default</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 
