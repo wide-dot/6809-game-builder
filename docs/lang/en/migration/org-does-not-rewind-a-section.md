@@ -96,4 +96,6 @@ lwasm defines `Struct.field`). Note that `sizeof{}` is refused inside a macro
 
 ## Met in
 
-wide-dot/sonic-2, title game mode, 05/10/2026.
+wide-dot/sonic-2, title game mode, 05/10/2026. `sound/Smps.asm` left the v2
+engine on 06/10/2026 : Sonic 2's title runs the SMPS object too, one driver
+for the game ; the idiom above stays v1's.
