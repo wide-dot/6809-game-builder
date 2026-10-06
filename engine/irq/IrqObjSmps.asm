@@ -43,6 +43,7 @@ TempoTurbo                     rmb   1                ; Stores the tempo if spee
 SpeedUpFlag                    rmb   1        
 DACEnabled                     rmb   1                
 60HzData                       rmb   1                ; 1: play 60hz track at 50hz, 0: do not skip frames
+SFXToPlay2                     rmb   1                ; V2-DEVIATION (06/10/2026) : s2's second SFX queue slot (PlaySound2, PlaySoundStereo)
  ENDSTRUCT
 
 ; V2-DEVIATION: in the lwasm obj target `org` does not rewind a section : the
@@ -71,6 +72,7 @@ Smps.TempoTurbo               equ   Smps+SmpsVar.TempoTurbo
 Smps.SpeedUpFlag              equ   Smps+SmpsVar.SpeedUpFlag
 Smps.DACEnabled               equ   Smps+SmpsVar.DACEnabled
 Smps.60HzData                 equ   Smps+SmpsVar.60HzData
+Smps.SFXToPlay2               equ   Smps+SmpsVar.SFXToPlay2
         ;org   SmpsStructStart ; V2-DEVIATION: see above
         fill  0,sizeof{SmpsVar}
 
