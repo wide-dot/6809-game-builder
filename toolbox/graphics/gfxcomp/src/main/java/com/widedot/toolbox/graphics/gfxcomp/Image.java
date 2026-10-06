@@ -3,6 +3,7 @@ package com.widedot.toolbox.graphics.gfxcomp;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.awt.image.ColorModel;
+import java.awt.image.WritableRaster;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -78,10 +79,20 @@ public class Image {
 	public static final String POSITION_CENTER   = "center";
 	public static final String POSITION_TOP_LEFT = "top-left";
 	public static final String POSITION_3QTRC    = "3qtr-center";	
+	/**
+	 * The anchor at column w/2 and row h/2 (integer halves), where "center"
+	 * anchors at (w-1)/2 and (h-1)/2. Both agree on an odd size ; on an even
+	 * one, center-w2 is one pixel right and one row down. It is the Mega
+	 * Drive's sprite origin as the art converters export it (the origin in
+	 * the middle of an even canvas, a mirror mapping dx to -1-dx), so a
+	 * position taken from the original game lands on the same pixel.
+	 */
+	public static final String POSITION_CENTER_W2 = "center-w2";
 	
 	public static final int POSITION_CENTER_INT   = 0;
 	public static final int POSITION_TOP_LEFT_INT = 1;
 	public static final int POSITION_3QTRC_INT    = 2;	
+	public static final int POSITION_CENTER_W2_INT = 3;
 	
 	public static final HashMap<String, Integer> positionId = new HashMap<String, Integer>() {
 		private static final long serialVersionUID = 1L;
@@ -89,6 +100,7 @@ public class Image {
 			put(POSITION_CENTER, POSITION_CENTER_INT);
 			put(POSITION_TOP_LEFT, POSITION_TOP_LEFT_INT);
 			put(POSITION_3QTRC, POSITION_3QTRC_INT);
+			put(POSITION_CENTER_W2, POSITION_CENTER_W2_INT);
 		}
 	};
 	
@@ -145,9 +157,16 @@ public class Image {
 	 * U back untouched, so a caller can draw a ROW of sprites — advance U,
 	 * call, advance U again. It is what the v1 HUD needed and hand-wrote : its
 	 * twelve digits could not afford to reload the plane pointer twelve times.
+	 *
+	 * CURSOR takes the second plane from the caller's cursor over a row of
+	 * cells, in Y, and leaves Y on the next cell (the image's width further,
+	 * in plane bytes) : a tile loop then neither stores its cursor for the
+	 * routine nor advances it after the call (TilemapBuffer.PLANES_CURSOR).
+	 * The caller's X and Y are live, so the code may use neither as data.
 	 */
 	public static final String PLANES_POINTER = "pointer";
 	public static final String PLANES_OFFSET  = "offset";
+	public static final String PLANES_CURSOR  = "cursor";
 
 	/** pixels per line of a 1bpp plane buffer : the full 320px $26 line */
 	public static final int MONO_STRIDE = 320;
@@ -167,6 +186,43 @@ public class Image {
 	private static final String CACHE_VERSION = "4";
 
 	public String planes;
+
+	/**
+	 * Which transparency the draw encoder announces to its caller, v1's tile
+	 * option. NONE is the sprite case and the default. ODD is v1's TILE8x16
+	 * half-line tiles : a tile whose odd lines hold a transparent pixel opens
+	 * with `stb <glb_alphaTiles`, so the tile renderer knows the background
+	 * shows through (v1 SimpleAssemblyGenerator._ODD_ALPHA). EVEN and ALL are
+	 * the generator's two other modes, exposed alike. v1 counts lines from 1 :
+	 * its odd lines are rows 0, 2, 4... of the picture.
+	 */
+	public static final String ALPHA_NONE = "none";
+	public static final String ALPHA_ALL  = "all";
+	public static final String ALPHA_ODD  = "odd";
+	public static final String ALPHA_EVEN = "even";
+	public static final HashMap<String, Integer> alphaId = new HashMap<String, Integer>() {
+		private static final long serialVersionUID = 1L;
+		{
+			put(ALPHA_NONE, SimpleAssemblyGenerator._NO_ALPHA);
+			put(ALPHA_ALL, SimpleAssemblyGenerator._ALPHA);
+			put(ALPHA_ODD, SimpleAssemblyGenerator._ODD_ALPHA);
+			put(ALPHA_EVEN, SimpleAssemblyGenerator._EVEN_ALPHA);
+		}
+	};
+	public String alphaMode = ALPHA_NONE;
+
+	/** the draw encoder's transparency announcement, see ALPHA_NONE */
+	// the toolchain signals build errors with plain Exceptions (48 throw sites)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	public void setAlphaMode(String value) throws Exception {
+		String v = value == null ? ALPHA_NONE : value;
+		known(name, "alpha", v, alphaId, "");
+		if (!ALPHA_NONE.equals(v) && type != TYPE_DRAW_INT) {
+			throw new Exception("image " + name + " : alpha=" + v
+					+ " only applies to the draw encoder");
+		}
+		alphaMode = v;
+	}
 
 	// A variant key is the v1 form : mirror letter, encoder letter, shift digit
 	// ("NB0" = no mirror, bdraw, no pre-shift). It names the generated code and
@@ -204,9 +260,21 @@ public class Image {
 		return id;
 	}
 
+	public Image(String imageName, Integer imageIndex, String imageFile, String encoderType, String encoderMirror, Integer encoderShift, String encoderPosition, String encoderPlanes) throws Exception {
+		this(imageName, imageIndex, imageFile, encoderType, encoderMirror, encoderShift, encoderPosition, encoderPlanes, false);
+	}
+
+	/**
+	 * halfline : the image is drawn on every other line only, the lines at an
+	 * even distance from the anchor row ; the others are made transparent
+	 * after the mirror, so every mirror of the image keeps the same rows
+	 * around its anchor. A game whose background is drawn on every other line
+	 * draws its sprites so, at an even screen line (BuildSprites.HALFLINE) :
+	 * nothing ever lands on the lines between, and the code is half as long.
+	 */
 	// the toolchain signals build errors with plain Exceptions (48 throw sites)
 	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
-	public Image(String imageName, Integer imageIndex, String imageFile, String encoderType, String encoderMirror, Integer encoderShift, String encoderPosition, String encoderPlanes) throws Exception {
+	public Image(String imageName, Integer imageIndex, String imageFile, String encoderType, String encoderMirror, Integer encoderShift, String encoderPosition, String encoderPlanes, boolean halfline) throws Exception {
 			File file = new File(imageFile);
 			if (!file.isFile()) {
 				throw new Exception("image file " + imageFile + " does not exist");
@@ -219,29 +287,70 @@ public class Image {
 			shift = encoderShift;
 			position = known(imageName, "position", encoderPosition, positionId, "");
 			planes = encoderPlanes;
-			if (!PLANES_POINTER.equals(planes) && !PLANES_OFFSET.equals(planes)) {
-				throw new Exception("image " + imageName + " : planes must be "
-						+ PLANES_POINTER + " or " + PLANES_OFFSET + ", got '" + planes + "'");
-			}
-			if (PLANES_OFFSET.equals(planes) && type != TYPE_DRAW_INT && !isOneBpp()) {
-				// bdraw saves and restores a background through its own cells,
-				// rle and zx0 stream : none of them addresses the two planes
-				// the way this option describes
-				throw new Exception("image " + imageName + " : planes=" + PLANES_OFFSET
-						+ " only applies to the draw encoder, not to " + encoderType);
-			}
+			checkPlanes(imageName, encoderType);
 			
 			variant = variantKey(type, mirror, shift);
 			width = image.getWidth();
 			height = image.getHeight();
 			colorModel = image.getColorModel();
-			int pixelSize = colorModel.getPixelSize();
 			plane0_empty = true;
 			plane1_empty = true;
 			index = imageIndex;
 			nb_cell = null;
 
 		// process images
+		checkGeometry(imageName, imageFile);
+		checkPixelRange(imageFile);
+
+			// The pipeline, in the order the two spaces impose : the mirror is
+			// a source transform, the planing measures the geometry, and the
+			// pre-shift rewrites the planes. Running the shift last is what
+			// makes a shifted variant declare the geometry of the unshifted
+			// one, which the imageset needs — it keeps a single x1/y1 for the
+			// whole mirror group.
+		image = Mirror.transform(image, mirror);
+		if (halfline) {
+			clearOddRows();
+		}
+		if (isOneBpp()) {
+			prepareMono(imageFile);
+		} else {
+			prepareImages();
+			Shift.transform(pixels, data, height, shift);
+		}
+	}
+	
+	// TODO - create n method as transformers
+	// pad image to memory width
+	// create n memory planes by vertical interlace or bitplanes
+	// add alpha transparency info to image, based on color index 0
+	// maintain a plane empty table
+	// set a coordinate variable based on position
+	// calcul des flags transparency, odd et even
+	// calcul x et y offset en fonction du type de positionnement (centre, top left ...)		
+	
+	/** the planes option : a known value, and the offset form for the draw encoder only */
+	// the toolchain signals build errors with plain Exceptions (48 throw sites)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	private void checkPlanes(String imageName, String encoderType) throws Exception {
+		if (!PLANES_POINTER.equals(planes) && !PLANES_OFFSET.equals(planes) && !PLANES_CURSOR.equals(planes)) {
+			throw new Exception("image " + imageName + " : planes must be "
+					+ PLANES_POINTER + ", " + PLANES_OFFSET + " or " + PLANES_CURSOR + ", got '" + planes + "'");
+		}
+		if (!PLANES_POINTER.equals(planes) && type != TYPE_DRAW_INT && !isOneBpp()) {
+			// bdraw saves and restores a background through its own cells,
+			// rle and zx0 stream : none of them addresses the two planes
+			// the way these options describe
+			throw new Exception("image " + imageName + " : planes=" + planes
+					+ " only applies to the draw encoder, not to " + encoderType);
+		}
+	}
+
+	/** an 8 bit image that fits the screen, and the 1bpp encoders' own limits */
+	// the toolchain signals build errors with plain Exceptions (48 throw sites)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	private void checkGeometry(String imageName, String imageFile) throws Exception {
+		int pixelSize = colorModel.getPixelSize();
 		if (pixelSize != 8) {
 			throw new Exception("unsupported file format for " + imageFile + ", pixel size: "
 			                    + pixelSize + " (should be 8).");
@@ -264,32 +373,25 @@ public class Image {
 			throw new Exception(imageFile + " is " + width + "x" + height
 			                    + ", past the 160x200 screen : the plane rows would overrun.");
 		}
-		checkPixelRange(imageFile);
+	}
 
-			// The pipeline, in the order the two spaces impose : the mirror is
-			// a source transform, the planing measures the geometry, and the
-			// pre-shift rewrites the planes. Running the shift last is what
-			// makes a shifted variant declare the geometry of the unshifted
-			// one, which the imageset needs — it keeps a single x1/y1 for the
-			// whole mirror group.
-		image = Mirror.transform(image, mirror);
-		if (isOneBpp()) {
-			prepareMono(imageFile);
-		} else {
-			prepareImages();
-			Shift.transform(pixels, data, height, shift);
+	/** the halfline option : the rows at an odd distance from the anchor row made transparent */
+	private void clearOddRows() {
+		int anchorRow;
+		switch (position) {
+			case POSITION_TOP_LEFT_INT : anchorRow = 0; break;
+			case POSITION_3QTRC_INT    : anchorRow = (height-1)*3/4; break;
+			case POSITION_CENTER_W2_INT: anchorRow = height/2; break;
+			default                    : anchorRow = (height-1)/2; break;   // center
+		}
+		WritableRaster raster = image.getRaster();
+		for (int y = (anchorRow + 1) % 2; y < height; y += 2) {
+			for (int x = 0; x < width; x++) {
+				raster.setSample(x, y, 0, 0);
+			}
 		}
 	}
-	
-	// TODO - create n method as transformers
-	// pad image to memory width
-	// create n memory planes by vertical interlace or bitplanes
-	// add alpha transparency info to image, based on color index 0
-	// maintain a plane empty table
-	// set a coordinate variable based on position
-	// calcul des flags transparency, odd et even
-	// calcul x et y offset en fonction du type de positionnement (centre, top left ...)		
-	
+
 	/**
 	 * Colour 0 is transparent and 1..16 are the palette, so anything above is a
 	 * mistake in the source image. v1 rejects it ; without the check the code
@@ -399,6 +501,7 @@ public class Image {
 			case POSITION_CENTER_INT   : coordinate = (int)((Math.ceil(height/2.0)-1)*40) +  width/8; break;
 			case POSITION_TOP_LEFT_INT : coordinate = 0; break;
 			case POSITION_3QTRC_INT    : coordinate = (int)((Math.ceil(height*3.0/4.0)-1)*40) +  width/8; break;
+			case POSITION_CENTER_W2_INT: coordinate = (height/2)*40 + width/8; break;
 		}
 		return coordinate;
 	}
@@ -410,6 +513,7 @@ public class Image {
 			case POSITION_CENTER_INT   : row = y-(height-1)/2; break;
 			case POSITION_TOP_LEFT_INT : row = 0; break;
 			case POSITION_3QTRC_INT    : row = y-(height-1)*3/4; break;
+			case POSITION_CENTER_W2_INT: row = y-height/2; break;
 		}
 		return row;
 	}
@@ -421,6 +525,7 @@ public class Image {
 			case POSITION_CENTER_INT   : offset = xMin-(((width-1)/2)&~7); break;
 			case POSITION_TOP_LEFT_INT : offset = xMin; break;
 			case POSITION_3QTRC_INT    : offset = xMin; break;
+			case POSITION_CENTER_W2_INT: offset = xMin-((width/2)&~7); break;
 		}
 		return offset;
 	}
@@ -433,6 +538,7 @@ public class Image {
 			case POSITION_CENTER_INT   : refByte = ((width-1)/2)/8; refRow = (height-1)/2; break;
 			case POSITION_TOP_LEFT_INT : break;
 			case POSITION_3QTRC_INT    : refRow = (height-1)*3/4; break;
+			case POSITION_CENTER_W2_INT: refByte = (width/2)/8; refRow = height/2; break;
 		}
 		return (monoY0 - refRow) * 40 + (monoX0 / 8 - refByte);
 	}
@@ -451,6 +557,7 @@ public class Image {
 			case POSITION_CENTER_INT   : coordinate = (int)((Math.ceil(height/2.0)-1)*40) +  width/8; break;
 			case POSITION_TOP_LEFT_INT : coordinate = 0; break;
 			case POSITION_3QTRC_INT    : coordinate = (int)((Math.ceil(height*3.0/4.0)-1)*40) +  width/8; break; 
+			case POSITION_CENTER_W2_INT: coordinate = (height/2)*40 + width/8; break;
 		}	
 		
 		// Position de début et de fin de chaque sous-image
@@ -502,6 +609,7 @@ public class Image {
 						case POSITION_CENTER_INT   : y1_offset = curLine-(height-1)/2; break;
 						case POSITION_TOP_LEFT_INT : y1_offset = 0; break;
 						case POSITION_3QTRC_INT    : y1_offset = curLine-(height-1)*3/4; break;
+						case POSITION_CENTER_W2_INT: y1_offset = curLine-height/2; break;
 					}						
 				}
 				if (indexDest*2+page*2-(160*curLine) < x_Min) {
@@ -510,6 +618,7 @@ public class Image {
 						case POSITION_CENTER_INT   : x1_offset = x_Min-((width-1)/2); break;
 						case POSITION_TOP_LEFT_INT : x1_offset = 0; break;
 						case POSITION_3QTRC_INT    : x1_offset = 0; break;
+						case POSITION_CENTER_W2_INT: x1_offset = x_Min-width/2; break;
 					}						
 				}
 				if (indexDest*2+page*2-(160*curLine) > x_Max) {
@@ -559,6 +668,7 @@ public class Image {
 							case POSITION_CENTER_INT   : y1_offset = curLine-(height-1)/2; break;
 							case POSITION_TOP_LEFT_INT : y1_offset = 0; break;
 							case POSITION_3QTRC_INT    : y1_offset = curLine-(height-1)*3/4; break;
+							case POSITION_CENTER_W2_INT: y1_offset = curLine-height/2; break;
 						}							
 					}
 					if (indexDest*2+page*2+1-(160*curLine) < x_Min) {
@@ -567,6 +677,7 @@ public class Image {
 							case POSITION_CENTER_INT   : x1_offset = x_Min-((width-1)/2); break;
 							case POSITION_TOP_LEFT_INT : x1_offset = 0; break;
 							case POSITION_3QTRC_INT    : x1_offset = 0; break;
+							case POSITION_CENTER_W2_INT: x1_offset = x_Min-width/2; break;
 						}					
 					}
 					if (indexDest*2+page*2+1-(160*curLine) > x_Max) {
@@ -614,7 +725,7 @@ public class Image {
 	private com.widedot.m6809.gamebuilder.spi.cache.BuildCache.Entry cacheEntry() throws Exception {
 		return com.widedot.m6809.gamebuilder.spi.cache.BuildCache.entry("gfxcomp", CACHE_VERSION)
 				.keyString(name + "|" + type + "|" + mirror + "|" + shift
-						+ "|" + position + "|" + planes + "|" + width + "x" + height
+						+ "|" + position + "|" + planes + "|" + alphaMode + "|" + width + "x" + height
 						// the video memory model changes the emitted code as
 						// surely as the pixels do — same image, another plane
 						// distance, another LEAU (caught by DrawPlanesTest)
@@ -664,7 +775,7 @@ public class Image {
 
 		Encoder e;
 		switch (type) {
-			case TYPE_DRAW_INT: e = new SimpleAssemblyGenerator(this, outputDir, SimpleAssemblyGenerator._NO_ALPHA); break;
+			case TYPE_DRAW_INT: e = new SimpleAssemblyGenerator(this, outputDir, alphaId.get(alphaMode)); break;
 			case TYPE_BDRAW_INT: e = new AssemblyGenerator(this, outputDir); break;
 			case TYPE_RLE_INT: e = new MapRleEncoder(this, outputDir); break;
 			case TYPE_ZX0_INT: e = new ZX0Encoder(this, outputDir); break;
@@ -710,7 +821,8 @@ public class Image {
 		if (isOneBpp()) {
 			return 0;
 		}
-		switch (width % 8) {
+		// center-w2 anchors at w/2, which is (w-1)/2 of a width made odd
+		switch ((position == POSITION_CENTER_W2_INT ? width | 1 : width) % 8) {
 			case 0 : return -1;
 			case 1 : return 0;
 			case 2 : return 0;
@@ -719,8 +831,8 @@ public class Image {
 			case 5 : return 2;
 			case 6 : return 2;
 			case 7 : return 3;
+			default : return 0;  // unreachable, a % 8 of a non negative width
 		}
-		return 0;
 	}
 	
 	public byte[] getSubImagePixels(int ramPage) {
@@ -800,6 +912,10 @@ public class Image {
 		return evenAlpha;
 	}		
 	
+	public int getWidth() {
+		return width;
+	}
+
 	public int getCoordinate() {
 		return coordinate;
 	}

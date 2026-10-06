@@ -534,11 +534,16 @@ Ordre de migration suggéré (dépendances croissantes) :
    qui est ce qui fait qu'un game mode écrit encore ses index à la main.
 3. ~~**Animation**~~ **FAIT (01/08/2026)** — `AnimateSpriteSync` et `moveByScript`
    importés et exercés (banc `objects` 15/15). Deux sémantiques relevées, toutes
-   deux contre-intuitives : l'appel qui *charge* une animation consomme son
-   frame-drop sur place là où la variante non synchronisée ne le fait pas (les
-   deux ne se réduisent donc pas l'une à l'autre, même à une trame) ; et l'octet
+   deux contre-intuitives : l'appel qui *charge* une animation consommait son
+   frame-drop sur place (v1 : D + reste − n), et le rechargement prenait le
+   frame-drop deux fois (D + c′ − n) — corrigés le 05/10/2026 : D + 1 + c′
+   borné à 0, chargement à D, les deux variantes égales à une trame (T19,
+   [`frame-drop-timer-carry.md`](docs/lang/en/migration/frame-drop-timer-carry.md),
+   r-type voit ses animations ralentir d'autant) ; et l'octet
    de fin de segment d'un script coûte sa propre trame, il ne fait pas partie des
    commandes de déplacement. Doc : [`objects.md`](docs/lang/en/objects.md).
+   `ObjectMoveAndFallSync` (05/10/2026) : la chute exacte sur k trames
+   (`g*k(k-1)/2` que `ObjectMoveSync` + gravité par trame manquait, T20).
 4. ~~**Scroll horizontal + tilemap**~~ **FAIT (01/08/2026)** — `scroll-map-buffered-even`
    importé 1:1 et validé par `examples/tilescroll` sous toje (défilement mesuré à la
    vitesse de R-Type, tuiles compilées par `gfxcomp`, deux cartes paire/impaire).
@@ -566,7 +571,7 @@ Ordre de migration suggéré (dépendances croissantes) :
 6. ~~**ObjectWave + caméra/AutoScroll**~~ **FAIT (02/08/2026)** — vague T17
    (horloge de jeu, retard porté par `wave_frame_drop`, marqueur de fin) ;
    AutoScroll + CheckCameraMove T18 (pas 8.8 à reste porté, arrêt à la borne,
-   drapeau de redraw une fois par tampon). `examples/objects` passe à 18/18.
+   drapeau de redraw une fois par tampon). `examples/objects` passe à 18/18 (20/20 le 05/10/2026).
 7. **Pipeline builder « jeu »** — conception EN COURS (02/08/2026). Objectif acté
    avec l'auteur : le commun (moteur résident, joueur/armes/HUD, état persistant)
    chargé une fois, chaque stage ne charge que son main + map + wave + ennemis.

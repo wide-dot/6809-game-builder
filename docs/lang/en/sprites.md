@@ -206,6 +206,7 @@ is the **caller's** business, not the image's :
 |---|---|---|
 | `pointer` *(default)* | `glb_screen_location_1` | consumed |
 | `offset` | `U − planedistance` | **given back** |
+| `cursor` | the caller's cursor, in `Y` | consumed ; **Y left on the next cell** |
 
 The default suits a sprite drawn once at a computed position. `offset` suits a
 caller drawing a **row** of them — a HUD advancing U by one byte between digits
@@ -213,6 +214,13 @@ caller drawing a **row** of them — a HUD advancing U by one byte between digit
 to the `draw` encoder only : `bdraw` restores a background through its own
 cells and the compressed encoders stream, so neither addresses the planes this
 way, and asking for it there is an error rather than a silent no-op.
+
+`cursor` is a tile loop's : the loop walks a row of cells with Y on the first
+plane and points U at the second, the routine draws the second plane through
+Y and ends with Y one cell further (the image's width in plane bytes, 2 for
+an 8 pixel tile) — the loop neither stores its cursor for the routine nor
+advances it after the call (`TilemapBuffer.PLANES_CURSOR`). The caller's X and Y
+are live : a routine whose code would use either is refused at build time.
 
 `planedistance` is a `<gfxcomp>` attribute, 8192 by default : the distance
 between the two halves of the TO8 video window. A machine constant, not a
@@ -395,6 +403,21 @@ and silently not drawn — the first thing to check when nothing appears.
 Setting `render_playfieldcoord` in `render_flags` switches the object to
 playfield coordinates (`x_pos` / `y_pos`), which the engine converts through
 the camera offsets. Without that flag `x_pos` is never read.
+
+The position names one pixel of the image, its anchor, chosen per encoder
+by `position`. `center` (the default, v1's) is column `(w-1)/2`, row
+`(h-1)/2` ; `center-w2` is `w/2`, `h/2`, the origin of art converted from
+the Mega Drive (an even image's middle, a mirror taking dx to -1-dx). The
+two differ on an even size only, by one pixel and one row : a game whose
+positions come from the original's code takes `center-w2`, and its
+positions need no correction.
+
+A game that draws its screen on every other line (Sonic 2's half-line
+Emerald Hill) compiles its sprites with `halfline="true"` : only the rows at
+an even distance from the anchor row are kept, after the mirror, and the
+others become transparent. The engine define `BuildSprites.HALFLINE` rounds
+the screen row down to even in the playfield and `xy_pixel` paths, so the
+anchor row, hence every drawn row, falls on an even line.
 
 ### Backgrounds
 

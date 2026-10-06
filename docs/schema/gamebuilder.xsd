@@ -793,10 +793,16 @@
         <xs:annotation><xs:documentation>pre shift in pixels</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="position" type="xs:string">
-        <xs:annotation><xs:documentation>center, top-left or 3qtr-center</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>center (anchor (w-1)/2, (h-1)/2), center-w2 (w/2, h/2 : the Mega Drive art origin), top-left or 3qtr-center</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="planes" type="xs:string">
-        <xs:annotation><xs:documentation>how the code reaches the second video plane : pointer (default, from glb_screen_location_1, U consumed) or offset (at planedistance from U, U given back — for a caller drawing a row of sprites). draw encoder only</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>how the code reaches the second video plane : pointer (default, from glb_screen_location_1, U consumed), offset (at planedistance from U, U given back — for a caller drawing a row of sprites) or cursor (the caller's cursor in Y, left on the next cell — a tile loop's, TilemapBuffer.PLANES_CURSOR). draw encoder only</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="alpha" type="xs:string">
+        <xs:annotation><xs:documentation>what transparency the draw code announces : none (default), odd (v1 TILE8x16 half-line tiles : stb &lt;glb_alphaTiles when an odd line shows the background), even or all. draw encoder only</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="halfline" type="xs:boolean">
+        <xs:annotation><xs:documentation>true : only the rows at an even distance from the anchor row are drawn (after the mirror), for a game drawing its sprites on every other line (BuildSprites.HALFLINE). false by default</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -1400,10 +1406,10 @@
         <xs:annotation><xs:documentation>none : the images are reached by name only — no imageset index is assigned, no idx byte grows the descriptors. Default auto : indexes continue when the gfxcomp carries genindex or imageset</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="position" type="xs:string">
-        <xs:annotation><xs:documentation>center, top-left or 3qtr-center, forwarded to every encoder of the row</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>center, center-w2, top-left or 3qtr-center, forwarded to every encoder of the row</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="planes" type="xs:string">
-        <xs:annotation><xs:documentation>pointer or offset, forwarded to every encoder of the row</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>pointer, offset or cursor, forwarded to every encoder of the row</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -2025,6 +2031,12 @@
       </xs:attribute>
       <xs:attribute name="shiftcolors" type="xs:boolean">
         <xs:annotation><xs:documentation>index 0 is transparency and 1..16 are colours 0..15</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="patches" type="xs:string">
+        <xs:annotation><xs:documentation>csv of patch rectangles (name,x,y,w,h in map pixels) : their tiles join the set, &lt;gendir&gt;/&lt;name&gt;.patches.asm lists the cells to rewrite</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="patchimage" type="xs:string">
+        <xs:annotation><xs:documentation>the map with the patches painted in place, same size — goes with patches</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>

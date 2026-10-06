@@ -58,6 +58,11 @@ public class SimpleAssemblyGenerator extends Encoder{
 	/** how the second plane is reached ; see Image.PLANES_* */
 	private final String planes;
 
+	/** planes=cursor : the LEAY that leaves Y on the next cell, 0 when the code lands there */
+	private int yReturn;
+	private int yReturnCycles;
+	private int yReturnSize;
+
 	public SimpleAssemblyGenerator(Image img, String destDir, int alphaOption) throws Exception {
 		planes = img.planes;
 		spriteCenterEven = (img.getCoordinate() % 2) == 0;
@@ -121,6 +126,10 @@ public class SimpleAssemblyGenerator extends Encoder{
 		spriteCode2 = regOpt.getAsmCode();	
 		cyclesSpriteCode2 = regOpt.getAsmCodeCycles();
 		sizeSpriteCode2 = regOpt.getAsmCodeSize();
+
+		if (planesByCursor()) {
+			secondPlaneThroughY(img);
+		}
 
 		// Calcul des cycles et taille du code de cadre
 		cyclesDFrameCode = 0;
@@ -215,11 +224,74 @@ public class SimpleAssemblyGenerator extends Encoder{
 		return Image.PLANES_OFFSET.equals(planes);
 	}
 
+	/** true when the second plane is the caller's Y, given back on the next cell */
+	private boolean planesByCursor() {
+		return Image.PLANES_CURSOR.equals(planes);
+	}
+
+	/**
+	 * planes=cursor : the second plane's code addresses Y instead of U (the same
+	 * indexed forms, at the same cost), and a final LEAY leaves Y one cell
+	 * further : the image's width in plane bytes from where the caller had it.
+	 * The caller walks its row with X and Y, so code using either as data is
+	 * refused rather than emitted.
+	 */
+	// the toolchain signals build errors with plain Exceptions (48 throw sites)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	private void secondPlaneThroughY(Image img) throws Exception {
+		for (List<String> code : List.of(spriteCode1, spriteCode2)) {
+			for (String element : code) {
+				for (String line : element.split("\n")) {
+					if (usesXorY(line)) {
+						throw new Exception("image " + name + " : planes=" + Image.PLANES_CURSOR
+								+ " keeps the caller's X and Y, this code needs one of them : " + line.trim());
+					}
+				}
+			}
+		}
+		int moved = 0;
+		List<String> code = new ArrayList<String>();
+		for (String element : spriteCode2) {
+			StringBuilder converted = new StringBuilder();
+			for (String line : element.split("\n", -1)) {
+				String op = line.trim();
+				if (op.toUpperCase().startsWith("LEAU")) {
+					moved += Integer.parseInt(op.substring(4, op.indexOf(',')).trim());
+				}
+				if (converted.length() > 0) {
+					converted.append('\n');
+				}
+				converted.append(line.replaceFirst("(?i)^(\\s*)LEAU", "$1LEAY").replaceFirst("(?i),U(\\s*)$", ",Y$1"));
+			}
+			code.add(converted.toString());
+		}
+		spriteCode2 = code;
+		int pixelsPerByte = VideoMemory.memoryPlanarBits / VideoMemory.memoryLinearBits;
+		int cellBytes = pixelsPerByte * VideoMemory.memoryNbPlanes;
+		if (img.getWidth() % cellBytes != 0) {
+			throw new Exception("image " + name + " : planes=" + Image.PLANES_CURSOR + " needs a width in whole plane bytes ("
+					+ cellBytes + " pixels), got " + img.getWidth());
+		}
+		yReturn = img.getWidth() / cellBytes - moved;
+		if (yReturn != 0) {
+			// LEAY : 4 cycles and 2 bytes, plus its offset's indexing
+			yReturnCycles = 4 + Register.getIndexedOffsetCost(yReturn);
+			yReturnSize = 2 + Register.getIndexedOffsetSize(yReturn);
+		}
+	}
+
+	/** an instruction that reads or writes X or Y, or pushes or pulls registers */
+	private static boolean usesXorY(String line) {
+		String op = line.trim().toUpperCase();
+		return op.matches("^(LD|ST|LEA|CMP)[XY]\\b.*") || op.matches("^(ABX|PSHU|PULU|PSHS|PULS|EXG|TFR)\\b.*")
+				|| op.matches(".*,-*[XY]\\+*$");
+	}
+
 	public List<String> getCodeFrameDrawMid() {
 		List<String> asm = new ArrayList<String>();
 		if (planesByOffset()) {
 			asm.add("\n\tLEAU  -" + VideoMemory.memoryPlaneDistance + ",U");
-		} else {
+		} else if (!planesByCursor()) {
 			asm.add("\n\tLDU <glb_screen_location_1");
 		}
 		return asm;
@@ -228,14 +300,18 @@ public class SimpleAssemblyGenerator extends Encoder{
 	public int getCodeFrameDrawMidCycles() {
 		int cycles = 0;
 		// LEAU n16,U : 4 base + 5 for the 16 bit offset indexing mode
-		cycles += planesByOffset() ? 9 : Register.costDirectLD[Register.U];
+		if (!planesByCursor()) {
+			cycles += planesByOffset() ? 9 : Register.costDirectLD[Register.U];
+		}
 		return cycles;
 	}
 
 	public int getCodeFrameDrawMidSize() {
 		int size = 0;
 		// LEAU n16,U : opcode + postbyte + two offset bytes
-		size += planesByOffset() ? 4 : Register.sizeDirectLD[Register.U];
+		if (!planesByCursor()) {
+			size += planesByOffset() ? 4 : Register.sizeDirectLD[Register.U];
+		}
 		return size;
 	}
 
@@ -244,6 +320,9 @@ public class SimpleAssemblyGenerator extends Encoder{
 		if (planesByOffset()) {
 			// U is the caller's cursor over a row of sprites : give it back
 			asm.add("\tLEAU  " + VideoMemory.memoryPlaneDistance + ",U");
+		}
+		if (planesByCursor() && yReturn != 0) {
+			asm.add("\tLEAY  " + yReturn + ",Y");
 		}
 		asm.add("\tRTS\n");
 		return asm;
@@ -254,6 +333,7 @@ public class SimpleAssemblyGenerator extends Encoder{
 		if (planesByOffset()) {
 			cycles += 9; // LEAU n16,U
 		}
+		cycles += yReturnCycles;
 		cycles += 5; // RTS
 		return cycles;
 	}
@@ -263,6 +343,7 @@ public class SimpleAssemblyGenerator extends Encoder{
 		if (planesByOffset()) {
 			size += 4; // LEAU n16,U
 		}
+		size += yReturnSize;
 		size += 1; // RTS
 		return size;
 	}

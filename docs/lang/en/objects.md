@@ -93,6 +93,13 @@ frame**, reading `gfxlock.frameDrop.count`. A dropped frame is compensated,
 not lost. Keep that coupling: R-Type's waves, boss and end-of-stage timings
 are calibrated against the arcade original through this counter.
 
+`ObjectMoveAndFallSync` moves under a constant acceleration (the
+acceleration in D, s8.8 per frame) : for each elapsed frame the position takes
+the velocity, then the velocity the acceleration — Sonic 2's
+`ObjectMoveAndFall`, exact over any drop (`x += k*v + g*k(k-1)/2`,
+`v += k*g`). `ObjectMoveSync` followed by the acceleration added once per
+elapsed frame is not the same fall : it misses `g*k(k-1)/2`.
+
 `ObjectDp_Clear` wipes the user direct page up to `dp_extreg`, which it shares
 with the engine and therefore leaves alone.
 
@@ -102,12 +109,13 @@ with the engine and therefore leaves alone.
 `gfxlock.frameDrop.count` instead, so a dropped frame is caught up rather than
 lost — the same coupling `ObjectMoveSync` has, and for the same reason.
 
-The two do **not** reduce to each other at a drop of one. The call that loads
-an animation consumes its own frame drop on the spot; the unsynchronised
-variant does not. So a sequence starting with an animation change lands one
-frame apart between the two, permanently. Prime past the load before comparing
-regimes — the bench does, and only then is the compensation exact on the
-displayed frame.
+At a drop of one the two are the same routine. At a drop of n, a timer gone
+past zero carries its overshoot c' into the next image as `D + 1 + c'` (an
+image lasts its script's duration plus one frame, as in the original),
+clamped at 0 : one image per call at most. The call that loads an animation
+counts one frame, the current one, whatever the drop — the frames before it
+belonged to the previous animation. The bench compares the regimes past the
+load (T13, T19).
 
 ## Scripted movement
 

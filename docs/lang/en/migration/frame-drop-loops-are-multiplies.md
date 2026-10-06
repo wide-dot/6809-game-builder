@@ -54,6 +54,14 @@ operation :
   `layer.AddPos` in R-Type), added once. Same positions to the bit ; about a
   hundred cycles whatever the drop. `engine/object-management/ObjectMoveSync.asm`
   does this since 2026-09-10 (a recorded deviation of the 1:1 import).
+- a **velocity under a constant acceleration** (a fall) integrated over k
+  frames, the position taking the velocity before the acceleration as the
+  original's `ObjectMoveAndFall` does, is `x += k*v + g*k(k-1)/2`,
+  `v += k*g`. `ObjectMoveSync` followed by the acceleration added k times
+  misses the `g*k(k-1)/2` : the jump peaks higher the longer the loop (Sonic
+  2's Masher : 146 lines at 5 frames per loop, 154 at 8, the original's 136).
+  `engine/object-management/ObjectMoveAndFallSync.asm` does it exactly, the
+  acceleration in D (since 2026-10-05, `examples/objects` T20).
 - a **counter with a threshold** advances by k, and the tests become
   interval tests : the threshold fires if it lies in `(counter, counter + k]`
   — the counter stops there, the remaining frames of the tick are lost as

@@ -4,8 +4,7 @@
 * Subroutine to draw sprites on screen
 * Read Display Priority Structure (back to front)
 * priority: 0 - unregistred
-* priority: 1 - register non moving overlay sprite
-* priority; 2-8 - register moving sprite (2:front, ..., 8:back)  
+* priority; 1-8 - registered sprite (2:front, ..., 8:back)  
 *
 * input REG : none
 * ---------------------------------------------------------------------------
@@ -96,17 +95,16 @@ DRS_rtsB1
 DRS_ProcessEachPriorityLevelB0    
         lda   rsv_render_flags,x
         anda  #rsv_render_displaysprite_mask
-        bne   >
-        jmp   DRS_NextObjectB0
-!       lda   rsv_prev_render_flags_0,x
+        beq   DRS_NextObjectB0
+        lda   rsv_prev_render_flags_0,x
         bmi   DRS_NextObjectB0
         lda   render_flags,x
         anda  #render_overlay_mask
         bne   DRS_DrawWithoutBackupB0
         lda   rsv_erase_nb_cell,x        
         jsr   BgBufferAlloc                 ; allocate free space to store sprite background data
-        leay   ,y                           ; y contains cell_end of allocated space 
-        beq    DRS_NextObjectB0             ; branch if no more free space
+        leay  ,y                            ; y contains cell_end of allocated space 
+        beq   DRS_NextObjectB0              ; branch if no more free space
 DRS_DrawWithoutBackupB0        
         ldd   xy_pixel,x                    ; load x position (48-207) and y position (28-227) in one operation
         suba  rsv_image_center_offset,x
@@ -118,10 +116,6 @@ DRS_DrawWithoutBackupB0
         stx   DRS_dyn3B0+1                  ; save x reg
         ldu   <glb_screen_location_2
         jsr   [rsv_draw_routine,x]          ; backup background and draw sprite on working screen buffer
-        bra   DRS_dyn3B0
-        jsr   DecMapAlpha
-        bra   DRS_dyn3B0       
-        jsr   zx0_6809_mega_wrap        
 DRS_dyn3B0        
         ldx   #$0000                        ; (dynamic) restore x reg
         stu   rsv_bgdata_0,x                ; store pointer to saved background data
@@ -207,16 +201,16 @@ DRS_dyn2
 DRS_ProcessEachPriorityLevelB1
         lda   rsv_render_flags,x
         anda  #rsv_render_displaysprite_mask
-        bne   >
-        jmp   DRS_NextObjectB1
-!       lda   rsv_prev_render_flags_1,x
+        beq   DRS_NextObjectB1
+        lda   rsv_prev_render_flags_1,x
         bmi   DRS_NextObjectB1
         lda   render_flags,x
         anda  #render_overlay_mask
         bne   DRS_DrawWithoutBackupB1
         lda   rsv_erase_nb_cell,x        
         jsr   BgBufferAlloc                 ; allocate free space to store sprite background data
-        leay  ,y                           ; y contains cell_end of allocated space
+*       cmpy  #$0000                        ; y contains cell_end of allocated space
+        leay  ,y
         beq   DRS_NextObjectB1             ; branch if no more free space
 DRS_DrawWithoutBackupB1        
         ldd   xy_pixel,x                    ; load x position (48-207) and y position (28-227) in one operation
@@ -229,10 +223,6 @@ DRS_DrawWithoutBackupB1
         stx   DRS_dyn3B1+1                  ; save x reg
         ldu   <glb_screen_location_2
         jsr   [rsv_draw_routine,x]
-        bra   DRS_dyn3B1        
-        jsr   DecMapAlpha
-        bra   DRS_dyn3B1        
-        jsr   zx0_6809_mega_wrap        
 DRS_dyn3B1        
         ldx   #$0000                        ; (dynamic) restore x reg
         stu   rsv_bgdata_1,x                ; store pointer to saved background data
@@ -270,13 +260,3 @@ DRS_NextObjectB1
         ldx   rsv_priority_next_obj_1,x
         lbne  DRS_ProcessEachPriorityLevelB1   
         rts
-
-        ifndef DecMapAlpha
-DecMapAlpha
-        rts
-        endc
-
-        ifndef zx0_6809_mega_wrap
-zx0_6809_mega_wrap
-        rts
-        endc

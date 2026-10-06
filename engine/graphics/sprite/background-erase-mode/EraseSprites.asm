@@ -181,7 +181,7 @@ ESP_ProcessEachPriorityLevelB0
         
 ESP_CheckPriorityB0
         cmpa  #0                            ; dynamic current priority
-        lbne   ESP_NextObjectB0             ; do not process this entry (case of priority change)
+        bne   ESP_NextObjectB0             ; do not process this entry (case of priority change)
         
 ESP_UnsetCheckRefreshB0
         lda   rsv_render_flags,u
@@ -193,7 +193,7 @@ ESP_UnsetCheckRefreshB0
         
 ESP_CheckEraseB0
         anda  #rsv_render_erasesprite_mask
-        lbeq   ESP_NextObjectB0
+        beq   ESP_NextObjectB0
         ldb   rsv_prev_render_flags_0,u
         bpl   ESP_UnsetOnScreenFlagB0   ; pas a l'ecran sur CE buffer : bgdata/adresse
                                             ; perimees, ne surtout pas restaurer (garde
@@ -278,7 +278,7 @@ ESP_ProcessEachPriorityLevelB1
         
 ESP_CheckPriorityB1
         cmpa  #0                            ; dynamic current priority
-        lbne   ESP_NextObjectB1             ; do not process this entry (case of priority change)
+        bne   ESP_NextObjectB1             ; do not process this entry (case of priority change)
         
 ESP_UnsetCheckRefreshB1
         lda   rsv_render_flags,u
@@ -290,8 +290,9 @@ ESP_UnsetCheckRefreshB1
         
 ESP_CheckEraseB1
         anda  #rsv_render_erasesprite_mask
-        lbeq   ESP_NextObjectB1
-        ldb   rsv_prev_render_flags_1,u
+        bne   >
+        jmp   ESP_NextObjectB1
+!       ldb   rsv_prev_render_flags_1,u
         bpl   ESP_UnsetOnScreenFlagB1   ; pas a l'ecran sur CE buffer : bgdata/adresse
                                             ; perimees, ne surtout pas restaurer (garde
                                             ; contre un flag erase force/rescape)
@@ -341,7 +342,7 @@ ESP_FreeEraseBufferB1
         stu   BBF_AddNewEntry+1
         ldu   #Lst_FreeCellFirstEntry_1        
         stu   BBF_SetNewEntryPrevLink+1          
-        ldu   Lst_FreeCellFirstEntry_1
+        ldu   ,u
         jsr   BgBufferFree                  ; free background data in memory
  ENDC
         
@@ -355,7 +356,7 @@ ESP_UnsetOnScreenFlagB1
         
 ESP_NextObjectB1
         ldu   rsv_priority_prev_obj_1,u
-        lbne   ESP_ProcessEachPriorityLevelB1   
+        bne   ESP_ProcessEachPriorityLevelB1   
         rts
         
 * ---------------------------------------------------------------------------

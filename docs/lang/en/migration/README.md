@@ -63,6 +63,9 @@ practice; this is a reading order, not a schedule.
 8. [A v1 game has no link data; a v2 unit pays for every pointer it
    holds](static-link-bake.md) — the one that fails as a dead machine mid-load,
    and sends you to the disk image instead of the link.
+8b. [A relative branch cannot reach another unit](relative-branch-across-units.md)
+    — `lbXX` to an engine routine : v1 knew the address, v2 would have to
+    relocate a symbol minus a place, and the link data cannot.
 
 **Assembly and includes** — what the obj target refuses, and where files go.
 
@@ -71,6 +74,9 @@ practice; this is a reading order, not a schedule.
     relocation](relocatable-alignment.md) — `equ (*/32)*32` folds in a v1 game
     mode assembled absolutely, and cannot be relocated at all.
 10. [Where to include a v1 file that has no `SECTION`](v1-file-sections.md)
+10b. [`org` does not rewind a section](org-does-not-rewind-a-section.md) —
+    v1 reserved struct instances then `org`'d back to initialise them ; in a
+    section both are emitted, and every later byte leaves its symbol behind.
 11. [The `irq.on` / `irq.off` bridge](irq-bridge.md)
 12. [A KEPT-V2 module imposes its API on imported objects](kept-v2-api.md)
 12b. [The YMM private stack vs. the main-loop IRQ](ymm-private-stack-irq.md)
@@ -117,8 +123,15 @@ practice; this is a reading order, not a schedule.
     them](resident-render-structures.md) — v1 reloaded them with its game
     mode binary; in v2 they outlive the pool they name, and a stale priority
     level stays poisoned for good.
+23b. [A game mode that loads the next one drops itself first, and returns
+    into it](game-mode-change.md) — v1's `LoadGameMode` without a resident
+    engine : `scene.unload` then `scene.load` with the new entry point as the
+    return address, one region per game mode.
 24. [Overlay: erase by omission, not by repaint](overlay-erase-by-omission.md)
 25. [A per-frame loop is a multiply](frame-drop-loops-are-multiplies.md)
+25b. [A frame-drop timer carries its overshoot](frame-drop-timer-carry.md) —
+    the original reloads on reaching -1 : D + 1 + c', clamped at 0 ; v1's
+    `AnimateSpriteSync` took the drop twice.
     — v1 hid things by painting background patches over them; in overlay the
     canvas is redrawn every frame, so the hidden thing becomes removable
     pieces owned by a manager, and the v1 eraser masks are the cutting guide.

@@ -110,6 +110,15 @@ BuildSprites
         bne   @nextobject1 
         bita  #render_subobjects_mask       ; is this a child multisprite sprite object?
         lbne  @multisprite
+        ; BUGFIX (2026-08-23) : image_set==0 means "no image" (see constants.asm).
+        ; DisplaySprite returns early in that case and therefore never unregisters
+        ; an object that was registered while it still had an image, so a stale
+        ; entry stays in the DPS. Without this guard the null pointer is
+        ; dereferenced against whatever sits at offset $0000 of the object image
+        ; page: harmless zeros on a RAM page (.fd/.sd), but the cartridge header
+        ; on a T2/ROM build, which sends the engine into an erased flash bank.
+        ldx   image_set,u
+        beq   @nextobject1
         sta   <_render_flags
 ;
 ; ****************************************************
@@ -260,6 +269,9 @@ BuildSprites
         ldd   <_y_pos 
         addd  <glb_camera_y_offset
         subd  <glb_camera_y_pos        
+ IFDEF BuildSprites.HALFLINE
+        andb  #$FE                          ; V2-DEVIATION : an even line, see below
+ ENDC
         stb   @ypx
         ldd   <_x_pos                       ; convert playfield position to screen position
         addd  <glb_camera_x_offset
@@ -310,6 +322,9 @@ BuildSprites
         blo   @nextobject 
 @setposition
         ldd   xy_pixel,u                    ; load x position (48-207) and y position (28-227) in one operation
+ IFDEF BuildSprites.HALFLINE
+        andb  #$FE                          ; V2-DEVIATION : an even line, see below
+ ENDC
         suba  <_image_center_parity+1
         suba  #48                           ; move x ref. to 0
         bcc   >                             ; no carry, continue
@@ -377,6 +392,7 @@ BuildSprites
 @id     equ   *-1
         _SetCartPageA        
         ldx   4,y ; get child imageset
+        beq   @nextchild                    ; BUGFIX (2026-08-23) : no image for this child
         stx   _image_set
         ldb   image_center_offset,x
         sex
@@ -389,6 +405,7 @@ BuildSprites
         ldd   ,y
         std   _x_pos
         jsr   @processMulti
+@nextchild
         dec   _nbchild
         beq   @nextobject2
         leay  next_subspr,y
@@ -470,6 +487,9 @@ BuildSprites
         ldd   _y_pos 
         addd  glb_camera_y_offset
         subd  glb_camera_y_pos        
+ IFDEF BuildSprites.HALFLINE
+        andb  #$FE                          ; V2-DEVIATION : an even line, see below
+ ENDC
         stb   @ypx
         ldd   _x_pos                        ; convert playfield position to screen position
         addd  glb_camera_x_offset
@@ -511,6 +531,12 @@ BuildSprites
         jsr   [_draw_routine]               ; draw compilated sprite on screen
         puls  u,y,pc
 
+; V2-DEVIATION (06/10/2026) : BuildSprites.HALFLINE, a game whose
+; background is drawn on every other line (the even screen lines) defines it
+; and compiles its sprites with gfxcomp's halfline option : the screen line
+; of every sprite is rounded down to an even one, so its kept rows land on
+; the background's lines and nothing is ever drawn on the lines between.
+; Undefined, nothing changes.
 ; V2-DEVIATION (20/08/2026, bugfix) : l'ajustement de parite du repli de
 ; frame manquante, partage par les deux chemins. B = l'index de variante
 ; APRES le eorb #%10 : bit1 pose = on retombe sur la DECALEE (reculer d'un

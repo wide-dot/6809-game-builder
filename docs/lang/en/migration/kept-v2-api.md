@@ -83,3 +83,13 @@ pose; restoring the read dropped `y_vel` to zero and froze the position.
 ## Met in
 
 `games/r-type`, 2026-08-03, porting the player. Ten call sites, seven symbols.
+
+wide-dot/sonic-2, 2026-10-05 — after the fact : `InitJoypads`,
+`ReadJoypads` and `joypad.const` had been imported a second time beside the
+KEPT-V2 module, and were removed. The title's Start (`Fire_Press`,
+`c1_button_A_mask`) and Emerald Hill's init now use `joypad.read`,
+`joypad.init` and `joypad.0.A` ; the three v1 files are watched as
+`KEPT-V2:` lines of the manifest. `ReadJoypads2` stays imported : it reads
+one byte per player, the `Ctrl_1` word Sonic's s2disasm transcription
+expects, and no v2 module produces that. Proof : the title's 730 loop
+states and EHZ's 667 samples, alone and after the title, identical to v1.
