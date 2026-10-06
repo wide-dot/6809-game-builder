@@ -252,9 +252,21 @@ public class Image {
 		return id;
 	}
 
+	public Image(String imageName, Integer imageIndex, String imageFile, String encoderType, String encoderMirror, Integer encoderShift, String encoderPosition, String encoderPlanes) throws Exception {
+		this(imageName, imageIndex, imageFile, encoderType, encoderMirror, encoderShift, encoderPosition, encoderPlanes, false);
+	}
+
+	/**
+	 * halfline : the image is drawn on every other line only, the lines at an
+	 * even distance from the anchor row ; the others are made transparent
+	 * after the mirror, so every mirror of the image keeps the same rows
+	 * around its anchor. A game whose background is drawn on every other line
+	 * draws its sprites so, at an even screen line (BuildSprites.HALFLINE) :
+	 * nothing ever lands on the lines between, and the code is half as long.
+	 */
 	// the toolchain signals build errors with plain Exceptions (48 throw sites)
 	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
-	public Image(String imageName, Integer imageIndex, String imageFile, String encoderType, String encoderMirror, Integer encoderShift, String encoderPosition, String encoderPlanes) throws Exception {
+	public Image(String imageName, Integer imageIndex, String imageFile, String encoderType, String encoderMirror, Integer encoderShift, String encoderPosition, String encoderPlanes, boolean halfline) throws Exception {
 			File file = new File(imageFile);
 			if (!file.isFile()) {
 				throw new Exception("image file " + imageFile + " does not exist");
@@ -321,6 +333,9 @@ public class Image {
 			// one, which the imageset needs — it keeps a single x1/y1 for the
 			// whole mirror group.
 		image = Mirror.transform(image, mirror);
+		if (halfline) {
+			clearOddRows();
+		}
 		if (isOneBpp()) {
 			prepareMono(imageFile);
 		} else {
@@ -338,6 +353,23 @@ public class Image {
 	// calcul des flags transparency, odd et even
 	// calcul x et y offset en fonction du type de positionnement (centre, top left ...)		
 	
+	/** the halfline option : the rows at an odd distance from the anchor row made transparent */
+	private void clearOddRows() {
+		int anchorRow = 0;
+		switch (position) {
+			case POSITION_CENTER_INT   : anchorRow = (height-1)/2; break;
+			case POSITION_TOP_LEFT_INT : anchorRow = 0; break;
+			case POSITION_3QTRC_INT    : anchorRow = (height-1)*3/4; break;
+			case POSITION_CENTER_W2_INT: anchorRow = height/2; break;
+		}
+		java.awt.image.WritableRaster raster = image.getRaster();
+		for (int y = (anchorRow + 1) % 2; y < height; y += 2) {
+			for (int x = 0; x < width; x++) {
+				raster.setSample(x, y, 0, 0);
+			}
+		}
+	}
+
 	/**
 	 * Colour 0 is transparent and 1..16 are the palette, so anything above is a
 	 * mistake in the source image. v1 rejects it ; without the check the code

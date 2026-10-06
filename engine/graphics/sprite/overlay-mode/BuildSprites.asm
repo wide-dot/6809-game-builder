@@ -269,6 +269,9 @@ BuildSprites
         ldd   <_y_pos 
         addd  <glb_camera_y_offset
         subd  <glb_camera_y_pos        
+ IFDEF BuildSprites.HALFLINE
+        andb  #$FE                          ; V2-DEVIATION : an even line, see below
+ ENDC
         stb   @ypx
         ldd   <_x_pos                       ; convert playfield position to screen position
         addd  <glb_camera_x_offset
@@ -319,6 +322,9 @@ BuildSprites
         blo   @nextobject 
 @setposition
         ldd   xy_pixel,u                    ; load x position (48-207) and y position (28-227) in one operation
+ IFDEF BuildSprites.HALFLINE
+        andb  #$FE                          ; V2-DEVIATION : an even line, see below
+ ENDC
         suba  <_image_center_parity+1
         suba  #48                           ; move x ref. to 0
         bcc   >                             ; no carry, continue
@@ -481,6 +487,9 @@ BuildSprites
         ldd   _y_pos 
         addd  glb_camera_y_offset
         subd  glb_camera_y_pos        
+ IFDEF BuildSprites.HALFLINE
+        andb  #$FE                          ; V2-DEVIATION : an even line, see below
+ ENDC
         stb   @ypx
         ldd   _x_pos                        ; convert playfield position to screen position
         addd  glb_camera_x_offset
@@ -522,6 +531,12 @@ BuildSprites
         jsr   [_draw_routine]               ; draw compilated sprite on screen
         puls  u,y,pc
 
+; V2-DEVIATION (06/10/2026) : BuildSprites.HALFLINE, a game whose
+; background is drawn on every other line (the even screen lines) defines it
+; and compiles its sprites with gfxcomp's halfline option : the screen line
+; of every sprite is rounded down to an even one, so its kept rows land on
+; the background's lines and nothing is ever drawn on the lines between.
+; Undefined, nothing changes.
 ; V2-DEVIATION (20/08/2026, bugfix) : l'ajustement de parite du repli de
 ; frame manquante, partage par les deux chemins. B = l'index de variante
 ; APRES le eorb #%10 : bit1 pose = on retombe sur la DECALEE (reculer d'un

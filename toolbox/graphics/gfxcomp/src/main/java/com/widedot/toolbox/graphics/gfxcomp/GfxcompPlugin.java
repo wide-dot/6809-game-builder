@@ -458,8 +458,9 @@ public class GfxcompPlugin {
 			String position = Attribute.getString(child, ctx, "position", Image.POSITION_CENTER);
 			String planes   = Attribute.getString(child, ctx, "planes", Image.PLANES_POINTER);
 			String alpha    = Attribute.getString(child, ctx, "alpha", Image.ALPHA_NONE);
+			boolean halfline = Attribute.getBoolean(child, ctx, "halfline", false);
 
-			Image image = new Image(name, index, filename, encoder, mirror, shift, position, planes);
+			Image image = new Image(name, index, filename, encoder, mirror, shift, position, planes, halfline);
 			image.setAlphaMode(alpha);
 			image.encode(gendir);
 			if (imageset != null) {
