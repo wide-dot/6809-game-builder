@@ -250,3 +250,5 @@ engine/graphics/font/DrawText/3x5_shaded_selected/asm/fnt_4x6_shd_sel_92_DN0.asm
 engine/graphics/font/DrawText/3x5_shaded_selected/asm/fnt_4x6_shd_sel_93_DN0.asm,engine/graphics/font/DrawText/3x5_shaded_selected/asm/fnt_4x6_shd_sel_93_DN0.asm,e2ad0dc1d9dea9d533ff4faab272afe83c53b679,2026-10-06,
 engine/graphics/font/DrawText/3x5_shaded_selected/asm/fnt_4x6_shd_sel_94_DN0.asm,engine/graphics/font/DrawText/3x5_shaded_selected/asm/fnt_4x6_shd_sel_94_DN0.asm,e2ad0dc1d9dea9d533ff4faab272afe83c53b679,2026-10-06,
 engine/graphics/font/DrawText/3x5_shaded_selected/asm/fnt_4x6_shd_sel_95_DN0.asm,engine/graphics/font/DrawText/3x5_shaded_selected/asm/fnt_4x6_shd_sel_95_DN0.asm,e2ad0dc1d9dea9d533ff4faab272afe83c53b679,2026-10-06,
+engine/graphics/image/GetImgIdA.asm,engine/graphics/image/GetImgIdA.asm,f873642ee58b8c6d294d174a68d1124392daf3ae,2026-10-07,
+engine/graphics/draw/DrawFullscreenImage.asm,engine/graphics/draw/DrawFullscreenImage.asm,87c7ec01b43cd7e53f66f82c68490c80d14e0363,2026-10-07,
