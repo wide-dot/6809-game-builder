@@ -75,6 +75,21 @@ BuildSprites
         addd  #200
         std   BS_yhi
 
+ IFDEF BuildSprites.FRONT_PASS
+        ; V2-DEVIATION (07/10/2026, sonic-2) : priority 1 has a pass of its
+        ; own, run by the game after its high priority tiles
+        ; (BuildSprites.front set) : Sonic 2's screen texts (the results, GAME
+        ; OVER) carry the art's priority bit, the Mega Drive draws them over
+        ; the planes' high priority tiles. The first pass leaves them out.
+        ; Defined by the game alone : the default is unchanged.
+        tst   BuildSprites.front
+        beq   @back
+        ldu   Tbl_Priority_Last_Entry+2
+        beq   >
+        jmp   @process
+!       rts
+@back
+ ENDC
         ldu   Tbl_Priority_Last_Entry+16
         beq   >
         jsr   @process   
@@ -96,10 +111,14 @@ BuildSprites
 !       ldu   Tbl_Priority_Last_Entry+4
         beq   >
         jsr   @process  
+ IFDEF BuildSprites.FRONT_PASS
+!       rts                                ; priority 1 : the front pass
+ ELSE
 !       ldu   Tbl_Priority_Last_Entry+2
         beq   >
         jmp   @process
 !       rts
+ ENDC
 @nextobject1
         ldu   rsv_priority_prev_obj,u
         bne   @process   
@@ -591,6 +610,9 @@ BS_xlo  fdb   0
 BS_xhi  fdb   0
 BS_ylo  fdb   0
 BS_yhi  fdb   0
+ IFDEF BuildSprites.FRONT_PASS
+BuildSprites.front fcb 0                   ; set : the pass draws priority 1 alone
+ ENDC
 
 BSP_parityFallback
         pshs  b
