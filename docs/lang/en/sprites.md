@@ -417,7 +417,10 @@ Emerald Hill) compiles its sprites with `halfline="true"` : only the rows at
 an even distance from the anchor row are kept, after the mirror, and the
 others become transparent. The engine define `BuildSprites.HALFLINE` rounds
 the screen row down to even in the playfield and `xy_pixel` paths, so the
-anchor row, hence every drawn row, falls on an even line.
+anchor row, hence every drawn row, falls on an even line. The
+background-erase mode has the same define, `DrawSprites.HALFLINE` : its
+`DRS_XYToAddress` rounds the row down to even (Sonic 2's half-line special
+stage, whose sprites and object layers all go through it).
 
 ### Backgrounds
 
