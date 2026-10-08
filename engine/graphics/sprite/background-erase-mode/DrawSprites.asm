@@ -168,6 +168,13 @@ DRS_NextObjectB0
 ********************************************************************************
 
 DRS_XYToAddress
+ IFDEF DrawSprites.HALFLINE
+        ; V2-DEVIATION: DrawSprites.HALFLINE (sonic-2's half-line special
+        ; stage, define, default unchanged) : the row rounded down to even,
+        ; the sprites compiled with gfxcomp's halfline drawing on the even
+        ; lines only (y_pixel's offset $1C is even)
+        andb  #$FE
+ ENDC
         suba  #$30
         bcc   DRS_XYToAddressPositive
         suba  #$60                          ; get x position one line up, skipping (160-255)
