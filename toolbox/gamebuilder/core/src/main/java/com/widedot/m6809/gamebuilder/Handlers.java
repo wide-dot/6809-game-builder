@@ -228,6 +228,17 @@ public final class Handlers {
 			.opt("scrollstep", STRING, "the module's scroll vector, default 0,0,1,0,0,0,0,0 — the engine's 1 px horizontal dual-plane scroll. Feeds the lean pass only")
 			.opt("nbsteps", STRING, "the module's sub-step counts, default 0,0,4,0,0,0,0,0. Feeds the lean pass only")
 			.opt("refresh", STRING, "cells forced to stay DRAWN (bound to the set's first tile) though the lean would empty them : a checkpoint restart repaints from the map, so a band the scroll cannot rebuild from its start-of-stage blocks needs them. Space or comma list of <col>:<row> or <col>:<rowFirst>-<rowLast>"));
+		spec(element("chunkmap").doc("a chunked tilemap converted by the build (the Mega Drive Sonic games' levels : layouts of 128x128 chunks of 16x16 blocks, the chunks drawn already) to the TilemapBuffer formats, under gendir : tiles.png (a column of tiles, the same ones merged : picture on the drawn lines, collision, flip ; tile 0 empty) for a <gfxcomp grid>, tiles.bin (its tile ids) for a <tilemap>, chunk_0.bin and chunk_1.bin (banks of 128 chunks, a big endian word an entry : priority 15, solidity 11-14, opaque 10 with opaque=, tile index), layout-<n>.bin (each act's plane on those chunks, 128 bytes a row), primary-collision.bin, secondary-collision.bin, flip-collision.bin (a byte a tile)")
+			.req("chunks", STRING, "the chunks' pictures : an indexed PNG, colour 0 transparent, a column of chunks (chunk n at y = n times its height), 8x8 cells each, the block flips applied")
+			.req("mappings", STRING, "chunk mappings : 64 big endian words a chunk, SSTT YXII IIII IIII (solidity of the alternate and normal layers, flips, block)")
+			.req("blocks", STRING, "block mappings : 4 big endian pattern words a block, read for the priority bit of the first")
+			.req("primary", STRING, "collision index of each block, normal layer : a byte a block")
+			.req("secondary", STRING, "collision index of each block, alternate layer : a byte a block")
+			.req("layouts", STRING, "the acts' layouts, comma separated : rows of 256 bytes, the plane's 128 chunk ids first ; written as layout-1.bin, layout-2.bin... in this order")
+			.req("gendir", STRING, "directory receiving the outputs")
+			.opt("halfline", BOOL, "true : the even lines alone are drawn — tiles are compared on them and their odd lines come out empty. Default false")
+			.opt("opaque", BOOL, "true : the entries carry the opaque bit (10 : no transparent pixel on the drawn lines, engine define TilemapBuffer.OPAQUE), the tile index keeps bits 0-9. Default false, the index then keeps bits 0-10")
+			.opt("animated", STRING, "blocks drawn at run time, mapped past the block mappings : <block>[/high][/opaque], comma or space separated ; each takes the tile index past the tileset, in this order (where the game's animated tilesets follow its index)"));
 		spec(element("images").doc("a SERIES of images, declared as one line : the files of a directory in their NN order-prefix order, all compiled alike. Imageset indexes continue across rows and literal <image> alike ; symbol names are <base>_<n> with one counter per base, so a mirror row of the same directory continues the numbering")
 			.req("dir", STRING, "series directory ; files are ordered by their NN numeric prefix (the order IS the name)")
 			.opt("match", STRING, "glob filter on the file names, *.png if omitted")
@@ -290,6 +301,8 @@ public final class Handlers {
 		DEFAULTS.put("machine", com.widedot.m6809.gamebuilder.plugin.machine.MachinePlugin::run);
 		DEFAULTS.put("leanscroll",
 				com.widedot.toolbox.graphics.tilemap.leanscroll.LeanscrollPlugin::run);
+		DEFAULTS.put("chunkmap",
+				com.widedot.toolbox.graphics.tilemap.chunkmap.ChunkmapPlugin::run);
 
 		// media structure
 		MEDIA.put("directory", DirectoryPlugin::run);
