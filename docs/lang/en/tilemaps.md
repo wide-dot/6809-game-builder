@@ -382,7 +382,10 @@ element does the engine's half :
 - **Chunks** : a chunk's entries are the cells' words ; chunks with the
   same 64 words are one, renumbered in the order the acts use them, chunk
   0 the empty one ; `chunk_0.bin` and `chunk_1.bin` are the banks. The
-  priority is the block's first pattern's.
+  priority is the block's first pattern's. An empty cell (tile 0, which has
+  no collision) is a zero word whatever its block's flags : the
+  `<tilemap>` index gives tile 0 page 0, the end of the high priority
+  queue, so a flagged empty cell would end it early.
 - **Layouts** : `layout-<n>.bin`, each act's plane on the zone's chunks,
   128 bytes a row.
 - **Collision** : `primary-collision.bin`, `secondary-collision.bin` and

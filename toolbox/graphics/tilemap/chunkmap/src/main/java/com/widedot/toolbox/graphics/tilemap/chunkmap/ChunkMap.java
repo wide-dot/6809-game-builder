@@ -44,7 +44,9 @@ import javax.imageio.ImageIO;
  * <li>the chunk entries, a big endian word each : priority (15, the block's
  * first pattern's), the solidity (11-14), the opaque bit (10, with
  * {@code opaque} : no transparent pixel on the drawn lines) and the tile
- * index (0-9, or 0-10 without the opaque bit). The chunks are merged when
+ * index (0-9, or 0-10 without the opaque bit) ; an empty cell is a zero
+ * word (tile 0 has collision index 0 : its solidity is moot, and the
+ * engine skips a zero word). The chunks are merged when
  * their 64 entries are the same, renumbered in the order the acts use them,
  * chunk 0 the empty one, and split in banks of 128 ;</li>
  * <li>each act's plane on the zone's chunk ids, 128 bytes a row ;</li>
@@ -201,8 +203,11 @@ public final class ChunkMap {
 									collision.add(new int[] { p, s, ff });
 								}
 								boolean high = (blocks[b * 8] & 0x80) != 0;
-								boolean full = t != 0 && covers(pic, tw, th, halfline);
-								word = (high ? 0x8000 : 0) | solidity << 11 | (opaque && full ? 0x400 : 0) | t;
+								boolean full = covers(pic, tw, th, halfline);
+								// an empty cell is a zero word : the engine reads it so (nothing
+								// drawn, no high priority queued : a tile of page 0 ends that
+								// queue), and its collision index 0 leaves its solidity moot
+								word = t == 0 ? 0 : (high ? 0x8000 : 0) | solidity << 11 | (opaque && full ? 0x400 : 0) | t;
 							}
 							entries[i] = word;
 						}

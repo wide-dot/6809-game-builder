@@ -33,6 +33,7 @@ class ChunkMapTest {
 			0xC401, // block 1 again, its picture differing on the odd line only
 			0x0000, // empty
 			0x0005, // animated block 5
+			0xF000, // block 0, empty and without collision, high and solid : a zero word
 	};
 
 	private static BufferedImage sheet() {
@@ -65,6 +66,7 @@ class ChunkMapTest {
 
 	private static byte[] blocks() {
 		byte[] b = new byte[3 * 8];
+		b[0] = (byte) 0x80;                     // block 0 : high priority (and empty)
 		b[8] = (byte) 0x80;                     // block 1 : high priority
 		return b;
 	}
@@ -107,6 +109,8 @@ class ChunkMapTest {
 		assertEquals(0, e[4]);
 		// the animated block : past the tileset, high as declared, not opaque
 		assertEquals(0x8000 | 3, e[5]);
+		// an empty cell : a zero word, whatever its block's priority and solidity
+		assertEquals(0, e[6]);
 		assertTrue(Arrays.stream(r.chunks.get(0)).allMatch(v -> v == 0));
 	}
 
