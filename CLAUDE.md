@@ -30,6 +30,67 @@ d'une session écrasant les fichiers de l'autre). 1 session = 1 clone =
 GitHub, lien `engine`, rappel de build). La synchro entre chantiers passe par
 `origin`, jamais par le même arbre.
 
+## Grille de revue avant fusion (09/10/2026)
+
+Toute branche passe cette grille avant sa PR (décision auteur). La revue
+reprend chaque point et le dit **fait**, **sans objet** ou **écart justifié** ;
+la description de la PR en garde la trace.
+
+1. **La chaîne de build est Java, et elle se déclare dans le `config.xml`.**
+   - Toute transformation entre une source commitée et ce que l'assembleur
+     consomme est une étape du builder : un handler Java enregistré dans
+     `Handlers.java`, un élément déclaré dans le `config.xml`. Jamais un
+     script à lancer avant le build.
+   - Python reste permis pour l'**authoring** (dessiner une mire, produire un
+     corpus de test) et l'**analyse** (sondes et bancs toje) : le script est
+     commité à côté de ce qu'il produit, ses sorties sont commitées, le build
+     ne l'appelle jamais, et il a un `--check` qui dit si elles sont à jour.
+   - Une source de vérité par asset : pas de version « source » et de version
+     « convertie » commitées côte à côte.
+2. **Une nouvelle capacité ASM vit dans l'engine, pas dans l'exemple.**
+   - Elle est rangée au bon niveau (`engine/system/<machine>/`, `thomson/`,
+     générique), nommée selon les conventions (`module.routine`,
+     `xxx.macro.asm`, `xxx.const.asm`). Un exemple n'écrit pas un registre
+     matériel en dur et ne dit pas « pas encore de macro ».
+   - Elle est opt-in (macro, routine incluse à la demande, ou `define`) : un
+     projet qui ne s'en sert pas ne paie rien, ni octet ni cycle. C'est
+     prouvé par `ci/build-corpus.sh` avant et après : images identiques à
+     l'octet, ou chaque écart listé et expliqué.
+   - Son coût pour qui l'utilise est chiffré : octets, cycles par appel.
+   - Un import de la v1 suit la skill `v1-migration` (1:1, manifest,
+     `V2-DEVIATION`, cas de migration).
+3. **Une capacité ajoutée à un outil existant reprend son vocabulaire.**
+   - Une notion déjà nommée ailleurs garde son nom et ses valeurs (un mode
+     vidéo s'appelle `videomode`, avec les valeurs de `png2bin`). Un nom
+     nouveau doit dire ce que l'option fait, pas comment elle est codée.
+   - Le défaut reproduit le comportement d'avant. L'option est déclarée dans
+     la spec de `Handlers` (type, doc), le XSD est regénéré (`-x`,
+     `docs/schema/gamebuilder.xsd`), une valeur inconnue est une erreur
+     nommée.
+   - Des tests JUnit l'exercent, sortie comparée octet pour octet à une
+     référence.
+4. **Un nouvel outil Java** est un module du réacteur Maven, enregistré d'une
+   ligne dans `Handlers`, spec déclarée, testé en JUnit, documenté dans
+   `docs/lang/en/`. Pas de dépendance nouvelle sans motif écrit.
+5. **Un exemple est un banc, propre et rejouable.**
+   - Son art est généré (une mire, cf. « Art des exemples »), jamais copié
+     d'un jeu.
+   - Ses résultats sont des témoins en `$9C00` (convention loader-ut), et un
+     script commité dans `ci/toje-bench/` les lit et compare l'écran à sa
+     référence : toute affirmation du readme se rejoue. Rien ne vit seulement
+     dans un scratchpad.
+   - Le corpus le construit (`ci/build-corpus.sh` le trouve seul). Son readme
+     dit ce qu'il prouve, comment le construire (une commande, sans étape
+     Python) et le résultat daté.
+   - Il ne recopie pas un autre exemple quand une capacité de l'engine peut
+     porter la différence ; s'il en dérive, il le dit et n'en garde que
+     l'écart.
+6. **Doc et traçabilité dans le même commit** : le manuel `docs/lang/en/`
+   pour toute capacité, l'analyse ou le plan concernés mis à jour, ce
+   `CLAUDE.md` si l'état des lieux change. Commentaires de code en anglais.
+7. **Avant la PR** : branche à jour de `master`, `mvn clean install` vert,
+   corpus identique, bancs toje concernés rejoués.
+
 ## Build & commandes
 
 - Build toolchain : `mvn clean install` à la racine (multi-module, 17 modules ; JDK 11+,
