@@ -784,7 +784,7 @@
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string">
-        <xs:annotation><xs:documentation>draw, bdraw, rle or zx0</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>draw, bdraw, rle, zx0, or the 1bpp draw1, bdraw1 and clear1</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="mirror" type="xs:string">
         <xs:annotation><xs:documentation>none, x, y or xy</xs:documentation></xs:annotation>
@@ -1192,6 +1192,9 @@
       <xs:attribute name="planedistance" type="int6809">
         <xs:annotation><xs:documentation>bytes between the two halves of the video window, 8192 if omitted ; only planes=offset needs it</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="videomode" type="xs:string">
+        <xs:annotation><xs:documentation>bm16 (default) or bm4s : the video mode the code draws in, png2bin's names. bm4s ($41, 320x200 in 4 colours, TO8/TO8D/TO9+) reads 320 pixel pictures in 4 colours (indexes 1 to 4, 0 transparent) and packs them by pixel pairs into the BM16 pictures the encoders draw : positions and pre-shifts count two pixels, transparency goes by pairs, the 1bpp encoders are refused</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 
@@ -1391,7 +1394,7 @@
         <xs:annotation><xs:documentation>glob filter on the file names, *.png if omitted</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="encoder" type="xs:string">
-        <xs:annotation><xs:documentation>draw, bdraw, rle or zx0 — bdraw if omitted</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>draw, bdraw, rle, zx0, or the 1bpp draw1, bdraw1 and clear1 — bdraw if omitted</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="mirror" type="xs:string">
         <xs:annotation><xs:documentation>none (default), x, y or xy — applied to every file of the row</xs:documentation></xs:annotation>
@@ -2240,7 +2243,7 @@
         <xs:annotation><xs:documentation>where the generated binaries go, source tree if omitted</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="videomode" type="xs:string">
-        <xs:annotation><xs:documentation>t0, t1, t1s, t2, bm16, c2, c4, c16 — the pixel layout</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>t0, t1, t1s, t2, bm16, bm4s (t1s under the name gfxcomp uses), c2, c4, c16 — the pixel layout</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="buffer" type="xs:string">
         <xs:annotation><xs:documentation>none, vscroll, vscrolltile, hscroll — engine buffer built on top</xs:documentation></xs:annotation>

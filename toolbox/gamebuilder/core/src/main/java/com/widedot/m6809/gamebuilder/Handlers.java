@@ -210,7 +210,8 @@ public final class Handlers {
 			.opt("planarbits", INT, "video memory planar bits")
 			.opt("linebytes", INT, "video memory bytes per line")
 			.opt("nbplanes", INT, "video memory planes")
-			.opt("planedistance", INT, "bytes between the two halves of the video window, 8192 if omitted ; only planes=offset needs it"));
+			.opt("planedistance", INT, "bytes between the two halves of the video window, 8192 if omitted ; only planes=offset needs it")
+			.opt("videomode", STRING, "bm16 (default) or bm4s : the video mode the code draws in, png2bin's names. bm4s ($41, 320x200 in 4 colours, TO8/TO8D/TO9+) reads 320 pixel pictures in 4 colours (indexes 1 to 4, 0 transparent) and packs them by pixel pairs into the BM16 pictures the encoders draw : positions and pre-shifts count two pixels, transparency goes by pairs, the 1bpp encoders are refused"));
 		spec(element("image").doc("one PNG of a gfxcomp unit")
 			.req("name", STRING, "image name, prefix of the generated symbols")
 			.req("filename", STRING, "input .png, 8 bit indexed, colour 0 transparent")
@@ -230,7 +231,7 @@ public final class Handlers {
 		spec(element("images").doc("a SERIES of images, declared as one line : the files of a directory in their NN order-prefix order, all compiled alike. Imageset indexes continue across rows and literal <image> alike ; symbol names are <base>_<n> with one counter per base, so a mirror row of the same directory continues the numbering")
 			.req("dir", STRING, "series directory ; files are ordered by their NN numeric prefix (the order IS the name)")
 			.opt("match", STRING, "glob filter on the file names, *.png if omitted")
-			.opt("encoder", STRING, "draw, bdraw, rle or zx0 — bdraw if omitted")
+			.opt("encoder", STRING, "draw, bdraw, rle, zx0, or the 1bpp draw1, bdraw1 and clear1 — bdraw if omitted")
 			.opt("mirror", STRING, "none (default), x, y or xy — applied to every file of the row")
 			.opt("shifts", STRING, "comma list of pre-shifts, one compiled variant each ; defaults through <default name=\"images.shifts\"> — the target's one-line d7/t2 decision — then to 0. A row may pin its own (the player and the boss pre-shift even on floppy)")
 			.opt("names", STRING, "symbol base, <base>_<n> ; derived from the series directory if omitted (its parent when the directory is a plain images/)")
@@ -238,7 +239,7 @@ public final class Handlers {
 			.opt("position", STRING, "center, center-w2, top-left or 3qtr-center, forwarded to every encoder of the row")
 			.opt("planes", STRING, "pointer, offset or cursor, forwarded to every encoder of the row"));
 		spec(element("encoder").doc("one compiled rendering of an image")
-			.opt("name", STRING, "draw, bdraw, rle or zx0")
+			.opt("name", STRING, "draw, bdraw, rle, zx0, or the 1bpp draw1, bdraw1 and clear1")
 			.opt("mirror", STRING, "none, x, y or xy")
 			.opt("shift", INT, "pre shift in pixels")
 			.opt("position", STRING, "center (anchor (w-1)/2, (h-1)/2), center-w2 (w/2, h/2 : the Mega Drive art origin), top-left or 3qtr-center")
@@ -400,7 +401,7 @@ public final class Handlers {
 		spec(element("png2bin").doc("convert an indexed PNG to video memory data, one plane per declaration")
 			.req("filename", STRING, "input .png")
 			.opt("gendir", STRING, "where the generated binaries go, source tree if omitted")
-			.opt("videomode", STRING, "t0, t1, t1s, t2, bm16, c2, c4, c16 — the pixel layout")
+			.opt("videomode", STRING, "t0, t1, t1s, t2, bm16, bm4s (t1s under the name gfxcomp uses), c2, c4, c16 — the pixel layout")
 			.opt("buffer", STRING, "none, vscroll, vscrolltile, hscroll — engine buffer built on top")
 			.opt("guardcolor", INT, "hscroll only : the colour the wrapped bytes are refilled with")
 			.opt("plane", INT, "which memory plane this declaration yields")

@@ -11,8 +11,18 @@ _gfxmode.set80C MACRO
  ENDM
 
 _gfxmode.setBM4 MACRO
-        ; 160x200x4c
+        ; 320x200x4c, bitmap 4 : a pixel's index split over the two planes,
+        ; its high bit in RAMA, its low bit in RAMB, at the same address
         lda   #$21
+        sta   map.CF74021.LGAMOD
+ ENDM
+
+_gfxmode.setBM4S MACRO
+        ; 320x200x4c, bitmap 4 "special" (TO8/TO8D/TO9+ only, not the TO9 nor
+        ; the MO6) : the BM16 byte layout with 2-bit pixels, so a byte holds
+        ; four pixels and RAMA the four left of RAMB's. Code compiled by
+        ; gfxcomp videomode="bm4s" draws in it through the BM16 runtime
+        lda   #$41
         sta   map.CF74021.LGAMOD
  ENDM
 
