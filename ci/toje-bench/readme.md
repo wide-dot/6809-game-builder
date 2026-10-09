@@ -23,6 +23,9 @@ python3 ../../ci/toje-bench/loader_ut.py dist/to8.fd dist/to8-disk1.fd
 
 cd games/r-type
 python3 ../../ci/toje-bench/rtype_bench.py dist/to8.fd
+
+cd examples/bm4s           # 320x200 4 couleurs ($41) : témoins + écran
+python3 ../../ci/toje-bench/bm4s_ut.py dist/to8.fd   # comparé aux sources 320 px
 ```
 
 Codes de sortie : 0 = pass, 1 = fail/blocage, 2 = pas de verdict.

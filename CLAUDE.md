@@ -141,6 +141,8 @@ la description de la PR en garde la trace.
   VRAM en `$9C00` — c'est le banc DIFFÉRENTIEL des optimisations de BuildSprites :
   deux builds ne différant que par le moteur doivent produire le même bloc),
   `examples/tlsf-ut` (tests unitaires TLSF sur machine),
+  `examples/bm4s` (le 320x200 4 couleurs `$41` : `videomode="bm4s"` de
+  gfxcomp, `_gfxmode.setBM4S`, banc `ci/toje-bench/bm4s_ut.py`),
   `examples/mplus` (bancs de test carte son MPLUS : DAC, MIDI 6850, MEA8000, SN76489, YM2413).
 - **État de validation au 13/08/2026** : le corpus compte **15 configs et
   63 images** (11 exemples dont collection/stacked-overflow/hscroll/
