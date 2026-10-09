@@ -25,3 +25,7 @@ loader.DEFAULT_SCENE_EXEC_PAGE equ 5
  IFNDEF loader.DEFAULT_SCENE_EXEC_ADDR
 loader.DEFAULT_SCENE_EXEC_ADDR equ $2100
  ENDC
+; C = 1 : a key is down (the loader's insert-disk prompt waits on it)
+_loader.keyDown MACRO
+        _monitor.jsr.ktst
+ ENDM

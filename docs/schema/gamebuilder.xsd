@@ -3035,6 +3035,9 @@
       <xs:attribute name="filename" type="xs:string" use="required">
         <xs:annotation><xs:documentation>output file, relative to dist.dir</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="drive" type="int6809">
+        <xs:annotation><xs:documentation>the SDDRIVE drive of this disk : 0 (default) units 0-1, 1 units 2-3 ; two &lt;floppydisk&gt; naming the same file write one .sd, in either order</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 

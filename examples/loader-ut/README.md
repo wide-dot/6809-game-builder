@@ -102,6 +102,15 @@ disks. Poll the handshake byte at `$9C1B` : on `$D1` mount `dist/to8-disk1.fd`
 and press a key, on `$D3` mount `dist/to8.fd` back and press a key. The loader
 is blocked in its own "Insert disk N" prompt meanwhile.
 
+With one drive the loader first probes the empty second drive (1.2 s, "not
+ready") before its prompt : a key pressed before the prompt is not an
+answer, the bench presses again until the handshake moves on, as a player
+would. **Two drives** (09/10/2026) : `dist/to8.sd` holds disk 0 in the first
+drive and disk 1 in the second (`<sd drive="1">`) ;
+`ci/toje-bench/loader_ut.py --two-drives dist/to8.sd` mounts nothing and
+presses nothing — the loader finds each disk where it is, and a prompt ends
+in no verdict. Both modes pass, toje `feature/second-drive`, 09/10/2026.
+
 Disk 1 is declared **first** in `to8.config.xml` on purpose : the builder
 writes each directory's `entries.asm` in a pre-pass, so disk 1 file ids are
 already known when the disk 0 game mode is assembled — that is what makes

@@ -180,7 +180,9 @@ public final class DirectoryLocations {
 		   .append(System.lineSeparator());
 		out.append("* One entry per <directory> of the target, indexed by directory id :")
 		   .append(System.lineSeparator());
-		out.append("* [physical disk] [face] [track] [sector 0-based]")
+		out.append("* [physical disk] [face, + 2 in the second drive : the loader writes back")
+		   .append(System.lineSeparator());
+		out.append("* the drive it found the disk in] [track] [sector 0-based]")
 		   .append(System.lineSeparator());
 		out.append("loader.dir.location.SIZE equ 4").append(System.lineSeparator());
 		out.append("loader.dir.count equ ").append(rows.size()).append(System.lineSeparator());
@@ -200,6 +202,11 @@ public final class DirectoryLocations {
 				   .append(" after the directories").append(System.lineSeparator());
 				continue;
 			}
+			if (r.disk > 8) {
+				// the insert-disk prompt writes one digit, the disk counted from 1
+				throw new Exception("directory " + id + " is on physical disk " + (r.disk + 1)
+						+ " : the loader's prompt numbers disks 1 to 9");
+			}
 			out.append("        fcb   ").append(r.disk).append(',').append(r.where[0])
 			   .append(',').append(r.where[1]).append(',').append(r.where[2])
 			   .append("   ; directory ").append(id)
@@ -210,6 +217,13 @@ public final class DirectoryLocations {
 		out.append("        ENDM").append(System.lineSeparator());
 		// the loader's current-disk variable starts on the disk that booted :
 		// the one holding directory 0
+		// the physical disks the directories live on : the digits the
+		// loader's insert-disk text carries (loadbar.asm)
+		int disks = 0;
+		for (com.widedot.m6809.gamebuilder.spi.globals.DirLocations.Row r : rows) {
+			disks = Math.max(disks, r.disk + 1);
+		}
+		out.append("loader.dir.physicalDisks equ ").append(disks).append(System.lineSeparator());
 		out.append("loader.dir.bootPhysicalDisk equ ").append(rows.get(0).disk)
 		   .append(System.lineSeparator());
 

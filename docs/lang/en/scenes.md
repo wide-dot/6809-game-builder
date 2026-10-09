@@ -371,6 +371,14 @@ A scene count, then three bytes per scene : its file id and the directory that
 holds it. Both are needed — the loader mounts a directory before reading the
 entries of a scene, and a state spans directories.
 
+The scenes are **grouped by directory** (the declaration order kept inside a
+group), and the convergence walks a table in two phases : the scenes of the
+directory in memory first, then the others. A departing scene whose
+directory has no file in the link data index is dropped without reading its
+disk. With one drive, each change of directory between two disks is a swap
+the player makes : grouped, a state costs one swap per disk it needs
+(`config.md`, *Several disks*).
+
 It is **generated source, not a file on the media**. A scene table is a
 directory entry because the loader discovers it at run time ; a composition is
 known at build time, so putting it on the disk would cost an entry, a read and

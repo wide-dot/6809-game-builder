@@ -83,7 +83,7 @@ public final class CompositionScan {
 	 * <p>One table per composition : a scene count, then three bytes per scene
 	 * — its file id and the directory that holds it. The loader needs both :
 	 * it mounts a directory before reading the entries of a scene, and a state
-	 * spans directories.</p>
+	 * spans directories. The scenes are grouped by directory.</p>
 	 */
 	public static void generate(ImmutableNode layout, BuildContext ctx,
 			List<Compositions.Composition> compositions) throws Exception {
@@ -105,14 +105,19 @@ public final class CompositionScan {
 			o.append("compositions.").append(c.name).append(System.lineSeparator());
 			o.append("        fcb   ").append(c.scenes.size())
 			 .append("          ; scenes").append(System.lineSeparator());
+			List<Object[]> rows = new ArrayList<Object[]>();
 			for (String scene : c.scenes) {
 				int[] found = locate(ctx, scene);
 				if (found == null) {
 					throw new Exception(c.where + ": composition '" + c.name + "' names the scene"
 							+ " '" + scene + "', which no <scene> of any directory declares");
 				}
+				rows.add(new Object[] { scene, found });
+			}
+			for (Object[] row : byDirectory(rows)) {
+				int[] found = (int[]) row[1];
 				o.append(String.format("        fdb   %-4d", found[0]))
-				 .append("       ; ").append(scene).append(System.lineSeparator());
+				 .append("       ; ").append(row[0]).append(System.lineSeparator());
 				o.append(String.format("        fcb   %-4d", found[1]))
 				 .append("       ;   directory").append(System.lineSeparator());
 			}
@@ -121,6 +126,22 @@ public final class CompositionScan {
 		FileWriter writer = new FileWriter(path);
 		writer.write(o.toString());
 		writer.close();
+	}
+
+	/**
+	 * The scenes grouped by directory, the declaration order kept inside a
+	 * group (a stable sort). With one drive, each change of directory between
+	 * two disks is a swap the player makes : the loader walks a table in its
+	 * order, the directory it has in memory first, so grouped scenes cost one
+	 * swap per disk, where an interleaved table asked for disk 1, then 2, then
+	 * 1 again (09/10/2026).
+	 *
+	 * @param rows { scene name, { file id, directory id } }
+	 */
+	static List<Object[]> byDirectory(List<Object[]> rows) {
+		List<Object[]> sorted = new ArrayList<Object[]>(rows);
+		sorted.sort((a, b) -> Integer.compare(((int[]) a[1])[1], ((int[]) b[1])[1]));
+		return sorted;
 	}
 
 	/** @return { file id, directory id } of a scene, null if no directory has it */

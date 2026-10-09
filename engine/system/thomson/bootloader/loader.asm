@@ -117,6 +117,7 @@ fileid   rmb types.WORD   ; [0000 000] [0000 000]    - [file id]
         jmp   >loader.progress.hook.set    ; OK
         jmp   >loader.dir.unload           ; OK
         jmp   >loader.loadbar.set          ; OK
+        jmp   >loader.loadbar.text.set     ; OK
 
 ; callbacks that can be modified by user at runtime
 error   jmp   >dskerr     ; Called if a read error is detected
@@ -142,6 +143,10 @@ diskId fcb   0     ; Directory id being requested/loaded
 dirSector fcb 0    ; First sector of that directory (from its table entry) :
                    ; the multi-sector read loop reloads B from here, the
                    ; monitor routines behind the insert prompt clobber B
+dirEntry  fdb 0    ; This directory's location entry (byte 1 : the drive found)
+dirTries  fcb 0    ; 0 : first try of a round, $FF : the other drive's
+dirAsked  fcb 0    ; nonzero once the player was prompted for this directory
+noDrive2  fcb 0    ; nonzero : the second drive answered "not ready"
 dirSkew   fcb 0    ; Interleave skew of that directory's track (skewtab,
                    ; same rule as ldsec) : the media rotates the soft
                    ; interleave map every track, so the sclist index is
@@ -426,83 +431,25 @@ loader.composition.load
         lbeq  @done                       ; deja cet etat : rien a faire
         stx   >composition.target
 ;
-        ; --- les partantes : residentes, absentes de la cible
-        ldy   >composition.current
-        beq   @arrivals                   ; rien de resident (boot)
-        lda   ,y+
-        beq   @arrivals
-        sta   >composition.count
-@drop   ldx   ,y
+        ; --- departures : resident, absent from the target
+        ldx   >composition.current
+        beq   @arrivals                   ; nothing resident (boot)
         ldu   >composition.target
-        jsr   loader.composition.holds
-        beq   @dropNext                   ; la cible la tient : on la garde
-        pshs  y                           ; ni dir.load ni scene.apply ne gardent
-        lda   2,y                         ; Y, et dir.load ecrase X en plus :
-        jsr   loader.dir.load             ; l'entree se relit sur la pile
-        ldy   ,s
-        ldx   ,y
-        jsr   loader.scene.unload
-        puls  y
-@dropNext
-        leay  3,y
-        dec   >composition.count
-        bne   @drop
+        ldy   #composition.drop
+        jsr   composition.walk
 ;
-        ; --- les arrivantes : d'abord leur COUT, si quelqu'un ecoute, pour
-        ; que le total soit connu avant la premiere lecture qu'il couvre —
-        ; un mot dans l'entree de chaque scene arrivante (dir.entry.units,
-        ; compte par le builder), le repertoire etant monte de toute facon
+        ; --- arrivals : their COST first, if someone listens, so that the
+        ; total is known before the first read it covers — a word in each
+        ; arriving scene's entry (dir.entry.units, counted by the builder)
 @arrivals
         ldx   >loader.progress.hook
         beq   @arrivals.load
-        ldy   >composition.target
-        lda   ,y+
-        beq   @relink
-        sta   >composition.count
-@measure
-        ldx   ,y
-        ldu   >composition.current
-        beq   @measure.do
-        jsr   loader.composition.holds
-        beq   @measure.next
-@measure.do
-        pshs  y
-        lda   2,y
-        jsr   loader.dir.load
-        ldy   ,s
-        ldx   ,y
-        jsr   loader.dir.getFile
-        ldd   dir.entry.units,y
-        addd  >loader.progress.total
-        std   >loader.progress.total
-        puls  y
-@measure.next
-        leay  3,y
-        dec   >composition.count
-        bne   @measure
+        ldy   #composition.measure
+        bsr   @walkArrivals
         clr   >loader.progress.measure     ; counted : the loading pass must not add twice
 @arrivals.load
-        ldy   >composition.target
-        lda   ,y+
-        beq   @relink
-        sta   >composition.count
-@add    ldx   ,y
-        ldu   >composition.current
-        beq   @addLoad                    ; rien de resident : tout arrive
-        jsr   loader.composition.holds
-        beq   @addNext                    ; deja la : on ne la relit pas
-@addLoad
-        pshs  y
-        lda   2,y
-        jsr   loader.dir.load
-        ldy   ,s
-        ldx   ,y
-        jsr   loader.scene.load.noLink
-        puls  y
-@addNext
-        leay  3,y
-        dec   >composition.count
-        bne   @add
+        ldy   #composition.add
+        bsr   @walkArrivals
 ;
         ; --- un seul lien pour tout l'etat
 @relink lda   #1
@@ -511,6 +458,95 @@ loader.composition.load
         ldx   >composition.target
         stx   >composition.current
 @done   puls  d,x,y,u,pc
+@walkArrivals
+        ldx   >composition.target
+        ldu   >composition.current
+        ; fall through
+
+;-----------------------------------------------------------------
+; composition.walk
+;
+; input  REG : [X] the table walked, [U] the table whose scenes are left
+;              alone (0 = none), [Y] the routine called for every other
+;              scene, with Y = its entry (id word, directory byte)
+;-----------------------------------------------------------------
+; Two phases : the scenes of the directory in memory first, then the
+; others. With one drive, each directory change is a disk swap the player
+; makes : walking the table in its own order asked for disk 1, then 2,
+; then 1 again whenever a state spans two disks (the builder groups a
+; table's scenes by directory, this puts the one already mounted first).
+;-----------------------------------------------------------------
+composition.walk
+        stx   >composition.walked
+        stu   >composition.kept
+        sty   >composition.routine
+        lda   >diskId                     ; the directory in memory
+        sta   >composition.first
+        clr   >composition.phase
+@phase  ldy   >composition.walked
+        lda   ,y+
+        beq   @rts
+        sta   >composition.count
+@entry  ldx   ,y
+        ldu   >composition.kept
+        beq   @mine
+        jsr   loader.composition.holds
+        beq   @next                       ; the other table has it : not ours
+@mine   lda   2,y
+        cmpa  >composition.first
+        beq   @first
+        tst   >composition.phase
+        beq   @next                       ; another directory : second phase
+        bra   @call
+@first  tst   >composition.phase
+        bne   @next                       ; the one in memory : first phase
+@call   pshs  y                           ; neither dir.load nor scene.apply
+        jsr   [composition.routine]       ; keep Y
+        puls  y
+@next   leay  3,y
+        dec   >composition.count
+        bne   @entry
+        com   >composition.phase
+        bne   @phase
+@rts    rts
+
+; Y = the entry : mount its directory, X = its scene id
+composition.mount
+        lda   2,y
+        pshs  y
+        jsr   loader.dir.load
+        puls  y
+        ldx   ,y
+        rts
+
+; A departing scene : unloading it removes its files from the link data
+; index, which needs its table — read from its disk. A scene whose
+; directory has no file in the index has nothing to remove : no disk
+; access, no swap (a game without link data never reads a disk to drop).
+; Its table may still be the cached one, which unload frees without a read.
+composition.drop
+        lda   2,y
+        jsr   linkData.dirIndexed
+        bne   @disk
+        ldx   ,y
+        cmpx  >loader.scene.tableId
+        bne   @rts
+        jmp   loader.scene.unload
+@disk   bsr   composition.mount
+        jmp   loader.scene.unload
+@rts    rts
+
+composition.measure
+        bsr   composition.mount
+        jsr   loader.dir.getFile
+        ldd   dir.entry.units,y
+        addd  >loader.progress.total
+        std   >loader.progress.total
+        rts
+
+composition.add
+        bsr   composition.mount
+        jmp   loader.scene.load.noLink
 
 ;-----------------------------------------------------------------
 ; loader.composition.set
@@ -610,19 +646,13 @@ loader.progress.rts
 loader.loadbar.set
         ldu   #loadbar
         ldb   #loadbar.PARAMS
-@copy   lda   ,x+
-        sta   ,u+
-        decb
-        bne   @copy
+        bsr   loader.copy
         ; the pulse colours come right after, `count` words : copied too —
         ; the caller's bytes may be what the load is about to overwrite
         ldb   loadbar.pulse.count
         aslb
         beq   @clear.from
-@table  lda   ,x+
-        sta   ,u+
-        decb
-        bne   @table
+        bsr   loader.copy
 @clear.from
         ldu   #loadbar.acc                ; a fresh start : accumulator, next
         ldb   #loadbar.STATE              ;   pixel, total seen, pulse tick and
@@ -635,19 +665,42 @@ loader.loadbar.set
         ; first pixel (the stage hand-over draws it on the faded frame)
         tst   loadbar.pulse.period
         beq   @hook
-        lda   loadbar.pulse.index
-        asla                              ; the EF9369 address counts bytes
-        sta   map.EF9369.A
-        ldd   loadbar.pulse.table
-        sta   map.EF9369.D
-        stb   map.EF9369.D
+        ldx   #loadbar.pulse.table
+        jsr   loadbar.colour
 @hook   ldx   #loadbar.hook
         jmp   loader.progress.hook.set
+
+;-----------------------------------------------------------------
+; loader.loadbar.text.set
+;
+; input  REG : [X] the address of the bar's text, x+40*y in its page
+;                  (0 : none)
+;-----------------------------------------------------------------
+; Where the insert-disk prompt writes "DISK n" while the loader's bar is
+; the progress hook (loadbar.asm) ; kept across loader.loadbar.set.
+;-----------------------------------------------------------------
+loader.loadbar.text.set
+        stx   >loadbar.text
+        rts
+
+
+; X source, U destination, B bytes (1-255)
+loader.copy
+        lda   ,x+
+        sta   ,u+
+        decb
+        bne   loader.copy
+        rts
 
 
 composition.current fdb   0 ; table de l'etat resident, 0 = rien
 composition.target  fdb   0 ; celle vers laquelle on converge
 composition.count   fcb   0 ; scenes restant a parcourir dans la passe
+composition.walked  fdb   0 ; the walk : the table walked,
+composition.kept    fdb   0 ;   the one whose scenes it leaves alone,
+composition.routine fdb   0 ;   what it does with the others,
+composition.first   fcb   0 ;   the directory it serves first
+composition.phase   fcb   0 ;   and its phase (0 : that directory, $FF : the others)
 
 ;-----------------------------------------------------------------
 ; loader.file.malloc
@@ -813,64 +866,79 @@ loader.dir.load.do
         ldd   #$ffff
         std   >ptsec.key          ; ptsec is about to hold a directory sector
 ; set the dir location from the builder's table : entry = [physical disk]
-; [face] [track] [sector]. The physical disk byte is informational — reading
-; the right location on the wrong physical disk fails the IDX tag/id check
-; below, and THAT is what raises the insert prompt, exactly as before
+; [drive and face] [track] [sector]. Byte 1 is DK.DRV : the face, plus 2
+; when the disk was last found in the second drive (faces 2/3) — written
+; back at every success, so a machine with two drives goes straight to the
+; right one. A miss (read error, drive not ready, another disk : the IDX
+; tag and id check) tries the other drive, a second miss asks the player.
         lda   >diskId
         ldb   #loader.dir.location.SIZE
         mul
         ldy   #loader.dir.locations
         leay  d,y
-        ldb   3,y                 ; first sector of this directory,
-        stb   >dirSector          ; kept for the multi-sector read loop
-        ldb   1,y                 ; D: [face]
-        ldx   2,y                 ; X: [track] [sector]
-; read first directory sector
-        lda   >diskId
-        cmpa  #10                 ; This version handle the display of disk id range 0-9
-        blo   @ascii
-        lda   #33+128             ; Print an esclamation when disk id is over 9
-        bra   >
-@ascii  adda  #48+128             ; Base index for ascii numbers plus end string bit flag
-!       sta   >messdiskId         ; Update message string with id
-        stb   <map.DK.DRV         ; Set directory location
-        tfr   x,d                 ; on floppy disk
-        sta   <map.DK.TRK+1       ; B is loaded with sector id
+        sty   >dirEntry           ; where the drive found is written back
+        ldd   ,y                  ; A: physical disk, B: drive and face
+        stb   <map.DK.DRV
+        adda  #'1'+$80            ; the player counts disks from 1 ; the
+        sta   >messdiskId         ; message's last character (bit 7 : its end)
+        ldd   2,y                 ; A: track, B: first sector of this
+        stb   >dirSector          ; directory, kept for the multi-sector loop
+        sta   <map.DK.TRK+1
         anda  #loader.interleave.SKEW_MASK
         ldx   #skewtab            ; interleave skew of this track (same rule
         lda   a,x                 ; as ldsec) : the sclist index is
         sta   >dirSkew            ; (skew+sector)&15
         addb  >dirSkew
         andb  #$0f
+        ldx   #sclist             ; Interleave list
+        lda   b,x                 ; Get sector
+        sta   <map.DK.SEC         ; number
         ldy   >loader.dir         ; Loading address for
         sty   <map.DK.BUF         ; directory data
-        lda   #$02                ; Read code
-        sta   <map.DK.OPC         ; operation
-        ldu   #sclist             ; Interleave list
-        ldx   #messIO             ; Info message
-        lda   b,u                 ; Get sector
-        sta   <map.DK.SEC         ; number
-@retry  jsr   >map.DKCONT         ; Load sector
-        bcc   >                   ; Skip if no error
+        clr   >dirTries
+        clr   >dirAsked
+@retry  lda   #$02                ; Read code, at every try : behind a prompt
+        sta   <map.DK.OPC         ; the monitor's timer may park the drive
+        jsr   >map.DKCONT         ; Load sector
+        bcc   @read
+        lda   <map.DK.STA
+        cmpa  #$10                ; not ready : no drive there, or no disk
+        beq   @absent             ; in it — no second try, it waited 1.2 s
         jsr   >map.DKCONT         ; Reload sector
-        bcc   >                   ; Skip if no error
-@info   jsr   >info               ; Error
+        bcc   @read
+        bra   @miss
+@absent ldb   <map.DK.DRV         ; the second drive not ready : not probed
+        andb  #2                  ; again before a prompt (a single drive
+        orb   >noDrive2           ; machine would wait 1.2 s at every swap)
+        stb   >noDrive2
+@miss   lda   <map.DK.DRV         ; the other drive
+        eora  #2
+        sta   <map.DK.DRV
+        com   >dirTries           ; first miss of a round : try it,
+        beq   @prompt             ; second miss : ask the player
+        anda  #2
+        anda  >noDrive2           ; the second drive, known absent :
+        beq   @retry
+        tst   >dirAsked           ; skipped before a prompt, tried after one
+        bne   @retry              ; (the player may have just filled it)
+        bra   @miss
+@prompt inc   >dirAsked
+        jsr   >info
         bra   @retry
 ; check for directory tag match
-!       ldx   #messinsertdisk
-        lda   dir.header.tag,y
+@read   lda   dir.header.tag,y
         cmpa  #'I'
-        bne   @info
+        bne   @miss
         lda   dir.header.tag+1,y
         cmpa  #'D'
-        bne   @info
+        bne   @miss
         lda   dir.header.tag+2,y
         cmpa  #'X'
-        bne   @info
+        bne   @miss
 ; check for directory id match
         lda   dir.header.diskId,y
         cmpa  >diskId
-        bne   @info
+        bne   @miss
 ; read remaining directory entries
         lda   dir.header.nsector,y ; init nb sectors to read      
         sta   >nsect
@@ -878,7 +946,15 @@ loader.dir.load.do
 ; a foreign or corrupt disk - route it through the insert prompt like a
 ; failed id check (A still holds dir.header.nsector here)
         cmpa  #loader.dir.buffer.SECTORS
-        bhi   @info
+        bhi   @miss
+; found : remember the drive
+        ldx   >dirEntry
+        lda   <map.DK.DRV
+        sta   1,x
+        bita  #2
+        beq   >
+        clr   >noDrive2           ; found on the second drive : it is there
+!
         ldu   >loader.dir.buffer  ; the block every directory is read into :
         bne   @got                ; allocated once, at the target's biggest
         pshs  x,y                 ; directory (a failure trips the tlsf
@@ -1100,7 +1176,7 @@ skewtab _loader.interleave.skew
 ; --------------------------------------
 
 messIO         fcs   "     I/O Error"
-messinsertdisk fcs   "   Insert disk 0"
+messinsertdisk fcs   "   Insert disk 1"
 messdiskId     equ *-1
 
 ;---------------------------------------
@@ -1210,14 +1286,30 @@ err2    ldb   ,u+                ; Read char
         andb  #$7f               ; Mask char
 err3    _monitor.jmp.putc
 
-* Display info message and wait a keystroke
-info    ldu   #messloc           ; Location
+* The insert-disk prompt, then a keystroke. With the loader's bar on
+* screen (its hook installed, a place given for its text) : "DISK n"
+* drawn by the bar in its page and its colours — no mode, page or palette
+* to take back (loadbar.asm). Otherwise the monitor's text at lines 11-13
+* of the page it writes, as always.
+info    pshs  d,x,y,u
+        ldd   >loader.progress.hook
+        cmpd  #loadbar.hook
+        bne   @text
+        ldd   >loadbar.text
+        beq   @text
+        lda   >messdiskId
+        anda  #$0F                ; the disk number, 1-9
+        jsr   loadbar.text.draw
+        bra   @up
+@text   ldu   #messloc           ; Location
         bsr   err2               ; Display location
-        leau  ,x                 ; Message pointer
+        ldu   #messinsertdisk    ; Message
         bsr   err2               ; Display message
-!       _monitor.jsr.ktst
-        bcc   <
-        rts
+@up     _loader.keyDown          ; a key still held from the game is not
+        bcs   @up                ; an answer : every key up first
+@down   _loader.keyDown
+        bcc   @down
+        puls  d,x,y,u,pc
 
 * Location message
 * the terminal error clears the WHOLE screen first (what page 0 held is not
@@ -1530,6 +1622,27 @@ loader.file.linkData.count
 ; search the link data index for a
 ; loaded disk/file
 ;---------------------------------------
+;---------------------------------------
+; linkData.dirIndexed
+;
+; input  REG : [A] directory id
+; output CC  : ne = the link data index holds a file of that directory
+;---------------------------------------
+linkData.dirIndexed
+        ldu   >loader.file.linkDataIdx
+        beq   @rts
+        ldx   linkData.header.occupiedSlots,u
+        beq   @rts
+        leau  sizeof{linkData.header},u
+@loop   cmpa  linkData.entry.diskId,u
+        beq   @yes
+        leau  sizeof{linkData.entry},u
+        leax  -1,x
+        bne   @loop
+@rts    rts                               ; eq : none
+@yes    andcc #%11111011
+        rts
+
 linkData.slot.find
         pshs  d,x,y
         ldu   >loader.file.linkDataIdx

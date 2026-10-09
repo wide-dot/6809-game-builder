@@ -171,7 +171,9 @@ public final class Handlers {
 		spec(element("fd").doc("write the interleaved image as a .fd file")
 			.req("filename", STRING, "output file, relative to dist.dir"));
 		spec(element("sd").doc("write the image for SDDRIVE as a .sd file")
-			.req("filename", STRING, "output file, relative to dist.dir"));
+			.req("filename", STRING, "output file, relative to dist.dir")
+			.opt("drive", INT, "the SDDRIVE drive of this disk : 0 (default) units 0-1, 1 units 2-3 ;"
+				+ " two <floppydisk> naming the same file write one .sd, in either order"));
 		spec(element("sap").doc("write the image as .sap file(s), one per used drive")
 			.req("filename", STRING, "output file, relative to dist.dir")
 			.opt("format", INT, "SAP format, 1 (default) or 2"));

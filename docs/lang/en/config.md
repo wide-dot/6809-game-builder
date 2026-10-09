@@ -48,6 +48,77 @@ one loader reads them all — the builder refuses otherwise. This is how two
 images of the same game, sector interleave 2 and 1, are produced for a
 side-by-side timing on the real machine (see
 `docs/lang/fr/etude-chargement-2026-09.md` §9).
+### Several disks : the second drive, the prompt, the .sd (09/10/2026)
+
+A target with several `<floppydisk>` is a game on several disks. The
+**physical disk** of a directory is the rank of its `<floppydisk>` in the
+target ; the player reads it counted from 1 (at most 9 disks : the prompt
+writes one digit, the builder refuses a tenth).
+
+**Where the loader looks.** The location table (`gen/directories/locations.asm`)
+gives each directory `[physical disk] [DK.DRV] [track] [sector]`. DK.DRV is
+the face, plus 2 for the second drive (faces 2 and 3) : the builder writes
+the first drive, the loader **writes back the drive it found the disk in**,
+so a machine with two drives — or SDDRIVE — goes straight to the right one
+from then on. A miss (read error, drive not ready, another disk : the IDX tag
+and id check) tries the other drive ; a second miss asks the player. A
+second drive that answers *not ready* (absent, or empty : the monitor's
+READY wait, `$E45A`, gives up after 1.18 s with DK.STA `$10`) is not probed
+again before a prompt — a one-drive machine pays those 1.2 s once — but it
+is after the player's key, in case they just filled it.
+
+**The prompt.** While the loader's own bar is the progress hook and a place
+was given for its text (`loader.loadbar.text.set`, jump table 51), the bar
+writes `DISK n` in its page and its colour, on colour 0 : no mode, page or
+palette to change or take back, nothing erased (the game redraws its
+screen). A bar of width 0 and period 0 is a **hidden bar** : nothing drawn,
+the text still written — for a load too short for a bar that may still
+cross disks ; the game lights the bar's palette entry itself if the screen
+is faded. Without the bar, the monitor's text, at lines 11-13 of video page
+0, as before. The answer is any key, read on the 6804's KTEST line (system
+PIA, PA0 : the bit the joypad reads), which works with interrupts masked ;
+every key up first, then one down. The text code is written for size : a
+3x5 font, a glyph a word, only the digits of the target's disks
+(`loader.dir.physicalDisks`, generated) — 130 bytes for two disks.
+
+**Fewer swaps.** With one drive, every change of directory between two
+disks is a swap the player makes. The builder groups a composition's scenes
+by directory ; the convergence walks each table in two phases, the
+directory in memory first, then the others ; a departing scene whose
+directory has no file in the link data index is dropped without reading its
+disk (a game without link data never reads a disk to drop). A state that
+spans two disks costs one swap per disk it needs — two with a visible bar,
+whose measure reads every arriving directory before the first load.
+
+**The second disk's directory.** A colocated directory is only located once
+it is written, and the loader embeds the table : a colocated directory on a
+disk declared after the loader's fails the assembly. Declare it at a fixed
+place (`section="INDEX"`, not colocated), or declare that disk first — but
+then it is the player's disk 1.
+
+**SDDRIVE.** `<sd drive="1" filename="…">` puts a disk in the second drive
+of a .sd : two `<floppydisk>` naming the same file, one `drive="0"` (the
+default), one `drive="1"`, write one .sd of four units, whatever their
+order. The game then never asks for a swap.
+
+```xml
+<floppydisk model="fd640">          <!-- disk 1 : boot, loader -->
+    …
+    <fd filename="game.fd"/>
+    <sd filename="game.sd"/>
+</floppydisk>
+<floppydisk model="fd640">          <!-- disk 2 -->
+    <section name="DATA" track="1" face="0" sector="1"/>
+    <directory id="3" section="INDEX" gensymbols="gen/directories/disk2/entries.asm">…</directory>
+    <fd filename="game-disk2.fd"/>
+    <sd filename="game.sd" drive="1"/>
+</floppydisk>
+```
+
+Benches : `ci/toje-bench/loader_ut.py` (one drive, the swaps answered) and
+`--two-drives dist/to8.sd` (both disks at once, nothing mounted, a prompt
+is a failure).
+
 ### Colocated directories, and the head path (08/09/2026)
 
 A directory is read by the loader every time a scene of another directory

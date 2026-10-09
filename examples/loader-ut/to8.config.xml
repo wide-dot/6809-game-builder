@@ -61,6 +61,8 @@
             </directory>
 
             <fd  filename="to8-disk1.fd"/>
+            <!-- the same .sd as disk 0 : this disk in the second drive (units 2-3) -->
+            <sd  filename="to8.sd" drive="1"/>
         </floppydisk>
 
         <!-- ================================================================ -->
