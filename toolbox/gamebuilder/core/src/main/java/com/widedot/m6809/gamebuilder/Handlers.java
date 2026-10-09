@@ -356,7 +356,8 @@ public final class Handlers {
 			.opt("linebytes", INT, "video memory bytes per line, 40 if omitted")
 			.opt("planedistance", INT, "the second plane, bytes below the first, 8192 if omitted")
 			.opt("beam", INT, "the search's width (states kept at each byte), 60 if omitted")
-			.opt("maxsize", INT, "the routine's bytes at most : the build stops past it"));
+			.opt("maxsize", INT, "the routine's bytes at most")
+			.opt("overflow", STRING, "past maxsize : error (default, the build stops) or trim (the picture's bottom lines dropped until the routine fits, a warning)"));
 		spec(element("tilemap").doc("generate the page/address table of a tile index map, baked in a .static section")
 			.req("map", STRING, "tile index .bin (leanscroll output), big endian, column major")
 			.req("label", STRING, "label of the generated table")

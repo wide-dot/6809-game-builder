@@ -437,8 +437,10 @@ of 4) into a routine for that, inside an `<lwasm>` unit :
 - **A picture taller than the view scrolls vertically** : the caller picks
   which picture lines go on the screen's (a differential scroll, the
   background travelling a fraction of the camera's height).
-- With `halfline` the even lines alone are drawn. `maxsize` stops the build
-  when the routine grows past it (one page of code, say).
+- With `halfline` the even lines alone are drawn. `maxsize` bounds the
+  routine (one page of code, say) : past it the build stops, or with
+  `overflow="trim"` the picture's bottom lines are dropped until it fits
+  (a warning says how many are kept).
 
 Measured on Sonic 2's backgrounds, 80 drawn lines of 34 bytes a plane : 82
 to 117 bytes a line with the tables and entries, about 12 000 to 16 000

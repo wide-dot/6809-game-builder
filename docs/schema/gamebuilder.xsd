@@ -293,7 +293,10 @@
         <xs:annotation><xs:documentation>the search's width (states kept at each byte), 60 if omitted</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="maxsize" type="int6809">
-        <xs:annotation><xs:documentation>the routine's bytes at most : the build stops past it</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>the routine's bytes at most</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="overflow" type="xs:string">
+        <xs:annotation><xs:documentation>past maxsize : error (default, the build stops) or trim (the picture's bottom lines dropped until the routine fits, a warning)</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>

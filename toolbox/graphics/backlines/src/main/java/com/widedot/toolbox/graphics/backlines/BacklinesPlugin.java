@@ -23,6 +23,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class BacklinesPlugin {
 
+	/** a subimage on its own raster, with the picture's colour model */
+	static BufferedImage copy(BufferedImage sub) {
+		BufferedImage out = new BufferedImage(sub.getWidth(), sub.getHeight(), BufferedImage.TYPE_BYTE_INDEXED,
+				(java.awt.image.IndexColorModel) sub.getColorModel());
+		out.setData(sub.getData());
+		return out;
+	}
+
 	public static File getFile(ImmutableNode node, BuildContext ctx) throws Exception {
 		String image = Attribute.getString(node, ctx, "image");
 		String label = Attribute.getString(node, ctx, "label");
@@ -32,6 +40,11 @@ public class BacklinesPlugin {
 		int planedistance = Attribute.getInteger(node, ctx, "planedistance", 0x2000);
 		int beam = Attribute.getInteger(node, ctx, "beam", 60);
 		Integer maxsize = Attribute.getIntegerOpt(node, ctx, "maxsize");
+		String overflow = Attribute.getString(node, ctx, "overflow", "error");
+		if (!"error".equals(overflow) && !"trim".equals(overflow)) {
+			throw new Exception(ctx.sources.locate(node) + ": <backlines> overflow=\"" + overflow
+					+ "\" : error or trim");
+		}
 
 		BufferedImage im = ImageIO.read(Paths.get(ctx.path, image).toFile());
 		if (im == null) {
@@ -44,11 +57,31 @@ public class BacklinesPlugin {
 			throw new Exception(ctx.sources.locate(node) + ": " + e.getMessage(), e);
 		}
 		if (maxsize != null && r.size > maxsize) {
-			throw new Exception(ctx.sources.locate(node) + ": <backlines> " + label + " is " + r.size
-					+ " bytes, over its maxsize of " + maxsize + " (" + r.lines + " drawn lines : fewer lines, or a"
-					+ " simpler picture)");
+			if ("error".equals(overflow)) {
+				throw new Exception(ctx.sources.locate(node) + ": <backlines> " + label + " is " + r.size
+						+ " bytes, over its maxsize of " + maxsize + " (" + r.lines + " drawn lines : fewer lines, or a"
+						+ " simpler picture)");
+			}
+			// trim : the picture's bottom lines dropped until the routine fits
+			int full = r.lines, step = halfline ? 2 : 1;
+			int lines = Math.max(1, (int) ((long) r.lines * maxsize / r.size));
+			while (true) {
+				BufferedImage cut = im.getSubimage(0, 0, im.getWidth(), Math.min(im.getHeight(), lines * step));
+				r = BackLines.compile(copy(cut), label, halfline, linebytes, planedistance, beam);
+				if (r.size <= maxsize || lines == 1) {
+					break;
+				}
+				lines--;
+			}
+			if (r.size > maxsize) {
+				throw new Exception(ctx.sources.locate(node) + ": <backlines> " + label + " : one line is already "
+						+ r.size + " bytes, over its maxsize of " + maxsize);
+			}
+			log.warn("backlines {} : {} drawn lines of {} kept, {} bytes within its maxsize of {} (overflow=\"trim\")",
+					label, r.lines, full, r.size, maxsize);
 		}
 		Path path = Paths.get(ctx.path, gensource);
+
 		if (path.getParent() != null) {
 			Files.createDirectories(path.getParent());
 		}
