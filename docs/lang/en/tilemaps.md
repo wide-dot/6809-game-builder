@@ -405,3 +405,42 @@ acts (the numbering free, everything the game shows and reads compared) :
 the only differences were two choices of the old converter, a priority
 raised by hand at a few places and a flip read from the wrong occurrence
 of a merged tile.
+
+## A background behind the tiles : `<backlines>`
+
+A level drawn over a background that stays on screen needs the background
+redrawn where the tiles leave it visible, every frame the camera moves —
+often a few rows only, the tiles covering the rest. `<backlines>` compiles a
+BM16 picture (PNG index = colour + 1, every pixel opaque, a width multiple
+of 4) into a routine for that, inside an `<lwasm>` unit :
+
+```xml
+<backlines image="objects/zone/background/zone_1.png" label="Zone_Back"
+           gensource="gen/zone/back.asm" halfline="true" maxsize="15700"/>
+```
+
+- **A chain a plane, a block a drawn line, bottom up.** A block pushes its
+  line with PSHU from the right end, the bytes held as immediate values in
+  A, B, DP, X and Y, then moves U up a line (a short LEAU : the address is
+  relative, so any picture line can be drawn at any screen line). A beam
+  search over the chain chooses how each line is cut into pushes and which
+  values stay in the registers from a line to the next, for the fewest
+  cycles.
+- **Entered at any line, stopped above any line.** Each line has an entry
+  loading what its block expects from the lines below (`<label>_Entries1/2`)
+  ; the chain runs up to an RTS, its own after the picture's first line or
+  one written at the start of the block above the last line wanted
+  (`<label>_Lines1/2`), put back after.
+- **`<label>_Draw`** does both planes : A the bottom drawn line, B the top
+  one (from 0 at the top), X the screen address just right of the bottom
+  line's first plane bytes. DP is a data register : the caller keeps it.
+- **A picture taller than the view scrolls vertically** : the caller picks
+  which picture lines go on the screen's (a differential scroll, the
+  background travelling a fraction of the camera's height).
+- With `halfline` the even lines alone are drawn. `maxsize` stops the build
+  when the routine grows past it (one page of code, say).
+
+Measured on Sonic 2's backgrounds, 80 drawn lines of 34 bytes a plane : 82
+to 117 bytes a line with the tables and entries, about 12 000 to 16 000
+cycles for every line (the line skip saves most of it). The JUnit tests run
+the generated chains through an interpreter, every entry with every stop.

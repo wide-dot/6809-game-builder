@@ -189,6 +189,7 @@
 		<module>./toolbox/graphics/tilemap/stm</module>
 		<module>./toolbox/graphics/tilemap/leanscroll</module>
 		<module>./toolbox/graphics/tilemap/chunkmap</module>
+		<module>./toolbox/graphics/backlines</module>
 		<module>./toolbox/graphics/gfxcomp</module>
 		<module>./toolbox/graphics/png2bin</module>
 		<module>./toolbox/graphics/png2pal</module>

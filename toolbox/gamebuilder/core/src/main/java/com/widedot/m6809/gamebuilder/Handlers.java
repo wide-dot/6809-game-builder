@@ -332,6 +332,7 @@ public final class Handlers {
 		// output must stay continuous (5d)
 		PARTS.put("unit", com.widedot.m6809.gamebuilder.plugin.unit.UnitPlugin::getParts);
 		FILES.put("tilemap", com.widedot.m6809.gamebuilder.plugin.tilemap.TilemapPlugin::getFile);
+		FILES.put("backlines", com.widedot.toolbox.graphics.backlines.BacklinesPlugin::getFile);
 		FILES.put("tilecols", com.widedot.m6809.gamebuilder.plugin.tilemap.TilecolsPlugin::getFile);
 		FILES.put("tilepatch", com.widedot.m6809.gamebuilder.plugin.tilemap.TilepatchPlugin::getFile);
 		FILES.put("tilereset", com.widedot.m6809.gamebuilder.plugin.tilemap.TileresetPlugin::getFile);
@@ -347,6 +348,15 @@ public final class Handlers {
 		OBJECTS.put("vgm2sfx", com.widedot.toolbox.audio.vgm2sfx.Vgm2SfxPlugin::getObject);
 		OBJECTS.put("pcm", com.widedot.toolbox.audio.pcm.PcmPlugin::getObject);
 		OBJECTS.put("png2pal", com.widedot.toolbox.graphics.png2pal.Png2PalPlugin::getObject);
+		spec(element("backlines").doc("a background picture (BM16) compiled line by line : a chain of code a plane, a block a drawn line pushed with PSHU, bottom up, entered at any line and stopped above any line, drawn at any screen line — a fixed background redrawn where the tiles leave it visible, and moved vertically by choosing its lines (generated <label>_Draw, <label>_Lines1/2, <label>_Entries1/2, <label>_LINES, <label>_BYTES)")
+			.req("image", STRING, "the picture : indexed PNG, index = colour + 1, every pixel opaque, width a multiple of 4")
+			.req("label", STRING, "prefix of the generated symbols")
+			.req("gensource", STRING, "generated source of the routine")
+			.opt("halfline", BOOL, "true : the picture's even lines alone are drawn, one screen line in two. Default false")
+			.opt("linebytes", INT, "video memory bytes per line, 40 if omitted")
+			.opt("planedistance", INT, "the second plane, bytes below the first, 8192 if omitted")
+			.opt("beam", INT, "the search's width (states kept at each byte), 60 if omitted")
+			.opt("maxsize", INT, "the routine's bytes at most : the build stops past it"));
 		spec(element("tilemap").doc("generate the page/address table of a tile index map, baked in a .static section")
 			.req("map", STRING, "tile index .bin (leanscroll output), big endian, column major")
 			.req("label", STRING, "label of the generated table")

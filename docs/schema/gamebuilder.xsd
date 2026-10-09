@@ -15,6 +15,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -90,6 +91,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -153,6 +155,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -210,6 +213,91 @@
     </xs:complexType>
   </xs:element>
 
+  <!-- a background picture (BM16) compiled line by line : a chain of code a plane, a block a drawn line pushed with PSHU, bottom up, entered at any line and stopped above any line, drawn at any screen line — a fixed background redrawn where the tiles leave it visible, and moved vertically by choosing its lines (generated <label>_Draw, <label>_Lines1/2, <label>_Entries1/2, <label>_LINES, <label>_BYTES) -->
+  <xs:element name="backlines">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="composition"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="file"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="images"/>
+        <xs:element ref="imageset"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="rect"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilecols"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="tilepatch"/>
+        <xs:element ref="tilereset"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
+      </xs:choice>
+      <xs:attribute name="image" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>the picture : indexed PNG, index = colour + 1, every pixel opaque, width a multiple of 4</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="label" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>prefix of the generated symbols</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gensource" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>generated source of the routine</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="halfline" type="xs:boolean">
+        <xs:annotation><xs:documentation>true : the picture's even lines alone are drawn, one screen line in two. Default false</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="linebytes" type="int6809">
+        <xs:annotation><xs:documentation>video memory bytes per line, 40 if omitted</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="planedistance" type="int6809">
+        <xs:annotation><xs:documentation>the second plane, bytes below the first, 8192 if omitted</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="beam" type="int6809">
+        <xs:annotation><xs:documentation>the search's width (states kept at each byte), 60 if omitted</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="maxsize" type="int6809">
+        <xs:annotation><xs:documentation>the routine's bytes at most : the build stops past it</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
   <!-- raw binary file inserted as is -->
   <xs:element name="bin">
     <xs:complexType>
@@ -217,6 +305,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -280,6 +369,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -370,6 +460,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -430,6 +521,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -493,6 +585,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -553,6 +646,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -628,6 +722,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -694,6 +789,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -760,6 +856,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -835,6 +932,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -916,6 +1014,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -979,6 +1078,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -1078,6 +1178,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -1153,6 +1254,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -1216,6 +1318,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -1312,6 +1415,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -1375,6 +1479,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -1447,6 +1552,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -1534,6 +1640,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -1603,6 +1710,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -1666,6 +1774,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -1729,6 +1838,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -1795,6 +1905,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -1885,6 +1996,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -1948,6 +2060,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -2017,6 +2130,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -2083,6 +2197,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -2170,6 +2285,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -2239,6 +2355,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -2308,6 +2425,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -2410,6 +2528,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -2494,6 +2613,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -2566,6 +2686,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -2644,6 +2765,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -2719,6 +2841,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -2785,6 +2908,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -2854,6 +2978,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -2917,6 +3042,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -2989,6 +3115,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -3052,6 +3179,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -3145,6 +3273,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -3226,6 +3355,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -3355,6 +3485,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -3445,6 +3576,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -3511,6 +3643,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -3586,6 +3719,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -3652,6 +3786,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -3718,6 +3853,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
@@ -3790,6 +3926,7 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
         <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
