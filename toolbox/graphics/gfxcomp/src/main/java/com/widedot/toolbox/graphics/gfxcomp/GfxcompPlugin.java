@@ -13,6 +13,7 @@ import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
 import com.widedot.toolbox.graphics.gfxcomp.imageset.ImageSet;
 import com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory;
+import com.widedot.toolbox.graphics.gfxcomp.setting.VideoMode;
 import com.widedot.toolbox.graphics.gfxcomp.transformer.mirror.Mirror;
 
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +58,7 @@ public class GfxcompPlugin {
 		VideoMemory.memoryLineBytes  = Attribute.getInteger(node, ctx, "linebytes", 40);
 		VideoMemory.memoryNbPlanes   = Attribute.getInteger(node, ctx, "nbplanes", 2);
 		VideoMemory.memoryPlaneDistance = Attribute.getInteger(node, ctx, "planedistance", 8192);
+		VideoMemory.videoMode = VideoMode.check(Attribute.getString(node, ctx, "videomode", VideoMode.BM16));
 
 		// A spread set is indexed from elsewhere, so the geometry measured here
 		// is handed over rather than written out : see ImageSets.
@@ -95,6 +97,7 @@ public class GfxcompPlugin {
 		VideoMemory.memoryLineBytes  = Attribute.getInteger(node, ctx, "linebytes", 40);
 		VideoMemory.memoryNbPlanes   = Attribute.getInteger(node, ctx, "nbplanes", 2);
 		VideoMemory.memoryPlaneDistance = Attribute.getInteger(node, ctx, "planedistance", 8192);
+		VideoMemory.videoMode = VideoMode.check(Attribute.getString(node, ctx, "videomode", VideoMode.BM16));
 
 		if (genindex != null && file == null) {
 			throw new Exception("<gfxcomp genindex> also needs file, the direntry name the images "

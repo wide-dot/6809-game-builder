@@ -43,6 +43,7 @@ public class Png2BinPlugin {
 		MODES.put("t1s", new int[]{2, 8,  40, 2, 2});   // 320x200x4, shifted
 		MODES.put("t2",  new int[]{1, 8,  40, 2, 1});   // 640x200x1
 		MODES.put("bm16",new int[]{4, 8,   0, 2, 4});   // 160x200x16, the TO8 bitmap mode
+		MODES.put("bm4s",MODES.get("t1s"));             // $41 under the name gfxcomp uses
 		MODES.put("c2",  new int[]{1, 0, 256, 1, 1});   // CoCo3
 		MODES.put("c4",  new int[]{2, 0, 256, 1, 2});
 		MODES.put("c16", new int[]{4, 0, 256, 1, 4});
@@ -54,6 +55,17 @@ public class Png2BinPlugin {
 		BUFFERS.put("vscroll",      Png2Bin.Buffer.VSCROLL);
 		BUFFERS.put("vscrolltile",  Png2Bin.Buffer.VSCROLL_TILE);
 		BUFFERS.put("hscroll",      Png2Bin.Buffer.HSCROLL);
+	}
+
+	/** a named mode's layout : linearBits, planarBits, lineBytes, planes, pixelDepth */
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	static int[] mode(String videomode) throws Exception {
+		int[] m = MODES.get(videomode.toLowerCase());
+		if (m == null) {
+			throw new Exception("png2bin : videomode '" + videomode + "' is not one of " + MODES.keySet());
+		}
+		return m;
 	}
 
 	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
@@ -75,10 +87,7 @@ public class Png2BinPlugin {
 
 		int linearBits, planarBits, lineBytes, planes, pixelDepth;
 		if (videomode != null) {
-			int[] m = MODES.get(videomode.toLowerCase());
-			if (m == null) {
-				throw new Exception("png2bin : videomode '" + videomode + "' is not one of " + MODES.keySet());
-			}
+			int[] m = mode(videomode);
 			linearBits = m[0]; planarBits = m[1]; lineBytes = m[2]; planes = m[3]; pixelDepth = m[4];
 		} else {
 			// spelled out, for a layout the named modes do not cover

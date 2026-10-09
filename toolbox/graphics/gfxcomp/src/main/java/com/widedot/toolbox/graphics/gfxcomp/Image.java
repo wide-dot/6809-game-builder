@@ -21,7 +21,10 @@ import com.widedot.toolbox.graphics.gfxcomp.encoder.onebpp.ClearGenerator;
 import com.widedot.toolbox.graphics.gfxcomp.encoder.onebpp.DrawGenerator;
 import com.widedot.toolbox.graphics.gfxcomp.encoder.rle.MapRleEncoder;
 import com.widedot.toolbox.graphics.gfxcomp.encoder.zx0.ZX0Encoder;
+import com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory;
+import com.widedot.toolbox.graphics.gfxcomp.setting.VideoMode;
 import com.widedot.toolbox.graphics.gfxcomp.transformer.mirror.Mirror;
+import com.widedot.toolbox.graphics.gfxcomp.transformer.pairs.PixelPairs;
 import com.widedot.toolbox.graphics.gfxcomp.transformer.shift.Shift;
 
 import lombok.extern.slf4j.Slf4j;
@@ -288,6 +291,15 @@ public class Image {
 			position = known(imageName, "position", encoderPosition, positionId, "");
 			planes = encoderPlanes;
 			checkPlanes(imageName, encoderType);
+			if (VideoMode.BM4S.equals(VideoMemory.videoMode)) {
+				// the 320 pixel 4 colour picture becomes the 160 pixel BM16
+				// one that draws it in $41 : everything below is unchanged
+				if (isOneBpp()) {
+					throw new Exception("image " + imageName + " : the " + encoderType
+							+ " encoder draws one bit per pixel, it has no bm4s form");
+				}
+				image = PixelPairs.pack(image, imageFile);
+			}
 			
 			variant = variantKey(type, mirror, shift);
 			width = image.getWidth();

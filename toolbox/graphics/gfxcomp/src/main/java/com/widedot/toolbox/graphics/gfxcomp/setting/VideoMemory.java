@@ -16,4 +16,7 @@ public class VideoMemory{
      * know how far it is.
      */
     public static Integer memoryPlaneDistance;
+
+    /** the video mode the code draws in (VideoMode) : bm16 unless the gfxcomp element says otherwise */
+    public static String videoMode = VideoMode.BM16;
 }

@@ -134,9 +134,21 @@ pixels au lieu de copier des octets :
 - **`ClearInterlacedDataMemory`** : ne remplit les deux plans avec le même mot
   qu'avec la couleur 0, comme en BM16.
 
-**Statut : déduit, pas encore vu sur machine.** C'est le premier
-travail à faire (§6, étape 1) : une expérience courte au résultat
-binaire.
+**Statut : vérifié sur machine le 02/10/2026** (`examples/bm4s`, sous
+toje). La bande de 320 px et ses colonnes d'un pixel sont exactes au pixel
+près (0 écart sur 7 680), le glyphe l'est sur ses deux variantes
+pré-décalées, son trou transparent laisse voir le fond, et l'effacement ne
+laisse aucune traînée. Seuls le registre de mode et la palette diffèrent
+d'`examples/sprites`.
+
+**Intégré au moteur le 09/10/2026** (le nom retenu par l'auteur : `bm4s`,
+aligné sur `bm16`) : la macro `_gfxmode.setBM4S`, l'attribut
+`<gfxcomp videomode="bm4s">` qui lit les PNG à 320 px en 4 couleurs et les
+recode lui-même par paires (le script Python de l'étape 1 ne fait plus que
+dessiner les mires), la palette par `<png2pal>` sur les mêmes PNG, et
+`bm4s` accepté par `png2bin` à côté de `t1s`. Le code compilé des sprites
+est identique à l'octet à celui de la recodage Python ; le banc
+`ci/toje-bench/bm4s_ut.py` compare l'écran aux sources 320 px.
 
 ### Et `$21` ?
 
@@ -236,7 +248,7 @@ copie triplerait la maintenance des correctifs.
 restaurée, `examples/vscroll` revalidé sous toje, corpus rejoué — seules
 `vscroll` et `layers` changent). Restent les dettes #4 et #7.
 
-**Étape 1 — preuve `$41`** : prendre `examples/sprites`, convertir
+**Étape 1 — preuve `$41`** (FAITE le 02/10/2026, `examples/bm4s`) : prendre `examples/sprites`, convertir
 ses PNG par un script Python (320×h 4 couleurs → 160×h, index `4a+b+1`),
 remplacer `setBM16` par un `$41` écrit à la main et la palette par 4 entrées,
 rebuild, capture toje. Attendu : sprites nets à 320 de large, déplacements par
@@ -245,7 +257,8 @@ acquise et le reste du 4 couleurs devient de l'outillage.
 
 **Étape 2 — `$41` outillé** : macro `setBM4S`, adaptateur dans gfxcomp
 (attribut de mode, refus des paires mi-transparentes, tests JUnit comparant
-octet pour octet l'image recodée à une image BM16 équivalente), `loadbar` et
+octet pour octet l'image recodée à une image BM16 équivalente — FAITS le
+09/10/2026 avec la macro, `videomode="bm4s"`), `loadbar` et
 `pixel-fade` paramétrés, doc. Programme de test `examples/bm4` sur le
 modèle de `layers` : sprites + `vscroll` (ou `mscroll`) à 320 px, témoins
 `$9C00` (marqueur, sprites dessinés, compteur de trames, tête de la liste de
@@ -273,8 +286,7 @@ journal de passation dans l'exemple.
 
 ## 7. Points ouverts
 
-1. Mode 4 couleurs : `$41` (recommandé, TO8+ seulement) ou `$21` (TO9 aussi,
-   tout à réécrire) ?
+1. ~~Mode 4 couleurs : `$41` ou `$21` ?~~ `$41`, nommé `bm4s` (09/10/2026).
 2. Modèle de couleur des sprites en 40 colonnes (§4).
 3. Le pas de 2 px suffit-il pour les jeux visés ? Bubble Bobble arcade a
    256 px utiles : en `$41` ils occupent 128 unités de 2 px, ce qui laisse de la

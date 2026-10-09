@@ -144,6 +144,36 @@ restoring a backup, and no background cell is ever allocated. The game
 selects it at build time with `CLEAR1BPP equ 1` before including the sprite
 pack ; backup (`bdraw1`) and clear sprites cannot mix in one build.
 
+#### 320x200 in 4 colours : `videomode="bm4s"`
+
+The TO8 bitmap 4 "special" mode (`$41`, TO8 / TO8D / TO9+ only, set by
+`_gfxmode.setBM4S`) has the byte layout of BM16 with 2 bit pixels : a byte
+holds four pixels, leftmost in bits 7-6, and the RAMA byte of an address
+shows the four pixels to the left of its RAMB byte. A BM16 pixel therefore
+covers two `$41` pixels, the pair (left, right) being the BM16 colour
+`(left << 2) | right`.
+
+`<gfxcomp videomode="bm4s">` reads its PNGs drawn as they show : 320
+pixels wide at most, in 4 colours (indexes 1 to 4 for the palette entries 0
+to 3, 0 transparent). It packs them by pixel pairs into the BM16 pictures
+the encoders draw, and from there nothing changes — the encoders, the
+imageset index, the sprite runtime, the pre-shifts. `<png2pal>` reads the
+palette from the same PNGs. The default, `videomode="bm16"`, is the
+encoders' own model ; the name and its values are png2bin's, which calls
+the same layout `bm4s` (or `t1s`).
+
+What the game sees :
+
+- a position unit is two screen pixels : `x_pixel` keeps its 0..159 range,
+  and a pre-shifted variant (`shift="1"`) is a 2 pixel shift ;
+- transparency goes by pixel pairs : a pair is transparent as a whole or not
+  at all, and a half transparent pair is a build error naming it, as are an
+  odd width and a fifth colour ;
+- the 1bpp encoders have no bm4s form and are refused.
+
+`examples/bm4s` is the bench (`ci/toje-bench/bm4s_ut.py` compares the screen
+against the 320 pixel sources).
+
 ## The imageset index
 
 The index is the table the runtime reads to find out what to draw. Its layout
