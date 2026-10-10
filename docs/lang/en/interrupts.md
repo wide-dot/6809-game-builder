@@ -71,9 +71,9 @@ frame applies from the next one or the one after.
 - a split frame : one more interrupt (the monitor's IRQ code first, some 90
   cycles on a TO8) and the split's routine ;
 - the routine's writes land some lines after `Irq_split_line` : sixteen
-  colours through `$E7DA` take some 370 cycles, near 6 lines. A game asks
-  for its line that much before (Sonic 2 : 6 lines, under its surface's
-  sprite).
+  colours through `$E7DA` take some 370 cycles, near 6 lines, landing 2 to
+  8 lines after the line asked. A game places its line accordingly (Sonic
+  2 : 5 lines under its water's level, past its surface's sprite).
 
 ### Limits
 
