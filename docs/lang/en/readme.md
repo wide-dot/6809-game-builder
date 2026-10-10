@@ -101,6 +101,8 @@ Platform distributions are then generated in `package/target` :
 
 [audio][audio]
 
+[interrupts][interrupts]
+
 [migrating from the first generation — the casebook][migration]
 
 ## Toolbox
@@ -125,6 +127,7 @@ Platform distributions are then generated in `package/target` :
 [sprites]: sprites.md
 [tilemaps]: tilemaps.md
 [audio]: audio.md
+[interrupts]: interrupts.md
 [migration]: migration/README.md
 [toolbox-reference]: toolbox.md
 [credits]: credits.md
