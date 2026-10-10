@@ -171,7 +171,9 @@ public final class Handlers {
 		spec(element("fd").doc("write the interleaved image as a .fd file")
 			.req("filename", STRING, "output file, relative to dist.dir"));
 		spec(element("sd").doc("write the image for SDDRIVE as a .sd file")
-			.req("filename", STRING, "output file, relative to dist.dir"));
+			.req("filename", STRING, "output file, relative to dist.dir")
+			.opt("drive", INT, "the SDDRIVE drive of this disk : 0 (default) units 0-1, 1 units 2-3 ;"
+				+ " two <floppydisk> naming the same file write one .sd, in either order"));
 		spec(element("sap").doc("write the image as .sap file(s), one per used drive")
 			.req("filename", STRING, "output file, relative to dist.dir")
 			.opt("format", INT, "SAP format, 1 (default) or 2"));
@@ -228,6 +230,17 @@ public final class Handlers {
 			.opt("scrollstep", STRING, "the module's scroll vector, default 0,0,1,0,0,0,0,0 — the engine's 1 px horizontal dual-plane scroll. Feeds the lean pass only")
 			.opt("nbsteps", STRING, "the module's sub-step counts, default 0,0,4,0,0,0,0,0. Feeds the lean pass only")
 			.opt("refresh", STRING, "cells forced to stay DRAWN (bound to the set's first tile) though the lean would empty them : a checkpoint restart repaints from the map, so a band the scroll cannot rebuild from its start-of-stage blocks needs them. Space or comma list of <col>:<row> or <col>:<rowFirst>-<rowLast>"));
+		spec(element("chunkmap").doc("a chunked tilemap converted by the build (the Mega Drive Sonic games' levels : layouts of 128x128 chunks of 16x16 blocks, the chunks drawn already) to the TilemapBuffer formats, under gendir : tiles.png (a column of tiles, the same ones merged : picture on the drawn lines, collision, flip ; tile 0 empty) for a <gfxcomp grid>, tiles.bin (its tile ids) for a <tilemap>, chunk_0.bin and chunk_1.bin (banks of 128 chunks, a big endian word an entry : priority 15, solidity 11-14, opaque 10 with opaque=, tile index), layout-<n>.bin (each act's plane on those chunks, 128 bytes a row), primary-collision.bin, secondary-collision.bin, flip-collision.bin (a byte a tile)")
+			.req("chunks", STRING, "the chunks' pictures : an indexed PNG, colour 0 transparent, a column of chunks (chunk n at y = n times its height), 8x8 cells each, the block flips applied")
+			.req("mappings", STRING, "chunk mappings : 64 big endian words a chunk, SSTT YXII IIII IIII (solidity of the alternate and normal layers, flips, block)")
+			.req("blocks", STRING, "block mappings : 4 big endian pattern words a block, read for the priority bit of the first")
+			.req("primary", STRING, "collision index of each block, normal layer : a byte a block")
+			.req("secondary", STRING, "collision index of each block, alternate layer : a byte a block")
+			.req("layouts", STRING, "the acts' layouts, comma separated : rows of 256 bytes, the plane's 128 chunk ids first ; written as layout-1.bin, layout-2.bin... in this order")
+			.req("gendir", STRING, "directory receiving the outputs")
+			.opt("halfline", BOOL, "true : the even lines alone are drawn — tiles are compared on them and their odd lines come out empty. Default false")
+			.opt("opaque", BOOL, "true : the entries carry the opaque bit (10 : no transparent pixel on the drawn lines, engine define TilemapBuffer.OPAQUE), the tile index keeps bits 0-9. Default false, the index then keeps bits 0-10")
+			.opt("animated", STRING, "blocks drawn at run time, mapped past the block mappings : <block>[/high][/opaque], comma or space separated ; each takes the tile index past the tileset, in this order (where the game's animated tilesets follow its index)"));
 		spec(element("images").doc("a SERIES of images, declared as one line : the files of a directory in their NN order-prefix order, all compiled alike. Imageset indexes continue across rows and literal <image> alike ; symbol names are <base>_<n> with one counter per base, so a mirror row of the same directory continues the numbering")
 			.req("dir", STRING, "series directory ; files are ordered by their NN numeric prefix (the order IS the name)")
 			.opt("match", STRING, "glob filter on the file names, *.png if omitted")
@@ -290,6 +303,8 @@ public final class Handlers {
 		DEFAULTS.put("machine", com.widedot.m6809.gamebuilder.plugin.machine.MachinePlugin::run);
 		DEFAULTS.put("leanscroll",
 				com.widedot.toolbox.graphics.tilemap.leanscroll.LeanscrollPlugin::run);
+		DEFAULTS.put("chunkmap",
+				com.widedot.toolbox.graphics.tilemap.chunkmap.ChunkmapPlugin::run);
 
 		// media structure
 		MEDIA.put("directory", DirectoryPlugin::run);
@@ -319,6 +334,7 @@ public final class Handlers {
 		// output must stay continuous (5d)
 		PARTS.put("unit", com.widedot.m6809.gamebuilder.plugin.unit.UnitPlugin::getParts);
 		FILES.put("tilemap", com.widedot.m6809.gamebuilder.plugin.tilemap.TilemapPlugin::getFile);
+		FILES.put("backlines", com.widedot.toolbox.graphics.backlines.BacklinesPlugin::getFile);
 		FILES.put("tilecols", com.widedot.m6809.gamebuilder.plugin.tilemap.TilecolsPlugin::getFile);
 		FILES.put("tilepatch", com.widedot.m6809.gamebuilder.plugin.tilemap.TilepatchPlugin::getFile);
 		FILES.put("tilereset", com.widedot.m6809.gamebuilder.plugin.tilemap.TileresetPlugin::getFile);
@@ -334,6 +350,16 @@ public final class Handlers {
 		OBJECTS.put("vgm2sfx", com.widedot.toolbox.audio.vgm2sfx.Vgm2SfxPlugin::getObject);
 		OBJECTS.put("pcm", com.widedot.toolbox.audio.pcm.PcmPlugin::getObject);
 		OBJECTS.put("png2pal", com.widedot.toolbox.graphics.png2pal.Png2PalPlugin::getObject);
+		spec(element("backlines").doc("a background picture (BM16) compiled line by line : a chain of code a plane, a block a drawn line pushed with PSHU, bottom up, entered at any line and stopped above any line, drawn at any screen line — a fixed background redrawn where the tiles leave it visible, and moved vertically by choosing its lines (generated <label>_Draw, <label>_Lines1/2, <label>_Entries1/2, <label>_LINES, <label>_BYTES)")
+			.req("image", STRING, "the picture : indexed PNG, index = colour + 1, every pixel opaque, width a multiple of 4")
+			.req("label", STRING, "prefix of the generated symbols")
+			.req("gensource", STRING, "generated source of the routine")
+			.opt("halfline", BOOL, "true : the picture's even lines alone are drawn, one screen line in two. Default false")
+			.opt("linebytes", INT, "video memory bytes per line, 40 if omitted")
+			.opt("planedistance", INT, "the second plane, bytes below the first, 8192 if omitted")
+			.opt("beam", INT, "the search's width (states kept at each byte), 60 if omitted")
+			.opt("maxsize", INT, "the routine's bytes at most")
+			.opt("overflow", STRING, "past maxsize : error (default, the build stops) or trim (the picture's bottom lines dropped until the routine fits, a warning)"));
 		spec(element("tilemap").doc("generate the page/address table of a tile index map, baked in a .static section")
 			.req("map", STRING, "tile index .bin (leanscroll output), big endian, column major")
 			.req("label", STRING, "label of the generated table")

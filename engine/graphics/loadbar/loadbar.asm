@@ -43,6 +43,23 @@
 *                    bar. Period 0 : no pulse. One palette write per step, not
 *                    per unit. Pick an entry the picture on screen does not
 *                    use, or it breathes too.
+*   width 0, period 0 : a HIDDEN bar — installed, nothing drawn, for a load
+*   too short for a bar that may still need its text (below).
+*
+* THE TEXT (09/10/2026) : when a disk is missing, the loader's prompt
+* writes "DISK n" in the bar's page — no mode, page or palette to change and
+* take back, nothing erased after : the game redraws its screen.
+* loader.loadbar.text.set (jump table) gives its place, the address x + 40*y
+* of its top left byte (6 bytes wide, 5 lines ; 0 : no text, the loader's
+* monitor prompt instead). Letters in the bar's colour on colour 0, the
+* space between the word and the digit left as it is (the screen under the
+* text is the game's : colour 0, cleared). The palette is the game's : a
+* hidden bar over a screen faded to black lights the bar's entry itself.
+* Written for SIZE, not speed (the author's rule : a prompt waits for the
+* player) : a 3x5 font, a glyph a word (row 0 in bits 15-13), a letter in
+* one byte position (two pixels in the form bank, the third and the gap in
+* the colour bank), and only the digits of the target's disks
+* (loader.dir.physicalDisks, from the builder).
 * loadbar.PARAMS bytes from `loadbar` are the parameters a caller sets, the
 * colour table follows them IN THE CALLER'S RECORD (`count` words) and is
 * copied here too : the splash's own bytes are overwritten by the load its
@@ -64,6 +81,9 @@ loadbar.pulse.count  fcb   0
 loadbar.PARAMS       equ   *-loadbar
 loadbar.PULSE_MAX    equ   8
 loadbar.pulse.table  fill  0,loadbar.PULSE_MAX*2
+loadbar.text         fdb   0   ; the text's place, 0 : none
+loadbar.text.pairs   fill  0,4 ; two pixels as a byte, by their two bits (%00 : 0, never written)
+loadbar.text.bits    fdb   0   ; the glyph being drawn (pairs+4)
 loadbar.acc          fdb   0
 loadbar.next         fcb   0
 loadbar.total        fdb   0
@@ -147,17 +167,116 @@ loadbar.hook
 !       sta   loadbar.pulse.step,pcr
         asla                           ; a word per colour
         leax  loadbar.pulse.table,pcr
-        ldd   a,x                      ; %GGGGRRRR %0000BBBB
-        pshs  d
-        lda   loadbar.pulse.index,pcr
-        asla                           ; the EF9369 address counts bytes
-        sta   map.EF9369.A
-        puls  a
-        sta   map.EF9369.D             ; green and red
-        puls  a
-        sta   map.EF9369.D             ; blue
+        leax  a,x
+        bsr   loadbar.colour
         bra   @rts
 @tick   stb   loadbar.pulse.tick,pcr
 @rts    puls  b,pc
+
+* X = a colour, %GGGGRRRR %0000BBBB : into the bar's palette entry
+loadbar.colour
+        lda   loadbar.pulse.index,pcr
+        asla                           ; the EF9369 address counts bytes
+        sta   map.EF9369.A
+        ldd   ,x
+        sta   map.EF9369.D             ; green and red
+        stb   map.EF9369.D             ; blue
+        rts
+
+* A = the disk number, 1 to 9 : "DISK n" at loadbar.text
+loadbar.text.draw
+        leau  loadbar.text.pairs,pcr   ; by two bits : %01 0 ink, %10 ink 0,
+        ldb   loadbar.pixels-loadbar.text.pairs,u
+        stb   3,u                      ; %11 ink ink
+        andb  #$0F
+        stb   1,u
+        eorb  3,u
+        stb   2,u
+        ldb   map.CF74021.CART         ; the loader's own mapping, kept
+        pshs  d                        ; with the digit
+        ldb   loadbar.page-loadbar.text.pairs,u
+        orb   #$60                     ; RAM over the cartridge, writable
+        stb   map.CF74021.CART
+        ldx   -2,u                     ; loadbar.text
+        leay  loadbar.glyphs,pcr       ; D I S K
+        ldb   #4
+@word   pshs  b
+        ldd   ,y++
+        bsr   loadbar.glyph
+        puls  b
+        decb
+        bne   @word
+        leax  1,x                      ; the space, left as it is
+        ldb   ,s                       ; the digit n : the n-th word from
+        aslb                           ; here
+        leay  b,y
+        ldd   -2,y
+        bsr   loadbar.glyph
+        puls  d
+        stb   map.CF74021.CART
+        rts
+
+* D = a glyph, X = its cell's top byte, U = loadbar.text.pairs : drawn,
+* X on the next cell
+loadbar.glyph
+        std   4,u
+        pshs  x
+        lda   #5
+@row    pshs  a
+        clrb
+        bsr   @bit
+        bsr   @bit
+        lda   b,u
+        sta   ,x                       ; pixels 0-1 : the form bank
+        clrb
+        bsr   @bit
+        aslb                           ; pixel 3 : the gap between letters
+        lda   b,u
+        sta   $2000,x                  ; pixels 2-3 : the colour bank
+        leax  40,x
+        puls  a
+        deca
+        bne   @row
+        puls  x
+        leax  1,x
+        rts
+@bit    lsl   5,u
+        rol   4,u
+        rolb
+        rts
+
+* 3x5, row 0 in bits 15-13 : D I S K, then the digits of the target's disks
+ IFNDEF loader.dir.physicalDisks
+loadbar.DIGITS equ 9
+ ELSE
+loadbar.DIGITS equ loader.dir.physicalDisks
+ ENDC
+loadbar.glyphs
+        fdb   $D6DC,$E92E,$711C,$B75A
+        fdb   $592E                    ; 1
+ IFGE loadbar.DIGITS-2
+        fdb   $E7CE                    ; 2
+ ENDC
+ IFGE loadbar.DIGITS-3
+        fdb   $E59E                    ; 3
+ ENDC
+ IFGE loadbar.DIGITS-4
+        fdb   $B792                    ; 4
+ ENDC
+ IFGE loadbar.DIGITS-5
+        fdb   $F39E                    ; 5
+ ENDC
+ IFGE loadbar.DIGITS-6
+        fdb   $F3DE                    ; 6
+ ENDC
+ IFGE loadbar.DIGITS-7
+        fdb   $E492                    ; 7
+ ENDC
+ IFGE loadbar.DIGITS-8
+        fdb   $F7DE                    ; 8
+ ENDC
+ IFGE loadbar.DIGITS-9
+        fdb   $F79E                    ; 9
+ ENDC
 loadbar.SIZE        equ   *-loadbar
 loadbar.hook.OFFSET equ   loadbar.hook-loadbar

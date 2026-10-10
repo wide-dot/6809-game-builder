@@ -15,7 +15,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -89,7 +91,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -151,7 +155,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -207,6 +213,94 @@
     </xs:complexType>
   </xs:element>
 
+  <!-- a background picture (BM16) compiled line by line : a chain of code a plane, a block a drawn line pushed with PSHU, bottom up, entered at any line and stopped above any line, drawn at any screen line — a fixed background redrawn where the tiles leave it visible, and moved vertically by choosing its lines (generated <label>_Draw, <label>_Lines1/2, <label>_Entries1/2, <label>_LINES, <label>_BYTES) -->
+  <xs:element name="backlines">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="composition"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="file"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="images"/>
+        <xs:element ref="imageset"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="rect"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilecols"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="tilepatch"/>
+        <xs:element ref="tilereset"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
+      </xs:choice>
+      <xs:attribute name="image" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>the picture : indexed PNG, index = colour + 1, every pixel opaque, width a multiple of 4</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="label" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>prefix of the generated symbols</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gensource" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>generated source of the routine</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="halfline" type="xs:boolean">
+        <xs:annotation><xs:documentation>true : the picture's even lines alone are drawn, one screen line in two. Default false</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="linebytes" type="int6809">
+        <xs:annotation><xs:documentation>video memory bytes per line, 40 if omitted</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="planedistance" type="int6809">
+        <xs:annotation><xs:documentation>the second plane, bytes below the first, 8192 if omitted</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="beam" type="int6809">
+        <xs:annotation><xs:documentation>the search's width (states kept at each byte), 60 if omitted</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="maxsize" type="int6809">
+        <xs:annotation><xs:documentation>the routine's bytes at most</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="overflow" type="xs:string">
+        <xs:annotation><xs:documentation>past maxsize : error (default, the build stops) or trim (the picture's bottom lines dropped until the routine fits, a warning)</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
   <!-- raw binary file inserted as is -->
   <xs:element name="bin">
     <xs:complexType>
@@ -214,7 +308,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -269,6 +365,97 @@
     </xs:complexType>
   </xs:element>
 
+  <!-- a chunked tilemap converted by the build (the Mega Drive Sonic games' levels : layouts of 128x128 chunks of 16x16 blocks, the chunks drawn already) to the TilemapBuffer formats, under gendir : tiles.png (a column of tiles, the same ones merged : picture on the drawn lines, collision, flip ; tile 0 empty) for a <gfxcomp grid>, tiles.bin (its tile ids) for a <tilemap>, chunk_0.bin and chunk_1.bin (banks of 128 chunks, a big endian word an entry : priority 15, solidity 11-14, opaque 10 with opaque=, tile index), layout-<n>.bin (each act's plane on those chunks, 128 bytes a row), primary-collision.bin, secondary-collision.bin, flip-collision.bin (a byte a tile) -->
+  <xs:element name="chunkmap">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="composition"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="file"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="images"/>
+        <xs:element ref="imageset"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="rect"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilecols"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="tilepatch"/>
+        <xs:element ref="tilereset"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
+      </xs:choice>
+      <xs:attribute name="chunks" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>the chunks' pictures : an indexed PNG, colour 0 transparent, a column of chunks (chunk n at y = n times its height), 8x8 cells each, the block flips applied</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="mappings" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>chunk mappings : 64 big endian words a chunk, SSTT YXII IIII IIII (solidity of the alternate and normal layers, flips, block)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="blocks" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>block mappings : 4 big endian pattern words a block, read for the priority bit of the first</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="primary" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>collision index of each block, normal layer : a byte a block</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="secondary" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>collision index of each block, alternate layer : a byte a block</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="layouts" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>the acts' layouts, comma separated : rows of 256 bytes, the plane's 128 chunk ids first ; written as layout-1.bin, layout-2.bin... in this order</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gendir" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>directory receiving the outputs</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="halfline" type="xs:boolean">
+        <xs:annotation><xs:documentation>true : the even lines alone are drawn — tiles are compared on them and their odd lines come out empty. Default false</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="opaque" type="xs:boolean">
+        <xs:annotation><xs:documentation>true : the entries carry the opaque bit (10 : no transparent pixel on the drawn lines, engine define TilemapBuffer.OPAQUE), the tile index keeps bits 0-9. Default false, the index then keeps bits 0-10</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="animated" type="xs:string">
+        <xs:annotation><xs:documentation>blocks drawn at run time, mapped past the block mappings : &lt;block&gt;[/high][/opaque], comma or space separated ; each takes the tile index past the tileset, in this order (where the game's animated tilesets follow its index)</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
   <!-- applies the fd640 boot sector checksum to its content -->
   <xs:element name="cksumfd640">
     <xs:complexType>
@@ -276,7 +463,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -335,7 +524,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -397,7 +588,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -456,7 +649,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -530,7 +725,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -595,7 +792,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -660,7 +859,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -734,7 +935,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -814,7 +1017,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -876,7 +1081,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -974,7 +1181,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -1048,7 +1257,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -1110,7 +1321,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -1205,7 +1418,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -1267,7 +1482,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -1338,7 +1555,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -1424,7 +1643,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -1492,7 +1713,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -1554,7 +1777,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -1616,7 +1841,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -1681,7 +1908,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -1770,7 +1999,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -1832,7 +2063,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -1900,7 +2133,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -1965,7 +2200,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -2051,7 +2288,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -2119,7 +2358,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -2187,7 +2428,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -2288,7 +2531,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -2371,7 +2616,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -2442,7 +2689,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -2519,7 +2768,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -2593,7 +2844,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -2658,7 +2911,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -2726,7 +2981,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -2778,6 +3035,9 @@
       <xs:attribute name="filename" type="xs:string" use="required">
         <xs:annotation><xs:documentation>output file, relative to dist.dir</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="drive" type="int6809">
+        <xs:annotation><xs:documentation>the SDDRIVE drive of this disk : 0 (default) units 0-1, 1 units 2-3 ; two &lt;floppydisk&gt; naming the same file write one .sd, in either order</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 
@@ -2788,7 +3048,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -2859,7 +3121,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -2921,7 +3185,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -3013,7 +3279,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -3093,7 +3361,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -3221,7 +3491,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -3310,7 +3582,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -3375,7 +3649,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -3449,7 +3725,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -3514,7 +3792,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -3579,7 +3859,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>
@@ -3650,7 +3932,9 @@
         <xs:element ref="animation"/>
         <xs:element ref="arena"/>
         <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
         <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
         <xs:element ref="cksumfd640"/>
         <xs:element ref="composition"/>
         <xs:element ref="configuration"/>

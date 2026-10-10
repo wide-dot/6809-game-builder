@@ -32,6 +32,18 @@
 * input REG : [dp] $E7 (set by the monitor)
 * reset REG : [none]
 *
+* IRQ_SPLIT (define, opt-in) : a second interrupt a frame, at a line of the
+* display, for a palette change there (a game's water surface). The VBL's
+* interrupt keeps its phase : the timer runs with TCR4 set (a latch write does
+* not restart the counter), each period loaded by the chip itself at the
+* expiry, the latch written one interrupt ahead. The split's interrupt counts
+* no frame and runs no user routine : Irq_split_routine alone (DP $E7, the
+* system stack). The game sets Irq_split_line : the line of the display
+* (0-199) where the next frames split, $FF none ; the change shows where
+* Irq_split_routine's writes land, a few lines after (the monitor's IRQ code
+* first). Cost when no split : the scheduling, ~60 cycles a frame ; one more
+* interrupt a frame when split.
+*
 * Special mode (glb_Page==0) is when page switching does not need to test
 * if RAM or ROM is in use. In this case RAM is always expected as page type.
 * This allows the use of <$E6 register without calling engine macro for
@@ -49,6 +61,13 @@
 * ---------------------------------------------------------------------------
 
 Irq_user_routine fdb 0                 ; user irq routine called by IrqManager
+ IFDEF IRQ_SPLIT
+Irq_split_routine fdb 0                ; the split's routine (DP $E7, the system stack)
+Irq_split_line    fcb $FF              ; the next frames' split : a line of the display, $FF none
+Irq_split_cur     fdb 0                ; this frame's : cycles from the VBL's interrupt, 0 none
+Irq_split_next    fcb 0                ; the next interrupt is the split
+Irq_sync_line     fdb 0                ; the line IrqSync set the VBL's interrupt on
+ ENDC
 ; V2-DEVIATION: Irq_one_frame et Irq_one_line sont definis dans
 ; engine/constants.asm. Ce sont des CONSTANTES ABSOLUES, pas des adresses : une
 ; unite paginee qui arme l'IRQ doit les voir a l'assemblage. Les faire passer
@@ -105,6 +124,13 @@ IrqUnpause
         puls  a,pc
 
 IrqSync 
+ IFDEF IRQ_SPLIT
+        sta   Irq_sync_line+1          ; the VBL's line, the splits are counted from it
+        clr   Irq_sync_line
+        clr   Irq_split_next
+        clr   Irq_split_cur            ; no split until IrqManager schedules one
+        clr   Irq_split_cur+1
+ ENDC
         ldb   #$42
         stb   MC6846.TCR
         
@@ -121,12 +147,33 @@ IrqSync
         bne   <                        ; wait until desired line
        
         stx   MC6846.TMSB              ; spot is at the end of desired line
+ IFDEF IRQ_SPLIT
+        ldb   #$52                     ; TCR4 : a latch write no longer restarts the counter
+        stb   MC6846.TCR               ; (IrqManager writes it one interrupt ahead)
+ ENDC
         rts  
 
         ;setdp $E7 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm obj target ; runtime DP is untouched, implicit-direct operands assemble extended)
 IrqManager
         sts   @stack                   ; backup system stack
         lds   #Irq_sys_stack           ; set tmp system stack for IRQ 
+ IFDEF IRQ_SPLIT
+        tst   Irq_split_next           ; the split's interrupt : its routine alone
+        beq   @vbl
+        clr   Irq_split_next
+        jsr   [Irq_split_routine]
+        jsr   IrqSplit_Schedule        ; then the next frame's, before its VBL
+        bra   @end
+@vbl    ldd   Irq_split_cur            ; the latch, for the interrupt after the next
+        beq   @single
+        inc   Irq_split_next           ; this frame's split comes next, then the VBL
+        ldd   #Irq_one_frame
+        subd  Irq_split_cur
+        std   MC6846.TMSB
+        bra   @count
+@single jsr   IrqSplit_Schedule        ; no split this frame : the next one's
+@count
+ ENDC
         inc   gfxlock.frame.count+1
         bne   >
         inc   gfxlock.frame.count
@@ -193,6 +240,41 @@ IrqManager
 @page2  equ   *-1
         sta   <$E6                     ; restore data page
         bra   @end
+
+ IFDEF IRQ_SPLIT
+* IrqSplit_Schedule - the next frame's split (Irq_split_line) : its period
+* from the VBL's interrupt into the latch, loaded at that interrupt
+IrqSplit_Schedule
+        ldb   Irq_split_line
+        cmpb  #200
+        bhs   @none
+        clra
+        addd  #312                     ; lines from the VBL's interrupt
+        subd  Irq_sync_line
+        cmpd  #312
+        blo   >
+        subd  #312
+!       aslb                           ; 64 cycles a line
+        rola
+        aslb
+        rola
+        aslb
+        rola
+        aslb
+        rola
+        aslb
+        rola
+        aslb
+        rola
+        std   Irq_split_cur
+        subd  #1                       ; the timer counts to -1
+        bra   >
+@none   ldd   #0
+        std   Irq_split_cur
+        ldd   #Irq_one_frame
+!       std   MC6846.TMSB
+        rts
+ ENDC
 
 ; This space allow the use of system stack inside IRQ calls
 ; otherwise the writes in sys stack will erase data when S is in use

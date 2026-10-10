@@ -814,6 +814,23 @@ page 0, palette 1/7 forcée blanc sur rouge, écran effacé — le registre
 d'adresse du EF9369 compte des octets, entrée n à 2n) et l'erreur de
 lecture d'un fichier y passe au lieu d'un reset (bilan §9). Loader 4 044.
 
+## Second lecteur, invite de disquette, .sd à deux lecteurs (09/10/2026)
+
+Le loader cherche une disquette sur le lecteur mémorisé (octet 1 de la
+table des emplacements = DK.DRV, réécrit à chaque succès), puis sur l'autre,
+puis demande. Un second lecteur « non prêt » (`DK.STA $10`, 1,18 s mesurées
+dans la ROM `$E45A`) n'est plus sondé avant une invite. L'invite écrit
+`DISK n` sous la barre du loader (`loader.loadbar.text.set`, table de saut
+51 ; barre masquée = largeur 0), sans toucher mode, page ni palette, écrite
+pour la taille (police 3x5, seulement les chiffres des disquettes de la
+cible, `loader.dir.physicalDisks`) ; sinon le texte moniteur. Touche : KTEST
+(PA0 du PIA système), IRQ masquées. La convergence groupe ses passes par
+répertoire (celui en mémoire d'abord, tables triées par le builder) et lâche
+sans lire le disque une scène sans données de lien. `<sd drive="1">` met une
+disquette dans les unités 2/3 du même .sd. Loader : +281 octets sur sonic
+(4 148 → 4 429). Manuel : `config.md`, *Several disks*. Bancs : loader-ut
+un lecteur et `--two-drives` (toje `feature/second-drive`), r-type 7/7.
+
 ## La barre de chargement : le loader compte, l'engine dessine (07/09/2026)
 
 `loader.progress.hook.set` (table de saut 42) installe un hook appelé à

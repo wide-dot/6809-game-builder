@@ -343,3 +343,106 @@ Validation : `examples/tilescroll/to8-cols.config.xml` builds the same
 example over the column engine (`TILES_COLS` defined) ; the whole initial
 scroll, both planes and the patch animation included, renders pixel for
 pixel what `to8.config.xml` renders (101 captures compared under toje).
+
+## Chunked maps : `<chunkmap>` and TilemapBuffer
+
+The Mega Drive Sonic games lay their levels out in two levels of
+indirection : a layout of 128x128 chunks, each chunk 8x8 blocks of 16x16,
+every block entry carrying its flips, the solidity of two collision layers
+and a block index, every block a collision index per layer. The engine's
+`TilemapBuffer` (`engine/graphics/tilemap/TilemapBuffer.asm`) keeps that
+shape : a layout of chunk ids, chunk definitions in two banks of 128, a
+word per cell — priority (bit 15), solidity (11-14), the opaque bit (10,
+define `TilemapBuffer.OPAQUE`), the tile index — and a page/address index
+of compiled tiles.
+
+`<chunkmap>` builds those from the source level. Drawing the chunks is the
+game's adaptation of its assets (its palette, its resolution : a script of
+the game writes one picture per chunk, the block flips applied) ; the
+element does the engine's half :
+
+```xml
+<chunkmap chunks="objects/zone/s2/chunks.png" mappings="objects/zone/s2/chunks.bin"
+          blocks="objects/zone/s2/blocks.bin"
+          primary="objects/zone/s2/primary-collision.bin"
+          secondary="objects/zone/s2/secondary-collision.bin"
+          layouts="objects/zone/s2/layout-1.bin,objects/zone/s2/layout-2.bin"
+          halfline="true" opaque="true" gendir="gen/zone/map"/>
+```
+
+- **Tiles** : every cell of every chunk the acts' plane uses is cut out
+  (8x16 here : a 64 pixel wide chunk picture of 8 cells) and merged with
+  the same ones — the same picture (on the even lines alone with
+  `halfline` : the odd ones are never drawn, they come out empty), the
+  same two collision indexes, the same flip (unless both indexes leave
+  nothing to flip). Tile 0 is the empty one. `tiles.png` is a column of
+  tiles for a `<gfxcomp>` `<image grid="8x16">` collection ; `tiles.bin`
+  holds its ids in order, the map a `<tilemap>` turns into the page and
+  address index the layer descriptor points at.
+- **Chunks** : a chunk's entries are the cells' words ; chunks with the
+  same 64 words are one, renumbered in the order the acts use them, chunk
+  0 the empty one ; `chunk_0.bin` and `chunk_1.bin` are the banks. The
+  priority is the block's first pattern's. An empty cell (tile 0, which has
+  no collision) is a zero word whatever its block's flags : the
+  `<tilemap>` index gives tile 0 page 0, the end of the high priority
+  queue, so a flagged empty cell would end it early.
+- **Layouts** : `layout-<n>.bin`, each act's plane on the zone's chunks,
+  128 bytes a row.
+- **Collision** : `primary-collision.bin`, `secondary-collision.bin` and
+  `flip-collision.bin`, a byte a tile, what the terrain collision reads
+  through the tile index.
+- **Animated blocks** (`animated="761/opaque,765/high,..."`) : blocks the
+  game builds at run time are mapped past the block mappings ; each takes
+  the tile index past the tileset, in the declared order, where the game's
+  animated tilesets follow its index.
+
+Like `<leanscroll>`, the element sits in its `<directory>` before the files
+that read its outputs, and runs before the arenas are measured. It is not
+cached : the conversion takes milliseconds.
+
+Validated against a hand-converted Sonic 2 zone, cell by cell over its two
+acts (the numbering free, everything the game shows and reads compared) :
+the only differences were two choices of the old converter, a priority
+raised by hand at a few places and a flip read from the wrong occurrence
+of a merged tile.
+
+## A background behind the tiles : `<backlines>`
+
+A level drawn over a background that stays on screen needs the background
+redrawn where the tiles leave it visible, every frame the camera moves —
+often a few rows only, the tiles covering the rest. `<backlines>` compiles a
+BM16 picture (PNG index = colour + 1, every pixel opaque, a width multiple
+of 4) into a routine for that, inside an `<lwasm>` unit :
+
+```xml
+<backlines image="objects/zone/background/zone_1.png" label="Zone_Back"
+           gensource="gen/zone/back.asm" halfline="true" maxsize="15700"/>
+```
+
+- **A chain a plane, a block a drawn line, bottom up.** A block pushes its
+  line with PSHU from the right end, the bytes held as immediate values in
+  A, B, DP, X and Y, then moves U up a line (a short LEAU : the address is
+  relative, so any picture line can be drawn at any screen line). A beam
+  search over the chain chooses how each line is cut into pushes and which
+  values stay in the registers from a line to the next, for the fewest
+  cycles.
+- **Entered at any line, stopped above any line.** Each line has an entry
+  loading what its block expects from the lines below (`<label>_Entries1/2`)
+  ; the chain runs up to an RTS, its own after the picture's first line or
+  one written at the start of the block above the last line wanted
+  (`<label>_Lines1/2`), put back after.
+- **`<label>_Draw`** does both planes : A the bottom drawn line, B the top
+  one (from 0 at the top), X the screen address just right of the bottom
+  line's first plane bytes. DP is a data register : the caller keeps it.
+- **A picture taller than the view scrolls vertically** : the caller picks
+  which picture lines go on the screen's (a differential scroll, the
+  background travelling a fraction of the camera's height).
+- With `halfline` the even lines alone are drawn. `maxsize` bounds the
+  routine (one page of code, say) : past it the build stops, or with
+  `overflow="trim"` the picture's bottom lines are dropped until it fits
+  (a warning says how many are kept).
+
+Measured on Sonic 2's backgrounds, 80 drawn lines of 34 bytes a plane : 82
+to 117 bytes a line with the tables and entries, about 12 000 to 16 000
+cycles for every line (the line skip saves most of it). The JUnit tests run
+the generated chains through an interpreter, every entry with every stop.

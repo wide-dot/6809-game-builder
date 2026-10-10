@@ -93,10 +93,11 @@ public final class PlacementScan {
 				com.widedot.m6809.gamebuilder.Handlers.getDefault(kind).run(child, scope);
 				continue;
 			}
-			// leanscroll PRODUCES build inputs : the tiles a collection
-			// measures are sliced from its outputs, so the chain has to run
-			// before the first measure. Cached — the real pass reuses it.
-			if ("leanscroll".equals(kind)) {
+			// leanscroll and chunkmap PRODUCE build inputs : the tiles a
+			// collection measures are sliced from their outputs, so the chain
+			// has to run before the first measure. leanscroll is cached — the
+			// real pass reuses it ; chunkmap is quick and simply runs again.
+			if ("leanscroll".equals(kind) || "chunkmap".equals(kind)) {
 				com.widedot.m6809.gamebuilder.Handlers.getDefault(kind).run(child, scope);
 				continue;
 			}

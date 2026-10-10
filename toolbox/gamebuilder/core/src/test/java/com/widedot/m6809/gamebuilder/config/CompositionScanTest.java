@@ -117,4 +117,21 @@ class CompositionScanTest {
 		CompositionScan.parse(node, ctx);
 		assertTrue(ctx.compositions.isEmpty());
 	}
+
+	@Test
+	@DisplayName("a table groups its scenes by directory, declaration order kept inside a group")
+	void scenesGroupedByDirectory(@TempDir Path dir) throws Exception {
+		BuildContext ctx = ctx(dir);
+		// declared interleaved : 0, 1, 0 — one drive would swap disks twice
+		ImmutableNode node = layout("gen/compositions.asm",
+				"mixed:scenes.title,scenes.stage1,scenes.boot");
+		CompositionScan.generate(node, ctx, CompositionScan.parse(node, ctx));
+
+		String out = new String(Files.readAllBytes(dir.resolve("gen/compositions.asm")));
+		int title = out.indexOf("; scenes.title");
+		int boot = out.indexOf("; scenes.boot");
+		int stage = out.indexOf("; scenes.stage1");
+		assertTrue(title < boot, "directory 0 first, its own order kept");
+		assertTrue(boot < stage, "directory 1 after directory 0");
+	}
 }

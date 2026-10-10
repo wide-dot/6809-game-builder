@@ -19,6 +19,7 @@ loader.composition.set.IDX      equ   39 ; Declare the resident state without lo
 loader.progress.hook.set.IDX    equ   42 ; Install a progress hook (X = routine, 0 = none) and reset the counters
 loader.dir.unload.IDX           equ   45 ; Give the current directory's buffer back to the pool (no-op if none)
 loader.loadbar.set.IDX          equ   48 ; Install the loader's own loading bar (X = loadbar.PARAMS bytes : video page, address x+40*y, width in pixels, height, pixel byte, pulse palette entry, pulse period in units or 0, colour count, then the colour table itself — count GR0B words, at most loadbar.PULSE_MAX — copied with the rest) and reset the counters
+loader.loadbar.text.set.IDX     equ   51 ; Where the bar writes "DISK n" when a disk is missing (X = address x+40*y in the bar's page, 0 = none : the monitor prompt)
 ; The progress hook : called by the loader after every addition to its
 ; progress counter — one unit per sector read (a re-read served from the
 ; cache counts too, the directory counts it), one per 512 bytes a compressed

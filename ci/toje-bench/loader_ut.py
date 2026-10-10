@@ -3,6 +3,13 @@
 
     TOJE_MCP=<toje>/scripts/toje-mcp.sh \
     python3 ci/toje-bench/loader_ut.py dist/to8.fd dist/to8-disk1.fd
+    python3 ci/toje-bench/loader_ut.py --two-drives dist/to8.sd
+
+--two-drives : both disks at once, the .sd holding disk 0 in the first drive
+(units 0-1) and disk 1 in the second (units 2-3) — what SDDRIVE serves, or a
+machine with two drives. Nothing is ever mounted : the loader must find each
+disk where it is, and a prompt (the bench never answers it) ends in no
+verdict.
 
 Result table at $9C00 (see the game mode's main.asm): +0 magic $CA,
 +1..+18 one byte per test, +27 disk handshake ($D1 = the bench waits for
@@ -15,7 +22,11 @@ Exit code: 0 pass, 1 fail, 2 no verdict.
 import sys, os, time
 from mcp import Toje
 
-disk0, disk1 = sys.argv[1], sys.argv[2]
+two_drives = sys.argv[1] == "--two-drives"
+if two_drives:
+    disk0, disk1 = sys.argv[2], None
+else:
+    disk0, disk1 = sys.argv[1], sys.argv[2]
 t = Toje()
 # settle 1 : the poll below reads the bench's own witnesses ; the 1200 frame
 # settle of the default left toje's drive in a state where a later sector
@@ -32,7 +43,9 @@ for i in range(600):
     print(f"i={i:3d} wall={time.time() - t0:4.0f}s magic={b[0]:02X} "
           f"slots={' '.join(f'{x:02X}' for x in b[1:19])} "
           f"hand={hand:02X} status={status:02X}", flush=True)
-    if hand == 0xD1 and mounted != 1:
+    if two_drives:
+        pass                      # nothing to mount, nobody to press a key
+    elif hand == 0xD1 and mounted != 1:
         print(">> mounting disk 1")
         t.call("mount_disk", {"path": disk1})
         mounted = 1
@@ -41,6 +54,11 @@ for i in range(600):
         print(">> mounting disk 0")
         t.call("mount_disk", {"path": disk0})
         mounted = 0
+        t.press()
+    elif (hand, mounted) in ((0xD1, 1), (0xD3, 0)):
+        # the disk is in, the loader not past its prompt yet : with one
+        # drive it probes the empty second one first (1.2 s, "not ready")
+        # and the prompt may come after the key — pressed again, as a player
         t.press()
     if status != 0:
         if status == 0x0D:
