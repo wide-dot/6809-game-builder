@@ -59,7 +59,7 @@
 		<!-- 3.3.6 declares the JNI version used by Java 21+/25, silencing the
 		     "Unsupported JNI version detected" warning from the 3.3.4 pulled
 		     transitively by imgui-java-app. Binary-compatible with imgui-java 1.88. -->
-		<lwjgl.version>3.3.6</lwjgl.version>
+		<lwjgl.version>3.4.2</lwjgl.version>
 	</properties>
 
 	<build>
