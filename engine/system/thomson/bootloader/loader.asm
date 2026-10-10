@@ -295,7 +295,18 @@ loader.scene.load
 ; chargement suivi du lien.
 ;-----------------------------------------------------------------
 loader.scene.load.noLink
-
+        pshs  x                           ; the scene's id : the cache's (tableId)
+        ; the previous table is no cache any more : given back BEFORE this
+        ; one is allocated, its block joins the free space round it. Freed
+        ; after (until 10/10/2026), it left a hole in front of the new
+        ; table, and the next scene's table found no block big enough
+        ; (sonic-2 : Chemical Plant 1 from the title, tlsf error 3).
+        ldu   >loader.scene.table
+        beq   >
+        jsr   tlsf.free
+        ldu   #0
+        stu   >loader.scene.table
+!       ldx   ,s
         jsr   loader.file.malloc
         cmpu  #0
         beq   >
@@ -324,16 +335,14 @@ loader.scene.load.noLink
         stx   loader.scene.routine
         jsr   loader.scene.apply
 
-        ; La table N'EST PAS liberee : elle devient le cache du dechargement
-        ; a venir. La precedente, elle, ne sert plus.
-        pshs  u,x
-        ldu   >loader.scene.table
-        beq   >
-        jsr   tlsf.free
-!       puls  u,x
+        ; The table is NOT freed : it is the cache of the unload to come.
+        ; Its id is the scene's (X, kept at the entry : X here is the last
+        ; routine applied, and that wrong tableId made the cache never found
+        ; by an unload, until 10/10/2026).
         stu   >loader.scene.table
+        puls  x
         stx   >loader.scene.tableId
-!       rts
+        rts
 
 
 ;-----------------------------------------------------------------
