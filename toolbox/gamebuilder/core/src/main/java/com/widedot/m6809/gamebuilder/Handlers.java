@@ -240,7 +240,7 @@ public final class Handlers {
 			.req("gendir", STRING, "directory receiving the outputs")
 			.opt("halfline", BOOL, "true : the even lines alone are drawn — tiles are compared on them and their odd lines come out empty. Default false")
 			.opt("opaque", BOOL, "true : the entries carry the opaque bit (10 : no transparent pixel on the drawn lines, engine define TilemapBuffer.OPAQUE), the tile index keeps bits 0-9. Default false, the index then keeps bits 0-10")
-			.opt("animated", STRING, "blocks drawn at run time, mapped past the block mappings : <block>[/high][/opaque], comma or space separated ; each takes the tile index past the tileset, in this order (where the game's animated tilesets follow its index)"));
+			.opt("animated", STRING, "blocks drawn at run time : <block>[/xflip][/yflip][/high][/opaque], comma or space separated, a block once per flip it is used with ; each takes the tile index past the tileset, in this order (where the game's animated tilesets follow its index), its collision past the tileset's"));
 		spec(element("images").doc("a SERIES of images, declared as one line : the files of a directory in their NN order-prefix order, all compiled alike. Imageset indexes continue across rows and literal <image> alike ; symbol names are <base>_<n> with one counter per base, so a mirror row of the same directory continues the numbering")
 			.req("dir", STRING, "series directory ; files are ordered by their NN numeric prefix (the order IS the name)")
 			.opt("match", STRING, "glob filter on the file names, *.png if omitted")

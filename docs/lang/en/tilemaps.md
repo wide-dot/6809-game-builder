@@ -391,10 +391,15 @@ element does the engine's half :
 - **Collision** : `primary-collision.bin`, `secondary-collision.bin` and
   `flip-collision.bin`, a byte a tile, what the terrain collision reads
   through the tile index.
-- **Animated blocks** (`animated="761/opaque,765/high,..."`) : blocks the
-  game builds at run time are mapped past the block mappings ; each takes
-  the tile index past the tileset, in the declared order, where the game's
-  animated tilesets follow its index.
+- **Animated blocks** (`animated="761/opaque,761/xflip,765/high,..."`) :
+  blocks the game draws at run time, mapped past the block mappings or
+  redrawn over them (a colour cycle drawn as frames) ; each takes the tile
+  index past the tileset, in the declared order, where the game's animated
+  tilesets follow its index. A block used flipped is declared once for each
+  flip it is used with (`/xflip`, `/yflip`), its frames drawn so ; a use
+  not declared is an error. Their collision follows the tileset's in the
+  three tables (the block's indexes, the flip as a tile's), so an animated
+  block can be solid.
 
 Like `<leanscroll>`, the element sits in its `<directory>` before the files
 that read its outputs, and runs before the arenas are measured. It is not

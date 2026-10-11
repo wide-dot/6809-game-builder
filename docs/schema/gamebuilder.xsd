@@ -451,7 +451,7 @@
         <xs:annotation><xs:documentation>true : the entries carry the opaque bit (10 : no transparent pixel on the drawn lines, engine define TilemapBuffer.OPAQUE), the tile index keeps bits 0-9. Default false, the index then keeps bits 0-10</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="animated" type="xs:string">
-        <xs:annotation><xs:documentation>blocks drawn at run time, mapped past the block mappings : &lt;block&gt;[/high][/opaque], comma or space separated ; each takes the tile index past the tileset, in this order (where the game's animated tilesets follow its index)</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>blocks drawn at run time : &lt;block&gt;[/xflip][/yflip][/high][/opaque], comma or space separated, a block once per flip it is used with ; each takes the tile index past the tileset, in this order (where the game's animated tilesets follow its index), its collision past the tileset's</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>

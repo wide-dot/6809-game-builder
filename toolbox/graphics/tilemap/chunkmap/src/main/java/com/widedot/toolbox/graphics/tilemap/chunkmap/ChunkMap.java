@@ -55,8 +55,10 @@ import javax.imageio.ImageIO;
  * </ul>
  *
  * Blocks drawn at run time (animated : the source maps them past its block
- * mappings) are declared ; each takes the tile index past the tileset, in
- * the declared order, where the game's animated tilesets follow its index.
+ * mappings, or the game redraws them over its mappings) are declared, with
+ * the flip they are used with ; each takes the tile index past the tileset,
+ * in the declared order, where the game's animated tilesets follow its
+ * index, and its collision follows the tileset's in the collision tables.
  */
 public final class ChunkMap {
 
@@ -112,7 +114,8 @@ public final class ChunkMap {
 	 * @param layouts   the acts' layouts, rows of 256 bytes (the plane's 128 first)
 	 * @param halfline  the even lines alone are drawn
 	 * @param opaque    entries carry the opaque bit (10) ; the index keeps bits 0-9
-	 * @param animated  blocks drawn at run time, by block index, in tile order
+	 * @param animated  blocks drawn at run time, keyed by block index and flip
+	 *                  (bits 10-11, the mapping word's), in tile order
 	 */
 	public static Result convert(BufferedImage sheet, byte[] mappings, byte[] blocks, byte[] primary,
 			byte[] secondary, List<byte[]> layouts, boolean halfline, boolean opaque,
@@ -180,12 +183,18 @@ public final class ChunkMap {
 							int f = (w >> 10) & 3;
 							int solidity = (w >> 12) & 0xF;
 							int word;
-							if (animated.containsKey(b)) {
-								Animated a = animated.get(b);
+							if (animated.containsKey(b | f << 10)) {
+								Animated a = animated.get(b | f << 10);
 								// patched past the tileset once its size is known
 								word = (a.high ? 0x8000 : 0) | solidity << 11 | (opaque && a.opaque ? 0x400 : 0)
-										| (0x10000 + animatedOrder.indexOf(b));
+										| (0x10000 + animatedOrder.indexOf(b | f << 10));
 							} else {
+								for (int k : animatedOrder) {
+									if ((k & 0x3FF) == b) {
+										throw new Exception("chunkmap : chunk " + c + " uses animated block " + b
+												+ flipName(f) + ", not declared so");
+									}
+								}
 								if (b >= nblocks) {
 									throw new Exception("chunkmap : chunk " + c + " uses block " + b
 											+ ", past the " + nblocks + " block mappings, and it is not declared animated");
@@ -246,9 +255,18 @@ public final class ChunkMap {
 		IndexColorModel cm = (IndexColorModel) sheet.getColorModel();
 		BufferedImage tiles = new BufferedImage(tw, th * count, BufferedImage.TYPE_BYTE_INDEXED, cm);
 		WritableRaster dst = tiles.getRaster();
-		byte[] primaryOut = new byte[count];
-		byte[] secondaryOut = new byte[count];
-		byte[] flipOut = new byte[count];
+		// the collision tables : the tileset's tiles, then the animated ones
+		byte[] primaryOut = new byte[count + animated.size()];
+		byte[] secondaryOut = new byte[count + animated.size()];
+		byte[] flipOut = new byte[count + animated.size()];
+		for (int i = 0; i < animatedOrder.size(); i++) {
+			int b = animatedOrder.get(i) & 0x3FF;
+			int p = b < primary.length ? primary[b] & 0xFF : 0;
+			int s = b < secondary.length ? secondary[b] & 0xFF : 0;
+			primaryOut[count + i] = (byte) p;
+			secondaryOut[count + i] = (byte) s;
+			flipOut[count + i] = (byte) ((p == 0 || p == 0xFF) && (s == 0 || s == 0xFF) ? 0 : animatedOrder.get(i) >> 10);
+		}
 		for (int t = 0; t < count; t++) {
 			byte[] pic = pictures.get(t);
 			for (int y = 0; y < th; y++) {
@@ -343,9 +361,14 @@ public final class ChunkMap {
 		Files.write(dir.resolve("flip-collision.bin"), r.flip);
 	}
 
+	private static String flipName(int f) {
+		return ((f & 1) != 0 ? "/xflip" : "") + ((f & 2) != 0 ? "/yflip" : "");
+	}
+
 	/**
-	 * The animated blocks, declared {@code <block>[/high][/opaque]}, comma or
-	 * space separated, in tile order.
+	 * The animated blocks, declared {@code <block>[/xflip][/yflip][/high][/opaque]},
+	 * comma or space separated, in tile order ; a block used flipped is
+	 * declared once for each flip it is used with (its frames are drawn so).
 	 */
 	public static LinkedHashMap<Integer, Animated> parseAnimated(String spec) throws Exception {
 		LinkedHashMap<Integer, Animated> out = new LinkedHashMap<Integer, Animated>();
@@ -355,19 +378,27 @@ public final class ChunkMap {
 		for (String item : spec.trim().split("[,\\s]+")) {
 			String[] parts = item.split("/");
 			boolean high = false, full = false;
+			int f = 0;
 			for (int i = 1; i < parts.length; i++) {
-				if ("high".equals(parts[i])) {
+				if ("xflip".equals(parts[i])) {
+					f |= 1;
+				} else if ("yflip".equals(parts[i])) {
+					f |= 2;
+				} else if ("high".equals(parts[i])) {
 					high = true;
 				} else if ("opaque".equals(parts[i])) {
 					full = true;
 				} else {
 					throw new Exception("chunkmap : animated block '" + item + "' : unknown flag '" + parts[i]
-							+ "' (high, opaque)");
+							+ "' (xflip, yflip, high, opaque)");
 				}
 			}
 			int b = Integer.decode(parts[0]);
-			if (out.put(b, new Animated(high, full)) != null) {
-				throw new Exception("chunkmap : animated block " + b + " declared twice");
+			if (b < 0 || b > 0x3FF) {
+				throw new Exception("chunkmap : animated block " + b + " past the mapping word's 10 bits");
+			}
+			if (out.put(b | f << 10, new Animated(high, full)) != null) {
+				throw new Exception("chunkmap : animated block " + b + flipName(f) + " declared twice");
 			}
 		}
 		return out;

@@ -91,9 +91,33 @@ class ChunkMapTest {
 		// 0 empty, 1 block 1's picture, 2 the same picture with block 2's collision ;
 		// the odd line differing does not count in half-line
 		assertEquals(3, r.tileCount);
-		assertArrayEquals(new byte[] { 0, 0x10, 0x20 }, r.primary);
-		assertArrayEquals(new byte[] { 0, 0x11, 0x21 }, r.secondary);
-		assertArrayEquals(new byte[] { 0, 1, 0 }, r.flip);
+		// then the animated block's (block 5 : past the indexes, none)
+		assertArrayEquals(new byte[] { 0, 0x10, 0x20, 0 }, r.primary);
+		assertArrayEquals(new byte[] { 0, 0x11, 0x21, 0 }, r.secondary);
+		assertArrayEquals(new byte[] { 0, 1, 0, 0 }, r.flip);
+	}
+
+	@Test
+	void givesAnAnimatedBlockItsCollision() throws Exception {
+		// block 1 drawn at run time : its collision and its flip, its
+		// cells the animated tile (the tileset keeps block 2's picture)
+		ChunkMap.Result r = ChunkMap.convert(sheet(), mappings(), blocks(), new byte[] { 0, 0x10, 0x20 },
+				new byte[] { 0, 0x11, 0x21 }, layouts(), true, true, ChunkMap.parseAnimated("5 1/xflip/opaque"));
+		assertEquals(2, r.tileCount);
+		assertArrayEquals(new byte[] { 0, 0x20, 0, 0x10 }, r.primary);
+		assertArrayEquals(new byte[] { 0, 0x21, 0, 0x11 }, r.secondary);
+		assertArrayEquals(new byte[] { 0, 0, 0, 1 }, r.flip);
+		int[] e = r.chunks.get(1);
+		assertEquals(0xC << 11 | 0x400 | 3, e[0]);
+		assertEquals(0x400 | 1, e[2]);
+		assertEquals(2, e[5]);
+	}
+
+	@Test
+	void refusesAnAnimatedBlockUsedWithAnotherFlip() {
+		Exception e = assertThrows(Exception.class, () -> ChunkMap.convert(sheet(), mappings(), blocks(),
+				new byte[3], new byte[3], layouts(), true, true, ChunkMap.parseAnimated("5,1")));
+		assertTrue(e.getMessage().contains("animated block 1/xflip"), e.getMessage());
 	}
 
 	@Test
@@ -154,6 +178,13 @@ class ChunkMapTest {
 	@Test
 	void refusesAnUnknownAnimatedFlag() {
 		assertThrows(Exception.class, () -> ChunkMap.parseAnimated("761/hi"));
+	}
+
+	@Test
+	void keysTheAnimatedBlocksByFlip() throws Exception {
+		assertEquals(List.of(761, 761 | 1 << 10, 762 | 3 << 10),
+				new ArrayList<Integer>(ChunkMap.parseAnimated("761, 761/xflip 762/yflip/xflip").keySet()));
+		assertThrows(Exception.class, () -> ChunkMap.parseAnimated("761/xflip,761/xflip/high"));
 	}
 
 	@Test
