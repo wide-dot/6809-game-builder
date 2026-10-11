@@ -551,7 +551,15 @@ DrawBufferedTile
         anda  #%00001111
         bne   @skip
         decb
-@skip   stb   <DBT_lcpt
+@skip
+ IFDEF TilemapBuffer.SKIP_ROWS
+        ; V2-DEVIATION (11/10/2026) : the view's last rows the game handles
+        ; itself (DBT_skiprows, fewer than the rows : a plane drawn over them
+        ; hides their low priority tiles ; it queues their high priority ones,
+        ; from DBT_row, DBT_rowy and DBT_hiptr as this loop leaves them)
+        subb  DBT_skiprows
+ ENDC
+        stb   <DBT_lcpt
 
         ; compute top left tile position on screen
         ; position is rounder to 2 px horizontally beacuse of 2px per byte
@@ -696,6 +704,10 @@ DBT_sys equ   *-2
 DBT_high
         pshs  b,x,y                                   ; page, cell, screen address
         bra   DBT_next
+
+ IFDEF TilemapBuffer.SKIP_ROWS
+DBT_skiprows fcb 0                                    ; set by the game each frame
+ ENDC
 
  IFNDEF TilemapBuffer.OPAQUE
 DBT_empty

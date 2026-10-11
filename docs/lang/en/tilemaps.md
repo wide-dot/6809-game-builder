@@ -356,6 +356,17 @@ word per cell — priority (bit 15), solidity (11-14), the opaque bit (10,
 define `TilemapBuffer.OPAQUE`), the tile index — and a page/address index
 of compiled tiles.
 
+`TilemapBuffer.SKIP_ROWS` (opt-in) lets a game take over the view's last
+rows for a frame : it writes `DBT_skiprows` (fewer than the view's rows)
+before `DrawBufferedTile`, which then draws the rows above alone. The game
+handles the others itself, typically under a plane it draws over the low
+priority tiles (a Mega Drive plane B high priority layer) : their low
+priority cells hidden, it pushes their high priority cells on the queue
+`DrawHighPriorityBufferedTile` pops, from `DBT_row`, `DBT_rowy` and
+`DBT_hiptr` as the loop leaves them, then puts `DBT_skiprows` back to 0.
+Cost when unused : none (the define off) ; when on, 4 bytes and 5 cycles a
+frame.
+
 `<chunkmap>` builds those from the source level. Drawing the chunks is the
 game's adaptation of its assets (its palette, its resolution : a script of
 the game writes one picture per chunk, the block flips applied) ; the
