@@ -452,6 +452,15 @@ background-erase mode has the same define, `DrawSprites.HALFLINE` : its
 `DRS_XYToAddress` rounds the row down to even (Sonic 2's half-line special
 stage, whose sprites and object layers all go through it).
 
+`BuildSprites.EVEN_X` floors a playfield sprite's x (and a multi-sprite's
+children's) to an even pixel before anything else, for a game whose camera
+moves by even steps (its tilemap drawn by 2 pixels) and whose sprites have
+no shifted variant. Without it, an odd x - camera falls back to the
+unshifted image rounded by the image's centre parity, which can be the
+other way than the camera's rounding : a sprite the camera follows, 1 pixel
+from it one loop in two, is drawn 2 pixels apart (Sonic 2's main character
+shaking as he runs). Cost : 2 bytes and 2 cycles a sprite.
+
 ### Backgrounds
 
 A `bdraw` sprite saves what it covers before drawing, into cells allocated by

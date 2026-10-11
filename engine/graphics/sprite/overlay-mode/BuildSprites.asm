@@ -185,6 +185,15 @@ BuildSprites
         anda  #render_playfieldcoord_mask
         beq   @a                            ; branch if position is already expressed in screen coordinate
         ldd   x_pos,u 
+ IFDEF BuildSprites.EVEN_X
+        ; V2-DEVIATION (11/10/2026) : the playfield x floored to an even pixel,
+        ; as the game's camera is (even) : a sprite following the camera keeps
+        ; its place on screen. Without a shifted variant, an odd x - camera
+        ; was rounded by the image's centre parity, the other way than the
+        ; camera's : 1 pixel apart became 2 (Sonic 2's main character shaking
+        ; when the camera follows him, its steps even, his not).
+        andb  #$FE
+ ENDC
         std   <_x_pos
         subd  <glb_camera_x_pos
         bra   @b
@@ -422,6 +431,9 @@ BuildSprites
         ldd   2,y
         std   _y_pos
         ldd   ,y
+ IFDEF BuildSprites.EVEN_X
+        andb  #$FE                          ; V2-DEVIATION : even, as the single path's
+ ENDC
         std   _x_pos
         jsr   @processMulti
 @nextchild
