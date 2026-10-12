@@ -106,7 +106,7 @@ engine/palette/color/Pal_black.asm,engine/palette/color/Pal_black.asm,ec0fdcdcde
 engine/math/CalcSine.asm,engine/math/CalcSine.asm,f873642ee58b8c6d294d174a68d1124392daf3ae,2026-10-05,
 engine/math/Mul9x16.asm,engine/math/Mul9x16.asm,02d661343b8f765bcac4356c4dfcfaab7c77ff53,2026-10-05,setdp neutralized (obj target)
 engine/math/sinewave.bin,engine/math/sinewave.bin,f873642ee58b8c6d294d174a68d1124392daf3ae,2026-10-05,
-engine/object-management/MarkObjGone.asm,engine/object-management/MarkObjGone.asm,eefb8847a88cc109d9829a6446e671eaac749ddd,2026-10-05,
+engine/object-management/MarkObjGone.asm,engine/object-management/MarkObjGone.asm,eefb8847a88cc109d9829a6446e671eaac749ddd,2026-10-05,respawn table $80 entries read unsigned (abx)
 engine/graphics/font/DrawText/DrawText.asm,engine/graphics/font/DrawText/DrawText.asm,e2ad0dc1d9dea9d533ff4faab272afe83c53b679,2026-10-06,
 engine/graphics/font/DrawText/3x5_shaded/asm/font_upper.asm,engine/graphics/font/DrawText/3x5_shaded/asm/font_upper.asm,e2ad0dc1d9dea9d533ff4faab272afe83c53b679,2026-10-06,
 engine/graphics/font/DrawText/3x5_shaded/asm/fnt_4x6_shd_00_DN0.asm,engine/graphics/font/DrawText/3x5_shaded/asm/fnt_4x6_shd_00_DN0.asm,e2ad0dc1d9dea9d533ff4faab272afe83c53b679,2026-10-06,

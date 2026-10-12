@@ -9,8 +9,11 @@
 
 Object_Respawn_Table
 Obj_respawn_index    fdb    0      ; respawn table indices of the next objects when moving left or right for the first player
-Obj_respawn_data     fill   0,$7C  ; Maximum possible number of respawn entries that S2 can handle; for stock S2, $80 is enough
-Obj_respawn_data_End               ; 2 byte index + $7C is max. reachable pair value with 8bit signed adressing mode
+; V2-DEVIATION: $80 entries (Casino Night 2's layout has 127 respawn entries),
+; read through abx (unsigned) : v1's b,x (8-bit signed) reached $7C at most,
+; past it the writes landed below the table, in the engine's code
+Obj_respawn_data     fill   0,$80  ; Maximum possible number of respawn entries that S2 can handle; for stock S2, $80 is enough
+Obj_respawn_data_End
 
                                                       *; ---------------------------------------------------------------------------
                                                       *; Routines to mark an enemy/monitor/ring/platform as destroyed
@@ -36,10 +39,10 @@ MarkObjGone2
         ;                                             *        moveq   #0,d0
         ldb   respawn_index,u                         *        move.b  respawn_index(a0),d0
         beq   >                                       *        beq.s   +
-        addb  #2
-        lda   b,x
+        abx
+        lda   2,x
         anda  #%01111111
-        sta   b,x                                     *        bclr    #7,2(a2,d0.w)
+        sta   2,x                                     *        bclr    #7,2(a2,d0.w)
 !                                                     *+
         jmp   DeleteObject                            *        bra.w   DeleteObject
                                                       *; ===========================================================================
@@ -83,10 +86,10 @@ MarkObjGone3                                          *MarkObjGone3:
         ;                                             *        moveq   #0,d0
         ldb   respawn_index,u                         *        move.b  respawn_index(a0),d0
         beq   >                                       *        beq.s   +
-        addb  #2
-        lda   b,x
+        abx
+        lda   2,x
         anda  #%01111111
-        sta   b,x                                     *        bclr    #7,2(a2,d0.w)
+        sta   2,x                                     *        bclr    #7,2(a2,d0.w)
 !                                                     *+
         jmp   DeleteObject                            *        bra.w   DeleteObject
                                                       *; ===========================================================================
