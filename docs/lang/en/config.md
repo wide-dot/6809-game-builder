@@ -173,3 +173,14 @@ editable on the page — their defaults are guesses to calibrate on the real
 drive, and the totals follow. `seek-report-<target>.txt` is the same walk as
 text, at the defaults, for diffs. The model is
 `report/HeadPath.java` ; the page's script mirrors it.
+
+**Several disks (12/10/2026).** The walk is one chain over all the disks of
+the target : a read goes to the disk that holds it (a directory, a table, a
+file's data or link data is written on one disk), each disk keeps its own
+head, and a read on another disk than the previous one is a *disk change*
+— counted (⇄ on the page, a line in the text report) but not costed, being
+the player's time at the prompt on a single drive. The page draws the disk
+the selected step reads most, or the one chosen ; the steps' table says on
+which disk each read is. The *RAM* view has a disk selector too : it lists
+the states that read from that disk, and each state, each scene, names the
+disks it comes from.

@@ -61,7 +61,7 @@ class HeadPathTest {
 
 	private static HeadPath.Model model(HeadPath.Disk disk, String scene, int dir, String... files) {
 		HeadPath.Model m = new HeadPath.Model();
-		m.disks.add(disk);
+		m.addDisk(disk);
 		m.scenes.put(scene, new HeadPath.SceneLoad(scene, dir, new ArrayList<String>(Arrays.asList(files))));
 		m.chain.add(new Compositions.Composition(scene, Arrays.asList(scene), ""));
 		return m;
@@ -78,7 +78,7 @@ class HeadPathTest {
 		HeadPath.Params p = new HeadPath.Params();
 		p.overheadMs = 1;
 		HeadPath.State st = new HeadPath.State();
-		HeadPath.Result r = HeadPath.simulate(m, disk, new ArrayList<String>(), Arrays.asList("s"), st, p);
+		HeadPath.Result r = HeadPath.simulate(m, new ArrayList<String>(), Arrays.asList("s"), st, p);
 		assertEquals(3, r.steps.size());
 		HeadPath.Step data = r.steps.get(2);
 		assertEquals(16, data.sectors);
@@ -103,7 +103,7 @@ class HeadPathTest {
 		element(disk, "a", "data", 0, 8, 0, 3, false, true);     // ends inside sector 2
 		element(disk, "b", "data", 0, 8, 2, 2, true, false);     // starts inside that sector
 		HeadPath.Model m = model(disk, "s", 0, "a", "b");
-		HeadPath.Result r = HeadPath.simulate(m, disk, new ArrayList<String>(), Arrays.asList("s"),
+		HeadPath.Result r = HeadPath.simulate(m, new ArrayList<String>(), Arrays.asList("s"),
 				new HeadPath.State(), new HeadPath.Params());
 		HeadPath.Step b = r.steps.get(3);
 		assertEquals(1, b.cached);
@@ -119,10 +119,10 @@ class HeadPathTest {
 		element(disk2, "a", "data", 0, 8, 0, 3, false, true);
 		element(disk2, "b", "data", 0, 8, 2, 2, true, false);
 		HeadPath.Model m2 = new HeadPath.Model();
-		m2.disks.add(disk2);
+		m2.addDisk(disk2);
 		m2.scenes.put("s", new HeadPath.SceneLoad("s", 0, Arrays.asList("a")));
 		m2.scenes.put("t", new HeadPath.SceneLoad("t", 1, Arrays.asList("b")));
-		HeadPath.Result r2 = HeadPath.simulate(m2, disk2, new ArrayList<String>(),
+		HeadPath.Result r2 = HeadPath.simulate(m2, new ArrayList<String>(),
 				Arrays.asList("s", "t"), new HeadPath.State(), new HeadPath.Params());
 		// dir 0, s, a, dir 1, t, b
 		assertEquals(6, r2.steps.size());
@@ -140,28 +140,66 @@ class HeadPathTest {
 		element(disk, "f", "data", 0, 8, 14, 4, false, false);   // 2 on face 0, 2 on face 1
 		element(disk, "g", "data", 1, 9, 0, 2, false, false);
 		HeadPath.Model m = new HeadPath.Model();
-		m.disks.add(disk);
+		m.addDisk(disk);
 		m.scenes.put("s", new HeadPath.SceneLoad("s", 0, Arrays.asList("f")));
 		m.scenes.put("t", new HeadPath.SceneLoad("t", 0, Arrays.asList("g")));
 		HeadPath.State st = new HeadPath.State();
 		HeadPath.Params p = new HeadPath.Params();
-		HeadPath.Result r = HeadPath.simulate(m, disk, new ArrayList<String>(), Arrays.asList("s"), st, p);
+		HeadPath.Result r = HeadPath.simulate(m, new ArrayList<String>(), Arrays.asList("s"), st, p);
 		HeadPath.Step f = r.steps.get(2);
 		assertEquals(1, f.seeks, "track 0 -> 8 only : the face change costs nothing");
 		assertEquals(4, f.sectors);
 		// s -> t : s departs, its table is the cached one (no read) ; t arrives
-		HeadPath.Result r2 = HeadPath.simulate(m, disk, Arrays.asList("s"), Arrays.asList("t"), st, p);
+		HeadPath.Result r2 = HeadPath.simulate(m, Arrays.asList("s"), Arrays.asList("t"), st, p);
 		List<String> kinds = new ArrayList<String>();
 		for (HeadPath.Step s : r2.steps) {
 			kinds.add(s.kind + ":" + s.name);
 		}
 		assertEquals(Arrays.asList("table:t", "data:g"), kinds, "same directory, cached table");
 		// t -> s : t's table is cached now, s's is read again
-		HeadPath.Result r3 = HeadPath.simulate(m, disk, Arrays.asList("t"), Arrays.asList("s"), st, p);
+		HeadPath.Result r3 = HeadPath.simulate(m, Arrays.asList("t"), Arrays.asList("s"), st, p);
 		kinds.clear();
 		for (HeadPath.Step s : r3.steps) {
 			kinds.add(s.kind + ":" + s.name);
 		}
 		assertEquals(Arrays.asList("table:s", "data:f"), kinds);
+	}
+
+	@Test
+	@DisplayName("two disks : each read on the disk that holds it, each disk its own head, a disk change counted")
+	void twoDisks() {
+		HeadPath.Disk d0 = fd640();
+		element(d0, "directory 0", "dir", 0, 0, 0, 1, false, false);
+		element(d0, "s", "table", 0, 0, 1, 1, false, false);
+		element(d0, "f", "data", 0, 20, 0, 2, false, false);
+		HeadPath.Disk d1 = new HeadPath.Disk(new Occupancy.Instance("to8-disk2.fd", 655360, 2, 80, SECTORS, 256,
+				2, 4, 7, d0.instance.readOrder, d0.instance.slotOfNumber, d0.instance.skewByTrack));
+		element(d1, "directory 1", "dir", 0, 0, 0, 1, false, false);
+		element(d1, "t", "table", 0, 0, 1, 1, false, false);
+		element(d1, "g", "data", 0, 5, 0, 2, false, false);
+		HeadPath.Model m = new HeadPath.Model();
+		m.addDisk(d0);
+		m.addDisk(d1);
+		m.scenes.put("s", new HeadPath.SceneLoad("s", 0, Arrays.asList("f")));
+		m.scenes.put("t", new HeadPath.SceneLoad("t", 1, Arrays.asList("g")));
+		HeadPath.State st = new HeadPath.State();
+		HeadPath.Params p = new HeadPath.Params();
+		HeadPath.Result r = HeadPath.simulate(m, new ArrayList<String>(), Arrays.asList("s"), st, p);
+		assertEquals(0, r.diskChanges);
+		assertEquals(0, r.elsewhere);
+		assertEquals(Integer.valueOf(20), st.heads.get("to8.fd"));
+		// s -> s + t : t's directory, table and data are on the second disk,
+		// whose head is still on track 0 ; nothing is "elsewhere"
+		HeadPath.Result r2 = HeadPath.simulate(m, Arrays.asList("s"), Arrays.asList("s", "t"), st, p);
+		assertEquals(0, r2.elsewhere);
+		assertEquals(1, r2.diskChanges, "the first read on the second disk");
+		assertTrue(r2.steps.get(0).diskChange);
+		assertEquals("to8-disk2.fd", r2.steps.get(0).disk);
+		HeadPath.Step g = r2.steps.get(2);
+		assertEquals("g", g.name);
+		assertEquals(1, g.seeks);
+		assertEquals(5, g.tracksTravelled, "from the second disk's own head, track 0, not the first's 20");
+		assertEquals(Integer.valueOf(20), st.heads.get("to8.fd"));
+		assertEquals(Integer.valueOf(5), st.heads.get("to8-disk2.fd"));
 	}
 }
