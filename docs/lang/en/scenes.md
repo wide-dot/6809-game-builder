@@ -212,7 +212,11 @@ count as occupants : they are exactly the content an arena's zone can grow
 into without anyone noticing.
 Space is not wasted for it : two enemies that never share a stage are
 never in memory together, so the packer may give them the **same**
-address (alternatives). When no address satisfies every composition, the
+address (alternatives). A zone fills from its tail — after the last file
+co-resident with the arena's — and a file no tail holds then takes the
+lowest free run under a tail, room only files never in memory with it
+occupy (12/10/2026 : Sonic 2's fifth zone stopped on a full arena with
+14 KB of another zone's objects under its tail). When no address satisfies every composition, the
 build fails with *does not fit* — the budget is raised at build time,
 never discovered on the machine.
 

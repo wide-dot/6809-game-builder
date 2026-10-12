@@ -56,6 +56,16 @@ import lombok.extern.slf4j.Slf4j;
  * first is what reaches the theoretical page count instead of wasting one
  * page in three (measured on r-type : 8 pages against 12) ; ties keep
  * declaration order, so a build stays reproducible.
+ *
+ * <p><b>Holes, when no tail holds a file</b> (12/10/2026). A zone's tail
+ * starts after the highest conflicting content, so the room under it — what
+ * another arena's files hold in states this file is never part of — was
+ * lost : Sonic 2's Aquatic Ruin 2 stopped on a full arena with 14 KB free in
+ * one of its pages, under Chemical Plant's objects. A file no tail holds,
+ * and that cannot be cut, now takes the lowest free run of a zone below its
+ * tail : free of every file of its own arena and of every file a state holds
+ * with it. Only where the build used to stop : every packing that fitted
+ * stays the same.
  */
 @Slf4j
 public final class ArenaPacker {
@@ -353,9 +363,11 @@ public final class ArenaPacker {
 		// how much room each zone has left, in declaration order — a zone
 		// starts after whatever CO-RESIDENT content already sits at its head
 		int[] free = new int[arena.zones.size()];
+		int[] tailStart = new int[free.length];
 		for (int i = 0; i < free.length; i++) {
 			Regions.Zone z = arena.zones.get(i);
-			free[i] = z.end() - start(z, files, statesOf, taken);
+			tailStart[i] = start(z, files, statesOf, taken);
+			free[i] = z.end() - tailStart[i];
 		}
 
 		// a collection's size is the sum of its measured elements ; anything
@@ -446,6 +458,11 @@ public final class ArenaPacker {
 				continue;
 			}
 			if (d == null) {
+				// no tail holds it : a hole under a tail, free of everything
+				// this file may be in RAM with
+				if (hole(arena, f, need, files, tailStart, statesOf, taken, ctx)) {
+					continue;
+				}
 				int biggest = 0;
 				for (int r : free) {
 					biggest = Math.max(biggest, r);
@@ -457,6 +474,62 @@ public final class ArenaPacker {
 			// cut if it cannot : the fallback the author asked for
 			cut(arena, f, d, free, ctx, taken);
 		}
+	}
+
+	/**
+	 * Place a file whole in the lowest free run under a zone's tail : the
+	 * bytes no file of this arena holds and no file a state holds with this
+	 * one. False when no run is long enough.
+	 */
+	static boolean hole(Regions.Region arena, String f, int need, List<String> arenaFiles,
+			int[] tailStart, Map<String, Set<String>> statesOf, List<Placed> taken,
+			BuildContext ctx) {
+		Set<String> ours = statesOf.get(f);
+		Set<String> mine = new java.util.HashSet<String>(arenaFiles);
+		for (int i = 0; i < tailStart.length; i++) {
+			Regions.Zone z = arena.zones.get(i);
+			// the busy ranges of this zone, below its tail
+			List<int[]> busy = new ArrayList<int[]>();
+			for (Placed p : taken) {
+				if (p.page != z.page || p.address + p.size <= z.address || p.address >= tailStart[i]) {
+					continue;
+				}
+				if (p.slice != null && z.slice != null && !p.slice.equals(z.slice)) {
+					continue;
+				}
+				boolean conflicts = mine.contains(p.file);
+				if (!conflicts && ours != null) {
+					Set<String> theirs = statesOf.get(p.file);
+					if (theirs != null) {
+						for (String state : ours) {
+							if (theirs.contains(state)) {
+								conflicts = true;
+								break;
+							}
+						}
+					}
+				}
+				if (conflicts) {
+					busy.add(new int[] { p.address, p.address + p.size });
+				}
+			}
+			busy.sort(Comparator.comparingInt((int[] b) -> b[0]));
+			int at = z.address;
+			for (int[] b : busy) {
+				if (b[0] - at >= need) {
+					break;
+				}
+				at = Math.max(at, b[1]);
+			}
+			if (tailStart[i] - at >= need) {
+				ctx.regions.placeFile(f, z.page, at);
+				taken.add(new Placed(f, z.page, at, need, z.slice));
+				log.info("arena {} : {} -> page {} ${}, in a hole under the zone's tail",
+						arena.name, f, z.page, Integer.toHexString(at).toUpperCase());
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
