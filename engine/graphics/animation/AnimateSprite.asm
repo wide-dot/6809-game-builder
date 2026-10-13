@@ -26,8 +26,8 @@ AnimateSprite                               *AnimateSprite:
         bpl   @a                       ; branch if anim is an address of anim
         ldx   #Ani_Asd_Index           ; negative means anim,u is a signed 8 bit offset for a LUT
         ; ldb   id,u                   ; already loaded
-        aslb
-        abx
+        abx                            ; V2-DEVIATION : ObjID*2 by two ABX, unsigned
+        abx                            ; (aslb overflowed past 127 objects : sonic-2, 13/10/2026)
         ldx   [,x]                     ; load Anim LUT (first entry in Asd LUT)
         ldb   anim+1,u                 ; load offset
         abx                            ; apply offset
