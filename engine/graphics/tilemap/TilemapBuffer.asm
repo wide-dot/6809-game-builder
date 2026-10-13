@@ -759,13 +759,19 @@ tile_buffer
 
  IFDEF TMB_HPRIO_TILES
 ; V2-DEVIATION: the game may keep the queue out of its unit too, at a fixed
-; address it reserves and clears (the zeros v1's fill loaded)
+; address it reserves and clears (the zeros v1's fill loaded) ; its size the
+; queue's bound (13/10/2026) : a 5 byte entry (PSHS b,x,y) a view cell, every
+; one high priority at worst, the end marker's entry pushed first, and under
+; S an IRQ's 12 bytes over a call's 2 (the IRQ switches S at once : its
+; hardware push alone lands here)
 tmb_hprio_tiles equ TMB_HPRIO_TILES
+tmb_hprio_size  equ (tmb_vp_h_tiles*tmb_vp_v_tiles+1)*5+12+2
  ELSE
 tmb_hprio_tiles
         fill  0,tmb_vp_h_tiles*tmb_vp_v_tiles*7 ; in case all tiles are in high priority ... that's crazy ... you can lower that if you know what you are doing
         fcb   0 ; end marker
+tmb_hprio_size  equ tmb_vp_h_tiles*tmb_vp_v_tiles*7
  ENDC
 ; the queue grows down from its top, 5 bytes a tile : 990 at most, the
 ; room below for an IRQ (12 bytes) and a call (2) is ample
-tmb_hprio_top equ tmb_hprio_tiles+tmb_vp_h_tiles*tmb_vp_v_tiles*7
+tmb_hprio_top equ tmb_hprio_tiles+tmb_hprio_size
