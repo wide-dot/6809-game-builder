@@ -41,6 +41,20 @@ public class BacklinesPlugin {
 		int beam = Attribute.getInteger(node, ctx, "beam", 60);
 		Integer maxsize = Attribute.getIntegerOpt(node, ctx, "maxsize");
 		String overflow = Attribute.getString(node, ctx, "overflow", "error");
+		// the animated part's frames (BackLines : a routine each, after the picture)
+		java.util.List<BufferedImage> frames = new java.util.ArrayList<BufferedImage>();
+		String framesAttr = Attribute.getString(node, ctx, "frames", "");
+		boolean picture = Attribute.getBoolean(node, ctx, "picture", true);
+		for (String f : framesAttr.split(",")) {
+			if (f.isBlank()) {
+				continue;
+			}
+			BufferedImage fi = ImageIO.read(Paths.get(ctx.path, f.trim()).toFile());
+			if (fi == null) {
+				throw new Exception(ctx.sources.locate(node) + ": <backlines> cannot read the frame " + f.trim());
+			}
+			frames.add(fi);
+		}
 		if (!"error".equals(overflow) && !"trim".equals(overflow)) {
 			throw new Exception(ctx.sources.locate(node) + ": <backlines> overflow=\"" + overflow
 					+ "\" : error or trim");
@@ -52,7 +66,7 @@ public class BacklinesPlugin {
 		}
 		BackLines.Result r;
 		try {
-			r = BackLines.compile(im, label, halfline, linebytes, planedistance, beam);
+			r = BackLines.compile(im, label, halfline, linebytes, planedistance, beam, frames, picture);
 		} catch (Exception e) {
 			throw new Exception(ctx.sources.locate(node) + ": " + e.getMessage(), e);
 		}
@@ -67,7 +81,7 @@ public class BacklinesPlugin {
 			int lines = Math.max(1, (int) ((long) r.lines * maxsize / r.size));
 			while (true) {
 				BufferedImage cut = im.getSubimage(0, 0, im.getWidth(), Math.min(im.getHeight(), lines * step));
-				r = BackLines.compile(copy(cut), label, halfline, linebytes, planedistance, beam);
+				r = BackLines.compile(copy(cut), label, halfline, linebytes, planedistance, beam, frames, picture);
 				if (r.size <= maxsize || lines == 1) {
 					break;
 				}
@@ -86,8 +100,8 @@ public class BacklinesPlugin {
 			Files.createDirectories(path.getParent());
 		}
 		Files.writeString(path, r.source);
-		log.info("backlines {} : {} drawn lines of {} bytes a plane, {} bytes of code, {} cycles for every line",
-				label, r.lines, r.bytes, r.size, r.cycles);
+		log.info("backlines {} : {} drawn lines of {} bytes a plane, {} bytes of code{}, {} cycles for every line",
+				label, r.lines, r.bytes, r.size, frames.isEmpty() ? "" : " (" + frames.size() + " frames included)", r.cycles);
 		return path.toFile();
 	}
 }

@@ -362,7 +362,9 @@ public final class Handlers {
 			.opt("planedistance", INT, "the second plane, bytes below the first, 8192 if omitted")
 			.opt("beam", INT, "the search's width (states kept at each byte), 60 if omitted")
 			.opt("maxsize", INT, "the routine's bytes at most")
-			.opt("overflow", STRING, "past maxsize : error (default, the build stops) or trim (the picture's bottom lines dropped until the routine fits, a warning)"));
+			.opt("overflow", STRING, "past maxsize : error (default, the build stops) or trim (the picture's bottom lines dropped until the routine fits, a warning)")
+			.opt("frames", STRING, "an animated part : comma separated pictures of the same size, transparent where the picture does not change ; each a routine <label>_F<k>_Draw, <label>_Draw's inputs, called after it, writing the bytes that hold its pixels")
+			.opt("picture", BOOL, "false : the frames alone, the picture's routine in another unit (a page each). Default true"));
 		spec(element("tilemap").doc("generate the page/address table of a tile index map, baked in a .static section")
 			.req("map", STRING, "tile index .bin (leanscroll output), big endian, column major")
 			.req("label", STRING, "label of the generated table")
