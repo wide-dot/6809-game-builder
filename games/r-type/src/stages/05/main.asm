@@ -50,6 +50,15 @@ slither.Render    EXTERNAL
 ; sur son script de chapelet. Deux identifiants, un seul point d'entree —
 ; seules ses images changent (celles du corps ou celles de la queue).
 slither.Corpse    EXTERNAL
+; Le BOSS, dans son propre direntry (stage5.bellmite) : le maitre et son
+; renderer groupe.
+bellmite.Object   EXTERNAL
+bellmite.Render   EXTERNAL
+; Ses 38 boites de collision vivent ICI, en RAM residente : Collision_Do les
+; parcourt avec une autre page montee (les boites d'un manager ne peuvent
+; pas vivre dans sa page). La zone residente du stage 5 est prise par le
+; serpent ; la region des stages a la place.
+bellmite.boxes    EXPORT
 
 ; La table des scripts d'animation, commune a tous les stages et dans sa
 ; propre page : moveByScript la lit par page montee.
@@ -267,7 +276,7 @@ main.endstage.rallyY     fdb endstage.RALLY_Y
 ; La duree armee par bossDefeated et la voie du fondu, publiees par LE
 ; STAGE (endlevel.const.asm) : le compte du Dobkeratops, le fondu par
 ; tramage — les valeurs d'avant le 08/09/2026.
-main.endstage.duration   fdb endstage.DURATION
+main.endstage.duration   fdb endstage.DURATION_LATCHED ; Bellmite leve le drapeau a l'heure arcade
 main.endstage.fadeMode   fcb endstage.FADE_PIXEL
 
 stage.endTick
@@ -338,7 +347,16 @@ stage.setup
         ; l'ouverture ET au rechargement de checkpoint — stage.setup couvre
         ; les deux, comme au stage 1.
         _Obj_RunB ObjID_endstage,#endstage.INIT
+        ; CE STAGE A SON BOSS : Bellmite leve lui-meme le drapeau de fin
+        ; (40:B42F, 128 trames apres sa mort ou sa sortie), jamais le compteur
+        ; de substitution.
+        lda   #1
+        sta   globals.realBoss
         rts
+
+; Les boites de Bellmite : le noyau (0) puis ses 37 satellites.
+bellmite.boxes
+        fill  0,38*9
 
 ; Fin du stage 5 : on enchaîne sur le stage 6. La campagne remonte
 ; jusqu'au stage 8, qui rend la main au title.

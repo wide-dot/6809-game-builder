@@ -51,6 +51,8 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage5.cast.page ; ObjID_slither_tail_corpse
         fcb   map.RAM_OVER_CART+stage5.cast.page ; ObjID_slither_head_hit
         fcb   map.RAM_OVER_CART+stage5.cast.page ; ObjID_slither_tail_hit
+        fcb   map.RAM_OVER_CART+stage5.bellmite.page ; ObjID_bellmite
+        fcb   map.RAM_OVER_CART+stage5.bellmite.page ; ObjID_bellmite_render
 Obj_Index_Page.end
 
 Obj_Index_Address
@@ -106,6 +108,8 @@ Obj_Index_Address
         fdb   slither.Corpse ; ObjID_slither_tail_corpse
         fdb   slither.Segment ; ObjID_slither_head_hit
         fdb   slither.Segment ; ObjID_slither_tail_hit
+        fdb   bellmite.Object ; ObjID_bellmite
+        fdb   bellmite.Render ; ObjID_bellmite_render
 Obj_Index_Address.end
 
 Ani_Page_Index
@@ -155,6 +159,8 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage5.cast.page ; ObjID_slither_tail_corpse
         fcb   map.RAM_OVER_CART+stage5.cast.page ; ObjID_slither_head_hit
         fcb   map.RAM_OVER_CART+stage5.cast.page ; ObjID_slither_tail_hit
+        fcb   map.RAM_OVER_CART+stage5.bellmite.page ; ObjID_bellmite
+        fcb   map.RAM_OVER_CART+stage5.bellmite.page ; ObjID_bellmite_render
 Ani_Page_Index.end
 
 Ani_Asd_Index
@@ -204,6 +210,8 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_slither_tail_corpse
         fdb   Ani_Asd_none ; ObjID_slither_head_hit
         fdb   Ani_Asd_none ; ObjID_slither_tail_hit
+        fdb   Ani_Asd_none ; ObjID_bellmite
+        fdb   Ani_Asd_none ; ObjID_bellmite_render
 Ani_Asd_Index.end
 
 Ani_Asd_none
@@ -256,6 +264,8 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage5.cast.imgTail.page ; ObjID_slither_tail_corpse
         fcb   map.RAM_OVER_CART+stage5.cast.imgHeadHit.page ; ObjID_slither_head_hit
         fcb   map.RAM_OVER_CART+stage5.cast.imgTailHit.page ; ObjID_slither_tail_hit
+        fcb   map.RAM_OVER_CART+stage5.bellmite.page ; ObjID_bellmite
+        fcb   map.RAM_OVER_CART+stage5.bellmite.page ; ObjID_bellmite_render
 Img_Page_Index.end
 
 * GARDE-FOU. Les cinq tables sont indexees par l'identifiant d'objet : le

@@ -195,6 +195,18 @@ sous-dossier ou `_shared/`.
   de page ou d'arène nouvelle se valide avec l'auteur avant d'écrire.
 
 ### 5. Valider
+
+> **Pour un boss (et tout ennemi à états), la validation est le banc trace
+> contre trace** — `doc/fidelite-arcade.md`, outil `tools/fidelity/`. Le port
+> calcule en REPÈRE ARCADE (positions 16.8, vitesses 8.8, tables recopiées
+> sans conversion, seul le dessin convertit), joue une trame arcade à la fois
+> dans l'ordre de la liste arcade, tient une copie privée de `random_ax` et de
+> son réensemencement des 512 trames, et expose quatre crochets nommés
+> (`<boss>.Seeded`, `<boss>.Spawned`, `<boss>.Tick`, `<boss>.Sample`). Le banc
+> rejoue alors le combat de MAME octet pour octet ; « identique » est le
+> critère d'acceptation, pas « ça ressemble ». Premier port : Bellmite
+> (`src/enemies/bellmite/obj.asm`), identique sur le combat complet et sur
+> une mise à mort injectée.
 - Build : `java -Dbasedir=<racine> -cp "../../repo/*"
   com.widedot.m6809.gamebuilder.MainCommand -f to8.config.xml` depuis
   `games/r-type/`.
