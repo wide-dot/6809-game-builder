@@ -387,8 +387,11 @@ element does the engine's half :
   `halfline` : the odd ones are never drawn, they come out empty), the
   same two collision indexes, the same flip (unless both indexes leave
   nothing to flip). Tile 0 is the empty one. `tiles.png` is a column of
-  tiles for a `<gfxcomp>` `<image grid="8x16">` collection ; `tiles.bin`
-  holds its ids in order, the map a `<tilemap>` turns into the page and
+  the tiles' pictures for a `<gfxcomp>` `<image grid="8x16">` collection,
+  each picture once : tiles of the same picture, their collision or flip
+  telling them apart, share one compiled routine (Hidden Palace 1 : 891
+  tiles, 848 pictures, 3.5 KB) ; tile 0 keeps its own. `tiles.bin` holds
+  each tile's picture, the map a `<tilemap>` turns into the page and
   address index the layer descriptor points at.
 - **Chunks** : a chunk's entries are the cells' words ; chunks with the
   same 64 words are one, renumbered in the order the acts use them, chunk
@@ -399,6 +402,20 @@ element does the engine's half :
   queue, so a flagged empty cell would end it early.
 - **Layouts** : `layout-<n>.bin`, each act's plane on the zone's chunks,
   128 bytes a row.
+- **More than 256 chunks** (`banks="3"` or `"4"`, 16/10/2026) : that many
+  banks of 128, `chunk_0.bin` to `chunk_<banks-1>.bin`, and the layouts a
+  big endian word a cell (rows of 256 bytes). The engine chooses at an act's
+  load, from the map descriptor's `layer_map_banks` (two : a byte a cell ;
+  more : a word) : `TilemapBuffer.SetCells` (A the banks, B the layout's
+  width, X the first bank's `[page][address]` record, the others following)
+  copies the records into `glb_map_bank_tbl`, sets `glb_map_stride` and
+  patches the cell's read in `LoadChunk` and the column's last shift in
+  `FeedTileBuffer` ; the descriptor's `layer_mul_ref` holds a row's bytes
+  (twice the width with words). A map of two banks runs the byte code as
+  before, no cycle more ; a word cell costs `LoadChunk` the bank's lookup
+  (some 40 cycles, once a chunk entering the view). The game's terrain
+  collision reads the layout too : Sonic 2 patches its `Find_Tile` the same
+  way.
 - **Collision** : `primary-collision.bin`, `secondary-collision.bin` and
   `flip-collision.bin`, a byte a tile, what the terrain collision reads
   through the tile index.
