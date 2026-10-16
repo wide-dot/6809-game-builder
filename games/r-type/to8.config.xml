@@ -5076,6 +5076,54 @@
                     </lwasm>
                 </file>
 
+                <!-- Le boss du stage 6 : l'essaim de Dops, porte en repere arcade
+                     (src/enemies/dop/obj.asm). Son maitre et son renderer groupe
+                     partagent cette page avec les images. -->
+                <file name="stage6.dopswarm" linkdata="DATA" arena="stage6.foes">
+                    <lwasm gensource="gen/enemies/stage6-dopswarm.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <asm filename="src/enemies/dop/dop.unit.asm"/>
+                        <gfxcomp file="stage6.dopswarm" gendir="gen/enemies/stage6-dopswarm"
+                                 gensource="gen/enemies/stage6-dopswarm/includes.asm"
+                                 genindex="gen/enemies/stage6-dopswarm/index.asm">
+                            <!-- Quatre poses par sens ; le clignotement de coup est UNE image
+                                 par sens (la pose 0 blanchie), l'idiome de flash du portage :
+                                 seize poses ne tiennent pas dans la page. -->
+                            <image name="dop_right_0" filename="src/enemies/dop/images/right/00.png" index="0">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dop_right_1" filename="src/enemies/dop/images/right/01.png" index="1">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dop_right_2" filename="src/enemies/dop/images/right/02.png" index="2">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dop_right_3" filename="src/enemies/dop/images/right/03.png" index="3">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dop_left_0" filename="src/enemies/dop/images/left/00.png" index="4">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dop_left_1" filename="src/enemies/dop/images/left/01.png" index="5">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dop_left_2" filename="src/enemies/dop/images/left/02.png" index="6">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dop_left_3" filename="src/enemies/dop/images/left/03.png" index="7">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dop_righthit" filename="src/enemies/dop/images/right-blink/00.png" index="8">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="dop_lefthit" filename="src/enemies/dop/images/left-blink/00.png" index="9">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <file name="stage6" linkdata="DATA" region="stage">
                     <lwasm gensource="gen/stages/06/stage06-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -5113,6 +5161,7 @@
                     <load name="stage6.tiles.odd"/>
                     <load name="stage6.maps"/>
                     <load name="stage6.wave"/>
+                    <load name="stage6.dopswarm"/>
                     <load name="stage6.collision"/>
                     <load name="stage6"/>
                 </scene>

@@ -42,6 +42,8 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
+        fcb   map.RAM_OVER_CART+stage6.dopswarm.page ; ObjID_dopswarm
+        fcb   map.RAM_OVER_CART+stage6.dopswarm.page ; ObjID_dopswarm_render
 Obj_Index_Page.end
 
 Obj_Index_Address
@@ -88,6 +90,8 @@ Obj_Index_Address
         fdb   stage.placeholder ; ObjID_checkpoint
         fdb   bossmusic.Object ; ObjID_bossmusic
         fdb   bink.Object ; ObjID_bink
+        fdb   dopswarm.Object ; ObjID_dopswarm
+        fdb   dopswarm.Render ; ObjID_dopswarm_render
 Obj_Index_Address.end
 
 Ani_Page_Index
@@ -128,6 +132,8 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
+        fcb   map.RAM_OVER_CART+stage6.dopswarm.page ; ObjID_dopswarm
+        fcb   map.RAM_OVER_CART+stage6.dopswarm.page ; ObjID_dopswarm_render
 Ani_Page_Index.end
 
 Ani_Asd_Index
@@ -168,6 +174,8 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_checkpoint
         fdb   Ani_Asd_none ; ObjID_bossmusic
         fdb   Ani_Asd_none ; ObjID_bink
+        fdb   Ani_Asd_none ; ObjID_dopswarm
+        fdb   Ani_Asd_none ; ObjID_dopswarm_render
 Ani_Asd_Index.end
 
 Ani_Asd_none
@@ -211,6 +219,8 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage.page ; ObjID_checkpoint
         fcb   map.RAM_OVER_CART+common.bossmusic.page ; ObjID_bossmusic
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
+        fcb   map.RAM_OVER_CART+stage6.dopswarm.page ; ObjID_dopswarm
+        fcb   map.RAM_OVER_CART+stage6.dopswarm.page ; ObjID_dopswarm_render
 Img_Page_Index.end
 
 * GARDE-FOU. Les cinq tables sont indexees par l'identifiant d'objet : le

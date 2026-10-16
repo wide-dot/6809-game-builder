@@ -119,6 +119,6 @@
 ;$13,$C4,ObjID_dop,$00,$2A
 ;$14,$98,ObjID_newt,$00,$17
 ;$14,$A0,ObjID_newt,$00,$10
-;$14,$F8,ObjID_34,$00,$00
+	fcb   $14,$F8,ObjID_dopswarm,$00,$00
 	fcb   $14,$FC,ObjID_bossmusic,$00,$00
 	fdb   $FFFF
