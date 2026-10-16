@@ -1011,24 +1011,25 @@ de sonde : lire les tampons en tête de boucle (ailleurs le tampon arrière
 est à moitié dessiné) et rendre la page data après lecture. Étude et
 mesures : [`etude-mscroll1-2026-10.md`](docs/lang/fr/etude-mscroll1-2026-10.md).
 
-## Rangement fichier par fichier : `<layout packing="file">` (15/10/2026)
+## Rangement fichier par fichier (15/10/2026, la règle depuis le 16/10)
 
-Par défaut (`arena`), une arène se range d'un bloc : chaque zone démarre
-après le plus haut contenu avec lequel UN de ses fichiers partage un état.
-Une arène dont les fichiers vivent dans plusieurs états laisse alors à
-personne la place que les autres états occupent (Hidden Palace 1 de
-sonic-2 : 32 Ko libres, 383 octets refusés). `packing="file"` range tous les
-fichiers de toutes les arènes en un seul tri, les plus partagés d'abord
-(nombre d'états qui les chargent) puis les plus gros, chacun dans le premier
-trou des zones de SON arène libre des fichiers avec
+Une arène rangée d'un bloc démarre chaque zone après le plus haut contenu
+avec lequel UN de ses fichiers partage un état : une arène dont les
+fichiers vivent dans plusieurs états laisse à personne la place que les
+autres états occupent (Hidden Palace 1 de sonic-2 : 32 Ko libres, 383
+octets refusés). Dès que le layout déclare ses `<composition>`, le packer
+range tous les fichiers de toutes les arènes en un seul tri, les plus
+partagés d'abord (nombre d'états qui les chargent) puis les plus gros,
+chacun dans le premier trou des zones de SON arène libre des fichiers avec
 lesquels IL partage un état ; une collection qu'aucun trou ne tient entière
-s'y découpe. L'ordre compte (16/10) : par taille seule, les fichiers
-communs à tous les états passaient après les gros fichiers d'un acte et
-trouaient les pages hautes de tous (plus grand bloc libre de sonic-2 :
-16 → 9 Ko) ; arène après arène, un gros fichier d'une arène rangée tard ne
-trouvait plus de place. Exige les `<composition>` ; le défaut ne change rien (corpus
-identique). Code : `ArenaPacker.packFiles`, tests `ArenaPackerFileTest`,
-manuel `scenes.md`.
+s'y découpe. L'ordre compte : par taille seule, les fichiers communs à tous
+les états passaient après les gros fichiers d'un acte et trouaient les
+pages hautes de tous (plus grand bloc libre de sonic-2 : 16 → 9 Ko) ;
+arène après arène, un gros fichier d'une arène rangée tard ne trouvait plus
+de place. Pas de réglage (décision auteur, 16/10) : r-type sort identique
+à l'octet, sans `<composition>` le rangement par arène reste (rien n'y dit
+qui peut partager des octets), la passe de découverte aussi. Code :
+`ArenaPacker.packFiles`, tests `ArenaPackerFileTest`, manuel `scenes.md`.
 
 ## Dettes / pièges connus
 

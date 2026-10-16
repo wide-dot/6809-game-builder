@@ -2,7 +2,6 @@ package com.widedot.m6809.gamebuilder.config;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +20,7 @@ import com.widedot.m6809.gamebuilder.spi.globals.Cuts;
 import com.widedot.m6809.gamebuilder.spi.globals.Regions;
 
 /**
- * Packing file by file (<layout packing="file">) : one largest-first sort
+ * Packing file by file (a layout that declares its RAM states) : one largest-first sort
  * over every arena, each file in the lowest run of its arena's zones free
  * of the files it shares a state with.
  */
@@ -149,15 +147,5 @@ class ArenaPackerFileTest {
 		assertEquals(2, members.size());
 		assertEquals(0x0000, members.get(0).address);
 		assertEquals(0x2800, members.get(1).address);
-	}
-
-	@Test
-	@DisplayName("an unknown packing is a named error")
-	void unknownPacking() {
-		ImmutableNode layout = new ImmutableNode.Builder().name("layout").addAttribute("packing", "files").create();
-		ImmutableNode target = new ImmutableNode.Builder().name("target").addChild(layout).create();
-		BuildContext c = ctx(new LinkedHashMap<String, Integer>());
-		Exception e = assertThrows(Exception.class, () -> ArenaPacker.packingOf(target, c));
-		assertEquals("<layout packing=\"files\"> : unknown packing (arena, file)", e.getMessage());
 	}
 }

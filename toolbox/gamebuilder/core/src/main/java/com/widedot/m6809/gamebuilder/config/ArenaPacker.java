@@ -129,11 +129,10 @@ public final class ArenaPacker {
 		Map<String, Set<String>> statesOf = statesOf(target, ctx);
 		List<Placed> taken = fixedPlacements(target, ctx, regions);
 
-		if (FILE.equals(packingOf(target, ctx)) && measured(wanted, ctx, divisibles)) {
-			if (statesOf.isEmpty()) {
-				throw new Exception("<layout packing=\"file\"> places each file by the states that"
-						+ " hold it : the layout declares no <composition>");
-			}
+		// the RAM states declared : file by file (16/10/2026, the default
+		// once a layout says which files share a state) ; the discovery
+		// pass keeps the arenas' provisional layout
+		if (!statesOf.isEmpty() && measured(wanted, ctx, divisibles)) {
 			packFiles(wanted, regions, ctx, divisibles, statesOf, taken);
 			return;
 		}
@@ -146,24 +145,6 @@ public final class ArenaPacker {
 			}
 			place(arena, e.getValue(), ctx, divisibles, statesOf, taken);
 		}
-	}
-
-	/** the layout's packing : one per arena (the default) */
-	static final String ARENA = "arena";
-	/** the layout's packing : file by file, over every arena (15/10/2026) */
-	static final String FILE = "file";
-
-	/** the layout's packing attribute, checked */
-	static String packingOf(ImmutableNode target, BuildContext ctx) throws Exception {
-		ImmutableNode layout = layoutOf(target);
-		String p = layout == null ? null : Attribute.getStringOpt(layout, ctx, "packing");
-		if (p == null || ARENA.equals(p)) {
-			return ARENA;
-		}
-		if (FILE.equals(p)) {
-			return FILE;
-		}
-		throw new Exception("<layout packing=\"" + p + "\"> : unknown packing (" + ARENA + ", " + FILE + ")");
 	}
 
 	/** every arena file measured : the discovery pass is over */
@@ -193,7 +174,10 @@ public final class ArenaPacker {
 	}
 
 	/**
-	 * Packing file by file ({@code <layout packing="file">}, 15/10/2026).
+	 * Packing file by file (15/10/2026), whenever the layout declares its
+	 * RAM states (the {@code <composition>}s ; 16/10/2026 : no setting, the
+	 * arena packing kept for a layout without them, where nothing says which
+	 * files may share bytes).
 	 * Every arena's files in one sort : the most shared first (the count of
 	 * states that hold the file), then the largest, ties in the scenes'
 	 * order ; a file takes the lowest free run of its arena's zones, in their

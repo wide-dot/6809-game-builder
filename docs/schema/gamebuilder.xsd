@@ -1913,9 +1913,6 @@
       <xs:attribute name="gencompositions" type="xs:string">
         <xs:annotation><xs:documentation>generated file of the &lt;composition&gt; tables — a scene count then file id and directory per scene — for the game to include and hand to the loader</xs:documentation></xs:annotation>
       </xs:attribute>
-      <xs:attribute name="packing" type="xs:string">
-        <xs:annotation><xs:documentation>how the arenas' files are ranged : arena (the default) packs each arena as a whole, a zone starting after the highest content any of its files shares a state with ; file packs every arena's files in one largest-first sort, each in the lowest run of its arena's zones free of the files it shares a state with (needs the &lt;composition&gt;s)</xs:documentation></xs:annotation>
-      </xs:attribute>
     </xs:complexType>
   </xs:element>
 
