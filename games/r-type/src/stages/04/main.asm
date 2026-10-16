@@ -269,7 +269,7 @@ main.endstage.rallyY     fdb endstage.RALLY_Y
 ; La duree armee par bossDefeated et la voie du fondu, publiees par LE
 ; STAGE (endlevel.const.asm) : le compte du Dobkeratops, le fondu par
 ; tramage — les valeurs d'avant le 08/09/2026.
-main.endstage.duration   fdb endstage.DURATION
+main.endstage.duration   fdb endstage.DURATION_LATCHED ; le Compiler leve le drapeau a l'heure arcade (40:A9D9)
 main.endstage.fadeMode   fcb endstage.FADE_PIXEL
 
 stage.endTick

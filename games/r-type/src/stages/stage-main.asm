@@ -167,7 +167,6 @@ stage.stateKept
         ; stage qui en a besoin le repose dans son setup.
         clr   globals.backgroundSolid
         clr   globals.realBoss         ; par defaut : le combat de substitution
-        clr   globals.compilerDead     ; aucune piece de boss tombee
         clr   globals.plainBackdrop    ; le decor reprend ses droits
         clr   globals.tilesBehind      ; ... et repasse DEVANT les sprites
         clr   globals.tilesDrop        ; ... a sa hauteur (scroll_vp_y_pos = 11)

@@ -29,11 +29,17 @@ l'etat 0x2F28 s'explique par ses tirages et le reensemencement des 512
 trames). Avec la meme graine, la meme horloge et le meme vaisseau, la borne
 est deterministe ; le port doit l'etre au meme octet.
 
-Usage (depuis games/r-type/) :
-  python3 tools/fidelity/fidelity.py arcade bellmite          # MAME -> ref
-  python3 tools/fidelity/fidelity.py arcade bellmite --check  # ref a jour ?
-  python3 tools/fidelity/fidelity.py to8 bellmite dist/to8.fd [--out f]
-  python3 tools/fidelity/fidelity.py compare bellmite [--to8 f]
+Quand le flux aleatoire est PARTAGE (le Compiler et le champ d'etoiles), la
+reference porte la valeur recue par chaque tirage de la famille et le banc
+l'ecrit dans D au crochet `<boss>.Drawn` (profil avec `draws`).
+
+Usage (depuis games/r-type/), <boss> = bellmite | compiler :
+  python3 tools/fidelity/fidelity.py arcade <boss>          # MAME -> ref
+  python3 tools/fidelity/fidelity.py arcade <boss> --check  # ref a jour ?
+  python3 tools/fidelity/fidelity.py to8 <boss> dist/to8.fd [--out f]
+  python3 tools/fidelity/fidelity.py compare <boss> [--to8 f]
+  --scenario kill (les trois commandes) : la mise a mort injectee
+  --shots k1,k2 (arcade, to8) : captures appariees
 
 Le build ne l'appelle jamais : c'est un banc d'analyse (grille de revue,
 point 1).
@@ -88,6 +94,7 @@ class Bellmite:
     PARENT = {0xB1FA: 1, 0xB2DC: 2, 0xB473: 3, 0xB40A: 4}
     SAT = {0xB521: 1, 0xB645: 2, 0xB6AE: 3, 0xB6C4: 4}
     HELPER = 0xB491
+    stage_boxes = True               # its boxes live in the stage (main.asm)
 
     # --- arcade record -> normalized state ------------------------------
     def arcade(self, frame, seen_parent):
@@ -191,7 +198,268 @@ class Bellmite:
                 'p': par, 's': sats, 'h': b('bm.helper')}
 
 
-PROFILES = {'bellmite': Bellmite()}
+class Compiler:
+    """The Compiler (stage 4). Its draws share random_ax with the starfield
+    (star_ctor draws three times per star during the fight), so the port
+    cannot reproduce the stream : the reference carries the AX each family
+    caller received, and the bench REPLAYS them at `compiler.Drawn`."""
+    name = 'compiler'
+    stage = 4
+    unit = 'lib.compiler'
+    lwmap = 'gen/enemies/build/compiler.lwmap'
+    hook = 'compiler'
+    data = ('cpl.Data', 'cpl.DataEnd')
+    gcsym, rngsym = 'cpl.gc', 'cpl.rng'
+    ticks = (0xA762, 0xA982, 0xA9C1, 0xAA0F, 0xAB62, 0xACE7, 0xB073, 0xAC4C,
+             0xE6AB, 0xE6C0, 0xAEFB, 0xAF6F)
+    budget = 7400
+    env = {'PILOT_RNGLOG': '1'}
+    pin_arcade = (512, 228)
+    pin_to8 = (80, 126)
+    # damage scenarios: (frame after the spawn, part) — 0 right, 1 bottom,
+    # 2 left. 'kill': the three parts, each cascade played out before the next
+    scenarios = {'idle': [], 'kill': [(600, 2), (800, 1), (1000, 0)]}
+    ORCH = {0xA762: 1, 0xA982: 2, 0xA9C1: 3}
+    PART = {0xAA0F: 'R', 0xAB62: 'B', 0xACE7: 'L'}
+    OWN = {0xA72B, 0xAB3B, 0xAE35, 0xAE87, 0xAE9F, 0xAED2, 0xAEEA,
+           0xF8E7, 0xB084, 0xB09E}
+    ROLL_DRAWS = {0xAE87, 0xAED2}
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.prev, self.where = None, {}
+
+    # --- the AX each family caller got this frame -------------------------
+    def draws(self, f):
+        if self.prev is None:
+            # the creation frame: the state BEFORE it is unknown, the state
+            # after its single draw is known — invert one step
+            a, b, c = f['rng']
+            st = (b, c, (a - c) & 0xFF)
+        else:
+            st = tuple(self.prev)
+            if (f['gc'] & 0x1FF) == 0:
+                st = (5, 1, 3)
+        out = []
+        for caller in f.get('rc', []):
+            a, b, c = st
+            na = (b + c) & 0xFF
+            if caller in self.OWN:
+                out.append([caller, (c << 8) | na])
+            st = (na, a, b)
+        self.prev = f['rng']
+        return out
+
+    @staticmethod
+    def aim(o):
+        # from the end-level flag on (countdown 0x80) the arcade autopilot
+        # moves the ship inside the frame : the turrets' aim is not compared
+        return not (o.get('st') == 3 and o.get('c36', 0x100) <= 0x80)
+
+    def arcade(self, frame, seen):
+        st = {'gc': frame['gc'], 'd': self.draws(frame), 'o': None,
+              'parts': {}, 'cas': {}, 't': [], 'z': [], 'w': []}
+        for o in frame['o']:
+            b = bytes.fromhex(o['r'])
+            w = lambda k: b[k] | (b[k + 1] << 8)
+            pos = lambda k: ((w(k + 1) << 8) | b[k]) & 0xFFFFFF
+            t = o['t']
+            if t in self.ORCH:
+                # the creation frame leaves +0x32/+0x34 to the record's previous
+                # occupant: the init (a972) clears them
+                st['o'] = {'st': self.ORCH[t], 'f30': w(0x30)}
+                if t != 0xA762:
+                    st['o'].update({'f32': w(0x32), 'f34': w(0x34)})
+                if t == 0xA9C1:
+                    st['o']['c36'] = w(0x36)
+            elif t in self.PART:
+                k = self.PART[t]
+                self.where[o['a']] = k
+                d = {'x': pos(3), 'y': pos(7), 'cur': w(0x12), 'cfg': w(0x10),
+                     'dur': w(0x3C), 'vx': w(0x38), 'vy': w(0x3A), 'f28': w(0x28)}
+                if k != 'B':
+                    d['c22'] = w(0x22)
+                if k == 'L':
+                    d['w34'] = w(0x34)
+                st['parts'][k] = d
+            elif t == 0xB073:
+                st['cas'][self.where.get(o['a'], '?')] = {'cl': w(0x10), 'c20': w(0x20)}
+            elif t == 0xAC4C:
+                st['t'].append({'x': w(4), 'y': w(8), 'c26': w(0x26), 'fire': b[0x16]})
+            elif t in (0xE6AB, 0xE6C0):
+                st['z'].append([w(4), w(8)])
+            elif t in (0xAEFB, 0xAF6F):
+                st['w'].append([w(4), w(8), w(0x20), pos(3), pos(7)])
+        if st['o'] is None:
+            st['o'] = {'st': 4 if seen else 0}
+        if not self.aim(st['o']):
+            for d in st['t']:
+                d.pop('fire')
+        st['z'].sort()
+        st['w'].sort()
+        # what makes the family "seen": its orchestrator
+        st['p'] = {'st': st['o']['st']}
+        return st
+
+    # --- TO8 memory -> normalized state ---------------------------------
+    def to8(self, sym, mem, base):
+        def b(name, off=0):
+            return mem[sym[name] - base + off]
+
+        def w(name, off=0):
+            return (b(name, off) << 8) | b(name, off + 1)
+
+        def rec(r, f, n=1):
+            v = 0
+            for i in range(n):
+                v = (v << 8) | mem[r + sym[f] + i]
+            return v
+        ost = b('cpl.ost')
+        o = {'st': ost}
+        if ost in (1, 2, 3):
+            o['f30'] = w('cpl.f30')
+        if ost in (2, 3):
+            o.update({'f32': w('cpl.f32'), 'f34': b('cpl.f34')})
+            if ost == 3:
+                o['c36'] = w('cpl.c36')
+        st = {'gc': w('cpl.gc'), 'o': o, 'parts': {}, 'cas': {}, 't': [],
+              'z': [], 'w': [], 'p': {'st': ost}}
+        p0 = sym['cpl.Parts'] - base
+        for i, k in enumerate('RBL'):
+            r = p0 + i * sym['P.SZ']
+            pst = rec(r, 'P.st')
+            if pst == 1:
+                d = {'x': (rec(r, 'P.x', 2) << 8) | rec(r, 'P.xf'),
+                     'y': (rec(r, 'P.y', 2) << 8) | rec(r, 'P.yf'),
+                     'cur': rec(r, 'P.cur', 2), 'cfg': rec(r, 'P.cfg', 2),
+                     'dur': rec(r, 'P.dur', 2), 'vx': rec(r, 'P.vx', 2),
+                     'vy': rec(r, 'P.vy', 2), 'f28': rec(r, 'P.f28', 2)}
+                if k != 'B':
+                    d['c22'] = rec(r, 'P.c22', 2)
+                if k == 'L':
+                    d['w34'] = rec(r, 'P.w34', 2)
+                st['parts'][k] = d
+            elif pst == 2:
+                st['cas'][k] = {'cl': rec(r, 'P.cl', 2), 'c20': rec(r, 'P.life')}
+        t0 = sym['cpl.Turrets'] - base
+        for i in range(3):
+            r = t0 + i * sym['T.SZ']
+            if rec(r, 'T.st') == 1:
+                st['t'].append({'x': rec(r, 'T.x', 2), 'y': rec(r, 'T.y', 2),
+                                'c26': rec(r, 'T.c26', 2), 'fire': rec(r, 'T.fire')})
+        z0 = sym['cpl.Lasers'] - base
+        for i in range(sym['cpl.NLASER']):
+            r = z0 + i * sym['Z.SZ']
+            if rec(r, 'Z.st'):
+                st['z'].append([rec(r, 'Z.x', 2), rec(r, 'Z.y', 2)])
+        w0 = sym['cpl.Rolls'] - base
+        for i in range(sym['cpl.NROLL']):
+            r = w0 + i * sym['W.SZ']
+            if rec(r, 'W.st'):
+                st['w'].append([rec(r, 'W.x', 2), rec(r, 'W.y', 2), rec(r, 'W.w20', 2),
+                                (rec(r, 'W.x', 2) << 8) | rec(r, 'W.xf'),
+                                (rec(r, 'W.y', 2) << 8) | rec(r, 'W.yf')])
+        if not self.aim(o):
+            for d in st['t']:
+                d.pop('fire')
+        st['z'].sort()
+        st['w'].sort()
+        return st
+
+    def done(self, st):
+        return st['o']['st'] == 4
+
+    @staticmethod
+    def flat(st):
+        out = {'o.' + k: v for k, v in st['o'].items()}
+        for grp in ('parts', 'cas'):
+            for k, d in st[grp].items():
+                out.update({'%s.%s.%s' % (grp, k, f): v for f, v in d.items()})
+            for k in 'RBL':
+                out.setdefault('%s.%s' % (grp, k), k in st[grp])
+        out['t.n'] = len(st['t'])
+        for i, d in enumerate(st['t']):
+            out.update({'t%d.%s' % (i, f): v for f, v in d.items()})
+        out['z'] = st['z']
+        out['w'] = st['w']
+        return out
+
+    # --- a scenario hit, on both sides -------------------------------------
+    def hit_arcade(self, target):
+        # (priority word +0x18, damage byte +0x1F): 0x28 is the parts' HP_max
+        return (0x4020, 0x4010, 0x4000)[target], 0x28
+
+    def hit_to8(self, t, sym, base, target, boxes):
+        # the part's box potential to 0: its tick destroys it this frame
+        r = base + sym['cpl.Parts'] + target * sym['P.SZ'] + sym['P.pup']
+        pup = t.read('%04X' % r, 2)
+        pup = (pup[0] << 8) | pup[1]
+        if not pup:
+            raise SystemExit('coup sur une piece sans marionnette (hors ecran ?)')
+        t.call('write_memory', {'addr': '%04X' % (pup + sym['AABB_0'] + sym['AABB.p']),
+                                'bytes': ['00']})
+
+    # --- the bench: residues and inputs ---------------------------------
+    def tick(self, t, sym, base, refs, g, gc0):
+        """at compiler.Tick of frame g, before any actor"""
+        put = lambda a, vals: t.call('write_memory', {
+            'addr': '%04X' % a, 'bytes': ['%02X' % v for v in vals]})
+        a = refs.get(g - 1)
+        if g != gc0 + 2 or a is None:
+            return
+        # the parts' position fractions (+3/+7, the record's previous
+        # occupant) and the turrets' fire clock (their gate +0x16 was a
+        # leftover: the first tick already counted), as frame gc0+1 left them
+        for i, k in enumerate('RBL'):
+            r = base + sym['cpl.Parts'] + i * sym['P.SZ']
+            if k in a['parts']:
+                put(r + sym['P.xf'], [a['parts'][k]['x'] & 0xFF])
+                put(r + sym['P.yf'], [a['parts'][k]['y'] & 0xFF])
+        for i, d in enumerate(a['t']):
+            r = base + sym['cpl.Turrets'] + i * sym['T.SZ']
+            put(r + sym['T.c26'], [d['c26'] >> 8, d['c26'] & 0xFF])
+
+    def settle(self, t, sym, base, refs, g, live, stats):
+        """the rolling segments once frame g is played (at the next Tick or
+        before a render is read). Born this frame: the arcade's leftover
+        fractions. Gone on the arcade, alive here, everything else equal:
+        the arcade's terrain probe killed it on the gum chains, which the
+        TO8 does not draw nor probe during the fight (stage-main.asm,
+        plainBackdrop) — an input, killed here and counted."""
+        a = refs.get(g)
+        if a is None or live.get('g') == g:
+            return
+        live['g'] = g
+        sz, n = sym['W.SZ'], sym['cpl.NROLL']
+        r0 = base + sym['cpl.Rolls']
+        m = list(t.read('%04X' % r0, n * sz))
+        put = lambda ad, vals: t.call('write_memory', {
+            'addr': '%04X' % ad, 'bytes': ['%02X' % v for v in vals]})
+        gw = lambda i, f: (m[i * sz + sym[f]] << 8) | m[i * sz + sym[f] + 1]
+        now = {i for i in range(n) if m[i * sz + sym['W.st']]}
+        for i in sorted(now - live.get('slots', set())):
+            x, y, w20 = gw(i, 'W.x'), gw(i, 'W.y'), gw(i, 'W.w20')
+            for ax, ay, aw, x24, y24 in a['w']:
+                if aw == w20 and abs(ax - x) <= 1 and abs(ay - y) <= 1:
+                    put(r0 + i * sz + sym['W.x'], [x24 >> 16, (x24 >> 8) & 0xFF, x24 & 0xFF])
+                    put(r0 + i * sz + sym['W.y'], [y24 >> 16, (y24 >> 8) & 0xFF, y24 & 0xFF])
+                    m[i * sz + sym['W.x']:i * sz + sym['W.x'] + 3] = [x24 >> 16, (x24 >> 8) & 0xFF, x24 & 0xFF]
+                    m[i * sz + sym['W.y']:i * sz + sym['W.y'] + 3] = [y24 >> 16, (y24 >> 8) & 0xFF, y24 & 0xFF]
+                    break
+        arc = {(ax, ay, aw) for ax, ay, aw, _, _ in a['w']}
+        mine = {i: (gw(i, 'W.x'), gw(i, 'W.y'), gw(i, 'W.w20')) for i in now}
+        gone = [i for i, v in mine.items() if v not in arc]
+        if gone and arc <= set(mine.values()) and len(mine) - len(gone) == len(arc):
+            for i in gone:
+                put(r0 + i * sz + sym['W.st'], [0])
+                now.discard(i)
+            stats['roll.terrain'] = stats.get('roll.terrain', 0) + len(gone)
+        live['slots'] = now
+
+
+PROFILES = {'bellmite': Bellmite(), 'compiler': Compiler()}
 
 
 # =============================================================================
@@ -214,7 +482,8 @@ def record_arcade(prof, snaps=(), scen='idle', gc0=None):
                PILOT_PLAYER='%d,%d' % prof.pin_arcade, PILOT_OUT=raw,
                PILOT_SNAPS=','.join(str(v) for v in snaps), PILOT_SNAPDIR=SCRATCH,
                PILOT_HITS=';'.join('%d:%d:%d' % ((gc0 + k,) + prof.hit_arcade(tg))
-                                   for k, tg in prof.scenarios[scen]))
+                                   for k, tg in prof.scenarios[scen]),
+               **getattr(prof, 'env', {}))
     lua = os.path.join(MAME_FORK, 'pilot', 'tools', 'trace_actors.lua')
     r = subprocess.run([MAME_BIN, 'rtype', '-video', 'none', '-sound', 'none',
                     '-nothrottle', '-noplugins', '-cfg_directory', cfg,
@@ -224,6 +493,8 @@ def record_arcade(prof, snaps=(), scen='idle', gc0=None):
         if line.startswith('[trace]'):
             print(line)
     frames = [json.loads(l) for l in open(raw)]
+    if hasattr(prof, 'reset'):
+        prof.reset()
     out, seen, last_gc = [], False, None
     for f in frames:
         if f['gc'] == last_gc:              # a slowdown frame: nothing ran
@@ -320,22 +591,39 @@ def cmd_to8(prof, image, out, shots=(), scen='idle'):
                     if k in m and 'cheat' in f:
                         tsym[k] = m[k]
     cpage, cbase = unit_place(image, 'title.cheat')
-    seeded = base + psym['bellmite.Seeded']
-    sample = base + psym['bellmite.Sample']
-    data_lo = base + psym['bm.Data']
-    data_hi = base + psym['bm.DataEnd']
+    hook = getattr(prof, 'hook', prof.name)
+    dlo, dhi = getattr(prof, 'data', ('bm.Data', 'bm.DataEnd'))
+    gcsym = getattr(prof, 'gcsym', 'bm.gc')
+    rngsym = getattr(prof, 'rngsym', 'bm.rng')
+    seeded = base + psym[hook + '.Seeded']
+    sample = base + psym[hook + '.Sample']
+    tick = base + psym[hook + '.Tick']
+    data_lo = base + psym[dlo]
+    data_hi = base + psym[dhi]
     player = esym['player1']
     xpos, ypos = esym['x_pos'], esym['y_pos']
     cam = esym['glb_camera_x_pos']
-    ref = read_states(ref_path(prof))
-    gc0, rng0 = ref[0]['gc'], ref[0]['rng']
+    ref = read_states(ref_path(prof, scen))
+    refs = {s['gc']: s for s in ref}
+    gc0 = ref[0]['gc']
+    rng0 = ref[0].get('rng', [5, 1, 3])
     # the scenario's hits, at a game frame: stop at <boss>.Tick of that frame
-    ssym = lwmap('gen/stages/%02d/build/stage%02d-main.lwmap' % (prof.stage, prof.stage))
-    _, sbase = unit_place(image, 'stage%d' % prof.stage)
-    boxes = sbase + ssym['bellmite.boxes']
-    tick = base + psym['bellmite.Tick']
     hits = sorted((gc0 + k, tg) for k, tg in prof.scenarios[scen])
+    boxes = None
+    if hits and getattr(prof, 'stage_boxes', False):
+        ssym = lwmap('gen/stages/%02d/build/stage%02d-main.lwmap' % (prof.stage, prof.stage))
+        _, sbase = unit_place(image, 'stage%d' % prof.stage)
+        boxes = sbase + ssym[hook + '.boxes']
+    # REPLAYED DRAWS (a profile with `draws`): the AX each family caller got
+    # on the arcade, frame by frame, written in D at <boss>.Drawn
+    replay = hasattr(prof, 'draws')
+    drawn = base + psym[hook + '.Drawn'] if replay else None
+    owed = {s['gc']: list(s['d']) for s in ref if s.get('d')}
+    every_tick = hasattr(prof, 'tick')
     tick_bp = None
+    diag = {'draw.extra': 0, 'draw.missing': 0}
+    drawlog = []
+    last_draw = []
 
     t = Toje()
     t.boot_floppy(image)
@@ -367,17 +655,6 @@ def cmd_to8(prof, image, out, shots=(), scen='idle'):
         t.call('set_register', {'reg': 'pc', 'value': '%04X' % (mbase + msym['stage.handOver'])})
         t.call('step')                  # toje: step after a stop, before running
         print('stage %d atteint, passation vers le stage %d' % (via, prof.stage), flush=True)
-    print('stage %d : attente du spawn' % prof.stage, flush=True)
-    t0 = time.time()
-    bp = t.call('set_breakpoint', {'pc': '$%04X' % seeded, 'page': page})['id']
-    if not run_to(t, 400):
-        raise SystemExit('le spawn n\'est jamais venu')
-    print('spawn en %.0f s' % (time.time() - t0), flush=True)
-    # the arcade clock and random state at the creation frame
-    t.call('write_memory', {'addr': '%04X' % (base + psym['bm.gc']),
-                            'bytes': ['%02X' % (gc0 >> 8), '%02X' % (gc0 & 255)]})
-    t.call('write_memory', {'addr': '%04X' % (base + psym['bm.rng']),
-                            'bytes': ['%02X' % v for v in rng0]})
 
     def pin():
         c = t.read('%04X' % cam, 2)
@@ -386,20 +663,75 @@ def cmd_to8(prof, image, out, shots=(), scen='idle'):
                                 'bytes': ['%02X' % (x >> 8), '%02X' % (x & 255)]})
         t.call('write_memory', {'addr': '%04X' % (player + ypos),
                                 'bytes': ['00', '%02X' % prof.pin_to8[1]]})
+
+    def put(a, vals):
+        t.call('write_memory', {'addr': '%04X' % a, 'bytes': ['%02X' % v for v in vals]})
+
+    def gc_now():
+        g = t.read('%04X' % (base + psym[gcsym]), 2)
+        return (g[0] << 8) | g[1]
+
+    def replay_draw(g):
+        # an IRQ taken ON the hook's rts returns to it: the same draw hits
+        # twice. Every real draw steps the port's generator: a hit with the
+        # same stack, return address and generator state as the previous one
+        # is that re-hit
+        regs = t.call('read_registers')
+        sp = int(regs['s'], 16)
+        ret = t.read('%04X' % sp, 2)
+        ret = (ret[0] << 8) | ret[1]
+        key = (sp, ret, tuple(t.read('%04X' % (base + psym[rngsym]), 3)))
+        if last_draw and last_draw[0] == key:
+            diag['draw.rehit'] = diag.get('draw.rehit', 0) + 1
+            return
+        q = owed.get(g)
+        if not q:
+            diag['draw.extra'] += 1
+            drawlog.append((g - gc0, None, ret))
+            return
+        caller, ax = q.pop(0)
+        drawlog.append((g - gc0, caller, ret))
+        t.call('set_register', {'reg': 'd', 'value': '%04X' % ax})
+        last_draw[:] = [key]
+
+    print('stage %d : attente du spawn' % prof.stage, flush=True)
+    t0 = time.time()
+    bp = t.call('set_breakpoint', {'pc': '$%04X' % seeded, 'page': page})['id']
+    dbp = t.call('set_breakpoint', {'pc': '$%04X' % drawn, 'page': page})['id'] if replay else None
+    while True:
+        r = run_to(t, 400)
+        if not r:
+            raise SystemExit('le spawn n\'est jamais venu')
+        if replay and int(r['hit_pc'], 16) == drawn:
+            # the creation draw, before the clock is set: frame gc0's own
+            # draw, with the player where the arcade pins it
+            replay_draw(gc0)
+            put(base + psym['cpl.plx'], [prof.pin_arcade[0] >> 8, prof.pin_arcade[0] & 255])
+            put(base + psym['cpl.ply'], [prof.pin_arcade[1] >> 8, prof.pin_arcade[1] & 255])
+            continue
+        break
+    print('spawn en %.0f s' % (time.time() - t0), flush=True)
+    # the arcade clock and random state at the creation frame
+    put(base + psym[gcsym], [gc0 >> 8, gc0 & 255])
+    put(base + psym[rngsym], rng0)
     pin()
     t.call('clear_breakpoint', {'id': bp})
-    # the leftovers of the recycled arcade records: position fractions
-    spawned = base + psym['bellmite.Spawned']
-    bp = t.call('set_breakpoint', {'pc': '$%04X' % spawned, 'page': page})['id']
-    if not run_to(t, 4):
-        raise SystemExit('les records ne naissent pas')
-    prof.inject(t, psym, base, ref)
-    t.call('clear_breakpoint', {'id': bp})
+    if hasattr(prof, 'inject'):
+        # the leftovers of the recycled arcade records: position fractions
+        spawned = base + psym[hook + '.Spawned']
+        bp = t.call('set_breakpoint', {'pc': '$%04X' % spawned, 'page': page})['id']
+        if not run_to(t, 4):
+            raise SystemExit('les records ne naissent pas')
+        prof.inject(t, psym, base, ref)
+        t.call('clear_breakpoint', {'id': bp})
     t.call('set_breakpoint', {'pc': '$%04X' % sample, 'page': page})
+    if every_tick:
+        tick_bp = t.call('set_breakpoint', {'pc': '$%04X' % tick, 'page': page})['id']
     n = 0
     want = sorted(gc0 + k for k in shots)
     shoot = None
     last_gc = gc0
+    live_rolls = {}
     with open(out, 'w') as f:
         while True:
             if hits and tick_bp is None and hits[0][0] <= last_gc + 16:
@@ -408,19 +740,31 @@ def cmd_to8(prof, image, out, shots=(), scen='idle'):
             if not r:
                 print('plus de rendu du boss')
                 break
-            if int(r['hit_pc'], 16) == tick:
-                g = t.read('%04X' % (base + psym['bm.gc']), 2)
-                g = (g[0] << 8) | g[1]
+            pc = int(r['hit_pc'], 16)
+            if replay and pc == drawn:
+                replay_draw(gc_now())
+                continue
+            if pc == tick:
+                g = gc_now()
+                if replay and owed.get(g - 1):
+                    diag['draw.missing'] += len(owed[g - 1])
+                    owed[g - 1] = []
                 while hits and hits[0][0] <= g:
                     if hits[0][0] == g:
                         prof.hit_to8(t, psym, base, hits[0][1], boxes)
                     hits.pop(0)
-                if not hits or hits[0][0] > g + 16:
+                if every_tick:
+                    if hasattr(prof, 'settle'):
+                        prof.settle(t, psym, base, refs, g - 1, live_rolls, diag)
+                    prof.tick(t, psym, base, refs, g, gc0)
+                elif not hits or hits[0][0] > g + 16:
                     t.call('clear_breakpoint', {'id': tick_bp})
                     tick_bp = None
                 continue
+            if hasattr(prof, 'settle'):
+                prof.settle(t, psym, base, refs, gc_now(), live_rolls, diag)
             mem = t.read('%04X' % data_lo, data_hi - data_lo)
-            st = prof.to8(psym, mem, psym['bm.Data'])
+            st = prof.to8(psym, mem, psym[dlo])
             last_gc = st['gc']
             f.write(json.dumps(st, sort_keys=True, separators=(',', ':')) + '\n')
             n += 1
@@ -432,10 +776,21 @@ def cmd_to8(prof, image, out, shots=(), scen='idle'):
                 shoot = want.pop(0) - gc0
             pin()
             if n % 50 == 0:
-                print('rendu %d gc=%d etat=%d sats=%d' % (n, st['gc'], st['p']['st'],
-                                                         len(st['s'])), flush=True)
-            if st['p']['st'] == 5 and not st['s'] and not st['h']:
+                print('rendu %d gc=%d etat=%d' % (n, st['gc'], st['p']['st']), flush=True)
+            if hasattr(prof, 'done'):
+                if prof.done(st) or st['gc'] > ref[-1]['gc']:
+                    break
+            elif st['p']['st'] == 5 and not st['s'] and not st['h']:
                 break
+    if replay:
+        print('tirages rejoues : %d en trop, %d manquants, %d arrets doubles (IRQ sur le crochet)'
+              % (diag['draw.extra'], diag['draw.missing'], diag.get('draw.rehit', 0)))
+    if replay:
+        with open(out + '.draws', 'w') as f:
+            for e in drawlog:
+                f.write(repr(e) + '\n')
+    if 'roll.terrain' in diag:
+        print('entrees : %d segments roulants tues par le decor de la borne' % diag['roll.terrain'])
     print('%d rendus -> %s' % (n, out))
     t.close()
     return 0
@@ -454,7 +809,7 @@ def cmd_compare(prof, to8_path, scen='idle'):
         for k in sorted(set(a) | set(b)):
             checked += 1
             if a.get(k) != b.get(k):
-                key = tag + '.' + k
+                key = tag + '.' + k if tag else k
                 count[key] = count.get(key, 0) + 1
                 first.setdefault(key, (gc, a.get(k), b.get(k)))
     renders = 0
@@ -463,6 +818,9 @@ def cmd_compare(prof, to8_path, scen='idle'):
         if a is None:
             continue
         renders += 1
+        if hasattr(prof, 'flat'):
+            diff('', prof.flat(a), prof.flat(o), o['gc'])
+            continue
         diff('rng', {'v': a['rng']}, {'v': o['rng']}, o['gc'])
         diff('parent', a['p'], o['p'], o['gc'])
         for sid in sorted(set(a['s']) | set(o['s']), key=int):
