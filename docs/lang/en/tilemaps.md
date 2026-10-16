@@ -399,6 +399,20 @@ element does the engine's half :
   queue, so a flagged empty cell would end it early.
 - **Layouts** : `layout-<n>.bin`, each act's plane on the zone's chunks,
   128 bytes a row.
+- **More than 256 chunks** (`banks="3"` or `"4"`, 16/10/2026) : that many
+  banks of 128, `chunk_0.bin` to `chunk_<banks-1>.bin`, and the layouts a
+  big endian word a cell (rows of 256 bytes). The engine chooses at an act's
+  load, from the map descriptor's `layer_map_banks` (two : a byte a cell ;
+  more : a word) : `TilemapBuffer.SetCells` (A the banks, B the layout's
+  width, X the first bank's `[page][address]` record, the others following)
+  copies the records into `glb_map_bank_tbl`, sets `glb_map_stride` and
+  patches the cell's read in `LoadChunk` and the column's last shift in
+  `FeedTileBuffer` ; the descriptor's `layer_mul_ref` holds a row's bytes
+  (twice the width with words). A map of two banks runs the byte code as
+  before, no cycle more ; a word cell costs `LoadChunk` the bank's lookup
+  (some 40 cycles, once a chunk entering the view). The game's terrain
+  collision reads the layout too : Sonic 2 patches its `Find_Tile` the same
+  way.
 - **Collision** : `primary-collision.bin`, `secondary-collision.bin` and
   `flip-collision.bin`, a byte a tile, what the terrain collision reads
   through the tile index.

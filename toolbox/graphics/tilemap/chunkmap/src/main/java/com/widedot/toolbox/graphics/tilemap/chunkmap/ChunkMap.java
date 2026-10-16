@@ -66,8 +66,14 @@ public final class ChunkMap {
 	public static final int CELLS = 8;
 	/** Chunks a bank holds. */
 	public static final int BANK = 128;
-	/** Chunks the engine addresses : two banks. */
+	/** Chunks the engine addresses by default : two banks, a byte a layout cell. */
 	public static final int MAX_CHUNKS = 2 * BANK;
+	/**
+	 * Banks a map may have (16/10/2026) : past two, the layouts are written
+	 * in words (big endian, rows of 256 bytes) and the engine reads them so
+	 * (TilemapBuffer's word layout, its bank table of four).
+	 */
+	public static final int MAX_BANKS = 4;
 
 	/** An animated block : its priority and whether its frames hide what is behind. */
 	public static final class Animated {
@@ -91,6 +97,8 @@ public final class ChunkMap {
 		public final byte[] flip;
 		/** With {@code split} : each slice's chunks (its own ids, holes null) ; else null. */
 		public final List<Slice> slices;
+		/** The chunk banks written (two : the layouts in bytes ; more : in words). */
+		public final int banks;
 
 		Result(BufferedImage tiles, int tileCount, List<int[]> chunks, List<byte[]> layouts,
 				byte[] primary, byte[] secondary, byte[] flip) {
@@ -99,6 +107,12 @@ public final class ChunkMap {
 
 		Result(BufferedImage tiles, int tileCount, List<int[]> chunks, List<byte[]> layouts,
 				byte[] primary, byte[] secondary, byte[] flip, List<Slice> slices) {
+			this(tiles, tileCount, chunks, layouts, primary, secondary, flip, slices, 2);
+		}
+
+		Result(BufferedImage tiles, int tileCount, List<int[]> chunks, List<byte[]> layouts,
+				byte[] primary, byte[] secondary, byte[] flip, List<Slice> slices, int banks) {
+			this.banks = banks;
 			this.tiles = tiles;
 			this.tileCount = tileCount;
 			this.chunks = chunks;
@@ -165,6 +179,23 @@ public final class ChunkMap {
 			byte[] secondary, List<byte[]> layouts, boolean halfline, boolean opaque,
 			LinkedHashMap<Integer, Animated> animated, boolean words, Map<Integer, int[]> split, int overlap)
 			throws Exception {
+		return convert(sheet, mappings, blocks, primary, secondary, layouts, halfline, opaque, animated, words,
+				split, overlap, 2);
+	}
+
+	/**
+	 * @param banks the chunk banks of 128 the map may fill (2 to
+	 *              {@link #MAX_BANKS}) : past two, the layouts are written in
+	 *              words
+	 */
+	public static Result convert(BufferedImage sheet, byte[] mappings, byte[] blocks, byte[] primary,
+			byte[] secondary, List<byte[]> layouts, boolean halfline, boolean opaque,
+			LinkedHashMap<Integer, Animated> animated, boolean words, Map<Integer, int[]> split, int overlap,
+			int banks) throws Exception {
+		if (banks < 2 || banks > MAX_BANKS) {
+			throw new Exception("chunkmap : banks=\"" + banks + "\", from 2 to " + MAX_BANKS);
+		}
+		final int maxChunks = banks * BANK;
 
 		if (!(sheet.getColorModel() instanceof IndexColorModel)) {
 			throw new Exception("chunkmap : the chunk pictures must be an indexed PNG");
@@ -287,7 +318,7 @@ public final class ChunkMap {
 		if (split == null) {
 			// the zone's chunks, merged when the same, in the order the acts use them
 			for (int[] src0 : sources) {
-				byte[] out = new byte[src0.length];
+				int[] out = new int[src0.length];
 				for (int j = 0; j < src0.length; j++) {
 					int c = src0[j];
 					Integer z = zoneChunk.get(c);
@@ -302,13 +333,13 @@ public final class ChunkMap {
 						}
 						zoneChunk.put(c, z);
 					}
-					out[j] = (byte) (int) z;
+					out[j] = z;
 				}
-				outLayouts.add(out);
+				outLayouts.add(cells(out, banks));
 			}
-			if (chunks.size() > MAX_CHUNKS) {
-				throw new Exception("chunkmap : " + chunks.size() + " chunks, the engine's two banks hold "
-						+ MAX_CHUNKS);
+			if (chunks.size() > maxChunks) {
+				throw new Exception("chunkmap : " + chunks.size() + " chunks, its " + banks + " banks hold "
+						+ maxChunks + " (banks=\"n\", up to " + MAX_BANKS + ")");
 			}
 		} else {
 			slices = new ArrayList<Slice>();
@@ -322,7 +353,7 @@ public final class ChunkMap {
 					}
 				}
 				int[] cuts = split.getOrDefault(a, new int[0]);
-				byte[] out = new byte[src0.length];
+				int[] out = new int[src0.length];
 				Slice prev = null;
 				Map<Integer, Integer> prevIds = null;
 				for (int k = 0; k <= cuts.length; k++) {
@@ -331,7 +362,7 @@ public final class ChunkMap {
 					Slice sl = new Slice(a, first, last);
 					Map<List<Integer>, Integer> idOf = new HashMap<List<Integer>, Integer>();
 					Map<Integer, Integer> ids = new HashMap<Integer, Integer>();
-					int[][] table = new int[MAX_CHUNKS][];
+					int[][] table = new int[maxChunks][];
 					table[0] = new int[CELLS * CELLS];
 					idOf.put(words(table[0]), 0);
 					ids.put(0, 0);
@@ -356,12 +387,12 @@ public final class ChunkMap {
 								List<Integer> key = words(entriesOf.get(c));
 								z = idOf.get(key);
 								if (z == null) {
-									while (next < MAX_CHUNKS && table[next] != null) {
+									while (next < maxChunks && table[next] != null) {
 										next++;
 									}
-									if (next >= MAX_CHUNKS) {
+									if (next >= maxChunks) {
 										throw new Exception("chunkmap : act " + (a + 1) + "'s slice of columns " + first
-												+ "-" + last + " holds more than " + MAX_CHUNKS + " chunks : cut it more");
+												+ "-" + last + " holds more than " + maxChunks + " chunks : cut it more");
 									}
 									z = next;
 									table[z] = entriesOf.get(c);
@@ -370,10 +401,10 @@ public final class ChunkMap {
 								ids.put(c, z);
 							}
 							// a column two slices hold : the first's id stands, the same
-							out[y * 128 + x] = (byte) (int) z;
+							out[y * 128 + x] = z;
 						}
 					}
-					int top = MAX_CHUNKS;
+					int top = maxChunks;
 					while (top > 0 && table[top - 1] == null) {
 						top--;
 					}
@@ -384,7 +415,7 @@ public final class ChunkMap {
 					prev = sl;
 					prevIds = ids;
 				}
-				outLayouts.add(out);
+				outLayouts.add(cells(out, banks));
 			}
 			for (Slice sl : slices) {
 				for (int[] e : sl.chunks) {
@@ -434,7 +465,24 @@ public final class ChunkMap {
 			secondaryOut[t] = (byte) collision.get(t)[1];
 			flipOut[t] = (byte) collision.get(t)[2];
 		}
-		return new Result(tiles, count, chunks, outLayouts, primaryOut, secondaryOut, flipOut, slices);
+		return new Result(tiles, count, chunks, outLayouts, primaryOut, secondaryOut, flipOut, slices, banks);
+	}
+
+	/** A layout's cells : a byte each with two banks, a big endian word past two. */
+	static byte[] cells(int[] ids, int banks) {
+		if (banks <= 2) {
+			byte[] out = new byte[ids.length];
+			for (int j = 0; j < ids.length; j++) {
+				out[j] = (byte) ids[j];
+			}
+			return out;
+		}
+		byte[] out = new byte[ids.length * 2];
+		for (int j = 0; j < ids.length; j++) {
+			out[j * 2] = (byte) (ids[j] >> 8);
+			out[j * 2 + 1] = (byte) ids[j];
+		}
+		return out;
 	}
 
 	/** One cell's picture ; in half-line the odd lines are emptied (never drawn). */
@@ -496,14 +544,14 @@ public final class ChunkMap {
 		}
 		Files.write(dir.resolve("tiles.bin"), ids);
 		if (r.slices == null) {
-			writeBanks(r.chunks, dir, "chunk_");
+			writeBanks(r.chunks, dir, "chunk_", r.banks);
 		} else {
 			// a slice's banks : chunk_<slice>_<bank>.bin ; slices.txt : act,
 			// first and last column of each, in the order of the files
 			StringBuilder sb = new StringBuilder();
 			for (int k = 0; k < r.slices.size(); k++) {
 				Slice sl = r.slices.get(k);
-				writeBanks(sl.chunks, dir, "chunk_" + k + "_");
+				writeBanks(sl.chunks, dir, "chunk_" + k + "_", r.banks);
 				sb.append(sl.act + 1).append(' ').append(sl.first).append(' ').append(sl.last)
 						.append(' ').append(sl.chunks.size()).append('\n');
 			}
@@ -517,12 +565,14 @@ public final class ChunkMap {
 		Files.write(dir.resolve("flip-collision.bin"), r.flip);
 	}
 
-	/** Two banks of 128 chunks, 64 big endian words a chunk (a hole : an empty chunk). */
-	private static void writeBanks(List<int[]> chunks, Path dir, String prefix) throws Exception {
-		for (int bank = 0; bank < 2; bank++) {
+	/** The banks of 128 chunks, 64 big endian words a chunk (a hole : an empty chunk). */
+	private static void writeBanks(List<int[]> chunks, Path dir, String prefix, int banks) throws Exception {
+		for (int bank = 0; bank < banks; bank++) {
 			int from = bank * BANK;
 			int to = Math.min(chunks.size(), from + BANK);
-			byte[] out = new byte[Math.max(0, to - from) * CELLS * CELLS * 2];
+			// past two banks, an empty one still a chunk (a file the game
+			// declares, never empty)
+			byte[] out = new byte[Math.max(banks > 2 ? 1 : 0, to - from) * CELLS * CELLS * 2];
 			for (int c = from; c < to; c++) {
 				int[] entries = chunks.get(c);
 				if (entries == null) {
@@ -608,6 +658,13 @@ public final class ChunkMap {
 	public static Result run(Path chunksPng, Path mappings, Path blocks, Path primary, Path secondary,
 			List<Path> layouts, boolean halfline, boolean opaque, String animated, Path gendir, boolean words,
 			String split, int overlap) throws Exception {
+		return run(chunksPng, mappings, blocks, primary, secondary, layouts, halfline, opaque, animated, gendir,
+				words, split, overlap, 2);
+	}
+
+	public static Result run(Path chunksPng, Path mappings, Path blocks, Path primary, Path secondary,
+			List<Path> layouts, boolean halfline, boolean opaque, String animated, Path gendir, boolean words,
+			String split, int overlap, int banks) throws Exception {
 		BufferedImage sheet = ImageIO.read(chunksPng.toFile());
 		if (sheet == null) {
 			throw new Exception("chunkmap : cannot read " + chunksPng);
@@ -618,7 +675,7 @@ public final class ChunkMap {
 		}
 		Result r = convert(sheet, Files.readAllBytes(mappings), Files.readAllBytes(blocks),
 				Files.readAllBytes(primary), Files.readAllBytes(secondary), lay, halfline, opaque,
-				parseAnimated(animated), words, parseSplit(split), overlap);
+				parseAnimated(animated), words, parseSplit(split), overlap, banks);
 		write(r, gendir);
 		return r;
 	}
@@ -646,7 +703,7 @@ public final class ChunkMap {
 				Boolean.parseBoolean(a.getOrDefault("halfline", "false")),
 				Boolean.parseBoolean(a.getOrDefault("opaque", "false")), a.get("animated"),
 				Paths.get(a.get("gendir")), Boolean.parseBoolean(a.getOrDefault("words", "false")), a.get("split"),
-				Integer.parseInt(a.getOrDefault("overlap", "4")));
+				Integer.parseInt(a.getOrDefault("overlap", "4")), Integer.parseInt(a.getOrDefault("banks", "2")));
 		System.out.println("chunkmap : " + r.tileCount + " tiles, " + r.chunks.size() + " chunks, "
 				+ r.layouts.size() + " layouts under " + new File(a.get("gendir")));
 	}
