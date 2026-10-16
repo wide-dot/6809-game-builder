@@ -129,6 +129,7 @@ public final class Handlers {
 		spec(element("layout").doc("memory layout of the target : the fixed regions scenes load into")
 			.opt("gensymbols", STRING, "generated file of <region>.page / <region>.address equates, for the game code to include")
 			.opt("gencompositions", STRING, "generated file of the <composition> tables — a scene count then file id and directory per scene — for the game to include and hand to the loader")
+			.opt("packing", STRING, "how the arenas' files are ranged : arena (the default) packs each arena as a whole, a zone starting after the highest content any of its files shares a state with ; file packs every arena's files in one largest-first sort, each in the lowest run of its arena's zones free of the files it shares a state with (needs the <composition>s)")
 			);
 		spec(element("region").doc("fixed destination shared by every scene that targets it")
 			.req("name", STRING, "region name, referenced by <load region=...>")

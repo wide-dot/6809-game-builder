@@ -1011,6 +1011,20 @@ de sonde : lire les tampons en tête de boucle (ailleurs le tampon arrière
 est à moitié dessiné) et rendre la page data après lecture. Étude et
 mesures : [`etude-mscroll1-2026-10.md`](docs/lang/fr/etude-mscroll1-2026-10.md).
 
+## Rangement fichier par fichier : `<layout packing="file">` (15/10/2026)
+
+Par défaut (`arena`), une arène se range d'un bloc : chaque zone démarre
+après le plus haut contenu avec lequel UN de ses fichiers partage un état.
+Une arène dont les fichiers vivent dans plusieurs états laisse alors à
+personne la place que les autres états occupent (Hidden Palace 1 de
+sonic-2 : 32 Ko libres, 383 octets refusés). `packing="file"` range tous les
+fichiers de toutes les arènes en un seul tri du plus gros au plus petit,
+chacun dans le premier trou des zones de SON arène libre des fichiers avec
+lesquels IL partage un état ; une collection qu'aucun trou ne tient entière
+s'y découpe. Exige les `<composition>` ; le défaut ne change rien (corpus
+identique). Code : `ArenaPacker.packFiles`, tests `ArenaPackerFileTest`,
+manuel `scenes.md`.
+
 ## Dettes / pièges connus
 
 - `engine/pack/mub.asm` : chemins d'INCLUDE invalides (fichiers dans `sound/mucom88/`).

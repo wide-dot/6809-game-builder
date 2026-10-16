@@ -298,6 +298,12 @@
       <xs:attribute name="overflow" type="xs:string">
         <xs:annotation><xs:documentation>past maxsize : error (default, the build stops) or trim (the picture's bottom lines dropped until the routine fits, a warning)</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="frames" type="xs:string">
+        <xs:annotation><xs:documentation>an animated part : comma separated pictures of the same size, transparent where the picture does not change ; each a routine &lt;label&gt;_F&lt;k&gt;_Draw, &lt;label&gt;_Draw's inputs, called after it, writing the bytes that hold its pixels</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="picture" type="xs:boolean">
+        <xs:annotation><xs:documentation>false : the frames alone, the picture's routine in another unit (a page each). Default true</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 
@@ -452,6 +458,15 @@
       </xs:attribute>
       <xs:attribute name="animated" type="xs:string">
         <xs:annotation><xs:documentation>blocks drawn at run time : &lt;block&gt;[/xflip][/yflip][/high][/opaque], comma or space separated, a block once per flip it is used with ; each takes the tile index past the tileset, in this order (where the game's animated tilesets follow its index), its collision past the tileset's</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="words" type="xs:boolean">
+        <xs:annotation><xs:documentation>true : the layouts' entries are big endian words, rows of 256 (a source of more than 256 chunks). Default false</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="split" type="xs:string">
+        <xs:annotation><xs:documentation>a source past the engine's two banks : &lt;act&gt;:&lt;column&gt;[:&lt;column&gt;...], comma separated, acts from 1 : each act cut in slices of its plane at those chunk columns (an act without one slice), each slice its own two banks, chunk_&lt;slice&gt;_&lt;bank&gt;.bin (slices in act order), slices.txt (act, first and last column, chunks) ; neighbouring slices overlap, the columns both hold with the same ids : the game swaps a slice's banks in by the camera</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="overlap" type="xs:string">
+        <xs:annotation><xs:documentation>with split : the columns each side of a cut both slices hold. Default 4</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -1897,6 +1912,9 @@
       </xs:attribute>
       <xs:attribute name="gencompositions" type="xs:string">
         <xs:annotation><xs:documentation>generated file of the &lt;composition&gt; tables — a scene count then file id and directory per scene — for the game to include and hand to the loader</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="packing" type="xs:string">
+        <xs:annotation><xs:documentation>how the arenas' files are ranged : arena (the default) packs each arena as a whole, a zone starting after the highest content any of its files shares a state with ; file packs every arena's files in one largest-first sort, each in the lowest run of its arena's zones free of the files it shares a state with (needs the &lt;composition&gt;s)</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>

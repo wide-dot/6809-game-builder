@@ -220,6 +220,25 @@ occupy (12/10/2026 : Sonic 2's fifth zone stopped on a full arena with
 build fails with *does not fit* — the budget is raised at build time,
 never discovered on the machine.
 
+**Packing file by file** (`<layout packing="file">`, 15/10/2026). By
+default an arena is packed as a whole : a zone's tail starts after the
+highest content that *any* of the arena's files shares a state with. An
+arena whose files live in several states (an act's own files and those it
+shares with the next act) then leaves to nobody the room the other states
+use : Sonic 2's Hidden Palace 1, 32 KB free in its state, could not take
+383 bytes more. `packing="file"` puts every arena's files in one
+largest-first sort, whatever their arena (ties in the scenes' order), each
+in the lowest run of its own arena's zones, in their order, free of the
+files *it* shares a state with ; a collection no run holds whole flows into
+the runs, one member per run. It needs the `<composition>`s (a file no
+composition holds shares no byte with anything), and it changes every
+placement : the default, `arena`, keeps the packing every image was built
+with.
+
+```xml
+<layout gensymbols="gen/layout.asm" packing="file"> … </layout>
+```
+
 Nothing in the game needs the file anywhere else : no code reaches it
 "by position", everything links through its symbols, resolved at load
 time. And the constant address is what keeps the runtime lifecycle

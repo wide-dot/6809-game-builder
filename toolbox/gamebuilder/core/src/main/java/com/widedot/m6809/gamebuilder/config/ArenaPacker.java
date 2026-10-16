@@ -129,6 +129,15 @@ public final class ArenaPacker {
 		Map<String, Set<String>> statesOf = statesOf(target, ctx);
 		List<Placed> taken = fixedPlacements(target, ctx, regions);
 
+		if (FILE.equals(packingOf(target, ctx)) && measured(wanted, ctx, divisibles)) {
+			if (statesOf.isEmpty()) {
+				throw new Exception("<layout packing=\"file\"> places each file by the states that"
+						+ " hold it : the layout declares no <composition>");
+			}
+			packFiles(wanted, regions, ctx, divisibles, statesOf, taken);
+			return;
+		}
+
 		for (Map.Entry<String, List<String>> e : wanted.entrySet()) {
 			Regions.Region arena = regions.get(e.getKey());
 			if (arena == null) {
@@ -137,6 +146,238 @@ public final class ArenaPacker {
 			}
 			place(arena, e.getValue(), ctx, divisibles, statesOf, taken);
 		}
+	}
+
+	/** the layout's packing : one per arena (the default) */
+	static final String ARENA = "arena";
+	/** the layout's packing : file by file, over every arena (15/10/2026) */
+	static final String FILE = "file";
+
+	/** the layout's packing attribute, checked */
+	static String packingOf(ImmutableNode target, BuildContext ctx) throws Exception {
+		ImmutableNode layout = layoutOf(target);
+		String p = layout == null ? null : Attribute.getStringOpt(layout, ctx, "packing");
+		if (p == null || ARENA.equals(p)) {
+			return ARENA;
+		}
+		if (FILE.equals(p)) {
+			return FILE;
+		}
+		throw new Exception("<layout packing=\"" + p + "\"> : unknown packing (" + ARENA + ", " + FILE + ")");
+	}
+
+	/** every arena file measured : the discovery pass is over */
+	private static boolean measured(Map<String, List<String>> wanted, BuildContext ctx,
+			Map<String, Divisible> divisibles) {
+		for (List<String> files : wanted.values()) {
+			for (String f : files) {
+				if (!divisibles.containsKey(f) && ctx.regions.fileSize(f) == null) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	/** a run of free bytes in a zone, for one file */
+	static final class Run {
+		final Regions.Zone zone;
+		final int at;
+		final int size;
+
+		Run(Regions.Zone zone, int at, int size) {
+			this.zone = zone;
+			this.at = at;
+			this.size = size;
+		}
+	}
+
+	/**
+	 * Packing file by file ({@code <layout packing="file">}, 15/10/2026).
+	 * Every arena file joins ONE largest-first sort, whatever its arena (ties
+	 * in the scenes' order), and takes the lowest free run of its arena's
+	 * zones, in their order, that no file it shares a state with holds :
+	 * its own conflicts, not its arena's. Packing an arena as a whole starts
+	 * each zone after the highest content ANY of its files shares a state
+	 * with, and an arena whose files live in several states leaves the room
+	 * of the others to nobody — Sonic 2's Hidden Palace 1, 32 KB free in its
+	 * state, could not hold 383 bytes more. A collection no run holds whole
+	 * flows into the runs, one member per run. A file no composition holds
+	 * conflicts with everything.
+	 */
+	static void packFiles(Map<String, List<String>> wanted, Map<String, Regions.Region> regions,
+			BuildContext ctx, Map<String, Divisible> divisibles, Map<String, Set<String>> statesOf,
+			List<Placed> taken) throws Exception {
+		final List<String> order = new ArrayList<String>();
+		final Map<String, String> arenaOf = new LinkedHashMap<String, String>();
+		final Map<String, Integer> sizes = new LinkedHashMap<String, Integer>();
+		for (Map.Entry<String, List<String>> e : wanted.entrySet()) {
+			if (regions.get(e.getKey()) == null) {
+				throw new Exception("unknown arena '" + e.getKey() + "' (layout declares: "
+						+ regions.keySet() + ")");
+			}
+			for (String f : e.getValue()) {
+				if (arenaOf.containsKey(f)) {
+					continue;
+				}
+				arenaOf.put(f, e.getKey());
+				order.add(f);
+				Divisible d = divisibles.get(f);
+				sizes.put(f, d != null ? d.total : ctx.regions.fileSize(f));
+			}
+		}
+		final List<String> declared = new ArrayList<String>(order);
+		order.sort(Comparator.comparingInt((String f) -> -sizes.get(f))
+				.thenComparingInt(declared::indexOf));
+		for (String f : order) {
+			Regions.Region arena = regions.get(arenaOf.get(f));
+			int need = sizes.get(f);
+			List<Run> runs = freeRuns(arena, f, statesOf, taken);
+			Divisible d = divisibles.get(f);
+			Run fit = null;
+			int biggest = 0;
+			for (Run r : runs) {
+				biggest = Math.max(biggest, r.size);
+				if (fit == null && r.size >= need) {
+					fit = r;
+				}
+			}
+			if (fit != null) {
+				ctx.regions.placeFile(f, fit.zone.page, fit.at);
+				taken.add(new Placed(f, fit.zone.page, fit.at, need, fit.zone.slice));
+				if (d != null) {
+					List<Integer> all = new ArrayList<Integer>();
+					for (int i = 0; i < d.parts.size(); i++) {
+						all.add(i);
+					}
+					List<List<Integer>> one = new ArrayList<List<Integer>>();
+					one.add(all);
+					ctx.cuts.declare(f, new Cuts.Cut(d.parts, one, d.gendir, d.units));
+				}
+				log.debug("arena {} : {} -> page {} ${}", arena.name, f, fit.zone.page,
+						Integer.toHexString(fit.at).toUpperCase());
+				continue;
+			}
+			if (d == null) {
+				throw new Exception("arena '" + arena.name + "' cannot hold '" + f + "' : it needs "
+						+ need + " bytes in one run free of the files it shares a state with, the"
+						+ " roomiest has " + biggest + " — give the arena another <zone>, or make"
+						+ " the file smaller");
+			}
+			cutRuns(arena, f, d, runs, ctx, taken);
+		}
+	}
+
+	/**
+	 * The free runs of an arena's zones for one file, in the zones' order and
+	 * by address : the bytes no placed file it shares a state with holds.
+	 */
+	static List<Run> freeRuns(Regions.Region arena, String f, Map<String, Set<String>> statesOf,
+			List<Placed> taken) {
+		Set<String> ours = statesOf.get(f);
+		List<Run> runs = new ArrayList<Run>();
+		for (Regions.Zone z : arena.zones) {
+			List<int[]> busy = new ArrayList<int[]>();
+			for (Placed p : taken) {
+				if (p.page != z.page || p.address + p.size <= z.address || p.address >= z.end()) {
+					continue;
+				}
+				if (p.slice != null && z.slice != null && !p.slice.equals(z.slice)) {
+					continue;
+				}
+				Set<String> theirs = statesOf.get(p.file);
+				boolean conflicts = ours == null || theirs == null;
+				if (!conflicts) {
+					for (String state : ours) {
+						if (theirs.contains(state)) {
+							conflicts = true;
+							break;
+						}
+					}
+				}
+				if (conflicts) {
+					busy.add(new int[] { p.address, p.address + p.size });
+				}
+			}
+			busy.sort(Comparator.comparingInt((int[] b) -> b[0]));
+			int at = z.address;
+			for (int[] b : busy) {
+				if (b[0] > at) {
+					runs.add(new Run(z, at, b[0] - at));
+				}
+				at = Math.max(at, b[1]);
+			}
+			if (z.end() > at) {
+				runs.add(new Run(z, at, z.end() - at));
+			}
+		}
+		return runs;
+	}
+
+	/**
+	 * A collection no run holds whole, flowed into the runs in element order :
+	 * one member per run used, runs under {@link #GAP_MIN} left empty.
+	 */
+	static void cutRuns(Regions.Region arena, String file, Divisible d, List<Run> runs,
+			BuildContext ctx, List<Placed> taken) throws Exception {
+		int biggest = 0;
+		for (Run r : runs) {
+			biggest = Math.max(biggest, r.size);
+		}
+		List<Cuts.Member> members = new ArrayList<Cuts.Member>();
+		List<List<Integer>> chunks = new ArrayList<List<Integer>>();
+		int ri = 0;
+		int used = 0;
+		List<Integer> chunk = new ArrayList<Integer>();
+		for (int e = 0; e < d.sizes.length; e++) {
+			if (d.sizes[e] > biggest) {
+				throw new Exception("collection '" + file + "' : '" + d.parts.get(e)[1] + "' is "
+						+ d.sizes[e] + " bytes, more than the " + biggest
+						+ " bytes of the roomiest free run — an element is never split, it has"
+						+ " to be made smaller (or the arena needs a roomier zone)");
+			}
+			while (ri < runs.size()
+					&& (runs.get(ri).size < GAP_MIN || used + d.sizes[e] > runs.get(ri).size)) {
+				if (!chunk.isEmpty()) {
+					closeRun(arena, file, members, chunks, chunk, runs.get(ri), used, taken);
+					chunk = new ArrayList<Integer>();
+				}
+				ri++;
+				used = 0;
+			}
+			if (ri == runs.size()) {
+				int remaining = 0;
+				for (int r = e; r < d.sizes.length; r++) {
+					remaining += d.sizes[r];
+				}
+				throw new Exception("collection '" + file + "' does not fit : " + remaining
+						+ " bytes of elements remain and every free run is used — give the"
+						+ " arena another <zone>, or put less in the collection");
+			}
+			chunk.add(e);
+			used += d.sizes[e];
+		}
+		if (!chunk.isEmpty()) {
+			closeRun(arena, file, members, chunks, chunk, runs.get(ri), used, taken);
+		}
+		if (members.size() == 1) {
+			ctx.regions.placeFile(file, members.get(0).page, members.get(0).address);
+			ctx.cuts.declare(file, new Cuts.Cut(d.parts, chunks, d.gendir, d.units));
+		} else {
+			ctx.cuts.declare(file, new Cuts.Cut(d.parts, chunks, d.gendir, d.units, members));
+		}
+		log.info("collection {} : {} member(s) flowed into arena '{}'", file, members.size(),
+				arena.name);
+	}
+
+	private static void closeRun(Regions.Region arena, String file, List<Cuts.Member> members,
+			List<List<Integer>> chunks, List<Integer> chunk, Run run, int used, List<Placed> taken) {
+		taken.add(new Placed(file, run.zone.page, run.at, used, run.zone.slice));
+		String memberName = file + "." + members.size();
+		members.add(new Cuts.Member(memberName, run.zone.page, run.at));
+		chunks.add(new ArrayList<Integer>(chunk));
+		log.debug("arena {} : {} -> page {} ${} ({} elements)", arena.name, memberName,
+				run.zone.page, Integer.toHexString(run.at).toUpperCase(), chunk.size());
 	}
 
 	/** one file already sitting somewhere, and who put it there */
