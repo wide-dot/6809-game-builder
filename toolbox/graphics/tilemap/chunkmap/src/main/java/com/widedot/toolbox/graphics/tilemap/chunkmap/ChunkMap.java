@@ -40,7 +40,9 @@ import javax.imageio.ImageIO;
  * half-line : the odd ones are never drawn, and come out empty), the same
  * two collision indexes and the same flip (unless both indexes leave nothing
  * to flip : none, or the full block). Tile 0 is the empty one, numbered
- * before any other ;</li>
+ * before any other. Tiles of the same picture (their collision or flip
+ * apart) share it : the tileset holds each picture once, each tile pointing
+ * at its own ;</li>
  * <li>the chunk entries, a big endian word each : priority (15, the block's
  * first pattern's), the solidity (11-14), the opaque bit (10, with
  * {@code opaque} : no transparent pixel on the drawn lines) and the tile
@@ -99,6 +101,11 @@ public final class ChunkMap {
 		public final List<Slice> slices;
 		/** The chunk banks written (two : the layouts in bytes ; more : in words). */
 		public final int banks;
+		/**
+		 * Each tile's picture in {@code tiles} : tiles of the same picture (their
+		 * collision or flip telling them apart) share one, so one compiled routine.
+		 */
+		public final int[] pictureOf;
 
 		Result(BufferedImage tiles, int tileCount, List<int[]> chunks, List<byte[]> layouts,
 				byte[] primary, byte[] secondary, byte[] flip) {
@@ -112,6 +119,18 @@ public final class ChunkMap {
 
 		Result(BufferedImage tiles, int tileCount, List<int[]> chunks, List<byte[]> layouts,
 				byte[] primary, byte[] secondary, byte[] flip, List<Slice> slices, int banks) {
+			this(tiles, tileCount, chunks, layouts, primary, secondary, flip, slices, banks, null);
+		}
+
+		Result(BufferedImage tiles, int tileCount, List<int[]> chunks, List<byte[]> layouts,
+				byte[] primary, byte[] secondary, byte[] flip, List<Slice> slices, int banks, int[] pictureOf) {
+			if (pictureOf == null) {
+				pictureOf = new int[tileCount];
+				for (int t = 0; t < tileCount; t++) {
+					pictureOf[t] = t;
+				}
+			}
+			this.pictureOf = pictureOf;
 			this.banks = banks;
 			this.tiles = tiles;
 			this.tileCount = tileCount;
@@ -439,8 +458,26 @@ public final class ChunkMap {
 			}
 		}
 
+		// the tileset's pictures (16/10/2026) : a tile of the same picture as
+		// another, its collision or flip telling them apart, draws with that
+		// one's routine (tiles.bin gives each tile its picture) ; tile 0 keeps
+		// its own, the empty entry (page 0) the engine never draws
+		int[] pictureOf = new int[count];
+		List<byte[]> distinct = new ArrayList<byte[]>();
+		Map<ByteBuffer, Integer> pictureIds = new HashMap<ByteBuffer, Integer>();
+		distinct.add(pictures.get(0));
+		for (int t = 1; t < count; t++) {
+			ByteBuffer k = ByteBuffer.wrap(pictures.get(t));
+			Integer p = pictureIds.get(k);
+			if (p == null) {
+				p = distinct.size();
+				pictureIds.put(k, p);
+				distinct.add(pictures.get(t));
+			}
+			pictureOf[t] = p;
+		}
 		IndexColorModel cm = (IndexColorModel) sheet.getColorModel();
-		BufferedImage tiles = new BufferedImage(tw, th * count, BufferedImage.TYPE_BYTE_INDEXED, cm);
+		BufferedImage tiles = new BufferedImage(tw, th * distinct.size(), BufferedImage.TYPE_BYTE_INDEXED, cm);
 		WritableRaster dst = tiles.getRaster();
 		// the collision tables : the tileset's tiles, then the animated ones
 		byte[] primaryOut = new byte[count + animated.size()];
@@ -454,18 +491,20 @@ public final class ChunkMap {
 			secondaryOut[count + i] = (byte) s;
 			flipOut[count + i] = (byte) ((p == 0 || p == 0xFF) && (s == 0 || s == 0xFF) ? 0 : animatedOrder.get(i) >> 10);
 		}
-		for (int t = 0; t < count; t++) {
-			byte[] pic = pictures.get(t);
+		for (int p = 0; p < distinct.size(); p++) {
+			byte[] pic = distinct.get(p);
 			for (int y = 0; y < th; y++) {
 				for (int x = 0; x < tw; x++) {
-					dst.setSample(x, t * th + y, 0, pic[y * tw + x] & 0xFF);
+					dst.setSample(x, p * th + y, 0, pic[y * tw + x] & 0xFF);
 				}
 			}
+		}
+		for (int t = 0; t < count; t++) {
 			primaryOut[t] = (byte) collision.get(t)[0];
 			secondaryOut[t] = (byte) collision.get(t)[1];
 			flipOut[t] = (byte) collision.get(t)[2];
 		}
-		return new Result(tiles, count, chunks, outLayouts, primaryOut, secondaryOut, flipOut, slices, banks);
+		return new Result(tiles, count, chunks, outLayouts, primaryOut, secondaryOut, flipOut, slices, banks, pictureOf);
 	}
 
 	/** A layout's cells : a byte each with two banks, a big endian word past two. */
@@ -528,9 +567,9 @@ public final class ChunkMap {
 	}
 
 	/**
-	 * Writes the result under dir : tiles.png (the tileset, a column of
-	 * tiles), tiles.bin (its tile ids in order, 16 bit big endian : the map a
-	 * &lt;tilemap&gt; turns into the page and address index), chunk_0.bin and
+	 * Writes the result under dir : tiles.png (the tileset's pictures, a
+	 * column of them), tiles.bin (each tile's picture, 16 bit big endian : the
+	 * map a &lt;tilemap&gt; turns into the page and address index), chunk_0.bin and
 	 * chunk_1.bin (the banks), layout-&lt;n&gt;.bin (the acts, from 1),
 	 * primary-collision.bin, secondary-collision.bin, flip-collision.bin.
 	 */
@@ -539,8 +578,8 @@ public final class ChunkMap {
 		ImageIO.write(r.tiles, "png", dir.resolve("tiles.png").toFile());
 		byte[] ids = new byte[r.tileCount * 2];
 		for (int t = 0; t < r.tileCount; t++) {
-			ids[t * 2] = (byte) (t >> 8);
-			ids[t * 2 + 1] = (byte) t;
+			ids[t * 2] = (byte) (r.pictureOf[t] >> 8);
+			ids[t * 2 + 1] = (byte) r.pictureOf[t];
 		}
 		Files.write(dir.resolve("tiles.bin"), ids);
 		if (r.slices == null) {

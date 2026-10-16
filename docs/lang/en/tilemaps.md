@@ -387,8 +387,11 @@ element does the engine's half :
   `halfline` : the odd ones are never drawn, they come out empty), the
   same two collision indexes, the same flip (unless both indexes leave
   nothing to flip). Tile 0 is the empty one. `tiles.png` is a column of
-  tiles for a `<gfxcomp>` `<image grid="8x16">` collection ; `tiles.bin`
-  holds its ids in order, the map a `<tilemap>` turns into the page and
+  the tiles' pictures for a `<gfxcomp>` `<image grid="8x16">` collection,
+  each picture once : tiles of the same picture, their collision or flip
+  telling them apart, share one compiled routine (Hidden Palace 1 : 891
+  tiles, 848 pictures, 3.5 KB) ; tile 0 keeps its own. `tiles.bin` holds
+  each tile's picture, the map a `<tilemap>` turns into the page and
   address index the layer descriptor points at.
 - **Chunks** : a chunk's entries are the cells' words ; chunks with the
   same 64 words are one, renumbered in the order the acts use them, chunk

@@ -91,6 +91,8 @@ class ChunkMapTest {
 		// 0 empty, 1 block 1's picture, 2 the same picture with block 2's collision ;
 		// the odd line differing does not count in half-line
 		assertEquals(3, r.tileCount);
+		// tiles 1 and 2 share their picture : one compiled, both pointing at it
+		assertArrayEquals(new int[] { 0, 1, 1 }, r.pictureOf);
 		// then the animated block's (block 5 : past the indexes, none)
 		assertArrayEquals(new byte[] { 0, 0x10, 0x20, 0 }, r.primary);
 		assertArrayEquals(new byte[] { 0, 0x11, 0x21, 0 }, r.secondary);
@@ -163,7 +165,8 @@ class ChunkMapTest {
 	void emptiesTheOddLines() throws Exception {
 		BufferedImage t = convert(true, true).tiles;
 		assertEquals(TW, t.getWidth());
-		assertEquals(3 * TH, t.getHeight());
+		// the pictures : the empty one, block 1's (tile 2 shares it)
+		assertEquals(2 * TH, t.getHeight());
 		assertEquals(1, t.getRaster().getSample(0, TH, 0));
 		assertEquals(0, t.getRaster().getSample(0, TH + 1, 0));
 	}
@@ -185,6 +188,12 @@ class ChunkMapTest {
 		assertEquals(List.of(761, 761 | 1 << 10, 762 | 3 << 10),
 				new ArrayList<Integer>(ChunkMap.parseAnimated("761, 761/xflip 762/yflip/xflip").keySet()));
 		assertThrows(Exception.class, () -> ChunkMap.parseAnimated("761/xflip,761/xflip/high"));
+	}
+
+	@Test
+	void writesEachTilesPicture(@TempDir Path dir) throws Exception {
+		ChunkMap.write(convert(true, true), dir);
+		assertArrayEquals(new byte[] { 0, 0, 0, 1, 0, 1 }, Files.readAllBytes(dir.resolve("tiles.bin")));
 	}
 
 	@Test
