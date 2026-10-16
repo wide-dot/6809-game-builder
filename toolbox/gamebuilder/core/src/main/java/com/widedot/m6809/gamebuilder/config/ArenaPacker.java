@@ -194,14 +194,23 @@ public final class ArenaPacker {
 
 	/**
 	 * Packing file by file ({@code <layout packing="file">}, 15/10/2026).
-	 * Every arena file joins ONE largest-first sort, whatever its arena (ties
-	 * in the scenes' order), and takes the lowest free run of its arena's
-	 * zones, in their order, that no file it shares a state with holds :
-	 * its own conflicts, not its arena's. Packing an arena as a whole starts
+	 * Every arena's files in one sort : the most shared first (the count of
+	 * states that hold the file), then the largest, ties in the scenes'
+	 * order ; a file takes the lowest free run of its arena's zones, in their
+	 * order, that no file it shares a state with holds : its own conflicts,
+	 * not its arena's. Packing an arena as a whole starts
 	 * each zone after the highest content ANY of its files shares a state
 	 * with, and an arena whose files live in several states leaves the room
 	 * of the others to nobody — Sonic 2's Hidden Palace 1, 32 KB free in its
-	 * state, could not hold 383 bytes more. A collection no run holds whole
+	 * state, could not hold 383 bytes more. The most shared first
+	 * (16/10/2026) : sorted by size alone, the files every state holds came
+	 * after the bigger ones of single acts, above the highest of them page by
+	 * page, and cut every state's free room (Sonic 2's largest free run, 16 KB
+	 * in most states, down to 9 KB) ; packed arena after arena, a big file of
+	 * an arena packed late found no run (Sonic 2's boss arena, 15 KB). The
+	 * most shared first keep together at the bottom, each state's room on top
+	 * of them, and the files of one state, the least constrained, share one
+	 * largest-first sort. A collection no run holds whole
 	 * flows into the runs, one member per run. A file no composition holds
 	 * conflicts with everything.
 	 */
@@ -226,8 +235,10 @@ public final class ArenaPacker {
 				sizes.put(f, d != null ? d.total : ctx.regions.fileSize(f));
 			}
 		}
+		// the most shared first, then the largest
 		final List<String> declared = new ArrayList<String>(order);
-		order.sort(Comparator.comparingInt((String f) -> -sizes.get(f))
+		order.sort(Comparator.comparingInt((String f) -> -shared(f, statesOf))
+				.thenComparingInt((String f) -> -sizes.get(f))
 				.thenComparingInt(declared::indexOf));
 		for (String f : order) {
 			Regions.Region arena = regions.get(arenaOf.get(f));
@@ -266,6 +277,12 @@ public final class ArenaPacker {
 			}
 			cutRuns(arena, f, d, runs, ctx, taken);
 		}
+	}
+
+	/** how many states hold a file ; one no composition holds, first of all */
+	static int shared(String f, Map<String, Set<String>> statesOf) {
+		Set<String> s = statesOf.get(f);
+		return s == null ? Integer.MAX_VALUE : s.size();
 	}
 
 	/**

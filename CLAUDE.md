@@ -1018,10 +1018,15 @@ après le plus haut contenu avec lequel UN de ses fichiers partage un état.
 Une arène dont les fichiers vivent dans plusieurs états laisse alors à
 personne la place que les autres états occupent (Hidden Palace 1 de
 sonic-2 : 32 Ko libres, 383 octets refusés). `packing="file"` range tous les
-fichiers de toutes les arènes en un seul tri du plus gros au plus petit,
-chacun dans le premier trou des zones de SON arène libre des fichiers avec
+fichiers de toutes les arènes en un seul tri, les plus partagés d'abord
+(nombre d'états qui les chargent) puis les plus gros, chacun dans le premier
+trou des zones de SON arène libre des fichiers avec
 lesquels IL partage un état ; une collection qu'aucun trou ne tient entière
-s'y découpe. Exige les `<composition>` ; le défaut ne change rien (corpus
+s'y découpe. L'ordre compte (16/10) : par taille seule, les fichiers
+communs à tous les états passaient après les gros fichiers d'un acte et
+trouaient les pages hautes de tous (plus grand bloc libre de sonic-2 :
+16 → 9 Ko) ; arène après arène, un gros fichier d'une arène rangée tard ne
+trouvait plus de place. Exige les `<composition>` ; le défaut ne change rien (corpus
 identique). Code : `ArenaPacker.packFiles`, tests `ArenaPackerFileTest`,
 manuel `scenes.md`.
 

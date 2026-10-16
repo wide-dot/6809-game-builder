@@ -226,10 +226,15 @@ highest content that *any* of the arena's files shares a state with. An
 arena whose files live in several states (an act's own files and those it
 shares with the next act) then leaves to nobody the room the other states
 use : Sonic 2's Hidden Palace 1, 32 KB free in its state, could not take
-383 bytes more. `packing="file"` puts every arena's files in one
-largest-first sort, whatever their arena (ties in the scenes' order), each
-in the lowest run of its own arena's zones, in their order, free of the
-files *it* shares a state with ; a collection no run holds whole flows into
+383 bytes more. `packing="file"` puts every arena's files in one sort,
+whatever their arena : the most shared first (the count of states that
+hold the file), then the largest, ties in the scenes' order ; each takes
+the lowest run of its own arena's zones, in their order, free of the files
+*it* shares a state with. The most shared first keeps the files every
+state holds together at the bottom and each state's room above them in one
+piece (16/10/2026 : sorted by size alone, Sonic 2's largest free run fell
+from 16 KB to 9 KB in most states ; packed arena after arena, a big file of
+an arena packed late found no run) ; a collection no run holds whole flows into
 the runs, one member per run. It needs the `<composition>`s (a file no
 composition holds shares no byte with anything), and it changes every
 placement : the default, `arena`, keeps the packing every image was built

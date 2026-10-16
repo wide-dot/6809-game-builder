@@ -49,7 +49,7 @@ class ArenaPackerFileTest {
 		// holding a file of act 1 alone and one of both acts. Packed as an
 		// arena, act 1's arena starts after the part (its shared file is in
 		// act 2's state) and its own file finds no 10 KB : packed file by
-		// file, it lies under the part
+		// file, it lies over the part, the most shared placed first
 		Map<String, Integer> sizes = new LinkedHashMap<String, Integer>();
 		sizes.put("zone", 0x1000);
 		sizes.put("part", 0x2000);
@@ -71,10 +71,35 @@ class ArenaPackerFileTest {
 		statesOf.put("a12", states("act1", "act2"));
 		ArenaPacker.packFiles(wanted, regions, c, new LinkedHashMap<String, ArenaPacker.Divisible>(),
 				statesOf, new ArrayList<ArenaPacker.Placed>());
-		assertArrayEquals(new int[] { 4, 0x0000 }, c.regions.filePlacement("a1"));
-		assertArrayEquals(new int[] { 4, 0x0000 }, c.regions.filePlacement("part"), "over a1 : never in RAM with it");
-		assertArrayEquals(new int[] { 4, 0x2800 }, c.regions.filePlacement("zone"));
-		assertArrayEquals(new int[] { 4, 0x3800 }, c.regions.filePlacement("a12"));
+		assertArrayEquals(new int[] { 4, 0x0000 }, c.regions.filePlacement("zone"));
+		assertArrayEquals(new int[] { 4, 0x1000 }, c.regions.filePlacement("a12"));
+		assertArrayEquals(new int[] { 4, 0x1800 }, c.regions.filePlacement("a1"));
+		assertArrayEquals(new int[] { 4, 0x1800 }, c.regions.filePlacement("part"), "over a1 : never in RAM with it");
+	}
+
+	@Test
+	@DisplayName("the most shared first : the zone's files together at the bottom")
+	void arenasInTheirOrder() throws Exception {
+		// the zone's small file before an act's big one : sorted by size
+		// alone, the act's file took the bottom and the zone's went above it
+		// for every state ; the most shared first, the zone's comes first
+		Map<String, Integer> sizes = new LinkedHashMap<String, Integer>();
+		sizes.put("common", 0x0800);
+		sizes.put("act", 0x3000);
+		BuildContext c = ctx(sizes);
+		Map<String, List<String>> wanted = new LinkedHashMap<String, List<String>>();
+		wanted.put("Z", Arrays.asList("common"));
+		wanted.put("A", Arrays.asList("act"));
+		Map<String, Regions.Region> regions = new LinkedHashMap<String, Regions.Region>();
+		regions.put("Z", arena("Z"));
+		regions.put("A", arena("A"));
+		Map<String, Set<String>> statesOf = new LinkedHashMap<String, Set<String>>();
+		statesOf.put("common", states("act1", "act2"));
+		statesOf.put("act", states("act1"));
+		ArenaPacker.packFiles(wanted, regions, c, new LinkedHashMap<String, ArenaPacker.Divisible>(),
+				statesOf, new ArrayList<ArenaPacker.Placed>());
+		assertArrayEquals(new int[] { 4, 0x0000 }, c.regions.filePlacement("common"));
+		assertArrayEquals(new int[] { 4, 0x0800 }, c.regions.filePlacement("act"));
 	}
 
 	@Test
@@ -94,8 +119,8 @@ class ArenaPackerFileTest {
 		statesOf.put("x", states("s1"));
 		ArenaPacker.packFiles(wanted, regions, c, new LinkedHashMap<String, ArenaPacker.Divisible>(),
 				statesOf, new ArrayList<ArenaPacker.Placed>());
-		assertArrayEquals(new int[] { 4, 0x0000 }, c.regions.filePlacement("x"));
-		assertArrayEquals(new int[] { 4, 0x1000 }, c.regions.filePlacement("y"));
+		assertArrayEquals(new int[] { 4, 0x0000 }, c.regions.filePlacement("y"), "no state : placed first");
+		assertArrayEquals(new int[] { 4, 0x1000 }, c.regions.filePlacement("x"));
 	}
 
 	@Test
