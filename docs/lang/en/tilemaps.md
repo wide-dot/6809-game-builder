@@ -356,6 +356,17 @@ word per cell — priority (bit 15), solidity (11-14), the opaque bit (10,
 define `TilemapBuffer.OPAQUE`), the tile index — and a page/address index
 of compiled tiles.
 
+`TilemapBuffer.SKIP_ROWS` (opt-in) lets a game take over the view's last
+rows for a frame : it writes `DBT_skiprows` (fewer than the view's rows)
+before `DrawBufferedTile`, which then draws the rows above alone. The game
+handles the others itself, typically under a plane it draws over the low
+priority tiles (a Mega Drive plane B high priority layer) : their low
+priority cells hidden, it pushes their high priority cells on the queue
+`DrawHighPriorityBufferedTile` pops, from `DBT_row`, `DBT_rowy` and
+`DBT_hiptr` as the loop leaves them, then puts `DBT_skiprows` back to 0.
+Cost when unused : none (the define off) ; when on, 4 bytes and 5 cycles a
+frame.
+
 `<chunkmap>` builds those from the source level. Drawing the chunks is the
 game's adaptation of its assets (its palette, its resolution : a script of
 the game writes one picture per chunk, the block flips applied) ; the
@@ -391,10 +402,15 @@ element does the engine's half :
 - **Collision** : `primary-collision.bin`, `secondary-collision.bin` and
   `flip-collision.bin`, a byte a tile, what the terrain collision reads
   through the tile index.
-- **Animated blocks** (`animated="761/opaque,765/high,..."`) : blocks the
-  game builds at run time are mapped past the block mappings ; each takes
-  the tile index past the tileset, in the declared order, where the game's
-  animated tilesets follow its index.
+- **Animated blocks** (`animated="761/opaque,761/xflip,765/high,..."`) :
+  blocks the game draws at run time, mapped past the block mappings or
+  redrawn over them (a colour cycle drawn as frames) ; each takes the tile
+  index past the tileset, in the declared order, where the game's animated
+  tilesets follow its index. A block used flipped is declared once for each
+  flip it is used with (`/xflip`, `/yflip`), its frames drawn so ; a use
+  not declared is an error. Their collision follows the tileset's in the
+  three tables (the block's indexes, the flip as a tile's), so an animated
+  block can be solid.
 
 Like `<leanscroll>`, the element sits in its `<directory>` before the files
 that read its outputs, and runs before the arenas are measured. It is not

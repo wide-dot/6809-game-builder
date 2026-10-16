@@ -199,6 +199,28 @@ const side = document.getElementById("side");
 const view = document.getElementById("view");
 const stats = document.getElementById("stats");
 
+/* ------------------------------------------------------------- the disks */
+/* Several disks : every element's key is written on ONE of them. A scene is
+   on the disk of its directory ; a RAM state reads from the disks of its
+   scenes. The RAM tab filters its states by disk, the head path walks one
+   chain over all of them. */
+const PATH = DATA.path || { disks: [], scenes: {}, chain: [], defaults: {} };
+const DISKS = PATH.disks.length ? PATH.disks : (DATA.media || []);
+const diskOfKey = new Map();
+PATH.disks.forEach((d, i) => Object.keys(d.elements).forEach(k => { if (!diskOfKey.has(k)) diskOfKey.set(k, i); }));
+function sceneDisk(scene) {
+  const load = PATH.scenes[scene];
+  if (!load || load.dir < 0) return -1;
+  const d = diskOfKey.get("directory " + load.dir);
+  return d === undefined ? -1 : d;
+}
+/* the disks a state reads from, in disk order */
+function stateDisks(c) {
+  return [...new Set(c.scenes.map(sceneDisk).filter(d => d >= 0))].sort((a, b) => a - b);
+}
+const diskLabel = i => i >= 0 && DISKS[i] ? DISKS[i].name : "?";
+let ramDisk = -1;           /* the RAM tab's disk filter, -1 all */
+
 /* -------------------------------------------------------------- RAM view */
 /* every checkable element, flat : scene loads and reserved ranges */
 const ramItems = [];
@@ -253,11 +275,33 @@ function stateSelector() {
   if (!compositions.length) {
     return;
   }
+  /* several disks : pick one, and the list holds the states that read from
+     it ; each state says the disks it reads from */
+  if (DISKS.length > 1) {
+    const dbox = $("div", { class: "sidetitle" }, side);
+    $("span", { text: "disquette" }, dbox);
+    const dsel = $("select", { class: "state" }, dbox);
+    $("option", { value: -1, text: "toutes" }, dsel);
+    DISKS.forEach((d, i) => {
+      const o = $("option", { value: i, text: d.name }, dsel);
+      if (i === ramDisk) o.selected = true;
+    });
+    dsel.addEventListener("change", () => {
+      ramDisk = +dsel.value;
+      const shown = compositions.filter(c => ramDisk < 0 || stateDisks(c).indexOf(ramDisk) >= 0);
+      if (shown.length && !shown.some(c => c.name === ramState)) applyState(shown[0].name);
+      else render();
+    });
+  }
   const box = $("div", { class: "sidetitle" }, side);
   $("span", { text: "état de RAM" }, box);
   const sel = $("select", { class: "state" }, box);
   compositions.forEach(c => {
-    const opt = $("option", { value: c.name, text: c.name }, sel);
+    const disks = stateDisks(c);
+    if (ramDisk >= 0 && disks.indexOf(ramDisk) < 0) return;
+    const text = DISKS.length > 1 && disks.length
+      ? c.name + " — " + disks.map(diskLabel).join(" + ") : c.name;
+    const opt = $("option", { value: c.name, text }, sel);
     if (c.name === ramState) {
       opt.selected = true;
     }
@@ -291,7 +335,9 @@ function ramSide() {
     $("span", { class: "arrow", text: "▸" }, sum);
     const gcb = $("input", { type: "checkbox" }, sum);
     $("span", { text: g }, sum);
-    $("span", { class: "n", text: items.length + " · " + kb(items.reduce((a, i) => a + i.size, 0)) }, sum);
+    const gd = DISKS.length > 1 ? sceneDisk(g) : -1;
+    $("span", { class: "n", text: (gd >= 0 ? diskLabel(gd) + " · " : "") + items.length + " · "
+        + kb(items.reduce((a, i) => a + i.size, 0)) }, sum);
     gcb.addEventListener("click", e => {
       e.preventDefault(); e.stopPropagation();
       const on = !items.every(i => i.checked);
@@ -593,10 +639,9 @@ function mediaView() {
    the loader converges scene by scene — directory, table, the files' data,
    their link data — and the drive pays seeks and rotation for every sector.
    Kept in step with the Java by hand ; the text seek report is the check. */
-const PATH = DATA.path || { disks: [], scenes: {}, chain: [], defaults: {} };
 const KIND = { dir: "répertoire", table: "table", data: "données", link: "liens", other: "autre" };
 const KINDCOL = { dir: "#c47a1a", table: "#7c5cd6", data: "#2e8bd9", link: "#2aa876", other: "#888" };
-let pathDisk = 0;
+let pathDisk = -1;          /* the disk drawn, -1 : the one the hop reads most */
 let pathSel = 0;            /* selected hop in the chain */
 let pathFrom = null;        /* override of the hop's origin state, or null */
 let pathStep = -1;          /* highlighted step */
@@ -609,23 +654,31 @@ function slotOf(disk, track, k) {
   return disk.slotOfNumber[number - 1];
 }
 
-function newState() { return { headTrack: 0, currentDir: null, cachedTable: null, ptsec: null, timeMs: 0 }; }
-function cloneState(st) { return Object.assign({}, st); }
+/* the drive between two convergences : each disk its own head, one ptsec,
+   one directory in memory (HeadPath.State) */
+function newState() { return { heads: {}, currentDir: null, cachedTable: null, ptsec: null, ptsecDisk: -1, currentDisk: -1, timeMs: 0 }; }
+function cloneState(st) { const c = Object.assign({}, st); c.heads = Object.assign({}, st.heads); return c; }
 
-function simulate(disk, from, to, st) {
-  const r = { steps: [], seekMs: 0, waitMs: 0, readMs: 0, seeks: 0, tracks: 0, sectors: 0, cached: 0, lost: 0, elsewhere: 0 };
-  const slotMs = 60000 / params.rpm / disk.sectors;
-  const perFace = disk.tracks * disk.sectors;
+function simulate(from, to, st) {
+  const r = { steps: [], seekMs: 0, waitMs: 0, readMs: 0, seeks: 0, tracks: 0, sectors: 0, cached: 0, lost: 0, elsewhere: 0, changes: 0 };
 
   function read(kind, key, name) {
-    const el = disk.elements[key];
+    const d = diskOfKey.get(key);
+    const disk = d === undefined ? null : PATH.disks[d];
+    const el = disk ? disk.elements[key] : null;
     if (!el) {
       if (kind === "data" || kind === "link") return;
-      r.steps.push({ kind, name, elsewhere: true, sectors: 0, cached: 0, seekMs: 0, waitMs: 0, readMs: 0, lin: [] });
+      r.steps.push({ kind, name, elsewhere: true, disk: -1, sectors: 0, cached: 0, seekMs: 0, waitMs: 0, readMs: 0, lin: [] });
       r.elsewhere++;
       return;
     }
-    const s = { kind, name, elsewhere: false, sectors: 0, cached: 0, seeks: 0, tracks: 0,
+    const slotMs = 60000 / params.rpm / disk.sectors;
+    const perFace = disk.tracks * disk.sectors;
+    const change = st.currentDisk >= 0 && st.currentDisk !== d;
+    if (change) r.changes++;
+    st.currentDisk = d;
+    let head = st.heads[d] || 0;
+    const s = { kind, name, elsewhere: false, disk: d, change, sectors: 0, cached: 0, seeks: 0, tracks: 0,
       seekMs: 0, waitMs: 0, readMs: 0, startMs: st.timeMs, lost: 0, lin: [], face: 0, track: 0, sector: 0, lastTrack: 0 };
     const n = el.sectors.length;
     el.sectors.forEach((lin, idx) => {
@@ -636,13 +689,13 @@ function simulate(disk, from, to, st) {
       s.lastTrack = track;
       s.lin.push(lin);
       const partial = (idx === 0 && el.pf) || (idx === n - 1 && el.pl);
-      if (partial && st.ptsec === lin) { s.cached++; return; }
+      if (partial && st.ptsec === lin && st.ptsecDisk === d) { s.cached++; return; }
       let sought = false;
-      if (track !== st.headTrack) {
-        const d = Math.abs(track - st.headTrack);
-        s.seeks++; s.tracks += d;
-        const ms = d * params.step + params.settle;
-        s.seekMs += ms; st.timeMs += ms; st.headTrack = track;
+      if (track !== head) {
+        const dt = Math.abs(track - head);
+        s.seeks++; s.tracks += dt;
+        const ms = dt * params.step + params.settle;
+        s.seekMs += ms; st.timeMs += ms; head = track; st.heads[d] = track;
         sought = true;
       }
       /* a long wait right after a seek is latency ; on a head that did not
@@ -656,7 +709,7 @@ function simulate(disk, from, to, st) {
       s.waitMs += waitMs; s.readMs += readMs;
       st.timeMs += waitMs + readMs + params.overhead;
       s.sectors++;
-      if (partial) st.ptsec = lin;
+      if (partial) { st.ptsec = lin; st.ptsecDisk = d; }
     });
     r.steps.push(s);
     r.seekMs += s.seekMs; r.waitMs += s.waitMs; r.readMs += s.readMs;
@@ -688,14 +741,14 @@ function simulate(disk, from, to, st) {
   return r;
 }
 
-/* the chain : every state from the previous one, drive state carried along ;
-   returns per hop {from, to, result, before (state snapshot)} */
-function runChain(disk) {
+/* the chain : every state from the previous one, drive state carried along,
+   over all the disks ; returns per hop {from, to, result, before (state snapshot)} */
+function runChain() {
   const hops = [];
   let st = newState(), from = [], fromName = "(rien)";
   PATH.chain.forEach(c => {
     const before = cloneState(st);
-    const result = simulate(disk, from, c.scenes, st);
+    const result = simulate(from, c.scenes, st);
     hops.push({ fromName, toName: c.name, from, to: c.scenes, result, before });
     from = c.scenes; fromName = c.name;
   });
@@ -707,7 +760,7 @@ function ms(v) { return v >= 1000 ? (v / 1000).toFixed(2) + " s" : Math.round(v)
 function pathSide() {
   const scroll = side.scrollTop;
   side.innerHTML = "";
-  const disk = PATH.disks[pathDisk];
+  const disk = PATH.disks[Math.max(pathDisk, 0)];
   if (!disk) { $("div", { class: "sidetitle", text: "aucun média" }, side); return; }
 
   $("div", { class: "sidetitle", text: "modèle mécanique" }, side);
@@ -722,19 +775,23 @@ function pathSide() {
     "<span style='grid-column:1/3;color:var(--dim)'>entrelacement " + disk.softskip + ", skew " + disk.softskew
     + ", format " + disk.hardskip + " — " + (60000 / params.rpm / disk.sectors).toFixed(1) + " ms le créneau</span>";
 
-  $("div", { class: "sidetitle", text: "enchaînement des états" }, side);
-  const hops = runChain(disk);
-  let total = 0;
+  $("div", { class: "sidetitle", text: "enchaînement des états"
+      + (PATH.disks.length > 1 ? " — toutes les disquettes, ⇄ un changement" : "") }, side);
+  const hops = runChain();
+  let total = 0, changes = 0;
   hops.forEach((h, i) => {
     total += h.result.totalMs;
+    changes += h.result.changes;
     const row = $("div", { class: "hop" + (i === pathSel ? " sel" : "") }, side);
-    $("span", { class: "nm", text: h.fromName + " → " + h.toName, title: h.fromName + " → " + h.toName }, row);
+    const label = h.fromName + " → " + h.toName;
+    $("span", { class: "nm", text: (h.result.changes ? "⇄ " : "") + label,
+      title: label + (h.result.changes ? " — " + h.result.changes + " changement(s) de disquette" : "") }, row);
     $("span", { class: "t mono", text: ms(h.result.totalMs) }, row);
     row.addEventListener("click", () => { pathSel = i; pathFrom = null; pathStep = -1; render(); });
   });
   const tot = $("div", { class: "hop" }, side);
   tot.style.cursor = "default";
-  $("span", { class: "nm", text: "toute la chaîne" }, tot);
+  $("span", { class: "nm", text: "toute la chaîne" + (changes ? " (" + changes + " ⇄)" : "") }, tot);
   $("span", { class: "t mono", text: ms(total) }, tot);
 
   if (hops.length) {
@@ -750,8 +807,8 @@ function pathSide() {
 }
 
 /* the hop the view shows : the chain's, or the selected target from another origin */
-function currentHop(disk) {
-  const hops = runChain(disk);
+function currentHop() {
+  const hops = runChain();
   if (!hops.length) return null;
   const hop = hops[Math.min(pathSel, hops.length - 1)];
   if (!pathFrom) return hop;
@@ -761,23 +818,33 @@ function currentHop(disk) {
     const origin = hops.find(h => h.toName === pathFrom);
     if (!origin) return hop;
     st = cloneState(origin.before);
-    simulate(disk, origin.from, origin.to, st);   /* the drive as that state left it */
+    simulate(origin.from, origin.to, st);   /* the drive as that state left it */
     from = origin.to;
   }
-  return { fromName, toName: hop.toName, from, to: hop.to, result: simulate(disk, from, hop.to, st) };
+  return { fromName, toName: hop.toName, from, to: hop.to, result: simulate(from, hop.to, st) };
 }
 
 function pathView() {
   view.innerHTML = "";
   const head = $("div", { class: "viewhead" }, view);
-  const sel = $("select", {}, head);
-  PATH.disks.forEach((d, i) => { const o = $("option", { value: i, text: d.name }, sel); if (i === pathDisk) o.selected = true; });
-  sel.addEventListener("change", () => { pathDisk = +sel.value; pathStep = -1; render(); });
-  const disk = PATH.disks[pathDisk];
-  if (!disk) { stats.textContent = ""; return; }
-  const hop = currentHop(disk);
+  if (!PATH.disks.length) { stats.textContent = ""; return; }
+  const hop = currentHop();
   if (!hop) { $("span", { class: "hint", text: "aucun état déclaré" }, head); stats.textContent = ""; return; }
   const r = hop.result;
+  /* the disk drawn : the one chosen, or the one this hop reads most */
+  const readOn = PATH.disks.map((_, i) => r.steps.filter(s => s.disk === i).reduce((a, s) => a + s.lin.length, 0));
+  const busiest = readOn.indexOf(Math.max(...readOn));
+  const shownDisk = pathDisk >= 0 ? pathDisk : Math.max(busiest, 0);
+  const disk = PATH.disks[shownDisk];
+  const sel = $("select", {}, head);
+  if (PATH.disks.length > 1) {
+    $("option", { value: -1, text: "auto — " + PATH.disks[Math.max(busiest, 0)].name }, sel);
+  }
+  PATH.disks.forEach((d, i) => {
+    const o = $("option", { value: i, text: d.name + (PATH.disks.length > 1 ? " (" + readOn[i] + " sect.)" : "") }, sel);
+    if (i === pathDisk) o.selected = true;
+  });
+  sel.addEventListener("change", () => { pathDisk = +sel.value; pathStep = -1; render(); });
   $("span", { class: "hint", text: hop.fromName + " → " + hop.toName + " : ce que la tête lit, dans l'ordre du loader" }, head);
   stats.textContent = hop.fromName + " → " + hop.toName + " · " + ms(r.totalMs);
 
@@ -787,11 +854,12 @@ function pathView() {
   cell(ms(r.seekMs), r.seeks + " déplacement" + (r.seeks > 1 ? "s" : "") + ", " + r.tracks + " pistes");
   cell(ms(r.waitMs), "d'attente de rotation, " + r.lost + " tour" + (r.lost > 1 ? "s" : "") + " perdu" + (r.lost > 1 ? "s" : ""));
   cell(ms(r.readMs), "de lecture, " + r.sectors + " secteurs" + (r.cached ? " (+" + r.cached + " en cache)" : ""));
-  if (r.elsewhere) cell(r.elsewhere, "lecture(s) sur une autre disquette");
+  if (r.changes) cell(r.changes, " changement" + (r.changes > 1 ? "s" : "") + " de disquette (non chiffré" + (r.changes > 1 ? "s" : "") + " : l'invite)");
+  if (r.elsewhere) cell(r.elsewhere, "lecture(s) sur aucune disquette");
 
   /* the disk, coloured by reading order */
   const order = new Map();   /* linear sector -> step index */
-  r.steps.forEach((s, i) => s.lin.forEach(lin => { if (!order.has(lin)) order.set(lin, i); }));
+  r.steps.forEach((s, i) => { if (s.disk === shownDisk) s.lin.forEach(lin => { if (!order.has(lin)) order.set(lin, i); }); });
   const nsteps = Math.max(1, r.steps.length);
   const CELL = 9, GAPC = 1, LABEL = 34, TITLE = 20;
   const gridW = disk.sectors * (CELL + GAPC);
@@ -824,8 +892,10 @@ function pathView() {
   /* the steps */
   const table = $("table", { class: "steps" }, view);
   const thead = $("tr", {}, $("thead", {}, table));
-  ["n°", "type", "élément", "face", "pistes", "secteur", "secteurs", "cache", "déplacement", "attente", "lecture", "total", "cumul"].forEach((h, i) =>
-    $("th", { class: i < 3 ? "l" : "", text: h }, thead));
+  const several = PATH.disks.length > 1;
+  ["n°", "type", "élément"].concat(several ? ["disquette"] : [])
+    .concat(["face", "pistes", "secteur", "secteurs", "cache", "déplacement", "attente", "lecture", "total", "cumul"]).forEach((h, i) =>
+    $("th", { class: i < (several ? 4 : 3) ? "l" : "", text: h }, thead));
   const tbody = $("tbody", {}, table);
   let cum = 0, prevTrack = -1;
   r.steps.forEach((s, i) => {
@@ -835,9 +905,13 @@ function pathView() {
     $("span", { class: "kind", text: KIND[s.kind] }, kt).style.background = KINDCOL[s.kind];
     $("td", { class: "l", text: s.name }, tr);
     if (s.elsewhere) {
-      $("td", { class: "dim l", text: "sur une autre disquette", colspan: 10 }, tr);
+      $("td", { class: "dim l", text: "sur aucune disquette", colspan: several ? 11 : 10 }, tr);
       return;
     }
+    if (several) {
+      $("td", { class: "l" + (s.disk === shownDisk ? "" : " dim"), text: (s.change ? "⇄ " : "") + diskLabel(s.disk) }, tr);
+    }
+    if (s.change) prevTrack = -1;
     const back = prevTrack >= 0 && s.track < prevTrack;
     const total = s.seekMs + s.waitMs + s.readMs;
     cum += total;

@@ -22,6 +22,9 @@ import com.widedot.m6809.gamebuilder.spi.globals.Compositions;
  * the data, costing real time ; {@code <directory colocate="true">} with
  * tables and link data in the data section is what removes it.
  *
+ * Several disks : one chain over all of them (see {@link HeadPath}), every
+ * read marked with its disk, a disk change on its own line.
+ *
  * A read-only consumer : nothing here changes an image.
  */
 public final class SeekReport {
@@ -41,47 +44,71 @@ public final class SeekReport {
 		out.append("the disk keeps spinning and a sector is read when its slot comes by.\n");
 		out.append("'<< back' marks a read on a lower track than the previous one.\n");
 
-		for (HeadPath.Disk disk : model.disks) {
-			out.append('\n').append("== ").append(disk.instance.name)
+		// the disks, then ONE chain over them : a state's reads go to the disk
+		// that holds each one, and a read on another disk than the previous
+		// one is a disk change (counted, not costed : the prompt's time)
+		boolean several = model.disks.size() > 1;
+		for (int d = 0; d < model.disks.size(); d++) {
+			HeadPath.Disk disk = model.disks.get(d);
+			out.append(several ? String.format("disk %d : ", d) : "disk : ")
+			   .append(disk.instance.name)
 			   .append(" (").append(disk.instance.tracks).append(" tracks x ")
 			   .append(disk.instance.faces).append(" faces, interleave ")
 			   .append(disk.instance.softskip).append(", skew ").append(disk.instance.softskew)
 			   .append(")\n");
-			HeadPath.State st = new HeadPath.State();
-			List<String> from = new ArrayList<String>();
-			double chainMs = 0;
-			for (Compositions.Composition c : model.chain) {
-				HeadPath.Result r = HeadPath.simulate(model, disk, from, c.scenes, st, p);
-				if (r.steps.isEmpty()) {
-					from = c.scenes;
+		}
+		HeadPath.State st = new HeadPath.State();
+		List<String> from = new ArrayList<String>();
+		double chainMs = 0;
+		int chainChanges = 0;
+		for (Compositions.Composition c : model.chain) {
+			HeadPath.Result r = HeadPath.simulate(model, from, c.scenes, st, p);
+			if (r.steps.isEmpty()) {
+				from = c.scenes;
+				continue;
+			}
+			chainMs += r.totalMs();
+			chainChanges += r.diskChanges;
+			out.append(String.format("%n%s -> %s : %.2f s (seek %.2f s over %d seek%s, %d tracks ; %d sectors, %d cached, %d lost turn%s)%s%s%n",
+					from.isEmpty() ? "(nothing)" : previousName(model, from), c.name,
+					r.totalMs() / 1000, r.seekMs / 1000, r.seeks, r.seeks == 1 ? "" : "s",
+					r.tracksTravelled, r.sectors, r.cached, r.lostTurns,
+					r.lostTurns == 1 ? "" : "s",
+					r.diskChanges > 0 ? " — " + r.diskChanges + " disk change" + (r.diskChanges == 1 ? "" : "s") : "",
+					r.elsewhere > 0 ? " — " + r.elsewhere + " read(s) on no disk" : ""));
+			int prevTrack = -1;
+			for (HeadPath.Step s : r.steps) {
+				if (s.elsewhere) {
+					out.append(String.format("    %-6s %-28s (on no disk)%n", s.kind, s.name));
 					continue;
 				}
-				chainMs += r.totalMs();
-				out.append(String.format("%n%s -> %s : %.2f s (seek %.2f s over %d seek%s, %d tracks ; %d sectors, %d cached, %d lost turn%s)%s%n",
-						from.isEmpty() ? "(nothing)" : previousName(model, from), c.name,
-						r.totalMs() / 1000, r.seekMs / 1000, r.seeks, r.seeks == 1 ? "" : "s",
-						r.tracksTravelled, r.sectors, r.cached, r.lostTurns,
-						r.lostTurns == 1 ? "" : "s",
-						r.elsewhere > 0 ? " — " + r.elsewhere + " read(s) not on this disk" : ""));
-				int prevTrack = -1;
-				for (HeadPath.Step s : r.steps) {
-					if (s.elsewhere) {
-						out.append(String.format("    %-6s %-28s (not on this disk)%n", s.kind, s.name));
-						continue;
-					}
-					String mark = prevTrack >= 0 && s.track < prevTrack
-							? String.format("  << back from t%d", prevTrack) : "";
-					out.append(String.format("    %-6s %-28s f%d t%d..t%d s%-2d %3d sect%s %6.0f ms%s%n",
-							s.kind, s.name, s.face, s.track, s.lastTrack, s.sector, s.sectors,
-							s.cached > 0 ? " +" + s.cached + "c" : "   ",
-							s.totalMs(), mark));
-					prevTrack = s.lastTrack;
+				if (s.diskChange) {
+					out.append(String.format("    -- disk %d : %s%n", diskIndex(model, s.disk), s.disk));
+					prevTrack = -1;
 				}
-				from = c.scenes;
+				String mark = prevTrack >= 0 && s.track < prevTrack
+						? String.format("  << back from t%d", prevTrack) : "";
+				out.append(String.format("    %-6s %-28s %sf%d t%d..t%d s%-2d %3d sect%s %6.0f ms%s%n",
+						s.kind, s.name, several ? "d" + diskIndex(model, s.disk) + " " : "",
+						s.face, s.track, s.lastTrack, s.sector, s.sectors,
+						s.cached > 0 ? " +" + s.cached + "c" : "   ",
+						s.totalMs(), mark));
+				prevTrack = s.lastTrack;
 			}
-			out.append(String.format("%nwhole chain : %.2f s%n", chainMs / 1000));
+			from = c.scenes;
 		}
+		out.append(String.format("%nwhole chain : %.2f s%s%n", chainMs / 1000,
+				chainChanges > 0 ? ", " + chainChanges + " disk change" + (chainChanges == 1 ? "" : "s") : ""));
 		return out.toString();
+	}
+
+	private static int diskIndex(HeadPath.Model model, String name) {
+		for (int d = 0; d < model.disks.size(); d++) {
+			if (model.disks.get(d).instance.name.equals(name)) {
+				return d;
+			}
+		}
+		return -1;
 	}
 
 	private static String previousName(HeadPath.Model model, List<String> scenes) {

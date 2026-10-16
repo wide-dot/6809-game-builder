@@ -37,6 +37,13 @@ import com.widedot.m6809.gamebuilder.spi.globals.Occupancy;
  * which is why the HTML report lets the reader change them and see the
  * totals move.</p>
  *
+ * <p>Several disks : the walk is ONE chain over all of them. A read goes to
+ * the disk that holds what it reads (a key is on one disk only), each disk
+ * keeps its own head (two drives ; with one, the head stays where the
+ * previous disk left it, a difference the model does not draw), and a read
+ * on another disk than the previous one is a disk change, counted but not
+ * costed : on one drive it is the player's time at the prompt.</p>
+ *
  * <p>Two consumers : the text seek report (defaults, declaration chain) and
  * the occupancy page, which carries the model as JSON and re-runs the same
  * simulation in the browser. The two implementations must agree ; the
@@ -105,6 +112,16 @@ public final class HeadPath {
 
 	public static final class Model {
 		public final List<Disk> disks = new ArrayList<Disk>();
+		/** the disk that holds an element's key : a key is written on one disk */
+		public final Map<String, Disk> diskOf = new LinkedHashMap<String, Disk>();
+
+		/** a disk and what it holds : its elements' keys are found on it */
+		public void addDisk(Disk disk) {
+			disks.add(disk);
+			for (String key : disk.elements.keySet()) {
+				diskOf.putIfAbsent(key, disk);
+			}
+		}
 		public final Map<String, SceneLoad> scenes = new LinkedHashMap<String, SceneLoad>();
 		/** the states in declaration order — the chain the report walks */
 		public final List<Compositions.Composition> chain = new ArrayList<Compositions.Composition>();
@@ -185,7 +202,7 @@ public final class HeadPath {
 					continue;
 				}
 			}
-			m.disks.add(disk);
+			m.addDisk(disk);
 		}
 
 		for (Map.Entry<String, List<String>> e : ctx.ramMap.tableOrder().entrySet()) {
@@ -225,7 +242,9 @@ public final class HeadPath {
 		public double readMs;
 		public double startMs;
 		public int lostTurns;
-		public boolean elsewhere;         // not on this disk
+		public boolean elsewhere;         // on no disk of the target
+		public String disk;               // the disk it is read from
+		public boolean diskChange;        // another disk than the previous read's
 
 		public double totalMs() {
 			return seekMs + waitMs + readMs;
@@ -234,17 +253,32 @@ public final class HeadPath {
 
 	/** the drive between two convergences : what carries from one to the next */
 	public static final class State {
-		public int headTrack = 0;
+		/** each disk's head ; a disk not read yet has its head on track 0 */
+		public final Map<String, Integer> heads = new LinkedHashMap<String, Integer>();
 		public Integer currentDir = null;
 		public String cachedTable = null;
 		public Integer ptsec = null;      // linear sector index in the partial buffer, or null
+		public String ptsecDisk = null;   // the disk that sector is on
+		public String currentDisk = null; // the disk of the last read
 		public double timeMs = 0;         // the rotation phase carries with the time
+
+		public State copy() {
+			State c = new State();
+			c.heads.putAll(heads);
+			c.currentDir = currentDir;
+			c.cachedTable = cachedTable;
+			c.ptsec = ptsec;
+			c.ptsecDisk = ptsecDisk;
+			c.currentDisk = currentDisk;
+			c.timeMs = timeMs;
+			return c;
+		}
 	}
 
 	public static final class Result {
 		public final List<Step> steps = new ArrayList<Step>();
 		public double seekMs, waitMs, readMs;
-		public int seeks, tracksTravelled, sectors, cached, lostTurns, elsewhere;
+		public int seeks, tracksTravelled, sectors, cached, lostTurns, elsewhere, diskChanges;
 
 		public double totalMs() {
 			return seekMs + waitMs + readMs;
@@ -252,14 +286,14 @@ public final class HeadPath {
 	}
 
 	/**
-	 * Converge from one set of scenes to another on one disk, from the given
-	 * drive state (updated in place : the next convergence starts where this
-	 * one ends).
+	 * Converge from one set of scenes to another, every read on the disk that
+	 * holds it, from the given drive state (updated in place : the next
+	 * convergence starts where this one ends).
 	 */
-	public static Result simulate(Model model, Disk disk, List<String> from, List<String> to,
+	public static Result simulate(Model model, List<String> from, List<String> to,
 			State st, Params p) {
 		Result r = new Result();
-		Sim sim = new Sim(disk, st, p, r);
+		Sim sim = new Sim(model, st, p, r);
 		Set<String> target = new HashSet<String>(to);
 		Set<String> held = new HashSet<String>(from);
 
@@ -302,20 +336,16 @@ public final class HeadPath {
 	}
 
 	private static final class Sim {
-		final Disk disk;
+		final Model model;
 		final State st;
 		final Params p;
 		final Result r;
-		final double slotMs;
-		final int sectors;
 
-		Sim(Disk disk, State st, Params p, Result r) {
-			this.disk = disk;
+		Sim(Model model, State st, Params p, Result r) {
+			this.model = model;
 			this.st = st;
 			this.p = p;
 			this.r = r;
-			this.sectors = disk.instance.sectors;
-			this.slotMs = 60000.0 / p.rpm / sectors;
 		}
 
 		void dirLoad(int dir) {
@@ -328,8 +358,8 @@ public final class HeadPath {
 		}
 
 		/** the physical slot of the logical sector k of a track */
-		int slot(int track, int k) {
-			Occupancy.Instance i = disk.instance;
+		static int slot(Occupancy.Instance i, int track, int k) {
+			int sectors = i.sectors;
 			if (i.readOrder == null) {
 				return k % sectors;
 			}
@@ -339,7 +369,8 @@ public final class HeadPath {
 		}
 
 		void read(String kind, String key, String name) {
-			Element el = disk.elements.get(key);
+			Disk disk = model.diskOf.get(key);
+			Element el = disk == null ? null : disk.elements.get(key);
 			if (el == null) {
 				if ("data".equals(kind) || "link".equals(kind)) {
 					return;                  // an export-only file, or no link data : nothing to read
@@ -356,6 +387,16 @@ public final class HeadPath {
 			s.kind = kind;
 			s.name = name;
 			s.startMs = st.timeMs;
+			String diskName = disk.instance.name;
+			s.disk = diskName;
+			if (st.currentDisk != null && !st.currentDisk.equals(diskName)) {
+				s.diskChange = true;
+				r.diskChanges++;
+			}
+			st.currentDisk = diskName;
+			int sectors = disk.instance.sectors;
+			double slotMs = 60000.0 / p.rpm / sectors;
+			int head = st.heads.containsKey(diskName) ? st.heads.get(diskName).intValue() : 0;
 			int perFace = disk.instance.tracks * sectors;
 			boolean first = true;
 			int n = el.sectors.size();
@@ -372,20 +413,22 @@ public final class HeadPath {
 				}
 				s.lastTrack = track;
 				boolean partial = (idx == 0 && el.partialFirst) || (idx == n - 1 && el.partialLast);
-				if (partial && st.ptsec != null && st.ptsec.intValue() == lin) {
+				if (partial && st.ptsec != null && st.ptsec.intValue() == lin
+						&& diskName.equals(st.ptsecDisk)) {
 					s.cached++;
 					continue;                // ptsec already holds it : no disk access
 				}
 				// seek
 				boolean sought = false;
-				if (track != st.headTrack) {
-					int d = Math.abs(track - st.headTrack);
+				if (track != head) {
+					int d = Math.abs(track - head);
 					s.seeks++;
 					s.tracksTravelled += d;
 					double ms = d * p.stepMs + p.settleMs;
 					s.seekMs += ms;
 					st.timeMs += ms;
-					st.headTrack = track;
+					head = track;
+					st.heads.put(diskName, Integer.valueOf(track));
 					sought = true;
 				}
 				// rotation : wait for the slot, then one slot to read it. A
@@ -393,7 +436,7 @@ public final class HeadPath {
 				// arbitrary) ; the same wait on a head that did not move is a
 				// turn LOST — the slot went by before the loader asked for it
 				double angle = (st.timeMs / slotMs) % sectors;
-				double wait = ((slot(track, k) - angle) % sectors + sectors) % sectors;
+				double wait = ((slot(disk.instance, track, k) - angle) % sectors + sectors) % sectors;
 				if (wait > sectors - 0.001) {
 					wait = 0;
 				}
@@ -408,6 +451,7 @@ public final class HeadPath {
 				s.sectors++;
 				if (partial) {
 					st.ptsec = Integer.valueOf(lin);
+					st.ptsecDisk = diskName;
 				}
 			}
 			r.steps.add(s);

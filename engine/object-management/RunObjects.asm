@@ -52,17 +52,21 @@ RunObjects
 ; live in another unit (r-type : the stage). A game mode that assembles them
 ; in the same unit as this routine defines OBJ_INDEX_LOCAL and gets v1's form,
 ; four cycles cheaper per object.
+; V2-DEVIATION: up to 256 objects (sonic-2, 13/10/2026 : its level game mode
+; past 127) : the ObjID unsigned everywhere, ABX (aslb overflowed past 127),
+; and the offset of the indirect call left to the assembler (v1 forced 8
+; bits, which overflowed past 127 objects ; the same 8 bits below 128).
  IFDEF OBJ_INDEX_LOCAL
         abx
  ELSE
-        aslb                  
         ldx   #Obj_Index_Address
+        abx
         abx
  ENDC
         ldd   run_object_next,u        ; in case of self-deletion by current object
         std   object_list_next         ; we need to save the next object in run list
  IFDEF OBJ_INDEX_LOCAL
-        jsr   [<Obj_Index_Address-Obj_Index_Page,x]        
+        jsr   [Obj_Index_Address-Obj_Index_Page,x]        
  ELSE
         jsr   [,x]        
  ENDC

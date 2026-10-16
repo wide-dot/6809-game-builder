@@ -40,6 +40,15 @@ import java.util.Set;
  * register and not restored), the tables {@code <label>_Lines1/2} (each
  * block's start) and {@code <label>_Entries1/2}, and {@code <label>_LINES},
  * {@code <label>_BYTES} (bytes a plane line).
+ *
+ * Frames (an animated part of the picture, a waterfall's colour cycle) :
+ * pictures of the same size, transparent (PNG index 0) where the picture
+ * does not change. Each frame k is a routine {@code <label>_F<k>_Draw} with
+ * {@code <label>_Draw}'s inputs, called after it : it writes, line by line
+ * bottom up, the bytes holding one of its pixels (the picture's pixel beside
+ * it), immediate stores from U, no register kept from a line to the next.
+ * With picture="false" the frames alone are compiled (their own unit and
+ * page, the picture's routine elsewhere).
  */
 public final class BackLines {
 
@@ -341,6 +350,21 @@ public final class BackLines {
 	 */
 	public static Result compile(BufferedImage im, String label, boolean halfline, int linebytes,
 			int planedistance, int beam) throws Exception {
+		return compile(im, label, halfline, linebytes, planedistance, beam, new ArrayList<BufferedImage>(), true);
+	}
+
+	public static Result compile(BufferedImage im, String label, boolean halfline, int linebytes,
+			int planedistance, int beam, List<BufferedImage> frames) throws Exception {
+		return compile(im, label, halfline, linebytes, planedistance, beam, frames, true);
+	}
+
+	/**
+	 * with frames : the pictures of the animated part, transparent where the
+	 * picture stays ; picture false : the frames alone (the picture's routine
+	 * in another unit, a page each)
+	 */
+	public static Result compile(BufferedImage im, String label, boolean halfline, int linebytes,
+			int planedistance, int beam, List<BufferedImage> frames, boolean picture) throws Exception {
 		if (!(im.getColorModel() instanceof IndexColorModel)) {
 			throw new Exception("backlines " + label + " : the picture must be an indexed PNG");
 		}
@@ -386,6 +410,13 @@ public final class BackLines {
 		s.append(" SECTION code").append(nl);
 		s.append(label).append("_LINES equ ").append(n).append(nl);
 		s.append(label).append("_BYTES equ ").append(bytes).append(nl).append(nl);
+		if (!picture) {
+			for (int f = 0; f < frames.size(); f++) {
+				size += frame(s, label + "_F" + f, frames.get(f), r, n, step, bytes, linebytes, planedistance, nl, label);
+			}
+			s.append(" ENDSECTION").append(nl);
+			return new Result(s.toString(), n, bytes, size, 0);
+		}
 		size += draw(s, label, planedistance, nl);
 
 		StringBuilder chains = new StringBuilder(), stubs = new StringBuilder();
@@ -466,13 +497,96 @@ public final class BackLines {
 			}
 		}
 		s.append(nl).append(chains).append(nl).append(stubs);
+		for (int f = 0; f < frames.size(); f++) {
+			size += frame(s, label + "_F" + f, frames.get(f), r, n, step, bytes, linebytes, planedistance, nl, label);
+		}
 		s.append(" ENDSECTION").append(nl);
 		return new Result(s.toString(), n, bytes, size, cycles);
 	}
 
 	/**
+	 * A frame's routine : for each plane, a chain of blocks bottom up, a block
+	 * a drawn line writing the bytes of the line that hold a frame pixel ; its
+	 * bytes.
+	 */
+	static int frame(StringBuilder s, String l, BufferedImage fr, Raster base, int n, int step, int bytes,
+			int linebytes, int planedistance, String nl, String label) throws Exception {
+		if (fr.getWidth() != base.getWidth() || fr.getHeight() < n * step - (step - 1)) {
+			throw new Exception("backlines " + label + " : a frame of " + fr.getWidth() + "x" + fr.getHeight()
+					+ ", not the picture's " + base.getWidth() + " pixels wide and " + base.getHeight() + " high");
+		}
+		Raster r = fr.getRaster();
+		int size = draw(s, l, planedistance, nl);
+		int up = -linebytes * step;
+		StringBuilder blocks = new StringBuilder();
+		for (int c = 0; c < 2; c++) {
+			s.append(l).append("_Lines").append(c + 1).append(nl);
+			for (int i = 0; i < n; i++) {
+				s.append("        fdb   ").append(l).append('_').append(c + 1).append('_').append(i).append(nl);
+				size += 2;
+			}
+			s.append(l).append("_Entries").append(c + 1).append(" equ ").append(l).append("_Lines").append(c + 1).append(nl);
+			for (int li = n - 1; li >= 0; li--) {
+				int y = li * step;
+				// the line's bytes holding a frame pixel : their values, -1 the others
+				int[] v = new int[bytes];
+				for (int k = 0; k < bytes; k++) {
+					int a = 4 * k + 2 * c, p0 = r.getSample(a, y, 0), p1 = r.getSample(a + 1, y, 0);
+					if (p0 == 0 && p1 == 0) {
+						v[k] = -1;
+						continue;
+					}
+					if (p0 == 0) {
+						p0 = base.getSample(a, y, 0);
+					}
+					if (p1 == 0) {
+						p1 = base.getSample(a + 1, y, 0);
+					}
+					if (p0 > 16 || p1 > 16) {
+						throw new Exception("backlines " + label + " : a frame's PNG index past 16 at line " + y);
+					}
+					v[k] = (p0 - 1) << 4 | (p1 - 1);
+				}
+				blocks.append(l).append('_').append(c + 1).append('_').append(li).append(nl);
+				int a = -1, b = -1;                     // A and B's values, kept along the line
+				for (int k = 0; k < bytes; k++) {
+					if (v[k] < 0) {
+						continue;
+					}
+					int off = k - bytes;
+					if (k + 1 < bytes && v[k + 1] >= 0) {
+						if (v[k] != a || v[k + 1] != b) {
+							blocks.append(String.format("        ldd   #$%02X%02X%n", v[k], v[k + 1]));
+							size += 3;
+							a = v[k];
+							b = v[k + 1];
+						}
+						blocks.append("        std   ").append(off).append(",u").append(nl);
+						size += off >= -16 ? 2 : 3;
+						k++;
+					} else {
+						if (v[k] != a) {
+							blocks.append(String.format("        lda   #$%02X%n", v[k]));
+							size += 2;
+							a = v[k];
+						}
+						blocks.append("        sta   ").append(off).append(",u").append(nl);
+						size += off >= -16 ? 2 : 3;
+					}
+				}
+				blocks.append("        leau  ").append(up).append(",u").append(nl);
+				size += leaSize(up);
+			}
+			blocks.append("        rts").append(nl);
+			size += 1;
+		}
+		s.append(nl).append(blocks).append(nl);
+		return size;
+	}
+
+	/**
 	 * Standalone : image=<png> label=<label> gensource=<asm> [halfline=true]
-	 * [linebytes=40] [planedistance=8192] [beam=60]
+	 * [linebytes=40] [planedistance=8192] [beam=60] [frames=<png>,...] [picture=false]
 	 */
 	public static void main(String[] args) throws Exception {
 		Map<String, String> a = new HashMap<String, String>();
@@ -480,9 +594,16 @@ public final class BackLines {
 			a.put(arg.substring(0, arg.indexOf('=')), arg.substring(arg.indexOf('=') + 1));
 		}
 		BufferedImage im = javax.imageio.ImageIO.read(new java.io.File(a.get("image")));
+		List<BufferedImage> frames = new ArrayList<BufferedImage>();
+		for (String f : a.getOrDefault("frames", "").split(",")) {
+			if (!f.isBlank()) {
+				frames.add(javax.imageio.ImageIO.read(new java.io.File(f.trim())));
+			}
+		}
 		Result r = compile(im, a.get("label"), Boolean.parseBoolean(a.getOrDefault("halfline", "false")),
 				Integer.decode(a.getOrDefault("linebytes", "40")), Integer.decode(a.getOrDefault("planedistance", "8192")),
-				Integer.decode(a.getOrDefault("beam", "60")));
+				Integer.decode(a.getOrDefault("beam", "60")), frames,
+				Boolean.parseBoolean(a.getOrDefault("picture", "true")));
 		java.nio.file.Files.writeString(java.nio.file.Paths.get(a.get("gensource")), r.source);
 		System.out.println("backlines " + a.get("label") + " : " + r.lines + " drawn lines, " + r.size + " bytes, "
 				+ r.cycles + " cycles for every line");

@@ -212,9 +212,34 @@ count as occupants : they are exactly the content an arena's zone can grow
 into without anyone noticing.
 Space is not wasted for it : two enemies that never share a stage are
 never in memory together, so the packer may give them the **same**
-address (alternatives). When no address satisfies every composition, the
+address (alternatives). A zone fills from its tail — after the last file
+co-resident with the arena's — and a file no tail holds then takes the
+lowest free run under a tail, room only files never in memory with it
+occupy (12/10/2026 : Sonic 2's fifth zone stopped on a full arena with
+14 KB of another zone's objects under its tail). When no address satisfies every composition, the
 build fails with *does not fit* — the budget is raised at build time,
 never discovered on the machine.
+
+**Packing file by file** (15/10/2026 ; the rule since 16/10/2026 whenever
+the layout declares its `<composition>`s). An arena packed as a whole
+starts a zone's tail after the highest content that *any* of its files
+shares a state with : an arena whose files live in several states (an
+act's own files and those it shares with the next act) leaves to nobody
+the room the other states use — Sonic 2's Hidden Palace 1, 32 KB free in
+its state, could not take 383 bytes more. So once the states are declared,
+every arena's files join one sort, whatever their arena : the most shared
+first (the count of states that hold the file), then the largest, ties in
+the scenes' order ; each takes the lowest run of its own arena's zones, in
+their order, free of the files *it* shares a state with ; a collection no
+run holds whole flows into the runs, one member per run. The most shared
+first keeps the files every state holds together at the bottom and each
+state's room above them in one piece (sorted by size alone, Sonic 2's
+largest free run fell from 16 KB to 9 KB in most states ; packed arena
+after arena, a big file of an arena packed late found no run). An arena
+whose files all live in the same states packs as before : r-type's image
+is the same byte for byte. A layout without compositions keeps the arena
+packing — nothing there says which files may share bytes — and so does
+the discovery pass, which places provisionally.
 
 Nothing in the game needs the file anywhere else : no code reaches it
 "by position", everything links through its symbols, resolved at load
