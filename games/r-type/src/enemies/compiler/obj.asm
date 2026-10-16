@@ -1,261 +1,1552 @@
-; ---------------------------------------------------------------------------
-; Compiler — le boss du stage 4
+;*******************************************************************************
+; Compiler — the stage 4 boss, ported 1:1 from the arcade
 ;
-; input REG : [u] pointer to Object Status Table (OST)
-; ---------------------------------------------------------------------------
+; PORTING SHEET (source: Ghidra `maincpu`, subsystem compiler)
+; ------------------------------------------------------------
+;   40:A71D create_compiler ............... compiler.Init (frame 0)
+;   40:A762 tick_compiler_init_segments ... cpl.OInit
+;   40:A982 tick_compiler_combat_monitor .. cpl.OMonitor
+;   40:A9C1 tick_compiler_death_sequence .. cpl.ODeath
+;   40:AA0F / AB62 / ACE7 the three parts . cpl.PartTick (right, bottom, left)
+;   40:AB01 / ADFB laser volleys .......... cpl.Volley
+;   40:AE5C rolling laser pair ............ cpl.RollSpawn
+;   40:AEFB / AF6F rolling laser phases ... cpl.RollTick
+;   40:AC4C tick_compiler_turret .......... cpl.TurretTick
+;   40:AFE6 compiler_part_motion_step ..... cpl.Motion
+;   40:B062 / B073 destroy cascade ........ cpl.Cascade
+;   40:E6AB / E6C0 run_horizontal_laser ... cpl.LaserRun
+;   40:F63A try_foe_fire, 40:F8A7 load_fire_preset (the turrets' clock)
 ;
-; FICHE DE PORTAGE — BLOC 1 : l'orchestrateur et les trois parties
-; ================================================================
-; arcade : create_compiler 0x40:A71D, tick_compiler_init_segments 0x40:A762,
-;          tick_compiler_combat_monitor 0x40:A982, motion_step 0x40:AFE6
-; donnees : compiler_variant_slot_table 0x1000:5ABA (8 variantes),
-;           compiler_shared_base_motion_script 0x1000:5B54 (l'intro)
+; THE PORT RUNS IN ARCADE SPACE and ONE ARCADE FRAME AT A TIME, in the
+; arcade's list order (orchestrator 0x1000, left lasers 0x3FFF, left part
+; 0x4000, bottom part 0x4010, turrets 0x4011/0x4012, right lasers 0x401F,
+; right part 0x4020, rolling lasers 0xC000). The order is not cosmetic: the
+; three parts move in LOCKSTEP — a part whose segment is over waits, still,
+; until the other two are done too (the orchestrator raises [+0x34] only on
+; the frame where the union of the expiries reaches 7), and a laser spawned
+; by a part only ticks the next frame when it sits before that part in the
+; list, the same frame when it sits after (the rolling lasers).
+; Positions are the arcade's 16.8, velocities its 8.8; the scripts, the
+; configurations and the cascade lists are a RAW copy of the ROM
+; (tables.asm), read address for address — after its last script a part
+; goes on reading the segments that follow in ROM, and so does this port.
+; Only the publication converts to the screen, once per render.
 ;
-; CE QUE FAIT LA BORNE, ET CE QUE CE BLOC EN PORTE
-; ------------------------------------------------
-; Le boss est un vaisseau-mere en TROIS PARTIES MOBILES (droite, bas,
-; gauche) qui naissent AU MEME POINT et paraissent d'abord assemblees en une
-; seule silhouette — leurs sprites ont des ancres differentes, c'est ce qui
-; les emboite. Elles derivent ensemble pendant l'intro, puis chacune part sur
-; ses propres scripts.
+; RANDOM NUMBERS: the arcade's random_ax stream is shared with the boss's
+; starfield (star_ctor draws three per star): this port cannot reproduce the
+; stream, only its own draws. Every draw goes through cpl.Draw; the bench
+; stops at compiler.Drawn and writes the value the arcade's caller got
+; (tools/fidelity/). In game, cpl.Rand is a private copy of random_ax.
 ;
-; BLOC 1 (ici) : l'orchestrateur, les trois parties, et l'INTRO — le script
-;   partage 0x5B54, un seul segment : vx = +1 px/trame arcade pendant 0x160
-;   trames (~5,9 s), vy nul. C'est tout ce qui bouge a ce stade.
-; BLOCS SUIVANTS (a venir) : les armes (le laser horizontal de la partie
-;   droite, les trois tourelles), les scripts de combat (9 au total, tires
-;   par la variante), les PV et la mort en cascade, l'auto-destruction.
+; DISPLAY: the actors are PUPPETS — objects of the five ObjIDs that only
+; show an image and carry a box. The manager creates them, places them and
+; tells them to go (cpl.Publish); they never think.
 ;
-; ECARTS ASSUMES
-; --------------
-; V2-DEVIATION: la variante est tiree au sort parmi 8 chez elle
-;   ((random + player_x + player_y) & 7) et ne change que l'ORDRE des scripts
-;   de combat. Sans scripts de combat, ce bloc n'en a pas besoin : la
-;   variante viendra avec eux.
-; V2-DEVIATION: pas de selecteur de difficulte en v2 — la cadence d'attaque
-;   par difficulte (0x1000:5844) prendra sa premiere valeur, comme le reste
-;   du cast.
-; ---------------------------------------------------------------------------
+; DEVIATIONS (V2-DEVIATION):
+; - collision runs once per render (engine), and a part has one box, not a
+;   main box plus sub-boxes (40:AA6D..AA91);
+; - palettes are global: the hit flash hides the part on the arcade's flash
+;   frames, the dome keeps the author's pulse (dome-pulse.asm);
+; - the rolling laser probes the TO8 terrain maps (terrainCollision), not
+;   the arcade's tile RAM. During the fight the TO8 neither draws nor probes
+;   the gum chains (plainBackdrop, stage-main.asm) the arcade keeps on
+;   screen: a segment the arcade loses on a chain flies on here (26 in the
+;   idle fight of the fidelity bench, which feeds those deaths as an input);
+; - sounds: the explosion objects carry them; the cascade keeps its draws.
+;*******************************************************************************
 
-AABB_0        equ ext_variables      ; AABB struct (9 bytes)
-cpl.part      equ ext_variables+9    ; 0 = droite, 1 = bas, 2 = gauche
-cpl.timer     equ ext_variables+10   ; WORD : trames restantes du segment
-cpl.vx        equ ext_variables+12   ; WORD : la vitesse du segment (8.8)
-; --- l'oscillateur du dome, porte par l'ORCHESTRATEUR (un seul, pas trois) ---
-cpl.dome.step equ ext_variables+14     ; l'index dans cpl.dome.seq
-cpl.dome.left equ ext_variables+15     ; trames restantes sur cette etape
-; Le laser reutilise les cases de la partie : un slot ne porte jamais les deux.
-cpl.laser.vx  equ cpl.vx               ; WORD : sa vitesse (8.8), vers la gauche
-; La tourelle, elle, garde le lien vers sa piece et ses deux decalages.
-cpl.tur.parent equ ext_variables+10    ; WORD : l'OST de la piece porteuse
-cpl.tur.offx  equ ext_variables+12     ; son decalage, signe
-cpl.tur.offy  equ ext_variables+13
-cpl.tur.dir   equ ext_variables+14     ; la direction visee (0,4,8..$3C)
-; L'onde du laser roulant : sa vitesse horizontale, et le mot a DOUBLE EMPLOI
-; de la borne — vitesse verticale ET compte a rebours de vie.
-cpl.wav.vx    equ ext_variables+10     ; WORD, signe
-cpl.wav.life  equ ext_variables+12     ; WORD, 8.8 : vitesse y ET duree
-; Le combat d'une piece : le souvenir de ses PV (pour voir le coup arriver),
-; son compte de clignotement, puis le curseur du chapelet d'explosions.
-; --- LES CHAMPS D'UNE PIECE, et il n'y a pas un octet de rab : l'espace
-; d'objet en offre onze (ext_variables_size 20, moins les neuf de la boite).
-;   9 part | 10-11 timer | 12-13 vx | 14-15 vy | 16 hp.prev | 17 hit
-;   18 cfg | 19 cursor
-; Le curseur PORTE DEUX CHAMPS : l'index du script dans les bits hauts, celui
-; du segment dans les bas — dix-sept segments demandent cinq bits, trois
-; scripts en demandent deux, et les deux ne tenaient pas separement.
-cpl.hp.prev   equ ext_variables+16     ; PV a la trame precedente
-cpl.hit       equ ext_variables+17     ; trames de clignotement restantes
-; LE CURSEUR DE COMBAT (AFE6) : la config tiree au spawn, le script courant
-; dans cette config, et la position dans ce script.
-cpl.vy        equ ext_variables+14     ; OCTET SIGNE : la vitesse y du segment
-;   Elle tenait un mot, mais les 9 scripts ne portent que des vitesses dans
-;   [-120,+120] (mesure sur la table generee) : la fraction 8.8 d'un mouvement
-;   sous le pixel par trame. L'octet ainsi rendu paie le compteur de cadence.
-cpl.cad       equ ext_variables+15     ; trames restantes avant la salve
-cpl.cfg       equ ext_variables+18     ; index de la config tiree (0..2)
-cpl.cursor    equ ext_variables+19     ; script<<5 | segment
-cpl.CUR_SEG   equ 31                   ; le masque du segment
-cpl.CUR_STEP  equ 32                   ; ce qu'un script vaut dans le curseur
-cpl.boom.cur  equ ext_variables+10     ; l'index dans la liste (apres la mort)
-cpl.boom.tick equ ext_variables+12     ; trames restantes du chapelet
-                                       ; (pas `left` : la liste de la piece
-                                       ;  GAUCHE porte deja ce nom)
+; --- the puppets: ext_variables -----------------------------------------------
+AABB_0        equ ext_variables      ; 9 bytes
+pp.show       equ ext_variables+9    ; 1 = DisplaySprite this render
+pp.kill       equ ext_variables+10   ; 1 = remove the box and go
+pp.list       equ ext_variables+11   ; 11,12 the box's list (0 = no box)
+
+; --- record layouts (page data) ------------------------------------------------
+P.st      equ 0      ; 0 gone, 1 live, 2 cascade
+P.x       equ 1      ; 1,2 int  (+4)
+P.xf      equ 3      ;     frac (+3)
+P.y       equ 4      ; 4,5 int  (+8)
+P.yf      equ 6      ;     frac (+7)
+P.cfg     equ 7      ; 7,8 config cursor, arcade address (+0x10)
+P.cur     equ 9      ; 9,10 script cursor, arcade address (+0x12)
+P.vx      equ 11     ; 11,12 (+0x38)
+P.vy      equ 13     ; 13,14 (+0x3A)
+P.dur     equ 15     ; 15,16 (+0x3C)
+P.c20     equ 17     ; cadence reload (+0x20)
+P.c22     equ 18     ; 18,19 cadence countdown (+0x22)
+P.f28     equ 20     ; 20,21 fade counter (+0x28)
+P.h32     equ 22     ; hit cooldown (+0x32)
+P.w34     equ 23     ; 23,24 left part: rolling-laser window (+0x34)
+P.bit     equ 25     ; 1 right, 2 bottom, 4 left
+P.pup     equ 26     ; 26,27 the puppet
+P.cl      equ 28     ; 28,29 cascade cursor, arcade address (+0x10)
+P.cl0     equ 30     ; 30,31 cascade list start (+0x12)
+P.life    equ 32     ; cascade lifetime (+0x20)
+P.pp      equ 33     ; box potential seen last render
+P.SZ      equ 34
+
+T.st      equ 0      ; 0 none, 1 live
+T.par     equ 1      ; 1,2 the part record
+T.ox      equ 3      ; 3,4 offset x (+0x30)
+T.oy      equ 5      ; 5,6 offset y (+0x32)
+T.x       equ 7      ; 7,8
+T.y       equ 9      ; 9,10
+T.fire    equ 11     ; the fire gate (+0x16)
+T.dir     equ 12     ; direction code (0..$3C)
+T.c26     equ 13     ; 13,14 fire clock (+0x26)
+T.thr     equ 15     ; 15,16 (+0x2A)
+T.rst     equ 17     ; 17,18 (+0x2C)
+T.pup     equ 19     ; 19,20
+T.pre     equ 21     ; its fire preset ($30 / $40)
+T.SZ      equ 22
+
+Z.st      equ 0      ; 0 free, 1 born this frame, 2 flying
+Z.side    equ 1      ; 0 right (0x401F), 1 left (0x3FFF)
+Z.x       equ 2      ; 2,3
+Z.xf      equ 4
+Z.y       equ 5      ; 5,6
+Z.vx      equ 7      ; 7,8
+Z.pup     equ 9      ; 9,10
+Z.SZ      equ 11
+cpl.NLASER equ 6
+
+W.st      equ 0      ; 0 free, 1 phase 1, 2 phase 2
+W.x       equ 1      ; 1,2
+W.xf      equ 3
+W.y       equ 4      ; 4,5
+W.yf      equ 6
+W.vx      equ 7      ; 7,8
+W.w20     equ 9      ; 9,10 vertical speed AND lifetime (+0x20)
+W.pup     equ 11     ; 11,12
+W.spr     equ 13     ; its pose, fixed for its life
+W.SZ      equ 14
+cpl.NROLL equ 8
+
+; orchestrator states
+O_INIT    equ 1
+O_MON     equ 2
+O_DEATH   equ 3
+O_GONE    equ 4
 
 Object
         lda   routine,u
         asla
         ldx   #Routines
         jmp   [a,x]
-
 Routines
-        fdb   BossInit
-        fdb   BossWatch
-        fdb   PartInit
-        fdb   PartLive
-        fdb   AlreadyDeleted
-        fdb   LaserInit
-        fdb   LaserFly
-        fdb   TurretInit
-        fdb   TurretRun
-        fdb   WaveInit
-        fdb   WaveFly
-        fdb   PartBoom
+        fdb   compiler.Init
+        fdb   compiler.Live
+        fdb   cpl.Puppet
 
-; ---------------------------------------------------------------------------
-; BossInit — A762 : l'orchestrateur engendre ses trois parties
-;
-; Un seul passage. La borne engendre aussi trois tourelles et pose les PV,
-; la cadence et le masque de mort ; tout cela vient avec les blocs suivants.
-; Elle n'affiche RIEN elle-meme : ce sont les parties qu'on voit.
-; ---------------------------------------------------------------------------
-BossInit
-        ; 5ABA : LA VARIANTE, tiree UNE SEULE FOIS — voir globals.cplVariant.
-        jsr   RandomNumber
-        andb  #3
-        cmpb  #3
-        bne   >
-        clrb                           ; le tirage rend 0..3, on replie sur 0..2
-!       stb   globals.cplVariant
-        clr   globals.cplWave          ; le laser roulant repart au repos
-        clr   globals.cplWavePair
-        ldb   #3                       ; les trois parties, dans l'ordre
-        stb   cpl.part,u               ;   arcade : droite, bas, gauche
-@spawn  ldb   cpl.part,u
-        decb
-        stb   cpl.part,u
-        jsr   LoadObject_x             ; un slot pour la partie
-        beq   @done                    ; pool plein : le boss sera partiel,
-                                       ; comme la borne (elle court-circuite
-                                       ; aussi vers le moniteur de combat)
-        lda   #ObjID_compilerpart
-        sta   id,x
-        ldb   cpl.part,u
-        stb   subtype_w+1,x            ; la partie que ce slot represente
-        ; FIX #1 : le fils partage le dispatch de l'orchestrateur, son etat de
-        ; depart doit donc etre POSE — un slot frais a routine=0, c'est-a-dire
-        ; BossInit : chaque partie re-engendrait trois parties jusqu'a saturer
-        ; le pool, et aucune n'atteignait PartInit (aucun sprite a l'ecran).
-        lda   #2                       ; -> PartInit
-        sta   routine,x
-        ; A768 : les trois naissent AU MEME POINT — ce sont les ancres de
-        ; leurs sprites qui les emboitent en une silhouette.
-        ldd   #cpl.SPAWN_X
-        addd  glb_camera_x_pos
-        std   x_pos,x
-        ldd   #cpl.SPAWN_Y
-        std   y_pos,x
-        ; LES TOURELLES DE CETTE PIECE. La borne les cree dans la foulee de
-        ; leur porteuse (A762) et leur donne un renvoi vers elle : deux sur la
-        ; piece du bas, une sur la gauche, la droite n'en a pas — elle a son
-        ; laser. On les cree ici, tant que X porte encore l'OST de la piece.
-        bsr   cpl.turrets.spawn
-        tst   cpl.part,u
-        bne   @spawn
-@done   lda   #1                       ; -> BossWatch
-        sta   routine,u
-        ; L'oscillateur part au repos (etape 0), et pose ses couleurs des
-        ; cette trame : la palette du combat vient d'etre echangee, son etape 0
-        ; en est deja la valeur — mais la poser ici rend l'orchestrateur seul
-        ; maitre du dome, quel que soit l'ordre d'arrivee.
-        clr   cpl.dome.step,u
-        clr   cpl.dome.left,u
-        bra   cpl.dome.tick
+;*******************************************************************************
+; THE MANAGER
+;*******************************************************************************
 
-; ---------------------------------------------------------------------------
-; cpl.turrets.spawn — A7xx : les tourelles portees par la piece courante
-; ---------------------------------------------------------------------------
-; entree : [x] l'OST de la piece, [u] l'orchestrateur (cpl.part = son numero)
-; La table dit, pour chacune des trois : la piece qui la porte, ses deux
-; decalages et son motif de tir. X survit — l'appelant s'en sert encore.
-; ---------------------------------------------------------------------------
-cpl.turrets.spawn
-        pshs  x,y
-        ldy   #cpl.turrets.tbl
-        ldb   #cpl.TURRETS
-@one    lda   ,y                       ; la piece porteuse de cette tourelle
-        cmpa  cpl.part,u
-        bne   @next
-        pshs  b,y
-        jsr   LoadObject_x             ; X = la tourelle... et on perd la piece
-        beq   @skip
-        lda   #ObjID_compilerturret
-        sta   id,x
-        lda   #7                       ; -> TurretInit
-        sta   routine,x
-        ; La pile, apres `pshs b,y` : B en 0,s ; la table en 1,s ; l'OST de la
-        ; piece (empile a l'entree) en 3,s. Se tromper d'un cran ici ne fait
-        ; rien naitre du tout — vecu.
-        ldy   1,s                      ; la table, remise de la pile
-        lda   1,y
-        sta   cpl.tur.offx,x
-        lda   2,y
-        sta   cpl.tur.offy,x
-        lda   3,y
-        sta   subtype_w+1,x            ; le motif de tir, lu par TurretInit
-        ldd   3,s                      ; l'OST de la piece, sauve a l'entree
-        std   cpl.tur.parent,x
-@skip   puls  b,y
-@next   leay  4,y
-        decb
-        bne   @one
-        puls  x,y
+; 40:A71D create_compiler — the creation frame (frame 0)
+compiler.Init
+        ldb   wave_frame_drop,u          ; aliases anim_frame_duration
+        stb   cpl.pending
+        ldx   #cpl.Data
+        ldd   #cpl.DataEnd-cpl.Data
+@clr    clr   ,x+
+        subd  #1
+        bne   @clr
+        ; a744: both scroll axes stop (restored at the end of the death)
+        ldd   scroll_vel
+        std   cpl.savedVel
+        ldd   #0
+        std   scroll_vel
+        ; the arcade counter at this frame and a seed (the bench rewrites both)
+        ldd   gfxlock.frame.gameCount
+        subb  cpl.pending
+        sbca  #0
+        std   cpl.gc
+        ldd   #$0501
+        std   cpl.rng
+        lda   #3
+        sta   cpl.rng+2
+        jsr   cpl.PlayerArcade
+        ; a728: the variant, (random + player y + player x) & 7, as a byte
+        ; offset into the slot table (stride 8)
+        jsr   cpl.Draw
+        addd  cpl.ply
+        addd  cpl.plx
+        andb  #7
+        lslb
+        lslb
+        lslb
+        stb   cpl.v10
+        ldd   #7                         ; a73f death mask
+        std   cpl.f30
+        lda   #O_INIT
+        sta   cpl.ost
+        inc   routine,u
+compiler.Seeded                      ; test hook: gc and the seed are final
+        ldb   cpl.pending
+        bra   cpl.Advance
+
+compiler.Live
+        jsr   cpl.PlayerArcade
+        jsr   cpl.HitWatch
+        ldb   gfxlock.frameDrop.count
+cpl.Advance
+        pshs  u
+        stb   cpl.nfr
+        beq   @pub
+@f      jsr   cpl.Frame
+        dec   cpl.nfr
+        bne   @f
+@pub    jsr   cpl.Publish
+        puls  u
+compiler.Sample                      ; test hook: a render's state is final
         rts
 
-; ---------------------------------------------------------------------------
-; BossWatch — A982 : le moniteur de combat
-;
-; BLOC 1 : il ne fait encore que l'OSCILLATION DU DOME. La borne y compte les
-; trois drapeaux de mort et arme la sequence finale quand les trois tombent ;
-; cela vient avec le bloc « degats et mort ».
-; ---------------------------------------------------------------------------
-BossWatch
-        ; A982 : LE MONITEUR DE COMBAT. La borne attend que les trois bits de
-        ; mort soient la, puis deroule une sequence de 256 trames — fondu de
-        ; palette, deux bruitages, drapeau de fin de niveau, et relance du
-        ; scroll pour la transition. Chez nous l'objet de fin generique
-        ; (common/flow/endlevel) fait tout cela des qu'on leve
-        ; globals.bossDefeated : c'est le geste que le stage 3 pose deja pour
-        ; son cuirasse, et le seul attendu d'un vrai boss.
-        ; V2-DEVIATION : la sequence de 256 trames de la borne, avec ses
-        ; jalons a 0xB0 et 0x80, n'est pas rejouee — l'objet de fin a la
-        ; sienne, calee sur le reste du jeu.
-        lda   globals.compilerDead
-        cmpa  #3
-        blo   cpl.dome.tick
-        lda   globals.bossDefeated
-        bne   cpl.dome.tick            ; deja leve : on n'y revient pas
+;*******************************************************************************
+; ONE ARCADE FRAME, in list order
+;*******************************************************************************
+cpl.Frame
+        ldd   cpl.gc                     ; 40:0219 / 021D
+        addd  #1
+        std   cpl.gc
+        bitb  #$FF
+        bne   >
+        bita  #1
+        bne   >
+        ldd   #$0501
+        std   cpl.rng
+        lda   #3
+        sta   cpl.rng+2
+!
+compiler.Tick                        ; test hook: frame cpl.gc, before any actor
+        lda   cpl.ost                    ; the orchestrator, 0x1000
+        cmpa  #O_INIT
+        bne   >
+        jsr   cpl.OInit
+        bra   @o
+!       cmpa  #O_MON
+        bne   >
+        jsr   cpl.OMonitor
+        bra   @o
+!       cmpa  #O_DEATH
+        bne   @o
+        jsr   cpl.ODeath
+@o      lda   #1                         ; the left lasers, 0x3FFF
+        jsr   cpl.LaserRun
+        ldy   #cpl.Parts+2*P.SZ          ; the left part, 0x4000
+        jsr   cpl.PartTick
+        ldy   #cpl.Parts+1*P.SZ          ; the bottom part, 0x4010
+        jsr   cpl.PartTick
+        ldy   #cpl.Turrets               ; the turrets: 0x4011, then the two
+        ldb   #3                         ; 0x4012, the newest first
+@t      pshs  b
+        jsr   cpl.TurretTick
+        leay  T.SZ,y
+        puls  b
+        decb
+        bne   @t
+        clra                             ; the right lasers, 0x401F
+        jsr   cpl.LaserRun
+        ldy   #cpl.Parts                 ; the right part, 0x4020
+        jsr   cpl.PartTick
+        ldy   #cpl.Rolls                 ; the rolling lasers, 0xC000
+        ldb   #cpl.NROLL
+@r      pshs  b
+        lda   W.st,y
+        beq   >
+        jsr   cpl.RollTick
+!       leay  W.SZ,y
+        puls  b
+        decb
+        bne   @r
+        ; the newly born lasers are flying from now on
+        ldy   #cpl.Lasers
+        ldb   #cpl.NLASER
+@z      lda   Z.st,y
+        cmpa  #1
+        bne   >
+        inc   Z.st,y
+!       leay  Z.SZ,y
+        decb
+        bne   @z
+        rts
+
+;*******************************************************************************
+; THE ORCHESTRATOR
+;*******************************************************************************
+
+; 40:A762 — the three parts and the three turrets
+cpl.OInit
+        ldy   #cpl.Parts                 ; RIGHT, 0x4020
+        lda   #1
+        ldb   #0
+        jsr   cpl.PartNew
+        ldy   #cpl.Parts+P.SZ            ; BOTTOM, 0x4010
+        lda   #2
+        ldb   #2
+        jsr   cpl.PartNew
+        ; a843: its two turrets, preset 0x30 then 0x40
+        ldx   #cpl.Turrets               ; b1 is list slot 0
+        ldd   #-32
+        std   cpl.wT
+        ldd   #-40
+        std   cpl.wT2
+        lda   #$30
+        jsr   cpl.TurretNew
+        ldx   #cpl.Turrets+2*T.SZ        ; b2 is list slot 2 (older 0x4012)
+        ldd   #-24
+        std   cpl.wT
+        ldd   #-64
+        std   cpl.wT2
+        lda   #$40
+        jsr   cpl.TurretNew
+        ldy   #cpl.Parts+2*P.SZ          ; LEFT, 0x4000
+        lda   #4
+        ldb   #4
+        jsr   cpl.PartNew
+        ldx   #cpl.Turrets+T.SZ          ; its turret, list slot 1 (newer 0x4012)
+        ldd   #-72
+        std   cpl.wT
+        ldd   #24
+        std   cpl.wT2
+        lda   #$30
+        jsr   cpl.TurretNew
+        clr   cpl.f32                    ; a972
+        clr   cpl.f32+1
+        clr   cpl.f34
+        lda   #O_MON
+        sta   cpl.ost
+        rts
+
+; Y = the part record, A = its death bit, B = its offset in the slot (0/2/4)
+cpl.PartNew
+        sta   P.bit,y
+        coma                             ; a770: the bit leaves the mask
+        anda  cpl.f30+1
+        sta   cpl.f30+1
+        lda   #1
+        sta   P.st,y
+        clra
+        addb  cpl.v10                    ; a775: variant slot + part offset
+        addd  #$5ABA
+        jsr   cpl.RomW                   ; D = the config's address
+        std   P.cfg,y
+        jsr   cpl.RomW                   ; D = its first script (5B54)
+        std   P.cur,y
+        jsr   cpl.RomX                   ; X = the script
+        ldd   ,x                         ; a786 the first segment
+        std   P.vx,y
+        ldd   2,x
+        std   P.vy,y
+        ldd   4,x
+        std   P.dur,y
+        ldd   #$0100                     ; a79a (0x100, 0x108)
+        std   P.x,y
+        ldd   #$0108
+        std   P.y,y
+        clr   P.xf,y                     ; leftovers in the arcade: the bench
+        clr   P.yf,y                     ; writes them (compiler.Tick)
+        clr   P.h32,y
+        clr   P.f28,y
+        clr   P.f28+1,y
+        clr   P.w34,y
+        clr   P.w34+1,y
+        lda   #cpl.CADENCE               ; a7d6 / a903: right and left only
+        sta   P.c20,y
+        clra
+        ldb   #cpl.CADENCE
+        std   P.c22,y
+        lda   #40                        ; a7a4 HP_max 0x28
+        sta   P.pp,y
+        rts
+
+; X = the turret record, Y = its part, A = its fire preset, cpl.wT/wT2 = the
+; offsets. f8a7 load_fire_preset: counter = (random * 4) & (threshold - 1)
+cpl.TurretNew
+        sta   T.pre,x
+        lda   #1
+        sta   T.st,x
+        sty   T.par,x
+        ldd   cpl.wT
+        std   T.ox,x
+        ldd   cpl.wT2
+        std   T.oy,x
+        clr   T.fire,x                   ; a leftover in the arcade (the bench)
+        lda   T.pre,x
+        cmpa  #$30
+        bne   >
+        ldd   #cpl.P30.THR
+        std   T.thr,x
+        ldd   #cpl.P30.RST
+        bra   @rst
+!       ldd   #cpl.P40.THR
+        std   T.thr,x
+        ldd   #cpl.P40.RST
+@rst    std   T.rst,x
+        pshs  x
+        jsr   cpl.Draw                   ; f8e4
+        puls  x
+        aslb                             ; f8e7 * 4
+        rola
+        aslb
+        rola
+        pshs  d
+        ldd   T.thr,x
+        subd  #1
+        anda  ,s
+        andb  1,s
+        leas  2,s
+        std   T.c26,x
+        rts
+
+; 40:A982
+cpl.OMonitor
+        clr   cpl.f34                    ; a989
+        ldd   cpl.f30                    ; a98e (f30 | f32) == 7 ?
+        ora   cpl.f32
+        orb   cpl.f32+1
+        cmpd  #7
+        bne   >
+        lda   #1                         ; a99b
+        sta   cpl.f34
+        clr   cpl.f32
+        clr   cpl.f32+1
+!       ldb   cpl.f30+1                  ; a9a5 (f30 & 7) == 7 ?
+        andb  #7
+        cmpb  #7
+        bne   >
+        ldd   #$0100                     ; a9b1
+        std   cpl.c36
+        lda   #O_DEATH
+        sta   cpl.ost
+!       rts
+
+; 40:A9C1 — 256 frames
+cpl.ODeath
+        ldd   cpl.c36
+        cmpd  #$0080                     ; a9c8: end_level_sequence_flag
+        bne   >
         lda   #1
         sta   globals.bossDefeated
+!       ldd   cpl.c36                    ; a9f0
+        subd  #1
+        std   cpl.c36
+        bne   >
+        lda   #O_GONE                    ; a9f6: the autoscroll restarts
+        sta   cpl.ost
+        ldd   cpl.savedVel
+        std   scroll_vel
+!       rts
+
+;*******************************************************************************
+; THE PARTS — Y = the record
+;*******************************************************************************
+cpl.PartTick
+        lda   P.st,y
+        lbeq  @rts
+        cmpa  #2
+        lbeq  cpl.Cascade
+        lda   P.bit,y
+        cmpa  #1
+        bne   >
+        lda   #0                         ; aa19 the right part fires first
+        jsr   cpl.Volley
+!       jsr   cpl.Motion                 ; aa3d / ab8d / ad12
+        lda   P.h32,y                    ; aa40 hit cooldown
+        beq   >
+        dec   P.h32,y
+!       ldd   P.f28,y                    ; aa66 the fade path: nothing else
+        bne   @rts
+        lda   P.bit,y
+        cmpa  #4
+        bne   @dmg
+        lda   #1                         ; ad42 the left part's weapons
+        jsr   cpl.Volley
+        ldd   P.y,y                      ; ad45 part high enough ?
+        cmpd  #$00B8
+        bhs   @low
+        ldd   P.w34,y                    ; ad4c
+        addd  #1
+        std   P.w34,y
+        cmpd  #$0040
+        bhs   @dmg
+        bitb  #$0F
+        bne   @dmg
+        jsr   cpl.RollSpawn              ; ad5c
+        bra   @dmg
+@low    clr   P.w34,y                    ; ad62
+        clr   P.w34+1,y
+@dmg    jsr   cpl.PartBox                ; aa9a damage >= HP_max ?
+        lda   AABB.p,x
+        bne   @rts
+        ; aadb destroy with score + cascade
+        lda   P.bit,y
+        ora   cpl.f30+1
+        sta   cpl.f30+1
+        pshs  y
+        ldb   #compiler_scoreIdx         ; 0x8714
+        jsr   AwardScore
+        puls  y
+        ldb   P.bit,y                    ; aafb / ac45 / adf5 the list
+        ldx   #cpl.BoomLists
+        lsrb
+        aslb
+        ldd   b,x
+        std   P.cl,y
+        std   P.cl0,y
+        lda   #$40                       ; b06d
+        sta   P.life,y
+        lda   #2
+        sta   P.st,y
+@rts    rts
+cpl.BoomLists                        ; indexed by bit/2*2: right, bottom, -, left
+        fdb   $58EE,$594E,$59A6,$59A6
+
+; 40:AFE6 compiler_part_motion_step, Y = the part
+cpl.Motion
+        ldd   P.dur,y
+        beq   @exp
+        subd  #1                         ; afed
+        std   P.dur,y
+        leax  P.x,y
+        ldd   P.vx,y
+        jsr   cpl.Move
+        leax  P.y,y
+        ldd   P.vy,y
+        jmp   cpl.Move
+@exp    ldb   P.bit,y                    ; afff the deferred signal
+        orb   cpl.f32+1
+        stb   cpl.f32+1
+        lda   cpl.f34                    ; b005 armed ?
+        beq   @rts
+        ldd   P.cur,y                    ; b00c next segment
+        addd  #6
+        std   P.cur,y
+        jsr   cpl.RomX
+        ldd   ,x
+        cmpd  #$8000                     ; b016 the loop sentinel
+        bne   @load
+        ldd   P.cfg,y                    ; b01b next script of the config
+        addd  #2
+        std   P.cfg,y
+        jsr   cpl.RomW
+        cmpd  #0
+        beq   @term
+        std   P.cur,y                    ; b029
+@load   ldd   P.cur,y                    ; b02c double tempo
+        jsr   cpl.RomX
+        ldd   ,x
+        aslb
+        rola
+        std   P.vx,y
+        ldd   2,x
+        aslb
+        rola
+        std   P.vy,y
+        ldd   4,x
+        lsra
+        rorb
+        std   P.dur,y
+@rts    rts
+@term   ldd   #$0200                     ; b04a the terminator
+        std   P.vx,y
+        ldd   #0
+        std   P.vy,y
+        lda   P.bit,y                    ; b057 the real death signal
+        ora   cpl.f30+1
+        sta   cpl.f30+1
+        ldd   P.cfg,y                    ; b05a
+        subd  #2
+        std   P.cfg,y
+        ldd   P.f28,y                    ; b05e
+        addd  #1
+        std   P.f28,y
+        rts
+
+; 40:AB01 (A = 0) / 40:ADFB (A = 1), Y = the part
+cpl.Volley
+        sta   cpl.wSide
+        ldd   cpl.plx                    ; ab01 player at or right of the part
+        cmpd  P.x,y
+        blo   @rts
+        ldd   cpl.ply                    ; ab09 the vertical window
+        addd  #$0010
+        subd  P.y,y
+        blo   @rts
+        tst   cpl.wSide
+        bne   >
+        subd  #$0050
+        bra   @w
+!       subd  #$0030
+@w      bhs   @rts
+        ldd   P.c22,y                    ; ab19 the cadence
+        subd  #1
+        std   P.c22,y
+        bne   @rts
+        clra                             ; ab1e
+        ldb   P.c20,y
+        std   P.c22,y
+        jsr   cpl.LaserFree              ; ab2a load_managed_object
+        beq   @nofree
+        ldd   P.x,y                      ; ab2f / ae29
+        tst   cpl.wSide
+        bne   >
+        addd  #$0050
+        bra   @x
+!       addd  #$0010
+@x      std   Z.x,x
+        clr   Z.xf,x                     ; the arcade leaves its leftover
+        pshs  x
+        jsr   cpl.Draw                   ; ab38 / ae32
+        puls  x
+        andb  #$0E
+        ldu   #cpl.PoolR
+        tst   cpl.wSide
+        beq   >
+        ldu   #cpl.PoolL
+!       ldd   b,u
+        addd  P.y,y
+        std   Z.y,x
+        ldd   #cpl.LASER_VX              ; ab54
+        std   Z.vx,x
+        lda   cpl.wSide
+        sta   Z.side,x
+        lda   #1
+        sta   Z.st,x
+@rts    rts
+@nofree pshs  x                          ; no room: the draw still happens,
+        jsr   cpl.Draw                   ; the stream stays in step
+        puls  x,pc
+
+; X = a free laser record, Z clear if none
+cpl.LaserFree
+        ldx   #cpl.Lasers
+        ldb   #cpl.NLASER
+@l      lda   Z.st,x
+        beq   @ok
+        leax  Z.SZ,x
+        decb
+        bne   @l
+        clrb                             ; Z = 1
+        rts
+@ok     lda   #1                         ; Z = 0
+        rts
+
+; 40:AE5C — two segments, Y = the left part
+cpl.RollSpawn
+        ldd   #-8                        ; ae5c the first one
+        bsr   cpl.RollOne
+        ldd   #-$28                      ; aea7 the second one
+; D = its x offset from the part
+cpl.RollOne
+        std   cpl.wT
+        jsr   cpl.Draw                   ; ae84 / aecf
+        std   cpl.wT2
+        jsr   cpl.Draw                   ; ae9c / aee7
+        std   cpl.wDX
+        jsr   cpl.RollFree
+        beq   @rts
+        ldd   P.x,y                      ; ae72 / aebd
+        addd  cpl.wT
+        std   W.x,x
+        clr   W.xf,x                     ; leftover in the arcade (the bench)
+        ldd   P.y,y                      ; ae7b +0x38
+        addd  #$0038
+        std   W.y,x
+        clr   W.yf,x
+        ldb   cpl.wT2                    ; ae89 vx = AH + 0x80 ...
+        clra
+        addd  #$0080
+        pshs  d
+        lda   cpl.wT2+1                  ; ae91 ... negated on AL bit 5
+        anda  #$20
+        puls  d
+        beq   >
+        coma
+        comb
+        addd  #1
+!       std   W.vx,x
+        lda   cpl.wDX+1                  ; aea1 ((AL << 8 | AH) & 0x1FF) + 0x280
+        anda  #1
+        ldb   cpl.wDX
+        addd  #$0280
+        std   W.w20,x
+        lda   #1
+        sta   W.st,x
+        lda   cpl.rollPose               ; its pose: the arcade takes it from
+        inca                             ; the record's address, we cycle
+        anda  #3
+        sta   cpl.rollPose
+        sta   W.spr,x
+@rts    rts
+
+; X = a free rolling record, Z clear if none
+cpl.RollFree
+        ldx   #cpl.Rolls
+        ldb   #cpl.NROLL
+@l      lda   W.st,x
+        beq   @ok
+        leax  W.SZ,x
+        decb
+        bne   @l
+        clrb                             ; Z = 1
+        rts
+@ok     lda   #1                         ; Z = 0
+        rts
+
+; 40:B073 the cascade walker, Y = the part
+cpl.Cascade
+        ldb   cpl.gc+1
+        bitb  #1
+        bne   @life
+        bitb  #3                         ; b07a every 4 frames: SFX 0x52/0x53
+        bne   >
+        jsr   cpl.Draw
+!       jsr   cpl.Draw                   ; b09b 25%: the big explosion
+        andb  #6
+        stb   cpl.wX
+        pshs  y
+        jsr   LoadObject_x
+        puls  y
+        beq   @next
+        lda   #explosion.subtype.smallx3+explosion.sfx.cascade2
+        ldb   cpl.wX
+        bne   >
+        lda   #explosion.subtype.big.brown+explosion.sfx.cascade2
+!       ldb   #ObjID_explosion
+        exg   a,b
+        std   id,x
+        pshs  x
+        ldd   P.cl,y                     ; b0a7 at part + offset
+        jsr   cpl.RomX
+        ldd   ,x
+        addd  P.x,y
+        std   cpl.wDX
+        ldd   2,x
+        addd  P.y,y
+        tfr   d,x
+        ldd   cpl.wDX
+        jsr   cpl.ToScreen               ; A = x, B = y (screen)
+        puls  x
+        jsr   cpl.SpawnAt
+@next   ldd   P.cl,y                     ; b0bd
+        addd  #4
+        std   P.cl,y
+        jsr   cpl.RomX
+        ldd   ,x
+        cmpd  #$8000
+        bne   @life
+        ldd   P.cl0,y                    ; b0ca wrap
+        std   P.cl,y
+@life   dec   P.life,y                   ; b0d7
+        bne   >
+        clr   P.st,y
+!       rts
+
+; X = a new object, A = x, B = y (screen, 0-based): its playfield position
+cpl.SpawnAt
+        pshs  b
+        tfr   a,b
+        clra
+        addd  glb_camera_x_pos
+        std   x_pos,x
+        puls  b
+        clra
+        std   y_pos,x
+        rts
+
+;*******************************************************************************
+; THE TURRETS — 40:AC4C, Y = the record
+;*******************************************************************************
+cpl.TurretTick
+        lda   T.st,y
+        beq   @rts
+        lda   T.fire,y                   ; ac4c try_foe_fire if the gate is up
+        beq   @pos
+        ldd   T.c26,y                    ; f63a
+        addd  #1
+        std   T.c26,y
+        cmpd  T.thr,y
+        beq   @shot
+        cmpd  T.rst,y
+        blo   @pos
+        ldd   #0
+        std   T.c26,y
+@shot   jsr   cpl.Shoot
+@pos    ldx   T.par,y                    ; ac56 parent + offset
+        ldd   P.x,x
+        addd  T.ox,y
+        std   T.x,y
+        ldd   P.y,x
+        addd  T.oy,y
+        std   T.y,y
+        jsr   cpl.DirToPlayer            ; ac6e
+        stb   T.dir,y
+        lsrb
+        lsrb
+        ldx   #cpl.TurretFire
+        lda   b,x
+        sta   T.fire,y
+        ldx   T.par,y                    ; acad parent still itself ?
+        lda   P.st,x
+        cmpa  #1
+        beq   @rts
+        clr   T.st,y                     ; acce the turret blows up
+        pshs  y
+        jsr   LoadObject_x
+        puls  y
+        beq   @rts
+        _ldd  ObjID_explosion,explosion.subtype.smallx2+explosion.sfx.turret
+        std   id,x
+        pshs  x
+        ldd   T.x,y
+        ldx   T.y,y
+        jsr   cpl.ToScreen
+        puls  x
+        jmp   cpl.SpawnAt
+@rts    rts
+
+; create_foe_fire from the turret's puppet, at the turret's position of the
+; previous frame (the arcade fires before it moves)
+cpl.Shoot
+        ldx   T.pup,y
+        beq   @rts
+        pshs  y,u
+        ldd   T.x,y
+        ldx   T.y,y
+        jsr   cpl.ToScreen
+        ldu   T.pup,y
+        jsr   cpl.SpawnAtU
+        ldu   T.pup,y
+        lda   #3
+        sta   fireDisplayDelay,u
+        ldx   #player1
+        stx   FoeFireTarget
+        lda   Obj_Index_Page+ObjID_createFoeFire
+        sta   PSR_Page
+        ldd   Obj_Index_Address+2*ObjID_createFoeFire
+        std   PSR_Address
+        jsr   RunPgSubRoutine
+        puls  y,u
+@rts    rts
+
+cpl.SpawnAtU
+        pshs  b
+        tfr   a,b
+        clra
+        addd  glb_camera_x_pos
+        std   x_pos,u
+        puls  b
+        clra
+        std   y_pos,u
+        rts
+
+;*******************************************************************************
+; THE LASERS — 40:E6AB / E6C0, A = the side to run (0 right, 1 left)
+;*******************************************************************************
+cpl.LaserRun
+        sta   cpl.wSide
+        ldy   #cpl.Lasers
+        ldb   #cpl.NLASER
+@l      pshs  b
+        lda   Z.st,y
+        cmpa  #2                         ; born this frame: not yet
+        bne   @n
+        lda   Z.side,y
+        cmpa  cpl.wSide
+        bne   @n
+        leax  Z.x,y                      ; e6c0 move
+        ldd   Z.vx,y
+        jsr   cpl.Move
+        ldd   Z.x,y
+        ldx   Z.y,y
+        jsr   cpl.Visible
+        beq   @n
+        clr   Z.st,y                     ; off screen: unload
+@n      leay  Z.SZ,y
+        puls  b
+        decb
+        bne   @l
+        rts
+
+;*******************************************************************************
+; THE ROLLING LASER — 40:AEFB / AF6F, Y = the segment
+;*******************************************************************************
+cpl.RollTick
+        leax  W.x,y
+        ldd   W.vx,y
+        jsr   cpl.Move
+        leax  W.y,y
+        ldd   W.w20,y
+        jsr   cpl.Move
+        lda   W.st,y
+        cmpa  #2
+        bne   >
+        ldd   W.w20,y                    ; af7b phase 2: SUB before the probe
+        subd  #$0010
+        std   W.w20,y
+!       jsr   cpl.RollTerrain            ; af22 the probe
+        bne   @kill
+        ldd   W.x,y                      ; af30
+        ldx   W.y,y
+        jsr   cpl.Visible
+        bne   @kill
+        lda   W.st,y
+        cmpa  #1
+        bne   @rts
+        ldd   W.w20,y                    ; af49 SUB after; JC -> phase 2
+        subd  #$0010
+        bhs   >
+        ldd   #0
+        std   W.w20,y
+        lda   #2
+        sta   W.st,y
+        rts
+!       std   W.w20,y
+@rts    rts
+@kill   clr   W.st,y
+        rts
+
+; Z = 0 when the segment touches the terrain (fg, or the gum field)
+cpl.RollTerrain
+        ldd   W.x,y
+        ldx   W.y,y
+        jsr   cpl.ToScreen
+        pshs  b
+        tfr   a,b
+        clra
+        addd  glb_camera_x_pos
+        std   terrainCollision.sensor.x
+        puls  b
+        clra
+        std   terrainCollision.sensor.y
+        pshs  y,u
+        ldb   #1                         ; foreground
+        jsr   terrainCollision.do
+        tstb
+        bne   @hit
+        lda   globals.backgroundSolid
+        beq   @hit
+        ldb   #0                         ; background
+        jsr   terrainCollision.do
+        tstb
+@hit    puls  y,u,pc
+
+;*******************************************************************************
+; THE TOOLS
+;*******************************************************************************
+
+; every draw passes here: the bench stops at compiler.Drawn and writes D
+cpl.Draw
+        jsr   cpl.Rand
+compiler.Drawn
+        rts
+
+; 40:EDE9 random_ax — D = AH:AL (A = the old c, B = the new a)
+cpl.Rand
+        ldd   cpl.rng+1
+        pshs  b
+        sta   cpl.rng+2
+        adda  ,s
+        ldb   cpl.rng
+        stb   cpl.rng+1
+        sta   cpl.rng
+        tfr   a,b
+        puls  a,pc
+
+; D = arcade address in cpl.ROM -> X
+cpl.RomX
+        subd  #cpl.ROM.BASE
+        addd  #cpl.ROM
+        tfr   d,x
+        rts
+
+; D = arcade address -> D = the word there
+cpl.RomW
+        jsr   cpl.RomX
+        ldd   ,x
+        rts
+
+; X = position (int:2, frac:1), D = signed 8.8 (move_x_pos_8_8)
+cpl.Move
+        pshs  a
+        addb  2,x
+        stb   2,x
+        puls  b
+        sex
+        adcb  1,x
+        adca  ,x
+        std   ,x
+        rts
+
+; is_visible_range 40:1D6B — D = x, X = y; Z = 1 when visible
+cpl.Visible
+        subd  #300
+        blo   @no
+        cmpd  #424
+        bhs   @no
+        tfr   x,d
+        subd  #124
+        blo   @no
+        cmpd  #280
+        bhs   @no
+        clra                             ; Z = 1
+        rts
+@no     lda   #1                         ; Z = 0
+        rts
+
+; set_direction_to 40:1D89, from the turret Y to the player — B = code
+cpl.DirToPlayer
+        ldd   T.y,y
+        addd  #8
+        cmpd  cpl.ply
+        blo   @above
+        ldd   T.y,y
+        subd  #8
+        cmpd  cpl.ply
+        bhs   @below
+        ldd   T.x,y
+        cmpd  cpl.plx
+        bhs   >
+        ldb   #$10
+        rts
+!       ldb   #$30
+        rts
+@above  ldd   T.x,y
+        addd  #8
+        cmpd  cpl.plx
+        blo   @ne
+        ldd   T.x,y
+        subd  #8
+        cmpd  cpl.plx
+        bhs   @nw
+        clrb
+        rts
+@below  ldd   T.x,y
+        addd  #8
+        cmpd  cpl.plx
+        blo   @se
+        ldd   T.x,y
+        subd  #8
+        cmpd  cpl.plx
+        bhs   @sw
+        ldb   #$20
+        rts
+@ne     ldd   cpl.plx
+        subd  T.x,y
+        std   cpl.wT
+        ldd   cpl.ply
+        subd  T.y,y
+        ldx   #cpl.DirNE
+        bra   @quad
+@nw     ldd   T.x,y
+        subd  cpl.plx
+        std   cpl.wT
+        ldd   cpl.ply
+        subd  T.y,y
+        ldx   #cpl.DirNW
+        bra   @quad
+@se     ldd   cpl.plx
+        subd  T.x,y
+        std   cpl.wT
+        ldd   T.y,y
+        subd  cpl.ply
+        ldx   #cpl.DirSE
+        bra   @quad
+@sw     ldd   T.x,y
+        subd  cpl.plx
+        std   cpl.wT
+        ldd   T.y,y
+        subd  cpl.ply
+        ldx   #cpl.DirSW
+@quad   std   cpl.wT2
+        ldd   cpl.wT
+        subd  cpl.wT2
+        addd  #$0020
+        cmpd  #$0040
+        blo   @diag
+        tsta
+        bmi   @vert
+        ldb   2,x
+        rts
+@diag   ldb   1,x
+        rts
+@vert   ldb   ,x
+        rts
+cpl.DirNE fcb   $04,$08,$0C
+cpl.DirNW fcb   $3C,$38,$34
+cpl.DirSE fcb   $1C,$18,$14
+cpl.DirSW fcb   $24,$28,$2C
+
+; D = x, X = y (arcade) -> A = x, B = y (screen, 0-based, clamped 0..255)
+cpl.ToScreen
+        subd  #320
+        std   cpl.wT
+        aslb
+        rola
+        addd  cpl.wT
+        asra
+        rorb
+        asra
+        rorb
+        asra
+        rorb
+        addd  #8
+        jsr   cpl.Clamp
+        stb   cpl.wX
+        tfr   x,d
+        std   cpl.wT
+        aslb
+        rola
+        addd  cpl.wT
+        asra
+        rorb
+        asra
+        rorb
+        std   cpl.wT
+        ldd   #297
+        subd  cpl.wT
+        jsr   cpl.Clamp
+        lda   cpl.wX
+        rts
+
+cpl.Clamp
+        tsta
+        beq   @rts
+        bmi   @lo
+        ldb   #255
+        rts
+@lo     clrb
+@rts    rts
+
+; the player in arcade units: x = 320 + 2v + (v*171 >> 8) with v = xs - 8,
+; y = w + (w*171 >> 9) with w = 297 - ys (exact, see bellmite/obj.asm)
+cpl.PlayerArcade
+        ldd   player1+x_pos
+        subd  glb_camera_x_pos
+        subd  #8
+        bpl   >
+        ldd   #0
+!       tsta
+        beq   >
+        ldb   #255
+!       stb   cpl.wX
+        lda   #171
+        mul
+        tfr   a,b
+        clra
+        std   cpl.wT
+        ldb   cpl.wX
+        clra
+        aslb
+        rola
+        addd  cpl.wT
+        addd  #320
+        std   cpl.plx
+        ldb   player1+y_pos+1
+        clra
+        std   cpl.wT
+        ldd   #297
+        subd  cpl.wT
+        std   cpl.wT
+        lda   #171
+        mul
+        tst   cpl.wT
+        beq   >
+        addd  #171*256
+!       lsra
+        tfr   a,b
+        clra
+        addd  cpl.wT
+        std   cpl.ply
+        rts
+
+; X = the part's box (in its puppet), or a dummy box without puppet
+cpl.PartBox
+        ldx   P.pup,y
+        beq   @none
+        leax  AABB_0,x
+        rts
+@none   ldx   #cpl.NoBox
+        rts
+cpl.NoBox fcb 40,0,0,0,0,0,0,0,0          ; p = 40: a part without puppet lives
+
+; once per render, before the frames: a lost potential is a hit (0x1F
+; frames of cooldown, aa7a); a rolling segment at 0 was shot or stopped
+cpl.HitWatch
+        ldy   #cpl.Parts
+        ldb   #3
+@p      pshs  b
+        lda   P.st,y
+        cmpa  #1
+        bne   @np
+        jsr   cpl.PartBox
+        lda   AABB.p,x
+        cmpa  P.pp,y
+        bhs   @np
+        sta   P.pp,y
+        lda   #$1F
+        sta   P.h32,y
+@np     leay  P.SZ,y
+        puls  b
+        decb
+        bne   @p
+        ldy   #cpl.Rolls
+        ldb   #cpl.NROLL
+@w      lda   W.st,y
+        beq   @nw
+        ldx   W.pup,y
+        beq   @nw
+        lda   AABB_0+AABB.p,x
+        bne   @nw
+        clr   W.st,y
+@nw     leay  W.SZ,y
+        decb
+        bne   @w
+        rts
+
+;*******************************************************************************
+; PUBLICATION — once per render: puppets created, placed, shown or released
+;*******************************************************************************
+cpl.Publish
+        clr   weaponPodImmune
+        ldy   #cpl.Parts                 ; --- the parts
+        ldb   #0
+@p      pshs  b
+        lda   P.st,y
+        cmpa  #1
+        bne   @pgone
+        lda   #1
+        sta   weaponPodImmune            ; a live part: pod immunity (v4)
+        ldx   P.pup,y
+        bne   >
+        lda   #ObjID_compilerpart
+        jsr   cpl.PupNew
+        beq   @pn
+        stx   P.pup,y
+        ldb   ,s
+        aslb
+        ldu   #cpl.images
+        ldd   b,u
+        std   image_set,x
+        ldb   ,s
+        ldu   #cpl.prio
+        lda   b,u
+        sta   priority,x
+        lda   #40                        ; a7a4 HP_max 0x28
+        sta   cpl.boxP
+        ldb   ,s
+        aslb
+        ldu   #cpl.hitbox
+        ldd   b,u
+        pshs  y
+        ldy   #AABB_list_ennemy
+        jsr   cpl.BoxAdd
+        puls  y
+!       ldd   P.f28,y                    ; the fade path: no more collision
+        beq   >
+        jsr   cpl.BoxOff
+!       ldd   P.x,y
+        ldx   P.y,y
+        jsr   cpl.ToScreen
+        ldx   P.pup,y
+        jsr   cpl.Place
+        ; the hit flash: the arcade paints the flash palette on gc & 4
+        lda   P.h32,y
+        beq   @pn
+        lda   cpl.gc+1
+        bita  #4
+        beq   @pn
+        clr   pp.show,x
+        bra   @pn
+@pgone  ldx   P.pup,y                    ; gone or in cascade: no picture
+        beq   @pn
+        jsr   cpl.PupKill
+        clr   P.pup,y
+        clr   P.pup+1,y
+@pn     leay  P.SZ,y
+        puls  b
+        incb
+        cmpb  #3
+        lblo  @p
+        ldy   #cpl.Turrets               ; --- the turrets
+        ldb   #3
+@t      pshs  b
+        lda   T.st,y
+        bne   >
+        ldx   T.pup,y
+        beq   @tn
+        jsr   cpl.PupKill
+        clr   T.pup,y
+        clr   T.pup+1,y
+        bra   @tn
+!       ldx   T.pup,y
+        bne   >
+        lda   #ObjID_compilerturret
+        jsr   cpl.PupNew
+        beq   @tn
+        stx   T.pup,y
+        lda   #cpl.PRIO_TURRET
+        sta   priority,x
+        pshs  x,y,u                      ; its fire preset: createFoeFire
+        tfr   x,u                        ; reads fireVelocityPreset
+        ldb   T.pre,y
+        _loadFirePreset
+        puls  x,y,u
+!       ldb   T.dir,y
+        lsrb                             ; /4 then *2: a pointer per direction
+        ldu   #cpl.turret.images
+        ldd   b,u
+        std   image_set,x
+        ldd   T.x,y
+        ldx   T.y,y
+        jsr   cpl.ToScreen
+        ldx   T.pup,y
+        jsr   cpl.Place
+        ldu   T.par,y                    ; the parent's flash, ac84
+        lda   P.h32,u
+        beq   @tn
+        lda   cpl.gc+1
+        bita  #4
+        beq   @tn
+        clr   pp.show,x
+@tn     leay  T.SZ,y
+        puls  b
+        decb
+        bne   @t
+        ldy   #cpl.Lasers                ; --- the lasers
+        ldb   #cpl.NLASER
+@z      pshs  b
+        lda   Z.st,y
+        bne   >
+        ldx   Z.pup,y
+        beq   @zn
+        jsr   cpl.PupKill
+        clr   Z.pup,y
+        clr   Z.pup+1,y
+        bra   @zn
+!       ldx   Z.pup,y
+        bne   >
+        lda   #ObjID_compilerlaser
+        jsr   cpl.PupNew
+        beq   @zn
+        stx   Z.pup,y
+        lda   #5
+        ldb   Z.side,y
+        beq   @pr
+        lda   #8
+@pr     sta   priority,x
+        lda   #$FF                       ; never worn out: it only kills
+        sta   cpl.boxP
+        _ldd  compilerlaser_hitbox_x,compilerlaser_hitbox_y
+        pshs  y
+        ldy   #AABB_list_ennemy_unkillable
+        jsr   cpl.BoxAdd
+        puls  y
+!       lda   cpl.gc+1                   ; e6c0 the frame: gc & 6
+        anda  #6
+        ldu   #cpl.laser.images
+        ldd   a,u
+        std   image_set,x
+        ldd   Z.x,y
+        ldx   Z.y,y
+        jsr   cpl.ToScreen
+        ldx   Z.pup,y
+        jsr   cpl.Place
+@zn     leay  Z.SZ,y
+        puls  b
+        decb
+        bne   @z
+        ldy   #cpl.Rolls                 ; --- the rolling lasers
+        ldb   #cpl.NROLL
+@w      pshs  b
+        lda   W.st,y
+        bne   >
+        ldx   W.pup,y
+        beq   @wn
+        jsr   cpl.PupKill
+        clr   W.pup,y
+        clr   W.pup+1,y
+        bra   @wn
+!       ldx   W.pup,y
+        bne   >
+        lda   #ObjID_compilerwave
+        jsr   cpl.PupNew
+        beq   @wn
+        stx   W.pup,y
+        lda   #cpl.PRIO_WAVE
+        sta   priority,x
+        ldb   W.spr,y
+        aslb
+        ldu   #cpl.wave.images
+        ldd   b,u
+        std   image_set,x
+        lda   #1
+        sta   cpl.boxP
+        _ldd  compilerwave_hitbox_x,compilerwave_hitbox_y
+        pshs  y
+        ldy   #AABB_list_foefire         ; phase 1: the pod stops it
+        jsr   cpl.BoxAdd
+        puls  y
+!       lda   W.st,y                     ; phase 2: the weapons can shoot it
+        cmpa  #2
+        bne   >
+        ldd   pp.list,x
+        cmpd  #AABB_list_ennemy
+        beq   >
+        jsr   cpl.BoxOff
+        lda   #1
+        sta   cpl.boxP
+        _ldd  compilerwave_hitbox_x,compilerwave_hitbox_y
+        pshs  y
+        ldy   #AABB_list_ennemy
+        jsr   cpl.BoxAdd
+        puls  y
+!       ldd   W.x,y
+        ldx   W.y,y
+        jsr   cpl.ToScreen
+        ldx   W.pup,y
+        jsr   cpl.Place
+@wn     leay  W.SZ,y
+        puls  b
+        decb
+        bne   @w
+        lda   cpl.ost                    ; the dome, while the boss lives
+        cmpa  #O_GONE
+        beq   >
+        jsr   cpl.dome.tick
+!       rts
+
+; A = the ObjID -> X = a new puppet, Z clear if the pool is full
+cpl.PupNew
+        pshs  a,y
+        jsr   LoadObject_x
+        beq   @full
+        puls  a
+        sta   id,x
+        lda   #2
+        sta   routine,x
+        lda   #render_playfieldcoord_mask
+        sta   render_flags,x
+        clr   pp.show,x
+        clr   pp.kill,x
+        clr   pp.list,x
+        clr   pp.list+1,x
+        puls  y
+        andcc #$FB                       ; Z = 0
+        rts
+@full   puls  a,y
+        orcc  #4                         ; Z = 1
+        rts
+
+; X = the puppet, A = x, B = y (screen 0-based): its position, its box, shown
+cpl.Place
+        pshs  a,b
+        tfr   a,b
+        clra
+        addd  glb_camera_x_pos
+        std   x_pos,x
+        clra
+        ldb   1,s
+        std   y_pos,x
+        puls  a,b
+        cmpa  #250                       ; the box, parked off screen when the
+        bhs   @park                      ; centre clamps
+        cmpb  #250
+        bhs   @park
+        sta   AABB_0+AABB.cx,x
+        stb   AABB_0+AABB.cy,x
+        bra   @show
+@park   lda   #220
+        sta   AABB_0+AABB.cx,x
+        sta   AABB_0+AABB.cy,x
+@show   lda   #1
+        sta   pp.show,x
+        rts
+
+; X = the puppet: it removes its box and goes, next time it runs
+cpl.PupKill
+        lda   #1
+        sta   pp.kill,x
+        clr   pp.show,x
+        rts
+
+; X = the puppet, D = rx:ry, Y = the list, cpl.boxP = the potential
+cpl.BoxAdd
+        pshs  x,y,u
+        leax  AABB_0,x
+        pshs  d
+        ldb   #sizeof{AABB}
+!       clr   ,x+
+        decb
+        bne   <
+        leax  -sizeof{AABB},x
+        puls  d
+        std   AABB.rx,x
+        lda   cpl.boxP
+        sta   AABB.p,x
+        lda   #220
+        sta   AABB.cx,x
+        sta   AABB.cy,x
+        jsr   Collision_AddAABB
+        puls  x,y,u
+        sty   pp.list,x
+        rts
+
+; X = the puppet: its box leaves its list
+cpl.BoxOff
+        pshs  x,y,u
+        ldy   pp.list,x
+        beq   @rts
+        sty   Collision_Remove_1
+        sty   Collision_Remove_3
+        leay  2,y
+        sty   Collision_Remove_2
+        leax  AABB_0,x
+        jsr   Collision_RemoveAABB
+        ldx   ,s
+        clr   pp.list,x
+        clr   pp.list+1,x
+@rts    puls  x,y,u,pc
+
+;*******************************************************************************
+; THE PUPPET — every actor's picture and box; the manager does the thinking
+;*******************************************************************************
+cpl.Puppet
+        lda   pp.kill,u
+        beq   >
+        tfr   u,x
+        jsr   cpl.BoxOff
+        jmp   DeleteObject
+!       lda   pp.show,u
+        beq   >
+        jmp   DisplaySprite
+!       rts
+
+;*******************************************************************************
+; THE DOME — the author's pulse (dome-pulse.asm), on the manager's clock
+;*******************************************************************************
 cpl.dome.tick
-        lda   cpl.dome.left,u
-        suba  gfxlock.frameDrop.count  ; le decompte suit l'horloge de jeu
-        bhi   @garde                   ; l'etape court toujours
-        ; --- etape suivante ---------------------------------------------
-        ldb   cpl.dome.step,u
+        lda   cpl.dome.left
+        suba  gfxlock.frameDrop.count
+        bhi   @garde
+        ldb   cpl.dome.step
         incb
         cmpb  #cpl.dome.CYCLE
         blo   >
-        clrb                           ; le ping-pong reboucle
-!       stb   cpl.dome.step,u
-        aslb                           ; deux octets par entree : etape, duree
+        clrb
+!       stb   cpl.dome.step
+        aslb
         ldx   #cpl.dome.seq
         abx
-        lda   1,x                      ; la duree de la nouvelle etape
-        sta   cpl.dome.left,u
-        ; --- poser les trois couleurs -----------------------------------
-        ; Les cases MATERIELLES 12, 13, 14 sont consecutives et reservees a
-        ; nous seuls (arcade_to_sprites --reserver) : trois mots d'affilee
-        ; dans Pal_buffer, a l'offset 12*2. C'est tout le cout de l'effet.
-        ldb   ,x                       ; l'etape a jouer
-        lda   #6                       ; trois mots par etape
-        mul                            ; d = etape * 6
+        lda   1,x
+        sta   cpl.dome.left
+        ldb   ,x
+        lda   #6
+        mul
         ldx   #cpl.dome.pal
         leax  d,x
-        ; U PORTE L'OST : on ne l'ecrase qu'ici, quand plus aucune variable
-        ; d'objet n'est a lire, et on le rend avant de sortir.
         pshs  u
-        ldu   #Pal_buffer+12*2         ; la premiere des trois cases
+        ldu   #Pal_buffer+12*2
         ldy   ,x++
         sty   ,u++
         ldy   ,x++
@@ -263,793 +1554,39 @@ cpl.dome.tick
         ldy   ,x
         sty   ,u
         puls  u
-        clr   PalRefresh               ; PalUpdateNow les posera cette trame
+        clr   PalRefresh
         rts
-@garde  sta   cpl.dome.left,u
-        rts
-
-; ---------------------------------------------------------------------------
-; PartInit — A76E : une partie, posee et armee sur le script d'intro
-; ---------------------------------------------------------------------------
-PartInit
-        lda   subtype_w+1,u
-        sta   cpl.part,u
-        clr   x_sub,u
-        clr   y_sub,u
-        ; 5B54 : le script d'intro, un seul segment — vx = +1 px/trame
-        ; arcade (0,375 px v2), vy nul, pendant 0x160 trames.
-        ldd   #cpl.INTRO_VX
-        std   cpl.vx,u
-        ldd   #cpl.INTRO_DUR
-        std   cpl.timer,u
-        ; FIX #12 (29/08) : la verticale n'etait jamais posee. L'intro heritait
-        ; donc du reliquat de l'objet precedent dans le slot, et derivait.
-        clr   cpl.vy,u
-        lda   #cpl.FIRE_PERIOD         ; A7D9 : le compteur part plein
-        sta   cpl.cad,u
-        ; A775 : la lettre du boss, tiree par l'orchestrateur pour les trois.
-        ldb   globals.cplVariant
-        stb   cpl.cfg,u
-        clr   cpl.cursor,u
-        ; l'image de CETTE partie : une pose chacune, la silhouette est faite
-        ; de leur assemblage
-        ldb   cpl.part,u
-        aslb
-        ldx   #cpl.images
-        abx
-        ldd   ,x
-        std   image_set,u
-        ; LA PROFONDEUR DES TROIS PIECES, ECHELONNEE COMME LA BORNE. Elle leur
-        ; donne trois valeurs distinctes au spawn (A762) : DROITE 0x4020,
-        ; BAS 0x4010, GAUCHE 0x4000 — en priorite signee, plus grand = plus
-        ; DEVANT. Notre echelle va dans l'autre sens (1 devant, 8 derriere,
-        ; cf. engine/constants.asm) et le joueur est a 3 : le boss tient donc
-        ; entre 4 et 8. Les trois partageaient la valeur 4 jusqu'au 29/08 —
-        ; leur ordre de recouvrement etait alors indetermine.
-        ldb   cpl.part,u
-        ldx   #cpl.prio
-        abx
-        ldb   ,x
-        stb   priority,u
-        lda   #render_playfieldcoord_mask
-        sta   render_flags,u
-        ; A7A4 : QUARANTE POINTS DE VIE par piece. Chez nous le champ de
-        ; potentiel de la boite EST le compteur — le moteur le decremente a
-        ; chaque coup, et zero vaut mort (meme idiome que le monstre du
-        ; stage 1, cf. dobkeratops/monster.asm).
-        _Collision_AddAABB AABB_0,AABB_list_ennemy
-        lda   #cpl.PART_HP
-        sta   AABB_0+AABB.p,u
-        sta   cpl.hp.prev,u
-        clr   cpl.hit,u
-        ldb   cpl.part,u
-        aslb
-        ldx   #cpl.hitbox
-        abx
-        ldd   ,x
-        std   AABB_0+AABB.rx,u
-        inc   routine,u                ; -> PartLive
-        lbra  PartLive.draw
-
-; ---------------------------------------------------------------------------
-; PartLive — AFE6 (motion_step) : la derive du segment courant
-;
-; BLOC 1 : le seul segment est celui de l'intro. Quand son compte tombe, la
-; partie s'immobilise — la borne enchainerait sur les scripts de combat.
-; ---------------------------------------------------------------------------
-PartLive
-        ; ARCADE v4 (0x40F7F1) : les trois pieces testent les bit devices SANS
-        ; le force pod — immunisees au contact du pod, pas a celui des bits.
-        ; Presence posee chaque trame, consommee par WeaponContactTick
-        ; (src/common/lib/collisionpass.unit.asm).
-        lda   #1
-        sta   weaponPodImmune
-        ldd   cpl.timer,u
-        ; SEGMENT EPUISE : on prend le suivant. C'est motion_step (AFE6) — la
-        ; piece enchaine les segments de son script, puis les scripts de sa
-        ; config. Elle s'immobilisait ici jusqu'au 29/08, faute de scripts.
-        ; (Le saut visait PartLive.draw un temps plus tot encore : il passait
-        ; par-dessus le bloc des armes, et les pieces se taisaient apres
-        ; l'intro.)
-        bne   >
-        lbsr  cpl.motion.next
-        lbra  PartLive.armed
-!
-        ldb   gfxlock.frameDrop.count  ; le decompte suit l'horloge de jeu
-        clra
-        pshs  d
-        ldd   cpl.timer,u
-        subd  ,s++
-        bhi   >
-        ldd   #0                       ; le segment est fini
-!       std   cpl.timer,u
-        ; le pas du segment, compense par le frame drop
-        ldd   cpl.vx,u
-        lbsr  cpl.step
-        jsr   moveXPos8.8
-        ; ET LA VERTICALE : l'intro n'en avait pas, les scripts de combat si.
-        ldb   cpl.vy,u
-        sex                            ; l'octet signe redevient un 8.8
-        aslb
-        rola                           ; B03B : le x2 de combat (voir @segment)
-        lbsr  cpl.step
-        jsr   moveYPos8.8
-PartLive.armed
-        ; LES ARMES DE LA PIECE. La DROITE (0) et la GAUCHE (2) envoient leurs
-        ; lasers horizontaux ; la gauche a en plus son laser roulant. La piece
-        ; du bas n'a pas d'arme propre — ses deux tourelles vivent dans leurs
-        ; propres slots.
-        ; TOUS LES CHEMINS REJOIGNENT PartLive.hurt : le controle de degats
-        ; doit tourner a chaque trame. Ce bloc tombait dans cpl.fire par
-        ; simple voisinage jusqu'au 29/08 — la piece gauche l'executait deux
-        ; fois puis continuait dans le spawner.
-        ldb   cpl.part,u
-        beq   @tire
-        cmpb  #2
-        lbne  PartLive.hurt
-@tire   lbsr  cpl.fire
-        ldb   cpl.part,u
-        cmpb  #2
-        lbne  PartLive.hurt
-        lbsr  cpl.wave.tick
-        lbra  PartLive.hurt
-; FIX #2 : NE DESSINER QU'ENTIER A L'ECRAN. Les sprites compiles ne clippent
-; pas — l'arcade spawne a x ecran -16 et laisse son MATERIEL rogner, nous
-; n'avons pas ce luxe : le dessin partiel d'une piece de 66 px a -16 ecrivait
-; hors du champ et CORROMPAIT la RAM residente (pscroll.res, atteste par
-; l'anneau de trace : pscroll.do saute en $0050 des le spawn du boss, machine
-; figee — le « gel a la camera 929 » des essais precedents, qui etait en fait
-; le gel A L'HEURE DE WAVE DU BOSS). Pendant la derive d'intro, chaque piece
-; apparait quand son bord gauche franchit le bord de l'ecran ; sa position
-; finale (x = 116) est entiere a l'ecran.
-; ---------------------------------------------------------------------------
-; cpl.step — le pas d'un tick, pour une vitesse 8.8 SIGNEE
-; ---------------------------------------------------------------------------
-; entree : [d] la vitesse du segment, signee     sortie : [d] le pas du tour
-;
-; Le piege qu'elle ferme (29/08) : l'idiome maison `ldb #PAS / mul / _negd`
-; suppose une MAGNITUDE dans B, et les ennemis l'emploient avec une constante
-; positive. Les scripts du boss, eux, portent des vitesses signees en
-; complement a deux — et l'octet bas de -72 ($FFB8) vaut 184, pas 72. Les
-; segments negatifs partaient donc DEUX FOIS ET DEMIE trop vite, et les pieces
-; sortaient de l'ecran en quelques secondes (releve auteur ; l'intro, dont la
-; vitesse est positive, etait juste — c'est ce qui a mis sur la piste).
-; On prend donc la valeur absolue, on multiplie, on remet le signe.
-; ---------------------------------------------------------------------------
-; Le produit est 16x8 (29/08) : il etait 8x8, l'octet bas seul passait au
-; MUL. Suffisant pour les scripts (magnitudes <= 240 une fois doublees), faux
-; pour le laser horizontal ($0120 = 288 -> il volait sur son octet bas, 32,
-; NEUF fois trop lent) et pour le laser roulant (wav.life $0358 = 856 -> 88).
-; Domaine : magnitude x trames doit tenir en 16 bits (ici <= 856 x 8).
-cpl.step
-        pshs  a                        ; le signe d'origine (PSHS ne touche
-        bpl   >                        ;   pas les indicateurs du LDD)
-        _negd                          ; D = la magnitude
-!       pshs  b                        ; l'octet bas, pour le second produit
-        ldb   gfxlock.frameDrop.count
-        mul                            ; octet haut x trames : tient dans B
-        tfr   b,a                      ;   et pese 256 fois plus
-        puls  b                        ; l'octet bas de la magnitude
-        pshs  a                        ; le produit haut, en attente
-        lda   gfxlock.frameDrop.count
-        mul                            ; D = octet bas x trames
-        adda  ,s+                      ; + (haut x trames) << 8
-        tst   ,s+
-        bpl   >
-        _negd                          ; et le signe revient
-!       rts
-
-; ---------------------------------------------------------------------------
-; cpl.motion.next — AFE6 : le segment suivant du script de combat
-; ---------------------------------------------------------------------------
-; Un segment fait trois mots : vitesse x, vitesse y, duree. La sentinelle
-; $8000 en x termine le script — on passe alors au suivant de la config, et
-; apres le troisieme on reboucle sur le premier.
-; V2-DEVIATION : la borne, elle, ne reboucle pas — son terminateur declenche
-; l'AUTO-DESTRUCTION de la piece (~3,6 min si le joueur ne fait rien). Ce
-; renoncement lui appartient ; ici la piece se bat tant qu'on ne l'abat pas,
-; ce qui est aussi ce que le stage attend depuis qu'il ne gagne plus au
-; compteur.
-; ---------------------------------------------------------------------------
-cpl.motion.next
-        ; la config de la piece : trois lignes de trois mots, une par tirage
-        ldb   cpl.part,u
-        aslb
-        ldx   #cpl.cfg.index
-        ldx   b,x                      ; les trois configs de CETTE piece
-        ldb   cpl.cfg,u
-        aslb                           ; six octets par ligne (trois mots)
-        pshs  b
-        aslb
-        addb  ,s+
-        abx                            ; x = la config tiree
-        ; le script courant, dans les bits hauts du curseur
-        ldb   cpl.cursor,u
-        lsrb
-        lsrb
-        lsrb
-        lsrb
-        lsrb                           ; b = index du script (0..2)
-        aslb
-        ldx   b,x                      ; x = le script
-        ; le segment courant, dans les bits bas
-        ldb   cpl.cursor,u
-        andb  #cpl.CUR_SEG
-        aslb                           ; six octets par segment
-        pshs  b
-        aslb
-        addb  ,s+
-        abx
-        ldd   ,x                       ; la vitesse x, ou la sentinelle
-        cmpd  #$8000
-        bne   @segment
-        ; fin du script : au suivant de la config. Le segment repart a zero,
-        ; d'ou le curseur reconstruit entier.
-        lda   cpl.cursor,u
-        lsra
-        lsra
-        lsra
-        lsra
-        lsra
-        inca
-        cmpa  #3
-        blo   >
-        lbra  cpl.motion.suicide       ; les trois epuises : elle renonce
-!       asla                            ; on le remet en bits hauts
-        asla
-        asla
-        asla
-        asla
-        sta   cpl.cursor,u             ; (segment = 0, il vient d'etre efface)
-        bra   cpl.motion.next          ; et on lit son premier segment
-@segment
-        ; B032/B044 — LE TEMPO DE COMBAT EST DOUBLE (rate, puis releve le
-        ; 29/08). A chaque lecture de segment, la borne DOUBLE les deux
-        ; vitesses et DIVISE la duree par deux : meme deplacement, joue deux
-        ; fois plus vite. Seule l'intro (chargee par l'init, sans passer par
-        ; ce chemin) reste a vitesse simple. Sans ce doublement, toute la
-        ; choregraphie se jouait a la moitie du tempo — en side-by-side avec
-        ; l'arcade, la sequence devenait meconnaissable (releve auteur). Les
-        ; tables generees restent les valeurs ROM brutes : le doublement est
-        ; un geste d'execution, comme sur la borne.
-        aslb
-        rola                           ; vx x2
-        std   cpl.vx,u
-        ldd   4,x                      ; la duree
-        lsra
-        rorb                           ; duree /2
-        std   cpl.timer,u
-        ldb   2+1,x                    ; la vitesse y : appliquee tout de
-        stb   cpl.vy,u                 ;   suite (doublee a l'application —
-        inc   cpl.cursor,u             ;   x2 deborde de l'octet au stockage)
+@garde  sta   cpl.dome.left
         rts
 
-; ---------------------------------------------------------------------------
-; cpl.motion.suicide — AFE6, le terminateur : L'AUTO-DESTRUCTION
-; ---------------------------------------------------------------------------
-; Au bout de sa chaine de trois scripts, la borne ne reboucle pas : la piece
-; RENONCE. Elle fige une derive vers la droite (+0x200 en 8.8, soit 2 px par
-; trame arcade), et son bit de mort est diffuse au parent — le moniteur de
-; combat la compte pour tombee, exactement comme si le joueur l'avait abattue.
-; Un boss laisse donc partir ses pieces au bout d'environ trois minutes et
-; demie si personne ne le combat.
-;
-; Elle ne s'eteint PAS ici : elle continue d'exister et de deriver, hors de
-; l'ecran a terme. C'est ce que fait la borne, et cela laisse le joueur voir
-; le boss s'en aller.
-;
-; Le curseur porte l'etat : son index de script passe a TROIS, valeur qu'un
-; enchainement normal n'atteint jamais. Elle vaut « deja renonce » et empeche
-; de compter la mort deux fois — la piece garde ses points de vie, on peut
-; encore l'abattre en chemin.
-; ---------------------------------------------------------------------------
-cpl.motion.suicide
-        lda   cpl.cursor,u
-        cmpa  #3*cpl.CUR_STEP
-        bhs   @deja
-        lda   #3*cpl.CUR_STEP          ; l'etat « a renonce »
-        sta   cpl.cursor,u
-        inc   globals.compilerDead     ; sa mort est annoncee, comme un abattage
-@deja   ldd   #cpl.SUICIDE_VX
-        std   cpl.vx,u
-        clr   cpl.vy,u
-        ldd   #$FFFF                   ; une duree que rien n'epuise
-        std   cpl.timer,u
-        rts
-
-; ---------------------------------------------------------------------------
-; cpl.fire — AB01 (droite) / ADFB (gauche) : la salve de lasers horizontaux
-; ---------------------------------------------------------------------------
-; La borne decide a chaque trame, pour la partie droite comme pour la gauche :
-;   - le joueur doit etre A DROITE de la piece (elle tire vers la gauche) ;
-;   - il doit etre dans une fenetre verticale, comptee depuis la piece :
-;     0..0x50 px arcade pour la droite, 0..0x30 pour la gauche — la piece
-;     gauche vise plus serre ;
-;   - un compteur de cadence doit tomber a zero ; il se recharge alors depuis
-;     la valeur de difficulte (nous prenons la premiere, comme tout le cast).
-; Le laser nait devant la piece (+0x50 px arcade a droite, +0x10 a gauche,
-; donc DANS le corps) a une hauteur tiree d'un pool de huit offsets, et part
-; vers la gauche a 3 px/trame arcade.
-; ---------------------------------------------------------------------------
-cpl.fire
-        ; ORDRE DES CONTROLES (AB01, releve le 29/08) : la borne teste les
-        ; positions AVANT de toucher au compteur. Le compteur GELE donc tant
-        ; que le joueur n'est pas en vue — sortir de la fenetre et y revenir
-        ; ne vaut pas une salve immediate. Ma premiere version lisait une
-        ; cadence sans etat dans l'horloge de jeu, ce qui inversait cet ordre.
-        ;
-        ; GARDE DE VISIBILITE — ECART ASSUME. La borne n'en a pas besoin : ses
-        ; pieces naissent POSEES a x=0x100, donc a droite du joueur, et le
-        ; controle « joueur devant » les fait taire jusqu'au combat. Notre
-        ; intro les fait ENTRER par la gauche (SPAWN_X = -16) : le meme
-        ; controle devient vrai des la naissance, et le boss tirait pendant
-        ; toute son approche, hors de l'ecran (releve auteur ; mesure sous
-        ; toje : 3 lasers nes alors que la piece etait encore a x ecran -8).
-        ldd   x_pos,u
-        subd  glb_camera_x_pos         ; x ecran du centre
-        bmi   @wait                    ; le centre n'est meme pas entre
-        pshs  x,b,a
-        ldx   #cpl.halfw
-        ldb   cpl.part,u
-        abx
-        clra
-        ldb   ,x                       ; D = la demi-largeur de CETTE piece
-        cmpd  ,s                       ; face au x ecran empile
-        puls  a,b,x                    ; (PULS ne touche pas aux indicateurs)
-        bhi   @wait                    ; pas encore ENTIEREMENT entree
-        ; --- AB01 : le joueur devant, et dans la fenetre ------------------
-        ldd   player1+x_pos
-        subd  x_pos,u
-        bmi   @wait                    ; il est DERRIERE la piece
-        ldd   player1+y_pos
-        subd  y_pos,u
-        addd  #cpl.FIRE_WINY0
-        bmi   @wait                    ; au-dessus de la fenetre
-        ldb   cpl.part,u
-        cmpb  #2                       ; 2 = la piece GAUCHE, fenetre serree
-        beq   @gauche
-        cmpd  #cpl.FIRE_WINY_R
-        bra   @teste
-@gauche cmpd  #cpl.FIRE_WINY_L
-@teste  bhi   @wait                    ; sous la fenetre
-        ; --- AB19 : et seulement maintenant, la cadence -------------------
-        lda   cpl.cad,u
-        suba  gfxlock.frameDrop.count
-        bhi   @garde                   ; le compte n'est pas epuise
-        lda   #cpl.FIRE_PERIOD         ; AB1E : il se recharge sur la salve
-        sta   cpl.cad,u
-        bsr   cpl.laser.spawn
-        rts
-@garde  sta   cpl.cad,u
-@wait   rts
-
-; ---------------------------------------------------------------------------
-; cpl.laser.spawn — AB3A : un laser, devant la piece, a hauteur tiree
-; ---------------------------------------------------------------------------
-cpl.laser.spawn
-        jsr   LoadObject_x
-        beq   @none                    ; pool plein : pas de tir, la borne
-                                       ; renonce aussi
-        lda   #ObjID_compilerlaser
-        sta   id,x
-        lda   #5                       ; -> LaserInit
-        sta   routine,x
-        ; X PORTE L'OST DU LASER — on le met a l'abri le temps de lire les
-        ; tables. Sans cela le `ldx #cpl.prio` ci-dessous l'ecrasait et TOUT
-        ; ce qui suit ecrivait dans la table de priorites au lieu du
-        ; projectile : le laser naissait sans position ni profondeur, et la
-        ; table qu'il ecrasait servait aux pieces (releve sous toje : la piece
-        ; droite bloquee sur son premier segment, duree de segment a 27604 la
-        ; ou le script en donne 256).
-        pshs  x
-        ; La borne place le laser JUSTE DERRIERE sa piece (0x401F contre
-        ; 0x4020 a droite, 0x3FFF contre 0x4000 a gauche) : d'un cran, donc,
-        ; et c'est le spawner qui le sait.
-        ldb   cpl.part,u
-        ldx   #cpl.prio
-        abx
-        ldb   ,x
-        incb
-        puls  x
-        stb   priority,x
-        ; la hauteur : un des huit offsets du pool de la piece
-        jsr   RandomNumber
-        andb  #7
-        aslb
-        ldy   #cpl.laser.poolR
-        lda   cpl.part,u
-        cmpa  #2
-        bne   >
-        ldy   #cpl.laser.poolL         ; la piece gauche a son propre pool
-!       ldd   b,y
-        addd  y_pos,u
-        std   y_pos,x
-        ; l'avance : devant la piece a droite, dans le corps a gauche
-        ldd   #cpl.FIRE_AHEAD_R
-        lda   cpl.part,u
-        cmpa  #2
-        bne   >
-        ldd   #cpl.FIRE_AHEAD_L
-!       addd  x_pos,u
-        std   x_pos,x
-        clr   x_sub,x
-        clr   y_sub,x
-@none   rts
-
-; ---------------------------------------------------------------------------
-; cpl.wave.tick — AD5C : la fenetre de tir du laser roulant
-; ---------------------------------------------------------------------------
-; La borne ouvre une fenetre de 64 trames et lache une PAIRE de segments
-; toutes les 16 trames — quatre paires par fenetre, puis un long silence. Le
-; declenchement d'origine tient a la hauteur de la piece et a un compteur de
-; son script de combat ; celui-ci n'etant pas encore porte (bloc 1 : l'intro
-; seule), on garde le RYTHME de la borne — quatre paires, puis la pause — et
-; c'est le compteur de l'objet qui l'entretient.
-; ---------------------------------------------------------------------------
-cpl.wave.tick
-        ; UN DECOMPTE, PAS UN TEST D'EGALITE. Un tick vaut ici jusqu'a huit
-        ; trames de jeu : un compteur qui avance de sept ne tombe jamais
-        ; PILE sur un multiple de seize, et rien ne partait (constat sous
-        ; toje). Meme piege que la fenetre d'engagement du geld.
-        ; Ses deux compteurs sont GLOBAUX : voir globals.cplWave dans
-        ; variables.asm — sur la piece ils tombaient sur cpl.vy.
-        lda   globals.cplWave
-        suba  gfxlock.frameDrop.count
-        bhi   @wait
-        bsr   cpl.wave.pair
-        ; QUATRE paires puis un silence : c'est le rythme de la borne, sa
-        ; fenetre de 0x40 trames en laissant partir une toutes les seize.
-        inc   globals.cplWavePair
-        lda   globals.cplWavePair
-        anda  #3
-        bne   >
-        lda   #cpl.WAVE_PAUSE          ; la fenetre se referme
-        bra   @wait
-!       lda   #cpl.WAVE_GAP            ; seize trames jusqu'a la suivante
-@wait   sta   globals.cplWave
-        rts
-
-; ---------------------------------------------------------------------------
-; cpl.wave.pair — AE5C : DEUX segments, l'un derriere l'autre
-; ---------------------------------------------------------------------------
-cpl.wave.pair
-        ldb   #2                       ; la borne en lance deux, jamais un
-@one    pshs  b
-        jsr   LoadObject_x
-        beq   @done                    ; pool plein : la borne renonce aussi,
-                                       ; et n'essaie meme pas le second
-        lda   #ObjID_compilerwave
-        sta   id,x
-        lda   #9                       ; -> WaveInit
-        sta   routine,x
-        ; le second segment nait plus a gauche que le premier
-        ; On BRANCHE avant de composer D : un `ldb ,s` place apres le `ldd`
-        ; en ecraserait l'octet bas — la faute deja faite sur le creusement du
-        ; geld, et sur le cap de son virage.
-        ldb   ,s
-        cmpb  #2
-        beq   @premier
-        ldd   #cpl.WAVE_DX2            ; le second nait plus a gauche
-        bra   @posex
-@premier ldd  #cpl.WAVE_DX1
-@posex  addd  x_pos,u
-        std   x_pos,x
-        ldd   #cpl.WAVE_DY
-        addd  y_pos,u
-        std   y_pos,x
-        clr   x_sub,x
-        clr   y_sub,x
-@done   puls  b
-        decb
-        bne   @one
-        rts
-
-PartLive.hurt
-        ; AA0F point 6 : la boite a-t-elle perdu du potentiel depuis la trame
-        ; d'avant ? Alors le coup vient d'entrer — la borne joue son SFX et
-        ; arme 0x1F trames de clignotement.
-        lda   AABB_0+AABB.p,u
-        lbeq  cpl.part.die
-        cmpa  cpl.hp.prev,u
-        bhs   @noHit
-        ldb   #cpl.HIT_FLASH
-        stb   cpl.hit,u
-        ; V2-DEVIATION : la borne joue ici son SFX 0x56 (le « ping » du coup
-        ; encaisse). Notre banque de bruitages n'en a pas d'equivalent — le
-        ; clignotement porte seul le retour au joueur.
-@noHit  sta   cpl.hp.prev,u
-        ; le clignotement : une trame sur deux sautee tant qu'il court
-        lda   cpl.hit,u
-        beq   PartLive.draw
-        suba  gfxlock.frameDrop.count
-        bhi   >
-        clra
-!       sta   cpl.hit,u
-        anda  #2                       ; deux trames visibles, deux non
-        bne   PartLive.draw
-        rts                            ; sautee : la piece disparait ce tour
-
-PartLive.draw
-        ldb   cpl.part,u
-        ldx   #cpl.halfw
-        abx
-        ldb   ,x                       ; la demi-largeur de CETTE piece
-        clra
-        pshs  d
-        ldd   x_pos,u
-        subd  glb_camera_x_pos         ; x ecran du centre
-        subd  ,s                       ; le bord gauche depasse ?
-        bmi   @hide
-        addd  ,s
-        addd  ,s++                     ; le bord droit depasse ?
-        cmpd  #cpl.SCREEN_W
-        bhi   @hide2
-        jmp   DisplaySprite
-@hide   leas  2,s
-@hide2  rts
-
-; ---------------------------------------------------------------------------
-; LaserInit / LaserFly — E6AB : le laser horizontal du Compiler
-; ---------------------------------------------------------------------------
-; Il vole vers la GAUCHE a vitesse constante, cycle sur quatre poses, et tue
-; le joueur au contact (la borne pose player_one_die_flag). Il ne rebondit
-; pas, ne vise pas : c'est un rideau que le joueur doit eviter.
-; V2-DEVIATION : pas de selecteur de difficulte — on prend la premiere entree
-; de la table de vitesses (0x1000:5848), comme tout le cast.
-; ---------------------------------------------------------------------------
-LaserInit
-        ldd   #cpl.LASER_VX
-        std   cpl.laser.vx,u
-        ; (la profondeur est posee par le spawner, elle suit la piece)
-        lda   #render_playfieldcoord_mask
-        sta   render_flags,u
-        _Collision_AddAABB AABB_0,AABB_list_ennemy
-        lda   #compilerlaser_hitdamage
-        sta   AABB_0+AABB.p,u
-        _ldd  compilerlaser_hitbox_x,compilerlaser_hitbox_y
-        std   AABB_0+AABB.rx,u
-        inc   routine,u                ; -> LaserFly
-LaserFly
-        ; il avance, puis se montre — l'ordre de la borne
-        ldd   cpl.laser.vx,u
-        _negd                          ; vers la gauche
-        lbsr  cpl.step
-        jsr   moveXPos8.8
-        ; quatre poses, deux trames chacune (frame_duration 2 au catalogue)
-        lda   gfxlock.frame.count+1
-        lsra
-        anda  #3
-        asla
-        ldx   #cpl.laser.images
-        ldd   a,x
-        std   image_set,u
-        ; sorti par la gauche ? le laser ne revient jamais
-        ldd   x_pos,u
-        subd  glb_camera_x_pos
-        stb   AABB_0+AABB.cx,u
-        addd  #compilerlaser_hitbox_x
-        bmi   @gone
-        ldd   y_pos,u
-        stb   AABB_0+AABB.cy,u
-        jmp   DisplaySprite
-@gone   lda   #4                       ; -> AlreadyDeleted
-        sta   routine,u
-        _Collision_RemoveAABB AABB_0,AABB_list_ennemy
-        jmp   DeleteObject
-
-; ---------------------------------------------------------------------------
-; TurretInit / TurretRun — AC4C : une tourelle, portee et pivotante
-; ---------------------------------------------------------------------------
-; Elle ne se deplace pas d'elle-meme : sa position EST celle de sa piece plus
-; son decalage, relue a chaque trame. Elle pivote vers le joueur — la borne
-; appelle set_direction_to puis lit deux tables entrelacees (0x1000:5870) pour
-; la pose et son attribut de miroir. Chez nous l'export a deja produit UNE
-; POSE PAR DIRECTION (seize, tirees par cette meme table) : le miroir est
-; cuit dans l'image, l'index suffit.
-; Elle tire par le tryFoeFire commun, celui de cancer et du geld, avec son
-; propre motif — et pas a la premiere trame, la borne attend d'avoir vise.
-; ---------------------------------------------------------------------------
-TurretInit
-        ldb   subtype_w+1,u            ; le motif de tir de CETTE tourelle
-        _loadFirePreset
-        ldb   #cpl.PRIO_TURRET         ; la borne les met DEVANT la piece du
-        stb   priority,u               ;   bas (0x4011/12 contre son 0x4010)
-        lda   #render_playfieldcoord_mask
-        sta   render_flags,u
-        clr   cpl.tur.dir,u            ; pas de tir tant qu'on n'a pas vise
-        _Collision_AddAABB AABB_0,AABB_list_ennemy
-        lda   #compilerturret_hitdamage
-        sta   AABB_0+AABB.p,u
-        _ldd  compilerturret_hitbox_x,compilerturret_hitbox_y
-        std   AABB_0+AABB.rx,u
-        inc   routine,u                ; -> TurretRun
-TurretRun
-        ; AC4C : elle ne tire QUE si elle a deja vise une fois
-        tst   cpl.tur.dir,u
-        beq   >
-        jsr   tryFoeFire
-        ; AC56 : sa position suit celle de sa piece, decalage compris
-!       ldx   cpl.tur.parent,u
-        beq   @orphan
-        lda   id,x
-        cmpa  #ObjID_compilerpart
-        bne   @orphan                  ; la piece a rendu son slot : on suit
-        ldb   cpl.tur.offx,u
-        sex
-        addd  x_pos,x
-        std   x_pos,u
-        ldb   cpl.tur.offy,u
-        sex
-        addd  y_pos,x
-        std   y_pos,u
-        ; AC6B : viser le joueur, et en tirer la pose
-        ldx   #player1
-        jsr   setDirectionTo           ; Y = 0,4,8..$3C, l'index de la borne
-        tfr   y,d
-        stb   cpl.tur.dir,u
-        lsrb                           ; /4 : une pose par direction
-        lsrb
-        ldx   #cpl.turret.images
-        aslb                           ; deux octets par pointeur
-        ldd   b,x
-        std   image_set,u
-        ldd   x_pos,u
-        subd  glb_camera_x_pos
-        stb   AABB_0+AABB.cx,u
-        ldd   y_pos,u
-        stb   AABB_0+AABB.cy,u
-        jmp   DisplaySprite
-@orphan lda   #4                       ; -> AlreadyDeleted
-        sta   routine,u
-        _Collision_RemoveAABB AABB_0,AABB_list_ennemy
-        jmp   DeleteObject
-
-; ---------------------------------------------------------------------------
-; WaveInit / WaveFly — AEFB : un segment du laser roulant
-; ---------------------------------------------------------------------------
-; Il part a l'horizontale d'un cote TIRE AU SORT, monte en ralentissant, et
-; s'eteint quand son compte tombe. Chez la borne, le mot [+0x20] sert aux DEUX
-; a la fois : c'est la vitesse verticale ET le compte a rebours, decremente
-; d'un pas fixe chaque trame — le segment ralentit donc en vieillissant, et
-; c'est ce qui donne la courbe. On garde ce double emploi tel quel.
-; La pose ne s'anime PAS : chaque segment en prend une, fixe pour sa vie ; le
-; « roulement » vient chez elle du cyclage de palette (kind 0x56), que nous
-; n'avons pas — nos quatre poses different assez pour que la paire se lise.
-; ---------------------------------------------------------------------------
-WaveInit
-        jsr   RandomNumber
-        pshs  b                        ; le meme tirage sert deux fois
-        andb  #$3F                     ; la magnitude horizontale
-        addb  #cpl.WAVE_VX0
-        clra
-        tst   ,s                       ; ... et son bit 5 donne le sens
-        bpl   >
-        _negd
-!       std   cpl.wav.vx,u
-        jsr   RandomNumber
-        andb  #1                       ; la duree : deux paliers, comme la
-        clra                           ;   plage 0x280..0x47F de la borne
-        beq   >
-        ldd   #cpl.WAVE_LIFE1
-        bra   @life
-!       ldd   #cpl.WAVE_LIFE0
-@life   std   cpl.wav.life,u
-        ; la pose, fixe pour toute la vie du segment : le slot la choisit
-        puls  b
-        andb  #3
-        aslb
-        ldx   #cpl.wave.images
-        ldd   b,x
-        std   image_set,u
-        ; AU FOND. La borne lui donne 0x C000 — en signe, tres loin derriere
-        ; tout le reste. Elle valait 2 chez nous jusqu'au 29/08, soit presque
-        ; au premier plan : l'ordre etait INVERSE.
-        ldb   #cpl.PRIO_WAVE
-        stb   priority,u
-        lda   #render_playfieldcoord_mask
-        sta   render_flags,u
-        _Collision_AddAABB AABB_0,AABB_list_ennemy
-        lda   #compilerwave_hitdamage
-        sta   AABB_0+AABB.p,u
-        _ldd  compilerwave_hitbox_x,compilerwave_hitbox_y
-        std   AABB_0+AABB.rx,u
-        inc   routine,u                ; -> WaveFly
-WaveFly
-        ; l'horizontale : sa vitesse ne change pas, et elle est SIGNEE — le
-        ; cote de depart est tire au sort.
-        ldd   cpl.wav.vx,u
-        lbsr  cpl.step
-        jsr   moveXPos8.8
-        ; la verticale : la vitesse EST le compte a rebours, il ralentit
-        ldd   cpl.wav.life,u
-        _negd                          ; il monte (l'axe y de la borne monte)
-        lbsr  cpl.step
-        jsr   moveYPos8.8
-        ldd   cpl.wav.life,u
-        subd  #cpl.WAVE_DECAY
-        bls   @gone
-        std   cpl.wav.life,u
-        ldd   x_pos,u
-        subd  glb_camera_x_pos
-        stb   AABB_0+AABB.cx,u
-        addd  #compilerwave_hitbox_x
-        bmi   @gone
-        cmpd  #cpl.SCREEN_W+compilerwave_hitbox_x*2
-        bhi   @gone
-        ldd   y_pos,u
-        bmi   @gone
-        stb   AABB_0+AABB.cy,u
-        jmp   DisplaySprite
-@gone   lda   #4                       ; -> AlreadyDeleted
-        sta   routine,u
-        _Collision_RemoveAABB AABB_0,AABB_list_ennemy
-        jmp   DeleteObject
-
-; ---------------------------------------------------------------------------
-; cpl.part.die / PartBoom — B062 : le chapelet d'explosions d'une piece
-; ---------------------------------------------------------------------------
-; La borne n'eteint pas la piece d'un coup : elle installe un MARCHEUR qui
-; parcourt une liste d'offsets pendant 64 trames et seme une explosion a
-; chacun, une trame sur deux. Chaque piece a sa liste — le nuage fleurit
-; differemment selon celle qu'on abat (gen/enemies/compiler/explosions.asm).
-; La piece cesse alors de tirer, de bouger et d'encaisser : seul le nuage
-; vit. Sa mort est annoncee a l'orchestrateur, qui compte.
-; ---------------------------------------------------------------------------
-cpl.part.die
-        _Collision_RemoveAABB AABB_0,AABB_list_ennemy
-        ; l'orchestrateur tient le compte des pieces tombees
-        inc   globals.compilerDead
-        clr   cpl.boom.cur,u
-        lda   #cpl.BOOM_FRAMES
-        sta   cpl.boom.tick,u
-        lda   #10                      ; -> PartBoom
-        sta   routine,u
-        rts
-
-PartBoom
-        ; une trame sur deux, comme la borne (elle teste la parite du compteur
-        ; global) — ici le compte a rebours en fait office.
-        lda   cpl.boom.tick,u
-        suba  gfxlock.frameDrop.count
-        bls   @fini
-        sta   cpl.boom.tick,u
-        bita  #1
-        bne   @rts
-        ; l'entree suivante du chapelet, tant qu'il en reste
-        ldb   cpl.part,u
-        ldx   #cpl.boom.count
-        abx
-        lda   cpl.boom.cur,u
-        cmpa  ,x
-        bhs   @rts                     ; liste epuisee : le nuage s'eteint
-        inc   cpl.boom.cur,u
-        ldb   cpl.part,u
-        aslb
-        ldx   #cpl.boom.index
-        ldx   b,x                      ; la liste de CETTE piece
-        lda   cpl.boom.cur,u
-        deca
-        asla                            ; deux octets par entree
-        leax  a,x
-        pshs  x
-        jsr   LoadObject_x
-        beq   @pop
-        _ldd  ObjID_explosion,explosion.subtype.smallx3+explosion.sfx.cascade2
-        std   id,x
-        ldy   ,s                       ; l'entree, remise de la pile
-        ldb   ,y                       ; dx, signe
-        sex
-        addd  x_pos,u
-        std   x_pos,x
-        ldb   1,y                      ; dy, signe
-        sex
-        addd  y_pos,u
-        std   y_pos,x
-@pop    puls  x
-@rts    rts
-@fini   lda   #4                       ; -> AlreadyDeleted
-        sta   routine,u
-        jmp   DeleteObject
-
-AlreadyDeleted
-        rts
+;*******************************************************************************
+; THE DATA (page), cleared at every Init
+;*******************************************************************************
+cpl.nfr      fcb   0
+cpl.pending  fcb   0
+cpl.savedVel fdb   0
+cpl.Data
+cpl.gc       fdb   0                     ; the arcade global counter
+cpl.rng      fcb   0,0,0                 ; random_ax state
+cpl.plx      fdb   0                     ; the player, arcade units
+cpl.ply      fdb   0
+cpl.ost      fcb   0                     ; orchestrator state
+cpl.v10      fcb   0                     ; variant slot offset (+0x10)
+cpl.f30      fdb   0                     ; death mask (+0x30)
+cpl.f32      fdb   0                     ; deferred expiries (+0x32)
+cpl.f34      fcb   0                     ; armed (+0x34)
+cpl.c36      fdb   0                     ; death countdown (+0x36)
+cpl.dome.step fcb  0
+cpl.dome.left fcb  0
+cpl.wSide    fcb   0
+cpl.wX       fcb   0
+cpl.wT       fdb   0
+cpl.wT2      fdb   0
+cpl.wDX      fdb   0
+cpl.boxP     fcb   0
+cpl.rollPose fcb   0
+cpl.Parts    fill  0,3*P.SZ              ; right, bottom, left
+cpl.Turrets  fill  0,3*T.SZ              ; list order: bottom #1, left, bottom #2
+cpl.Lasers   fill  0,cpl.NLASER*Z.SZ
+cpl.Rolls    fill  0,cpl.NROLL*W.SZ
+cpl.DataEnd

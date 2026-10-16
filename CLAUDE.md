@@ -1054,6 +1054,22 @@ détourner le PC après un `run_frames` peut tomber DANS le gestionnaire d'IRQ
 écrase ses cadres ; reposer S, DP et CC avant tout saut (`goto_stage.py`
 corrigé, ses décalages en dur aussi).
 
+**Le Compiler (stage 4) réécrit 1:1 le même jour**, IDENTIQUE à la borne
+sur le combat sans tir jusqu'à la fin de ses scripts (1 684 rendus, 87 478
+valeurs) et sur la destruction des trois pièces (328 rendus, cascades
+comprises) ; le stage 4 passe toujours la main au 5. Son flux aléatoire est
+partagé avec le champ d'étoiles (`star_ctor`) : la trace porte les appelants
+de `random_ax` (`PILOT_RNGLOG`), la référence la valeur reçue par chacun, et
+le banc l'écrit dans D au crochet `compiler.Drawn` (une IRQ prise sur ce
+crochet y revient : doublon détecté par l'état du générateur). Les morts de
+lasers roulants sur les chaînes de gommes — que la borne garde à l'écran et
+que le TO8 ne dessine ni ne sonde pendant le combat — sont une entrée du
+banc (26). La spécification est un modèle Python
+(`tools/fidelity/models/compiler_model.py`) vérifié contre la trace avant
+toute ligne de 6809. Les quatre globales de l'ancien Compiler sont rendues
+(+157, +159, +160 libres) ; `globals.cplVariant` partageait l'octet +161
+avec `globals.tilesBehind`.
+
 ## Dettes / pièges connus
 
 - `engine/pack/mub.asm` : chemins d'INCLUDE invalides (fichiers dans `sound/mucom88/`).

@@ -5,8 +5,9 @@ Un boss porté est fidèle quand, aux mêmes entrées, il passe par les mêmes
 outils qui le vérifient sans jugement visuel, et ce qu'il faut respecter dans
 le code d'un portage pour que la vérification soit possible.
 
-Premier client : Bellmite, le boss du stage 5. Prochains : le Compiler (stage
-4, dont les déplacements divergent encore), puis les boss des stages 6 à 8.
+Clients : Bellmite, le boss du stage 5, puis le Compiler (stage 4), réécrit
+1:1 le 16/10/2026 parce que ses déplacements divergeaient. Prochains : les
+boss des stages 6 à 8.
 
 ## Le constat qui rend la méthode possible
 
@@ -44,12 +45,16 @@ port qui calcule comme elle doit le rejouer au même octet.
 3. **Le générateur de la borne, privé.** Une copie de `random_ax` et de son
    réensemencement, tenue par le boss, avec une copie du compteur global
    semée depuis `gfxlock.frame.gameCount` au spawn.
-4. **Quatre crochets nommés.** `<boss>.Seeded`, après la création et avant
+4. **Des crochets nommés.** `<boss>.Seeded`, après la création et avant
    la première trame jouée : le banc y écrit l'horloge et la graine de la
    borne. `<boss>.Spawned`, quand les records existent : le banc y écrit les
    **résidus** de la borne (voir plus bas). `<boss>.Tick`, en tête de chaque
    trame arcade : le banc y injecte les dégâts d'un scénario. `<boss>.Sample`,
-   à la fin de chaque rendu : le banc y relève l'état.
+   à la fin de chaque rendu : le banc y relève l'état. Un boss dont les
+   tirages ne se reproduisent pas (voir plus bas) a un cinquième crochet,
+   `<boss>.Drawn`, sur le `rts` de sa routine de tirage. Un boss sans
+   résidus de création n'a pas de `Spawned` : ses résidus s'écrivent à
+   `Tick`.
 
 ## Les résidus d'un record recyclé
 
@@ -62,12 +67,53 @@ du combat au même titre que la graine : le port les pose à 0, le banc écrit
 celles de la borne au crochet `Spawned`. Après cette injection, plus aucune
 divergence.
 
+## Quand le flux aléatoire est partagé : rejouer les tirages
+
+Le constat de Bellmite — tous les tirages pendant le combat viennent du
+boss — ne tient pas pour le Compiler : son combat fait naître le champ
+d'étoiles, et `star_ctor` tire trois fois par étoile (724 étoiles sur un
+combat). Le port ne fait pas naître ces étoiles de la même façon ; il ne
+peut pas reproduire le flux, seulement SES tirages.
+
+La trace MAME porte alors, trame par trame, l'adresse de retour de chaque
+appel à `random_ax` (`PILOT_RNGLOG=1`, champ `rc`). L'état du générateur
+avant et après chaque trame étant connu, la valeur que chaque appelant a
+reçue se recalcule. La référence garde la liste des tirages de la famille
+(`d` : appelant, AX). Côté TO8, chaque tirage passe par `cpl.Draw` ; le banc
+s'arrête sur `compiler.Drawn` et écrit dans D la valeur de la borne. Il
+compte les tirages en trop ou manquants : un port qui tire au mauvais
+endroit ou au mauvais moment se voit là, avant même la comparaison d'état.
+
+**Piège du crochet de tirage.** Une IRQ prise SUR l'instruction du crochet
+y revient après son RTI : le même tirage arrête le banc deux fois, et le
+second arrêt consommait le tirage suivant (vu à la trame 4379 : la paire de
+lasers roulants naissait avec les vitesses de la paire d'après). Un vrai
+tirage fait toujours avancer le générateur du port ; un arrêt dont la pile,
+l'adresse de retour et l'état du générateur sont ceux de l'arrêt précédent
+est ce doublon, et le banc l'ignore. Tester D ne suffit pas : la valeur
+propre du port coïncide souvent avec celle de la borne (même graine, et le
+champ d'étoiles ne tire que par intermittence).
+
+## Les entrées que le port ne calcule pas comme la borne
+
+Un écart assumé du port qui touche l'état du boss devient une ENTRÉE du
+banc, comme la graine : la valeur de la borne est imposée, l'injection est
+comptée et affichée. Le seul cas aujourd'hui est la mort d'un segment de
+laser roulant du Compiler sur le décor. La borne garde ses chaînes de
+gommes à l'écran pendant le combat et y perd ses segments ; le TO8 remplace
+le décor par le champ d'étoiles et coupe ce plan de collision (décision du
+28/08, `stage-main.asm`, `plainBackdrop`). Quand un segment manque à la
+borne, et qu'il est le seul écart des segments, le banc le retire du port
+(26 sur le combat sans tir). Un segment que le port perdrait seul resterait,
+lui, une divergence.
+
 ## Les outils
 
 | Étape | Outil | Sortie |
 |---|---|---|
 | Trace borne | `pilot/tools/trace_actors.lua` (fork MAME) : état d'entrée du stage, vaisseau épinglé, records de la famille à chaque trame | JSON Lines brut |
 | Référence | `tools/fidelity/fidelity.py arcade <boss>` décode selon le profil du boss | `tools/fidelity/ref/<boss>.ref.jsonl.gz` (commitée ; `--check` la rejoue) |
+| Spécification | `tools/fidelity/models/<boss>_model.py` : le boss en Python, routine par routine, vérifié contre la trace brute avant d'écrire une ligne de 6809 (Compiler) | `IDENTIQUE` ou la première divergence par champ |
 | Trace TO8 | `tools/fidelity/fidelity.py to8 <boss> dist/to8.fd` : toje, saut par le cheat du title, graine écrite au spawn, relevé à chaque rendu | JSON Lines, même format |
 | Verdict | `tools/fidelity/fidelity.py compare <boss>` : jointure sur l'horloge globale, comparaison champ par champ | première divergence de chaque champ et compte |
 
@@ -100,9 +146,16 @@ son délai), `kill` tue 26 satellites puis le noyau.
 |---|---|---|---|
 | bellmite idle | 598 | 212 002 | identique |
 | bellmite kill | 168 | 37 789 | identique |
+| compiler idle | 1 684 | 87 478 | identique (26 morts de segments sur les gommes en entrée) |
+| compiler kill | 328 | 11 416 | identique (gauche, bas puis droite, cascades jouées) |
 
-Le combat tourne à 4 à 6 trames de jeu par rendu sur TO8 (8,5 images par
-seconde en moyenne pendant le boss).
+`compiler idle` va jusqu'au bout des scripts : les trois pièces atteignent
+leur terminateur, l'orchestrateur joue sa séquence de 256 trames et
+disparaît. `compiler kill` détruit une pièce toutes les 200 trames.
+
+Bellmite tourne à 4 à 6 trames de jeu par rendu sur TO8 (8,5 images par
+seconde en moyenne pendant le boss), le Compiler à 4,3 (11,6 images par
+seconde).
 
 ## Les captures appariées
 
@@ -118,6 +171,18 @@ l'interruption suivante écrase ses cadres. Le symptôme imite un bug du jeu :
 DKCONT rendait la main en $0005 au milieu du chargement du stage 5. Avant
 tout saut, le banc repose S sur `glb_system_stack`, DP sur $9F et masque les
 IRQ (CC = $D0).
+
+## La méthode, dans l'ordre (leçon du Compiler)
+
+1. Tracer la famille sous MAME, tirages compris.
+2. Écrire le **modèle Python** routine par routine, adresse arcade en
+   commentaire, et le faire tomber à `IDENTIQUE` contre la trace brute. C'est
+   là que se trouvent les vraies règles (tempo double des segments de combat,
+   pièces qui avancent en bloc, compteur de tir `(AX·4) & (seuil−1)`,
+   résidus des records recyclés), en secondes et non en minutes de toje.
+3. Traduire le modèle en 6809, mêmes noms, même ordre.
+4. Profil du banc, référence, comparaison TO8 : les écarts restants sont
+   des fautes de traduction, pas de compréhension.
 
 ## Ce que le banc ne couvre pas
 

@@ -206,7 +206,13 @@ sous-dossier ou `_shared/`.
 > rejoue alors le combat de MAME octet pour octet ; « identique » est le
 > critère d'acceptation, pas « ça ressemble ». Premier port : Bellmite
 > (`src/enemies/bellmite/obj.asm`), identique sur le combat complet et sur
-> une mise à mort injectée.
+> une mise à mort injectée. Puis le Compiler (`src/enemies/compiler/`),
+> dont le flux aléatoire est partagé avec le champ d'étoiles : ses tirages
+> passent par un crochet `compiler.Drawn` où le banc écrit la valeur de la
+> borne. **Ordre de travail** : modèle Python d'abord
+> (`tools/fidelity/models/`), mis à `IDENTIQUE` contre la trace brute, PUIS
+> la traduction 6809 — le Compiler est tombé identique au premier passage
+> sous toje.
 - Build : `java -Dbasedir=<racine> -cp "../../repo/*"
   com.widedot.m6809.gamebuilder.MainCommand -f to8.config.xml` depuis
   `games/r-type/`.
