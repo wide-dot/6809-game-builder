@@ -97,6 +97,14 @@ sounds.clearstage.ymm EXTERNAL
 stage.music       equ sounds.level7.ymm
 stage.music.page  equ stage7.music.ymm.page
 
+; Le BOSS, dans son propre direntry (stage7.bronco) : le maitre et son
+; renderer groupe ; ses boites, ses creneaux et sa boucle de dessin sont ici.
+bronco.Object     EXTERNAL
+bronco.Render     EXTERNAL
+bronco.boxes      EXPORT
+bronco.slots      EXPORT
+bronco.DrawAll    EXPORT
+
 ; Le sequenceur de fin generique et le jingle qu'il demande au stage de
 ; jouer (protocole du stage 1, objet commun monte au boot).
 endlevel.Object       EXTERNAL
@@ -263,7 +271,7 @@ main.endstage.rallyY     fdb endstage.RALLY_Y
 ; La duree armee par bossDefeated et la voie du fondu, publiees par LE
 ; STAGE (endlevel.const.asm) : le compte du Dobkeratops, le fondu par
 ; tramage — les valeurs d'avant le 08/09/2026.
-main.endstage.duration   fdb endstage.DURATION
+main.endstage.duration   fdb endstage.DURATION_LATCHED ; Bronco leve le drapeau a l'heure arcade
 main.endstage.fadeMode   fcb endstage.FADE_PIXEL
 
 stage.endTick
@@ -334,6 +342,59 @@ stage.setup
         ; l'ouverture ET au rechargement de checkpoint — stage.setup couvre
         ; les deux, comme au stage 1.
         _Obj_RunB ObjID_endstage,#endstage.INIT
+        ; CE STAGE A SON BOSS : Bronco leve lui-meme le drapeau de fin
+        ; (40:B970, 0x1160 + 0x80 trames apres sa naissance), jamais le
+        ; compteur de substitution.
+        lda   #1
+        sta   globals.realBoss
+        rts
+
+;*******************************************************************************
+; BRONCO — ce qui doit etre RESIDENT (src/enemies/bronco/obj.asm)
+;
+; Ses boites (Collision_Do les parcourt avec une autre page montee), ses
+; creneaux de dessin et la boucle qui les dessine : ses cellules vivent sur
+; trois pages (celles de Bronco, et deux du bug), la boucle monte la page de
+; chaque cellule avant de l'appeler.
+;*******************************************************************************
+bronco.boxes
+        fill  0,28*9
+bronco.slots                         ; [on, x, y, imageset(2), page]
+        fill  0,32*6
+bronco.slotsEnd
+
+bronco.DrawAll
+        _GetCartPageA
+        sta   @page
+        ldx   #bronco.slots
+@loop   lda   ,x
+        beq   @next
+        stx   @slot
+        lda   5,x                        ; the cell's page
+        _SetCartPageA
+        ldd   1,x
+        ldx   3,x                        ; its imageset
+        pshs  a,b
+        _sprite.cull bronco.DrawAll.off
+        lda   ,s
+        suba  imgset.center,x
+        ldb   1,s
+        pshs  x
+        jsr   DRS_XYToAddress
+        puls  x
+        ldx   14,x                       ; its routine
+        ldu   <glb_screen_location_2
+        jsr   ,x
+bronco.DrawAll.off
+        leas  2,s
+        ldx   #0
+@slot   equ   *-2
+@next   leax  6,x
+        cmpx  #bronco.slotsEnd
+        blo   @loop
+        lda   #0
+@page   equ   *-1
+        _SetCartPageA
         rts
 
 ; Fin du stage 7 : on enchaîne sur le stage 8. La campagne remonte

@@ -144,7 +144,7 @@
 	fcb   $11,$58,ObjID_patapata,$00,$54
 	fcb   $11,$74,ObjID_patapata,$00,$06
 	fcb   $11,$88,ObjID_patapata,$00,$74
-;$11,$A0,ObjID_bronco,$00,$00
+	fcb   $11,$A0,ObjID_bronco,$00,$00
 	fcb   $11,$A0,ObjID_patapata,$00,$37
 	fcb   $11,$B4,ObjID_patapata,$00,$42
 	fcb   $11,$C2,ObjID_patapata,$00,$04

@@ -49,6 +49,8 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+lib.mid.page ; ObjID_mid
         fcb   0,0,0,0,0,0,0 ; 42..48 libres
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender
+        fcb   map.RAM_OVER_CART+stage7.bronco.page ; ObjID_bronco
+        fcb   map.RAM_OVER_CART+stage7.bronco.page ; ObjID_bronco_render
 Obj_Index_Page.end
 
 Obj_Index_Address
@@ -102,6 +104,8 @@ Obj_Index_Address
         fdb   mid.Object ; ObjID_mid
         fdb   0,0,0,0,0,0,0 ; 42..48 libres
         fdb   bug.Render ; ObjID_bugrender
+        fdb   bronco.Object ; ObjID_bronco
+        fdb   bronco.Render ; ObjID_bronco_render
 Obj_Index_Address.end
 
 Ani_Page_Index
@@ -149,6 +153,8 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+lib.mid.page ; ObjID_mid
         fcb   0,0,0,0,0,0,0 ; 42..48 libres
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender
+        fcb   map.RAM_OVER_CART+stage7.bronco.page ; ObjID_bronco
+        fcb   map.RAM_OVER_CART+stage7.bronco.page ; ObjID_bronco_render
 Ani_Page_Index.end
 
 Ani_Asd_Index
@@ -196,6 +202,8 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_mid
         fdb   0,0,0,0,0,0,0 ; 42..48 libres
         fdb   Ani_Asd_none ; ObjID_bugrender
+        fdb   Ani_Asd_none ; ObjID_bronco
+        fdb   Ani_Asd_none ; ObjID_bronco_render
 Ani_Asd_Index.end
 
 Ani_Asd_none
@@ -246,6 +254,8 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+lib.mid.page ; ObjID_mid
         fcb   0,0,0,0,0,0,0 ; 42..48 libres
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender
+        fcb   map.RAM_OVER_CART+stage7.bronco.page ; ObjID_bronco
+        fcb   map.RAM_OVER_CART+stage7.bronco.page ; ObjID_bronco_render
 Img_Page_Index.end
 
 * GARDE-FOU. Les cinq tables sont indexees par l'identifiant d'objet : le

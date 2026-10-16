@@ -33,7 +33,7 @@ Quand le flux aleatoire est PARTAGE (le Compiler et le champ d'etoiles), la
 reference porte la valeur recue par chaque tirage de la famille et le banc
 l'ecrit dans D au crochet `<boss>.Drawn` (profil avec `draws`).
 
-Usage (depuis games/r-type/), <boss> = bellmite | compiler | dopswarm :
+Usage (depuis games/r-type/), <boss> = bellmite | compiler | dopswarm | bronco :
   python3 tools/fidelity/fidelity.py arcade <boss>          # MAME -> ref
   python3 tools/fidelity/fidelity.py arcade <boss> --check  # ref a jour ?
   python3 tools/fidelity/fidelity.py to8 <boss> dist/to8.fd [--out f]
@@ -577,7 +577,211 @@ class Dopswarm:
         live['slots'] = now
 
 
-PROFILES = {'bellmite': Bellmite(), 'compiler': Compiler(), 'dopswarm': Dopswarm()}
+class Bronco:
+    """Bronco (stage 7): a timed manager, five lamps, junk launched at
+    random, chasers, the main attacker and its scripted sub-children. Its
+    draws share random_ax with the stage's wave (the pata-patas, the
+    rockets): replayed at bronco.Drawn, as for the Compiler."""
+    name = 'bronco'
+    stage = 7
+    unit = 'stage7.bronco'
+    lwmap = 'gen/enemies/build/stage7-bronco.lwmap'
+    hook = 'bronco'
+    data = ('bro.Data', 'bro.DataEnd')
+    gcsym, rngsym = 'bro.gc', 'bro.rng'
+    ticks = ('b7fb-c0a0',)
+    budget = 5000
+    env = {'PILOT_RNGLOG': '1', 'PILOT_START': 'b805'}
+    pin_arcade = (512, 228)
+    pin_to8 = (80, 126)
+    # 'kill': the main attacker takes its 160 points at frame 2000 (it wakes
+    # at 0x500): its fall broadcasts +0x31 and the whole family goes
+    scenarios = {'idle': [], 'kill': [(2000, 0)]}
+    OWN = {0xBAE1, 0xBB4D, 0xBBC6, 0xBBDC, 0xBC3E, 0xBC70, 0xBD29, 0xBEE2,
+           0xBA6F, 0xBFF2, 0xC00B, 0xC017}
+    INST = {0xBB40, 0xBB72, 0xBB7E, 0xBB8A, 0xBB96, 0xBBA2, 0xBBAE, 0xBBC3,
+            0xBC08, 0xBC31, 0xBC63}
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.prev = None
+
+    def draws(self, f):
+        if self.prev is None:
+            st = tuple(f['rng'])                 # nothing draws at creation
+        else:
+            st = tuple(self.prev)
+            if (f['gc'] & 0x1FF) == 0:
+                st = (5, 1, 3)
+        out = []
+        for caller in f.get('rc', []):
+            a, b, c = st
+            na = (b + c) & 0xFF
+            if caller in self.OWN:
+                out.append([caller, (c << 8) | na])
+            st = (na, a, b)
+        self.prev = f['rng']
+        return out
+
+    def arcade(self, frame, seen):
+        st = {'gc': frame['gc'], 'd': self.draws(frame), 'rng': frame['rng'],
+              'm': {'st': 4 if seen else 0}, 'segs': [], 'disp': None, 'spawner': None,
+              'ma': None, 'debris': [], 'chasers': [], 'subs': []}
+        for o in frame['o']:
+            b = bytes.fromhex(o['r'])
+            w = lambda k: b[k] | (b[k + 1] << 8)
+            pos = lambda k: ((w(k + 1) << 8) | b[k]) & 0xFFFFFF
+            t = o['t']
+            if t in (0xB805, 0xB8D5, 0xB950):
+                st['m'] = {'st': {0xB805: 1, 0xB8D5: 2, 0xB950: 3}[t]}
+                if t != 0xB805:
+                    st['m'].update({'c10': w(0x10), 'f30': b[0x30], 'f31': b[0x31]})
+                if t == 0xB950:
+                    st['m']['c32'] = w(0x32)
+            elif t in (0xB997, 0xB9FD):
+                st['segs'].append([w(4), w(8), w(0x30), 1 if t == 0xB997 else 2])
+            elif t == 0xBAA7:
+                st['disp'] = [w(0x30), w(0x20), w(0x32), w(0x34), w(0x36)]
+            elif t == 0xBD32:
+                st['spawner'] = [w(0x20), w(0x22)]
+            elif t in (0xBE81, 0xBFE8):
+                st['ma'] = [pos(3), w(8), w(0x30), w(0x32), 1 if t == 0xBE81 else 2]
+            elif t in self.INST:
+                st['debris'].append([w(4), pos(7), w(0x20), 1, 0, 0, 0, 0, 0])
+            elif t == 0xBC95:
+                st['debris'].append([w(4), pos(7), w(0x20), 2, w(0x22), b[0x2F], b[0x32],
+                                     b[0x33], w(0x26)])
+            elif t == 0xBDB2:
+                st['chasers'].append([w(4), pos(7), w(0x30)])
+            elif t in (0xC03F, 0xC069):
+                st['subs'].append([w(4), w(8), w(0x12), w(0x14), b[0x16], b[0x17], w(0x34),
+                                   1 if t == 0xC03F else 2])
+        for k in ('segs', 'debris', 'chasers', 'subs'):
+            st[k].sort()
+        st['p'] = {'st': st['m']['st']}
+        return st
+
+    def to8(self, sym, mem, base):
+        def b(name, off=0):
+            return mem[sym[name] - base + off]
+
+        def w(name, off=0):
+            return (b(name, off) << 8) | b(name, off + 1)
+
+        def recs(table, size, n):
+            r0 = sym[table] - base
+            for i in range(n):
+                r = r0 + i * sym[size]
+                yield (lambda f, k=1, r=r: int.from_bytes(bytes(mem[r + sym[f]:r + sym[f] + k]), 'big'))
+        mst = b('bro.mst')
+        m = {'st': mst}
+        if mst in (2, 3):
+            m.update({'c10': w('bro.c10'), 'f30': b('bro.f30'), 'f31': b('bro.f31')})
+        if mst == 3:
+            m['c32'] = w('bro.c32')
+        st = {'gc': w('bro.gc'), 'm': m, 'p': {'st': mst},
+              'segs': [], 'debris': [], 'chasers': [], 'subs': [],
+              'disp': [w('bro.dc30'), w('bro.dcur'), w('bro.dc32'), w('bro.dc34'),
+                       w('bro.dc36')] if b('bro.dst') else None,
+              'spawner': [w('bro.sc20'), w('bro.scur')] if b('bro.sst') else None,
+              'ma': [(w('bro.ax') << 8) | b('bro.axf'), w('bro.ay'), w('bro.ac30'),
+                     w('bro.ac32'), b('bro.ast')] if b('bro.ast') else None}
+        for g in recs('bro.Segs', 'G.SZ', sym['bro.NSEG']):
+            if g('G.st'):
+                st['segs'].append([g('G.x', 2), 0x160, g('G.c30', 2), g('G.st')])
+        for g in recs('bro.Debris', 'R.SZ', sym['bro.NDEB']):
+            s_ = g('R.st')
+            if s_ == 1:
+                st['debris'].append([g('R.x', 2), g('R.y', 3), g('R.vy', 2), 1, 0, 0, 0, 0, 0])
+            elif s_ == 2:
+                st['debris'].append([g('R.x', 2), g('R.y', 3), g('R.vy', 2), 2, g('R.p22', 2),
+                                     g('R.hp'), g('R.f32'), g('R.f33'), g('R.f26')])
+        for g in recs('bro.Chasers', 'C.SZ', sym['bro.NCH']):
+            if g('C.st'):
+                st['chasers'].append([g('C.x', 2), g('C.y', 3), g('C.c30', 2)])
+        for g in recs('bro.Subs', 'B.SZ', sym['bro.NSUB']):
+            if g('B.st'):
+                st['subs'].append([g('B.x', 2), g('B.y', 2), g('B.s12', 2), g('B.s14', 2),
+                                   g('B.s16'), g('B.s17'), g('B.p34', 2), g('B.st')])
+        for k in ('segs', 'debris', 'chasers', 'subs'):
+            st[k].sort()
+        return st
+
+    def done(self, st):
+        return st['m']['st'] == 4
+
+    @staticmethod
+    def flat(st):
+        out = {'m.' + k: v for k, v in st['m'].items()}
+        for k in ('segs', 'disp', 'spawner', 'ma', 'debris', 'chasers', 'subs'):
+            out[k] = st[k]
+        return out
+
+    def hit_arcade(self, target):
+        return 0xA130, 0xA0                    # +0x1F >= HP 0xA0 (40:BF92)
+
+    def hit_to8(self, t, sym, base, target, boxes):
+        t.call('write_memory', {'addr': '%04X' % (base + sym['bro.admg']),
+                                'bytes': ['00', 'A0']})
+
+    def seed(self, t, sym, base, ref):
+        """the autoscroll's phase: the frame of the lamps' first step"""
+        put = lambda a, vals: t.call('write_memory', {
+            'addr': '%04X' % a, 'bytes': ['%02X' % v for v in vals]})
+        gc0, x0 = ref[0]['gc'], None
+        for s_ in ref[1:]:
+            if s_['segs']:
+                x = s_['segs'][0][0]
+                if x0 is not None and x != x0:
+                    put(base + sym['bro.sacc'], [0x00 if (s_['gc'] - gc0) % 2 == 0 else 0x80])
+                    return
+                x0 = x
+
+    def tick(self, t, sym, base, refs, g, gc0):
+        pass
+
+    def settle(self, t, sym, base, refs, g, live, stats):
+        """records born in frame g: the arcade's leftovers (fractions, the
+        sub-child's image byte). A birth is told by the record's state, not
+        by its slot: a slot freed and taken again in the same frame (a
+        chaser dying as the next one is born) keeps its place"""
+        a = refs.get(g)
+        if a is None or live.get('g') == g:
+            return
+        live['g'] = g
+        put = lambda ad, vals: t.call('write_memory', {
+            'addr': '%04X' % ad, 'bytes': ['%02X' % v for v in vals]})
+        for table, size, n, kind in (('bro.Debris', 'R.SZ', 'bro.NDEB', 'd'),
+                                     ('bro.Chasers', 'C.SZ', 'bro.NCH', 'c'),
+                                     ('bro.Subs', 'B.SZ', 'bro.NSUB', 's')):
+            sz, cnt = sym[size], sym[n]
+            r0 = base + sym[table]
+            m = list(t.read('%04X' % r0, cnt * sz))
+            for i in range(cnt):
+                r = i * sz
+                gw = lambda f: (m[r + sym[f]] << 8) | m[r + sym[f] + 1]
+                if kind == 'd' and m[r + sym['R.st']] == 1:          # not installed
+                    for d in a['debris']:
+                        if d[3] == 1 and d[0] == gw('R.x'):
+                            put(r0 + r + sym['R.yf'], [d[1] & 0xFF])
+                elif kind == 'c' and m[r + sym['C.st']] and gw('C.c30') == 0:
+                    for c in a['chasers']:
+                        if c[2] == 0 and c[0] == gw('C.x'):
+                            put(r0 + r + sym['C.yf'], [c[1] & 0xFF])
+                elif (kind == 's' and m[r + sym['B.st']] == 1 and gw('B.s12') == 0xA7FC
+                      and gw('B.s14') == 0xAA5C):                    # not moved yet
+                    for sb in a['subs']:
+                        if sb[2] == 0xA7FC and sb[3] == 0xAA5C and sb[0] == gw('B.x'):
+                            put(r0 + r + sym['B.s16'], [sb[4]])
+        if a['ma'] and not live.get('ma') and t.read('%04X' % (base + sym['bro.ast']), 1)[0]:
+            live['ma'] = True
+            put(base + sym['bro.axf'], [a['ma'][0] & 0xFF])
+
+
+PROFILES = {'bellmite': Bellmite(), 'compiler': Compiler(), 'dopswarm': Dopswarm(),
+            'bronco': Bronco()}
 
 
 # =============================================================================
@@ -595,7 +799,7 @@ def record_arcade(prof, snaps=(), scen='idle', gc0=None):
     cfg = tempfile.mkdtemp(prefix='fidelity-cfg-', dir=SCRATCH)
     os.rmdir(cfg)                       # MAME creates it
     env = dict(os.environ, PILOT_STAGE=str(prof.stage),
-               PILOT_TICKS=','.join('%x' % t for t in prof.ticks),
+               PILOT_TICKS=','.join(t if isinstance(t, str) else '%x' % t for t in prof.ticks),
                PILOT_BUDGET=str(prof.budget),
                PILOT_PLAYER='%d,%d' % prof.pin_arcade, PILOT_OUT=raw,
                PILOT_SNAPS=','.join(str(v) for v in snaps), PILOT_SNAPDIR=SCRATCH,
@@ -610,14 +814,22 @@ def record_arcade(prof, snaps=(), scen='idle', gc0=None):
     for line in r.stdout.splitlines():
         if line.startswith('[trace]'):
             print(line)
-    frames = [json.loads(l) for l in open(raw)]
+    frames = []
+    for line in open(raw):
+        f = json.loads(line)
+        # A SLOWDOWN: one game frame spread over several video frames. The
+        # first snapshot can catch it half played (lived on Bronco's creation
+        # frame): the game frame's state is the LAST snapshot of its counter,
+        # and its draws are those of every snapshot
+        if frames and f['gc'] == frames[-1]['gc']:
+            f['rc'] = frames[-1].get('rc', []) + f.get('rc', [])
+            frames[-1] = f
+        else:
+            frames.append(f)
     if hasattr(prof, 'reset'):
         prof.reset()
-    out, seen, last_gc = [], False, None
+    out, seen = [], False
     for f in frames:
-        if f['gc'] == last_gc:              # a slowdown frame: nothing ran
-            continue
-        last_gc = f['gc']
         st = prof.arcade(f, seen)
         seen = seen or st['p']['st'] != 0
         out.append(st)
@@ -824,8 +1036,9 @@ def cmd_to8(prof, image, out, shots=(), scen='idle'):
             # the creation draw, before the clock is set: frame gc0's own
             # draw, with the player where the arcade pins it
             replay_draw(gc0)
-            put(base + psym['cpl.plx'], [prof.pin_arcade[0] >> 8, prof.pin_arcade[0] & 255])
-            put(base + psym['cpl.ply'], [prof.pin_arcade[1] >> 8, prof.pin_arcade[1] & 255])
+            if 'cpl.plx' in psym:
+                put(base + psym['cpl.plx'], [prof.pin_arcade[0] >> 8, prof.pin_arcade[0] & 255])
+                put(base + psym['cpl.ply'], [prof.pin_arcade[1] >> 8, prof.pin_arcade[1] & 255])
             continue
         break
     print('spawn en %.0f s' % (time.time() - t0), flush=True)
@@ -833,6 +1046,8 @@ def cmd_to8(prof, image, out, shots=(), scen='idle'):
     put(base + psym[gcsym], [gc0 >> 8, gc0 & 255])
     if rngsym:
         put(base + psym[rngsym], rng0)
+    if hasattr(prof, 'seed'):
+        prof.seed(t, psym, base, ref)
     pin()
     t.call('clear_breakpoint', {'id': bp})
     if hasattr(prof, 'inject'):

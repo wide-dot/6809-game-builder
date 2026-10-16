@@ -7,7 +7,8 @@ le code d'un portage pour que la vérification soit possible.
 
 Clients : Bellmite, le boss du stage 5, puis le Compiler (stage 4), réécrit
 1:1 le 16/10/2026 parce que ses déplacements divergeaient, puis l'essaim de
-Dops (stage 6), porté le même jour. Prochains : les boss des stages 7 et 8.
+Dops (stage 6) et Bronco (stage 7), portés le même jour. Prochain : le boss
+du stage 8.
 
 ## Le constat qui rend la méthode possible
 
@@ -117,6 +118,29 @@ code de l'essaim s'exécute : le port ne peut pas la lire directement. Sa
 tranche d'arène est assemblée dans le boss depuis le même fichier
 (`INCLUDEBIN fichier,offset,longueur`, une ligne par rangée) : aucune copie de
 l'asset, une seule source.
+
+## Piège de trace : une trame de jeu sur deux trames vidéo
+
+Quand la borne ralentit (Bronco crée neuf objets d'un coup), une trame de
+jeu s'étale sur deux trames vidéo, et la première capture la prend à moitié
+jouée : des segments créés, l'attaquant pas encore, le gestionnaire toujours
+à son installation. La référence garde donc, pour chaque valeur du compteur,
+la DERNIÈRE capture, et les appelants de `random_ax` de toutes ses captures.
+Les références déjà écrites (Bellmite, Compiler, essaim) n'en changent pas.
+
+## Les images : des cellules arcade, partagées et reprises
+
+Une image arcade est faite de cellules (6 octets : décalage, tuile,
+attributs). Le catalog décrit Bronco cellule par cellule quand une cellule
+sert plusieurs poses : la tête de l'attaquant est commune à ses quatre bras,
+celle du poursuivant à ses neuf jambes, et chacune n'est compilée qu'une
+fois. Le convertisseur centre chaque cellule sur le point chaud (marge
+transparente, gratuite pour un sprite compilé) : les cellules se dessinent
+toutes à la position de l'objet. Avant de convertir, on cherche les codes de
+tuile de l'objet dans tout le catalog : les débris de Bronco sont le
+pursuer, le bug, le geld et le POW (à l'envers). Le bug, chargé au stage 7
+avec sa palette, est repris tel quel ; le pursuer et le geld portent les
+couleurs de leurs stages (cases 13-16) et sont reconvertis.
 
 ## Les entrées que le port ne calcule pas comme la borne
 
