@@ -21,8 +21,12 @@ ObjID_mid equ 41
 ; le renderer groupe des chaines de bug — MEME valeur que l'equ de
 ; bug.unit.asm (47 : le premier id libre dans les trois stages a bugs)
 ObjID_bugrender equ 49
+* Le BOSS : Bronco, un maitre (toute sa famille, en repere arcade) et son
+* renderer groupe, dans leur propre direntry (entree de wave bronco $11A0).
+ObjID_bronco equ 50
+ObjID_bronco_render equ 51
 
-objid.count equ 49
+objid.count equ 51
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

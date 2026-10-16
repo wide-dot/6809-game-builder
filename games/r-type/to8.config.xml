@@ -5226,6 +5226,73 @@
                     </lwasm>
                 </file>
 
+                <!-- Le boss du stage 7 : Bronco, porte en repere arcade
+                     (src/enemies/bronco/obj.asm). Ses images sont des CELLULES
+                     arcade, une cellule partagee compilee une fois (la tete de
+                     l'attaquant, celle du poursuivant) ; le petit debris EST le
+                     bug (lib.bug). Trois pages : le code, les lampes et
+                     l'attaquant ; les debris ; les poursuivants. -->
+                <file name="stage7.bronco" linkdata="DATA" arena="stage7.foes">
+                    <lwasm gensource="gen/enemies/stage7-bronco.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <asm filename="gen/directories/dir7/entries.asm"/>
+                        <asm filename="src/enemies/bronco/bronco.unit.asm"/>
+                        <gfxcomp file="stage7.bronco" gendir="gen/enemies/stage7-bronco"
+                                 gensource="gen/enemies/stage7-bronco/includes.asm"
+                                 genindex="gen/enemies/stage7-bronco/index.asm">
+                            <images dir="src/enemies/bronco/images/segment" names="bronco_segment"/>
+                            <images dir="src/enemies/bronco/images/main_head" names="bronco_main_head"/>
+                            <images dir="src/enemies/bronco/images/main_head_flash" names="bronco_main_head_flash"/>
+                            <images dir="src/enemies/bronco/images/main_arm0" names="bronco_main_arm0"/>
+                            <images dir="src/enemies/bronco/images/main_arm1" names="bronco_main_arm1"/>
+                            <images dir="src/enemies/bronco/images/main_arm2" names="bronco_main_arm2"/>
+                            <images dir="src/enemies/bronco/images/main_arm3" names="bronco_main_arm3"/>
+                            <images dir="src/enemies/bronco/images/main_arm0_flash" names="bronco_main_arm0_flash"/>
+                            <images dir="src/enemies/bronco/images/main_arm1_flash" names="bronco_main_arm1_flash"/>
+                            <images dir="src/enemies/bronco/images/main_arm2_flash" names="bronco_main_arm2_flash"/>
+                            <images dir="src/enemies/bronco/images/main_arm3_flash" names="bronco_main_arm3_flash"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="stage7.bronco.junk" linkdata="DATA" arena="stage7.foes">
+                    <lwasm gensource="gen/enemies/stage7-bronco-junk.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <gfxcomp file="stage7.bronco.junk" gendir="gen/enemies/stage7-bronco-junk"
+                                 gensource="gen/enemies/stage7-bronco-junk/includes.asm"
+                                 genindex="gen/enemies/stage7-bronco-junk/index.asm">
+                            <images dir="src/enemies/bronco/images/debris" names="bronco_debris"/>
+                            <images dir="src/enemies/bronco/images/debris_strong" names="bronco_debris_strong"/>
+                            <images dir="src/enemies/bronco/images/debris_rare" names="bronco_debris_rare"/>
+                            <images dir="src/enemies/bronco/images/debris_geld" names="bronco_debris_geld"/>
+                            <images dir="src/enemies/bronco/images/debris_pursuer" names="bronco_debris_pursuer"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="stage7.bronco.chaser" linkdata="DATA" arena="stage7.foes">
+                    <lwasm gensource="gen/enemies/stage7-bronco-chaser.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <gfxcomp file="stage7.bronco.chaser" gendir="gen/enemies/stage7-bronco-chaser"
+                                 gensource="gen/enemies/stage7-bronco-chaser/includes.asm"
+                                 genindex="gen/enemies/stage7-bronco-chaser/index.asm">
+                            <images dir="src/enemies/bronco/images/chaser_head" names="bronco_chaser_head"/>
+                            <images dir="src/enemies/bronco/images/chaser_leg0" names="bronco_chaser_leg0"/>
+                            <images dir="src/enemies/bronco/images/chaser_leg1" names="bronco_chaser_leg1"/>
+                            <images dir="src/enemies/bronco/images/chaser_leg2" names="bronco_chaser_leg2"/>
+                            <images dir="src/enemies/bronco/images/chaser_leg3" names="bronco_chaser_leg3"/>
+                            <images dir="src/enemies/bronco/images/chaser_leg4" names="bronco_chaser_leg4"/>
+                            <images dir="src/enemies/bronco/images/chaser_leg5" names="bronco_chaser_leg5"/>
+                            <images dir="src/enemies/bronco/images/chaser_leg6" names="bronco_chaser_leg6"/>
+                            <images dir="src/enemies/bronco/images/chaser_leg7" names="bronco_chaser_leg7"/>
+                            <images dir="src/enemies/bronco/images/chaser_leg8" names="bronco_chaser_leg8"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <file name="stage7" linkdata="DATA" region="stage">
                     <lwasm gensource="gen/stages/07/stage07-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -5271,6 +5338,9 @@
                     <load name="stage7.tiles.odd"/>
                     <load name="stage7.maps"/>
                     <load name="stage7.wave"/>
+                    <load name="stage7.bronco"/>
+                    <load name="stage7.bronco.junk"/>
+                    <load name="stage7.bronco.chaser"/>
                     <load name="stage7.collision"/>
                     <load name="stage7"/>
                     <load name="stage7.bugres"/>

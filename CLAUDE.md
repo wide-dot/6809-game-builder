@@ -1083,6 +1083,20 @@ au premier passage sous toje : combat complet (421 rendus) et mise à mort
 stage 6 restent à brancher. Le clignotement de coup est une image par sens
 (16 poses ne tiennent pas dans la page).
 
+**Bronco (boss du stage 7) porté 1:1 le même jour** (`src/enemies/bronco/`,
+wave `$11A0`) : gestionnaire minuté, cinq lampes, débris lâchés au hasard,
+poursuivants, attaquant principal et ses sous-enfants scriptés
+(`move_by_script` lu sur des plages brutes de la ROM). Modèle Python
+identique sur tout le combat, puis port IDENTIQUE sous toje : combat complet
+(790 rendus, 658 tirages rejoués — le flux est partagé avec la wave) et mise
+à mort de l'attaquant (399 rendus) ; le stage 7 passe au 8. Images en
+CELLULES arcade (une cellule partagée compilée une fois) sur trois pages de
+`stage7.foes`, dessinées par une boucle résidente du main du stage
+(`bronco.DrawAll`, créneaux et boîtes résidents) ; le petit débris EST le bug
+(`lib.bug` repris), pursuer et geld reconvertis sur la palette du stage.
+Trace : une trame de jeu sur deux trames vidéo (ralentissement) se fusionne
+désormais (dernière capture, tous les appelants).
+
 ## Dettes / pièges connus
 
 - `engine/pack/mub.asm` : chemins d'INCLUDE invalides (fichiers dans `sound/mucom88/`).

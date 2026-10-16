@@ -213,6 +213,11 @@ sous-dossier ou `_shared/`.
 > (`tools/fidelity/models/`), mis à `IDENTIQUE` contre la trace brute, PUIS
 > la traduction 6809 — le Compiler est tombé identique au premier passage
 > sous toje.
+> Les **images** : décrire l'objet cellule par cellule quand une cellule
+> arcade sert plusieurs poses (une compilation par cellule partagée), et
+> chercher ses codes de tuile dans tout le catalog avant de convertir — un
+> sprite déjà porté et chargé au stage se reprend (Bronco : les débris sont
+> le bug, le pursuer, le geld, le POW).
 - Build : `java -Dbasedir=<racine> -cp "../../repo/*"
   com.widedot.m6809.gamebuilder.MainCommand -f to8.config.xml` depuis
   `games/r-type/`.
