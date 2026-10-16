@@ -91,6 +91,8 @@ class ChunkMapTest {
 		// 0 empty, 1 block 1's picture, 2 the same picture with block 2's collision ;
 		// the odd line differing does not count in half-line
 		assertEquals(3, r.tileCount);
+		// tiles 1 and 2 share their picture : one compiled, both pointing at it
+		assertArrayEquals(new int[] { 0, 1, 1 }, r.pictureOf);
 		// then the animated block's (block 5 : past the indexes, none)
 		assertArrayEquals(new byte[] { 0, 0x10, 0x20, 0 }, r.primary);
 		assertArrayEquals(new byte[] { 0, 0x11, 0x21, 0 }, r.secondary);
@@ -163,7 +165,8 @@ class ChunkMapTest {
 	void emptiesTheOddLines() throws Exception {
 		BufferedImage t = convert(true, true).tiles;
 		assertEquals(TW, t.getWidth());
-		assertEquals(3 * TH, t.getHeight());
+		// the pictures : the empty one, block 1's (tile 2 shares it)
+		assertEquals(2 * TH, t.getHeight());
 		assertEquals(1, t.getRaster().getSample(0, TH, 0));
 		assertEquals(0, t.getRaster().getSample(0, TH + 1, 0));
 	}
@@ -188,6 +191,12 @@ class ChunkMapTest {
 	}
 
 	@Test
+	void writesEachTilesPicture(@TempDir Path dir) throws Exception {
+		ChunkMap.write(convert(true, true), dir);
+		assertArrayEquals(new byte[] { 0, 0, 0, 1, 0, 1 }, Files.readAllBytes(dir.resolve("tiles.bin")));
+	}
+
+	@Test
 	void splitsTheBanks(@TempDir Path dir) throws Exception {
 		List<int[]> chunks = new ArrayList<int[]>();
 		for (int c = 0; c < 130; c++) {
@@ -203,5 +212,33 @@ class ChunkMapTest {
 		byte[] b1 = Files.readAllBytes(dir.resolve("chunk_1.bin"));
 		assertEquals(129, b1[128 + 1] & 0xFF);
 		assertArrayEquals(new byte[] { 0, 0, 0, 1, 0, 2 }, Files.readAllBytes(dir.resolve("tiles.bin")));
+	}
+
+	@Test
+	void writesMoreBanksAndWordLayouts(@TempDir Path dir) throws Exception {
+		// past two banks (16/10/2026) : a bank file each, the layouts in words
+		assertArrayEquals(new byte[] { 1, (byte) 200 }, ChunkMap.cells(new int[] { 1, 200 }, 2));
+		assertArrayEquals(new byte[] { 0, 1, 1, 44 }, ChunkMap.cells(new int[] { 1, 300 }, 3));
+		List<int[]> chunks = new ArrayList<int[]>();
+		for (int c = 0; c < 300; c++) {
+			int[] e = new int[64];
+			e[0] = c;
+			chunks.add(e);
+		}
+		ChunkMap.Result r = new ChunkMap.Result(convert(true, true).tiles, 3, chunks,
+				List.of(ChunkMap.cells(new int[] { 299 }, 3)), new byte[3], new byte[3], new byte[3], null, 3);
+		ChunkMap.write(r, dir);
+		assertEquals(128 * 128, Files.size(dir.resolve("chunk_1.bin")));
+		assertEquals(44 * 128, Files.size(dir.resolve("chunk_2.bin")));
+		byte[] b2 = Files.readAllBytes(dir.resolve("chunk_2.bin"));
+		assertEquals(299 & 0xFF, b2[43 * 128 + 1] & 0xFF);
+		assertArrayEquals(new byte[] { 1, 43 }, Files.readAllBytes(dir.resolve("layout-1.bin")));
+	}
+
+	@Test
+	void refusesBanksPastTheEngines() {
+		assertThrows(Exception.class, () -> ChunkMap.convert(convert(true, true).tiles, new byte[128], new byte[8],
+				new byte[1], new byte[1], List.of(new byte[256]), true, true,
+				new java.util.LinkedHashMap<Integer, ChunkMap.Animated>(), false, null, 0, ChunkMap.MAX_BANKS + 1));
 	}
 }

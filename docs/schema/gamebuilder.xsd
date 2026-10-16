@@ -468,6 +468,9 @@
       <xs:attribute name="overlap" type="xs:string">
         <xs:annotation><xs:documentation>with split : the columns each side of a cut both slices hold. Default 4</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="banks" type="int6809">
+        <xs:annotation><xs:documentation>the chunk banks of 128 a map may fill, 2 to 4 (16/10/2026). Default 2 : the layouts a byte a cell, chunk_0.bin and chunk_1.bin. Past 2 : the layouts a big endian word a cell (rows of 256 bytes), chunk_0.bin to chunk_&lt;banks-1&gt;.bin, the engine reading them through its bank table (TilemapBuffer : the map descriptor's layer_map_banks)</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 

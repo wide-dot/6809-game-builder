@@ -18,7 +18,8 @@ glb_map_defchunk1_pge   fcb   0 ; chunk data to tiles (8x16 px)
 glb_map_defchunk1_adr   fdb   0 ; chunk data to tiles (8x16 px)
 glb_map_tiles_pge       fcb   0 ; tile index
 glb_map_tiles_adr       fdb   0 ; tile index
-glb_map_width           fcb   0
+glb_map_stride          fdb   0 ; a layout row's bytes : the width, twice with word cells
+glb_map_bank_tbl        fill  0,4*3 ; word cells : each bank's [page][address], 4 at most
 
 ; tmp variables
 h_tl                  equ   dp_engine    ; nb of full sized (middle) horizontal chunks
@@ -198,7 +199,8 @@ FeedTileBuffer
         _lsrd
         _lsrd
         _lsrd
-        _lsrd
+TMB_xcell                                             ; (dynamic, TilemapBuffer.SetCells) lsra/rorb : a byte a cell,
+        _lsrd                                         ; andb #$FE : a word (the column * 2)
         std   @dyn1
         ldd   tmb_y
         _lsrd
@@ -325,10 +327,10 @@ cl_pos_bck equ *-2
         ldd   #0
 @l1_bck equ   *-2
         std   b_loc                    ; set location for next row
-        ldb   glb_map_width
         ldx   #0
 @start_pos_bck equ *-2
-        abx
+        ldd   glb_map_stride           ; the next row of the layout
+        leax  d,x
         ldb   v_tl                     ; are we in middle or bottom chunk ?
         beq   @a
         bmi   @end
@@ -347,6 +349,58 @@ cl_pos_bck equ *-2
         jmp   @vloop
 @end    rts
 
+* ---------------------------------------------------------------------------
+* TilemapBuffer.SetCells - the map's layout cells (16/10/2026), at an act's
+* load : A the chunk banks of 128, B the layout's width (chunks a row), X
+* the first bank's [page][address] record, the others following it.
+* Two banks : a byte a cell (ids 0-255, the banks glb_map_defchunk0/1, the
+* caller's). More, up to 4 : a big endian word a cell, the bank id >> 7 in
+* glb_map_bank_tbl, copied here. The cell's read and the column's last
+* shift are patched once : the loops pay nothing for it.
+* ---------------------------------------------------------------------------
+TilemapBuffer.SetCells
+        pshs  a
+        clra
+        std   glb_map_stride                          ; a byte a cell : the width
+        puls  a
+        cmpa  #2
+        bhi   @word
+        ldd   #$A680                                  ; lda ,x+
+        std   LC_cell
+        ldd   #$4456                                  ; lsra / rorb
+        std   TMB_xcell
+        rts
+@word   asl   glb_map_stride+1                        ; a word a cell : twice the width
+        rol   glb_map_stride
+        ldu   #glb_map_bank_tbl
+        ldb   #3
+        mul                                           ; the records' bytes
+@copy   lda   ,x+
+        sta   ,u+
+        decb
+        bne   @copy
+        ldd   #$2000+((LC_word-LC_cell-2)&$FF)        ; bra LC_word
+        std   LC_cell
+        ldd   #$C4FE                                  ; andb #$FE
+        std   TMB_xcell
+        rts
+
+; a word cell (TilemapBuffer.SetCells, 16/10/2026) : the chunk's bank its id
+; >> 7, in glb_map_bank_tbl ; LoadChunk's cell read patched to come here
+LC_word ldd   ,x++                                    ; the chunk id
+        lslb                                          ; B : (id & 127) * 2
+        rola                                          ; A : its bank
+        pshs  b
+        ldb   #3
+        mul
+        ldu   #glb_map_bank_tbl
+        leau  d,u
+        ldb   ,u                                      ; the bank's page
+        ldu   1,u                                     ; and address
+        puls  a
+        lsra                                          ; A : id & 127
+        bra   LC_bank
+
 LoadChunk
         ldd   b_loc
         andb  #%10000000
@@ -361,15 +415,18 @@ LoadChunk
 
         ldx   #0
 start_pos equ *-2
-        lda   ,x+
+LC_cell lda   ,x+                                     ; (dynamic) bra LC_word : a word cell
         bpl   @a
         ldu   glb_map_defchunk1_adr
         anda  #%01111111
         ldb   glb_map_defchunk1_pge
-        bra   @b
+        bra   LC_bank
 @a      ldu   glb_map_defchunk0_adr
         ldb   glb_map_defchunk0_pge
-@b      stb   chk_idx_pge
+ IFGT LC_cell+2-LC_word-128
+        ERROR "LC_word out of the patched bra's reach"
+ ENDC
+LC_bank stb   chk_idx_pge
         _SetCartPageB                                 ; set chunk definition page
         ldb   #0
         _asrd

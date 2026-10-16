@@ -39,6 +39,9 @@ public class ChunkmapPlugin {
 		boolean words = Attribute.getBoolean(node, ctx, "words", false);
 		String split = Attribute.getStringOpt(node, ctx, "split");
 		String overlap = Attribute.getStringOpt(node, ctx, "overlap");
+		// more than 256 chunks in a map (16/10/2026) : more banks of 128,
+		// the layouts in words
+		int banks = Attribute.getInteger(node, ctx, "banks", 2);
 
 		List<Path> lay = new ArrayList<Path>();
 		for (String l : layouts.split(",")) {
@@ -49,7 +52,8 @@ public class ChunkmapPlugin {
 			r = ChunkMap.run(Paths.get(ctx.path, chunks), Paths.get(ctx.path, mappings),
 					Paths.get(ctx.path, blocks), Paths.get(ctx.path, primary),
 					Paths.get(ctx.path, secondary), lay, halfline, opaque, animated,
-					Paths.get(ctx.path, gendir), words, split, overlap == null ? 4 : Integer.parseInt(overlap));
+					Paths.get(ctx.path, gendir), words, split, overlap == null ? 4 : Integer.parseInt(overlap),
+					banks);
 		} catch (Exception e) {
 			throw new Exception(ctx.sources.locate(node) + ": " + e.getMessage(), e);
 		}
