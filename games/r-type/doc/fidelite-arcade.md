@@ -146,15 +146,15 @@ son délai), `kill` tue 26 satellites puis le noyau.
 |---|---|---|---|
 | bellmite idle | 598 | 212 002 | identique |
 | bellmite kill | 168 | 37 789 | identique |
-| compiler idle | 1 638 | 85 087 | identique (26 morts de segments sur les gommes en entrée) |
-| compiler kill | 306 | 10 473 | identique (gauche, bas puis droite, cascades jouées) |
+| compiler idle | 1 684 | 87 478 | identique (26 morts de segments sur les gommes en entrée) |
+| compiler kill | 328 | 11 416 | identique (gauche, bas puis droite, cascades jouées) |
 
 `compiler idle` va jusqu'au bout des scripts : les trois pièces atteignent
 leur terminateur, l'orchestrateur joue sa séquence de 256 trames et
 disparaît. `compiler kill` détruit une pièce toutes les 200 trames.
 
 Bellmite tourne à 4 à 6 trames de jeu par rendu sur TO8 (8,5 images par
-seconde en moyenne pendant le boss), le Compiler à 4,4 (11,3 images par
+seconde en moyenne pendant le boss), le Compiler à 4,3 (11,6 images par
 seconde).
 
 ## Les captures appariées

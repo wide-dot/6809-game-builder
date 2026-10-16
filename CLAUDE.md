@@ -1055,8 +1055,8 @@ détourner le PC après un `run_frames` peut tomber DANS le gestionnaire d'IRQ
 corrigé, ses décalages en dur aussi).
 
 **Le Compiler (stage 4) réécrit 1:1 le même jour**, IDENTIQUE à la borne
-sur le combat sans tir jusqu'à la fin de ses scripts (1 638 rendus, 85 087
-valeurs) et sur la destruction des trois pièces (306 rendus, cascades
+sur le combat sans tir jusqu'à la fin de ses scripts (1 684 rendus, 87 478
+valeurs) et sur la destruction des trois pièces (328 rendus, cascades
 comprises) ; le stage 4 passe toujours la main au 5. Son flux aléatoire est
 partagé avec le champ d'étoiles (`star_ctor`) : la trace porte les appelants
 de `random_ax` (`PILOT_RNGLOG`), la référence la valeur reçue par chacun, et
