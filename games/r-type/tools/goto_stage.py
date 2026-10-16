@@ -19,19 +19,21 @@ import re
 import shutil
 import sys
 
-sys.path.insert(0, "/Users/benoitrousseau/Documents/Claude/Projects/6809-game-builder-gommes/ci/toje-bench")
-from mcp import Toje                                            # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "..", "..", "..", "ci", "toje-bench"))
+from mcp import Toje, bench_block                               # noqa: E402
 
 image = os.path.abspath(sys.argv[1])
 stage = int(sys.argv[2]) if len(sys.argv) > 2 else 4
 trames = int(sys.argv[3]) if len(sys.argv) > 3 else 900
 dest = sys.argv[4] if len(sys.argv) > 4 else "/tmp/claude-501/stage%d.png" % stage
 
+BENCH = "%04X" % bench_block(image)   # jamais en dur : il a demenage
 t = Toje()
 t.boot_floppy(image)
 t.call("run_frames", {"n": 900})               # que le title soit pose
 t.call("run_frames", {"n": 300})
-b = t.read("87DB", 8)
+b = t.read(BENCH, 8)
 print("title : magic=%02X stage=%02X" % (b[0], b[1]))
 if b[0] != 0xCA:
     print("!! le jeu n'a pas demarre — inutile d'aller plus loin")
@@ -81,16 +83,25 @@ def cart(off):
 
 
 # monter la page du cheat, comme paged.call le ferait
+off = {k: v[0][1] for k, v in sym.items()}          # decalages dans l'unite
 t.call("write_memory", {"addr": "E7E6", "bytes": ["%02X" % (0x60 + CHEAT_PAGE)]})
-t.call("write_memory", {"addr": "%04X" % cart(0xDF), "bytes": ["%02X" % stage]})
-t.call("write_memory", {"addr": "%04X" % cart(0xE0), "bytes": ["01"]})
+t.call("write_memory", {"addr": "%04X" % cart(off["tct.pstage"]), "bytes": ["%02X" % stage]})
+t.call("write_memory", {"addr": "%04X" % cart(off["tct.pinv"]), "bytes": ["01"]})
 print("cheat pose : stage %d, invincible" % stage)
-t.call("set_register", {"reg": "pc", "value": "%04X" % cart(0x9D)})
+# UN FIL PRINCIPAL PROPRE : run_frames s'arrete n'importe ou, gestionnaire
+# d'IRQ compris ; un PC detourne la laisse le fil principal sur Irq_sys_stack
+# et l'IRQ suivante ecrase ses cadres (vecu le 16/10/2026 : DKCONT rendait la
+# main en $0005 pendant le chargement du stage 5). Pile systeme, DP, IRQ masquee.
+t.call("set_register", {"reg": "s", "value": "9EF0"})   # glb_system_stack
+t.call("set_register", {"reg": "cc", "value": "D0"})
+t.call("set_register", {"reg": "dp", "value": "9F"})
+t.call("set_register", {"reg": "pc", "value": "%04X" % cart(off["title.cheat.launch"])})
+t.call("step")
 t.call("run_frames", {"n": 120})
-b = t.read("87DB", 8)
+b = t.read(BENCH, 8)
 print("apres le saut : magic=%02X stage=%02X" % (b[0], b[1]))
 t.call("run_frames", {"n": trames})
-b = t.read("87DB", 8)
+b = t.read(BENCH, 8)
 print("apres %d trames : stage=%02X tour=%02X camera=%d spawns=%d"
       % (trames, b[1], b[2], (b[3] << 8) | b[4], (b[5] << 8) | b[6]))
 shutil.copy(t.call("screenshot")["path"], dest)

@@ -4952,6 +4952,25 @@
                     </lwasm>
                 </file>
 
+                <!-- Le boss du stage 5 : Bellmite, porte en repere arcade
+                     (src/enemies/bellmite/obj.asm). Son maitre et son renderer
+                     groupe partagent cette page avec les images. -->
+                <file name="stage5.bellmite" linkdata="DATA" arena="stage5.foes">
+                    <lwasm gensource="gen/enemies/stage5-bellmite.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <asm filename="src/enemies/bellmite/bellmite.unit.asm"/>
+                        <gfxcomp file="stage5.bellmite" gendir="gen/enemies/stage5-bellmite"
+                                 gensource="gen/enemies/stage5-bellmite/includes.asm"
+                                 genindex="gen/enemies/stage5-bellmite/index.asm">
+                            <images dir="src/enemies/bellmite/images/body" names="bellmite_body"/>
+                            <images dir="src/enemies/bellmite/images/body_flash" names="bellmite_bodyhit"/>
+                            <images dir="src/enemies/bellmite/images/satellite" names="bellmite_sat"/>
+                            <images dir="src/enemies/bellmite/images/satellite_flash" names="bellmite_sathit"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <file name="stage5" linkdata="DATA" region="stage">
                     <lwasm gensource="gen/stages/05/stage05-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -4988,6 +5007,7 @@
                     <load name="stage5.cast.imgHeadHit"/>
                     <load name="stage5.cast.imgTailHit"/>
                     <load name="stage5.slither.res"/>
+                    <load name="stage5.bellmite"/>
                     <load name="stage5.tiles.even"/>
                     <load name="stage5.tiles.odd"/>
                     <load name="stage5.maps"/>

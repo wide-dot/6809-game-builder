@@ -117,6 +117,12 @@ cancer_hitbox_y		equ 13
 cancer_hitdamage	equ 1
 ; geld : AABB arcade 24x24 centree (0x1000:407E, +-12 px) -> +-4,5 px v2 en X
 ; et +-9 lignes en Y ; un seul coup le tue (liste one-shot v1).
+; bellmite — the core (1000:60A6) and the satellites (1000:60AE) share the
+; same arcade box, -16..+16 on both axes: x0.375 and x0.75 give 6 and 12.
+; Their points (14 per satellite, 40 for the core) are set by the manager.
+bellmite_hitbox_x         equ 6
+bellmite_hitbox_y         equ 12
+
 compilerwave_hitbox_x     equ 3   ; 6 px de large
 compilerwave_hitbox_y     equ 3   ; 6 lignes
 compilerwave_hitdamage    equ 1

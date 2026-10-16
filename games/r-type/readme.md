@@ -507,4 +507,6 @@ graphismes et les deux boss exportés ont été importés tels quels — 590 ima
 19 ennemis. Manquent, faute d'export amont : **gomander** (boss du stage 2 ;
 au catalogue de l'extracteur, mais son moteur `tile_grid indirect` ne sort
 pas), et **bellmite** (5), **bronco** (7), **bydo** (8), qui n'ont qu'une
-routine identifiée et aucune entrée de catalogue.
+routine identifiée et aucune entrée de catalogue. Bellmite a reçu la sienne
+le 16/10/2026 (`bellmite` : corps, satellite et leurs poses de flash) ; son
+port est validé trace contre trace (`doc/fidelite-arcade.md`).

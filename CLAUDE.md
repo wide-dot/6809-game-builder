@@ -1031,6 +1031,29 @@ de place. Pas de réglage (décision auteur, 16/10) : r-type sort identique
 qui peut partager des octets), la passe de découverte aussi. Code :
 `ArenaPacker.packFiles`, tests `ArenaPackerFileTest`, manuel `scenes.md`.
 
+## Fidélité arcade : le banc trace contre trace (16/10/2026)
+
+Un boss se valide désormais en rejouant le combat de la borne octet pour
+octet. MAME enregistre la famille du boss à chaque trame depuis l'état
+d'entrée du stage, vaisseau épinglé (`pilot/tools/trace_actors.lua` du
+fork) ; `games/r-type/tools/fidelity/fidelity.py` décode cette trace en
+référence commitée (`tools/fidelity/ref/`), rejoue le port sous toje en lui
+injectant l'horloge globale et la graine de `random_ax` de la borne, et
+compare champ par champ à horloge égale. Possible parce que pendant un
+combat tous les tirages viennent du boss et que la borne réensemence son
+générateur à chaque multiple de 512 trames. Conditions côté port : calcul en
+REPÈRE ARCADE (seul le dessin convertit), une trame arcade à la fois dans
+l'ordre de la liste, une copie privée du générateur, des crochets nommés.
+Premier port : **Bellmite** (boss du stage 5, `src/enemies/bellmite/`),
+IDENTIQUE à la borne sur le combat complet (598 rendus, 212 002 valeurs) et
+sur une mise à mort injectée (168 rendus). 37 satellites et non 12 (la plate
+Ghidra se trompait, la trace l'a dit). Méthode :
+`games/r-type/doc/fidelite-arcade.md`. Piège de banc relevé au passage :
+détourner le PC après un `run_frames` peut tomber DANS le gestionnaire d'IRQ
+— le fil principal continue alors sur `Irq_sys_stack` et l'IRQ suivante
+écrase ses cadres ; reposer S, DP et CC avant tout saut (`goto_stage.py`
+corrigé, ses décalages en dur aussi).
+
 ## Dettes / pièges connus
 
 - `engine/pack/mub.asm` : chemins d'INCLUDE invalides (fichiers dans `sound/mucom88/`).
