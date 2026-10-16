@@ -33,7 +33,7 @@ Quand le flux aleatoire est PARTAGE (le Compiler et le champ d'etoiles), la
 reference porte la valeur recue par chaque tirage de la famille et le banc
 l'ecrit dans D au crochet `<boss>.Drawn` (profil avec `draws`).
 
-Usage (depuis games/r-type/), <boss> = bellmite | compiler :
+Usage (depuis games/r-type/), <boss> = bellmite | compiler | dopswarm :
   python3 tools/fidelity/fidelity.py arcade <boss>          # MAME -> ref
   python3 tools/fidelity/fidelity.py arcade <boss> --check  # ref a jour ?
   python3 tools/fidelity/fidelity.py to8 <boss> dist/to8.fd [--out f]
@@ -459,7 +459,125 @@ class Compiler:
         live['slots'] = now
 
 
-PROFILES = {'bellmite': Bellmite(), 'compiler': Compiler()}
+class Dopswarm:
+    """The Dop swarm (stage 6): a manager releasing sixteen Dops. No random
+    draw at all; the Dops' path is written in the tile map, which the port
+    reads from the stage's collision map. The Dops alive before the manager
+    (the stage's own wave) are not the boss's and are left out."""
+    name = 'dopswarm'
+    stage = 6
+    unit = 'stage6.dopswarm'
+    lwmap = 'gen/enemies/build/stage6-dopswarm.lwmap'
+    hook = 'dopswarm'
+    data = ('dsw.Data', 'dsw.DataEnd')
+    gcsym, rngsym = 'dsw.gc', None
+    ticks = (0xB111, 0xB1AC, 0x5F3C)
+    budget = 2400
+    env = {'PILOT_START': 'b111'}
+    pin_arcade = (512, 228)
+    pin_to8 = (80, 126)
+    # 'kill': every live Dop takes its 10 points at once (they share the
+    # priority word the arcade injection keys on), twice
+    scenarios = {'idle': [], 'kill': [(450, 0), (1450, 0)]}
+    stage_boxes = True               # its boxes live in the stage (main.asm)
+    MGR = {0xB111: 1, 0xB1AC: 2}
+
+    def hit_arcade(self, target):
+        return 0x4030, 10                      # +0x1F >= 0x0A: 40:5FCA
+
+    def hit_to8(self, t, sym, base, target, boxes):
+        # every live Dop: its rear box potential to 0, it dies this frame
+        sz = sym['D.SZ']
+        r0 = base + sym['dsw.Dops']
+        m = t.read('%04X' % r0, sym['dsw.NDOP'] * sz)
+        for i in range(sym['dsw.NDOP']):
+            if m[i * sz + sym['D.st']]:
+                rid = m[i * sz + sym['D.id']]
+                t.call('write_memory', {'addr': '%04X' % (boxes + (2 * rid + 1) * 9 + sym['AABB.p']),
+                                        'bytes': ['00']})
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.early = None
+
+    def arcade(self, frame, seen):
+        if self.early is None:
+            self.early = {o['a'] for o in frame['o'] if o['t'] == 0x5F3C}
+        m, dops = {'st': 3 if seen else 0}, []
+        for o in frame['o']:
+            b = bytes.fromhex(o['r'])
+            w = lambda k: b[k] | (b[k + 1] << 8)
+            if o['t'] in self.MGR:
+                m = {'st': self.MGR[o['t']]}
+                if o['t'] == 0xB111:
+                    m['cur'] = w(0x12)
+                else:
+                    m['c30'] = w(0x30)
+            elif o['t'] == 0x5F3C and o['a'] not in self.early:
+                dops.append([(w(4) << 8) | b[3], (w(8) << 8) | b[7], b[0x20],
+                             b[0x1E], b[0x2E], w(0x22) & 0xFF])
+        return {'gc': frame['gc'], 'm': m, 'd': sorted(dops), 'p': {'st': m['st']}}
+
+    def to8(self, sym, mem, base):
+        def b(name, off=0):
+            return mem[sym[name] - base + off]
+
+        def w(name, off=0):
+            return (b(name, off) << 8) | b(name, off + 1)
+        st = b('dsw.st')
+        m = {'st': st}
+        if st == 1:
+            m['cur'] = w('dsw.cur')
+        elif st == 2:
+            m['c30'] = w('dsw.c30')
+        dops = []
+        d0 = sym['dsw.Dops'] - base
+        for i in range(sym['dsw.NDOP']):
+            r = d0 + i * sym['D.SZ']
+            g = lambda f, n=1: int.from_bytes(bytes(mem[r + sym[f]:r + sym[f] + n]), 'big')
+            if g('D.st'):
+                dops.append([g('D.x', 3), g('D.y', 3), g('D.lane'), g('D.A'),
+                             g('D.B'), g('D.vs')])
+        return {'gc': w('dsw.gc'), 'm': m, 'd': sorted(dops), 'p': {'st': st}}
+
+    def done(self, st):
+        return st['m']['st'] == 3
+
+    @staticmethod
+    def flat(st):
+        out = {'m.' + k: v for k, v in st['m'].items()}
+        out['d'] = st['d']
+        return out
+
+    def tick(self, t, sym, base, refs, g, gc0):
+        pass
+
+    def settle(self, t, sym, base, refs, g, live, stats):
+        """a Dop born in frame g: the arcade's leftover fractions (+3/+7)"""
+        a = refs.get(g)
+        if a is None or live.get('g') == g:
+            return
+        live['g'] = g
+        sz, n = sym['D.SZ'], sym['dsw.NDOP']
+        r0 = base + sym['dsw.Dops']
+        m = list(t.read('%04X' % r0, n * sz))
+        now = {i for i in range(n) if m[i * sz + sym['D.st']]}
+        for i in sorted(now - live.get('slots', set())):
+            x = (m[i * sz + sym['D.x']] << 8) | m[i * sz + sym['D.x'] + 1]
+            y = (m[i * sz + sym['D.y']] << 8) | m[i * sz + sym['D.y'] + 1]
+            for ax, ay, *_ in a['d']:
+                if ax >> 8 == x and ay >> 8 == y:
+                    t.call('write_memory', {'addr': '%04X' % (r0 + i * sz + sym['D.xf']),
+                                            'bytes': ['%02X' % (ax & 0xFF)]})
+                    t.call('write_memory', {'addr': '%04X' % (r0 + i * sz + sym['D.yf']),
+                                            'bytes': ['%02X' % (ay & 0xFF)]})
+                    break
+        live['slots'] = now
+
+
+PROFILES = {'bellmite': Bellmite(), 'compiler': Compiler(), 'dopswarm': Dopswarm()}
 
 
 # =============================================================================
@@ -713,7 +831,8 @@ def cmd_to8(prof, image, out, shots=(), scen='idle'):
     print('spawn en %.0f s' % (time.time() - t0), flush=True)
     # the arcade clock and random state at the creation frame
     put(base + psym[gcsym], [gc0 >> 8, gc0 & 255])
-    put(base + psym[rngsym], rng0)
+    if rngsym:
+        put(base + psym[rngsym], rng0)
     pin()
     t.call('clear_breakpoint', {'id': bp})
     if hasattr(prof, 'inject'):

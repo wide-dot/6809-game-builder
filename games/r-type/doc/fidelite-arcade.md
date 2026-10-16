@@ -6,8 +6,8 @@ outils qui le vérifient sans jugement visuel, et ce qu'il faut respecter dans
 le code d'un portage pour que la vérification soit possible.
 
 Clients : Bellmite, le boss du stage 5, puis le Compiler (stage 4), réécrit
-1:1 le 16/10/2026 parce que ses déplacements divergeaient. Prochains : les
-boss des stages 6 à 8.
+1:1 le 16/10/2026 parce que ses déplacements divergeaient, puis l'essaim de
+Dops (stage 6), porté le même jour. Prochains : les boss des stages 7 et 8.
 
 ## Le constat qui rend la méthode possible
 
@@ -94,6 +94,30 @@ est ce doublon, et le banc l'ignore. Tester D ne suffit pas : la valeur
 propre du port coïncide souvent avec celle de la borne (même graine, et le
 champ d'étoiles ne tire que par intermittence).
 
+## Quand la trajectoire est écrite dans le décor : vérifier la carte
+
+L'essaim de Dops du stage 6 ne tire aucun nombre au hasard. Un Dop avance
+sur une « voie » et tourne quand une sonde à trois pas devant lui touche une
+tuile pleine : toute sa trajectoire se lit dans la carte de tuiles. Le port
+n'est fidèle que si SA carte rend les mêmes réponses que la RAM de tuiles de
+la borne, case par case.
+
+La trace MAME en porte donc un vidage (`PILOT_TILEDUMP`, 16 Ko de RAM de
+tuiles à l'ouverture de l'enregistrement, caméra imprimée). Le modèle
+(`tools/fidelity/models/dopswarm_model.py`) rejoue tout le combat deux fois :
+une fois en sondant ce vidage comme la borne sonde sa RAM, une fois en
+sondant la carte de collision du TO8 (`--to8`). Les deux sont identiques à
+la trace : la carte du stage 6 (`level6_fc.bin`, un bit par tuile arcade de
+8×8) est juste dans l'arène — ses 48 dernières colonnes, à partir de la 335,
+lignes alignées. C'est cette vérification, faite avant le 6809, qui autorise
+le port à sonder la carte du TO8 en coordonnées arcade.
+
+La carte vit dans la région de collision, dans la fenêtre cartouche d'où le
+code de l'essaim s'exécute : le port ne peut pas la lire directement. Sa
+tranche d'arène est assemblée dans le boss depuis le même fichier
+(`INCLUDEBIN fichier,offset,longueur`, une ligne par rangée) : aucune copie de
+l'asset, une seule source.
+
 ## Les entrées que le port ne calcule pas comme la borne
 
 Un écart assumé du port qui touche l'état du boss devient une ENTRÉE du
@@ -148,6 +172,10 @@ son délai), `kill` tue 26 satellites puis le noyau.
 | bellmite kill | 168 | 37 789 | identique |
 | compiler idle | 1 684 | 87 478 | identique (26 morts de segments sur les gommes en entrée) |
 | compiler kill | 328 | 11 416 | identique (gauche, bas puis droite, cascades jouées) |
+
+Les valeurs de l'essaim comptent l'état du gestionnaire et la liste des
+Dops comme une valeur chacune : chaque rendu compare toutes les positions
+16.8, les voies et les variantes des Dops vivants.
 
 `compiler idle` va jusqu'au bout des scripts : les trois pièces atteignent
 leur terminateur, l'orchestrateur joue sa séquence de 256 trames et

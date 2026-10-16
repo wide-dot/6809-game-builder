@@ -1070,6 +1070,19 @@ toute ligne de 6809. Les quatre globales de l'ancien Compiler sont rendues
 (+157, +159, +160 libres) ; `globals.cplVariant` partageait l'octet +161
 avec `globals.tilesBehind`.
 
+**L'essaim de Dops (boss du stage 6) porté 1:1 le même jour**
+(`src/enemies/dop/`, wave 34 arcade à `$14F8`) : un gestionnaire lâche seize
+Dops, un toutes les 100 trames, et finit le stage à la trame 0x800. Le Dop
+ne tire rien au hasard ; il tourne sur sonde de tuiles. La trace MAME porte
+un vidage de la RAM de tuiles (`PILOT_TILEDUMP`) et le modèle Python
+(`tools/fidelity/models/dopswarm_model.py`) prouve que la carte de collision
+du TO8 rend les mêmes réponses dans l'arène ; le port sonde cette carte en
+coordonnées arcade (tranche assemblée par `INCLUDEBIN` à offset). IDENTIQUE
+au premier passage sous toje : combat complet (421 rendus) et mise à mort
+(448 rendus) ; le stage 6 passe au 7. Les 45 Dops ordinaires de la wave du
+stage 6 restent à brancher. Le clignotement de coup est une image par sens
+(16 poses ne tiennent pas dans la page).
+
 ## Dettes / pièges connus
 
 - `engine/pack/mub.asm` : chemins d'INCLUDE invalides (fichiers dans `sound/mucom88/`).

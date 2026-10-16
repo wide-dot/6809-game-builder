@@ -127,6 +127,14 @@ counterairlaser.Object EXTERNAL
 groundlaser.Object EXTERNAL
 counterairreflect.Object EXTERNAL
 
+; Le BOSS, dans son propre direntry (stage6.dopswarm) : le maitre et son
+; renderer groupe.
+dopswarm.Object   EXTERNAL
+dopswarm.Render   EXTERNAL
+; Ses boites de collision (deux par Dop) vivent ICI, en RAM residente :
+; Collision_Do les parcourt avec une autre page montee.
+dopswarm.boxes    EXPORT
+
 ; Le cast d'ennemis, un direntry chacun.
 bug.Object      EXTERNAL
 bink.Object     EXTERNAL
@@ -249,7 +257,7 @@ main.endstage.rallyY     fdb endstage.RALLY_Y
 ; La duree armee par bossDefeated et la voie du fondu, publiees par LE
 ; STAGE (endlevel.const.asm) : le compte du Dobkeratops, le fondu par
 ; tramage — les valeurs d'avant le 08/09/2026.
-main.endstage.duration   fdb endstage.DURATION
+main.endstage.duration   fdb endstage.DURATION_LATCHED ; l'essaim leve le drapeau a l'heure arcade
 main.endstage.fadeMode   fcb endstage.FADE_PIXEL
 
 stage.endTick
@@ -320,7 +328,16 @@ stage.setup
         ; l'ouverture ET au rechargement de checkpoint — stage.setup couvre
         ; les deux, comme au stage 1.
         _Obj_RunB ObjID_endstage,#endstage.INIT
+        ; CE STAGE A SON BOSS : l'essaim leve lui-meme le drapeau de fin
+        ; (40:B1C2, 0x800 + 16 trames apres sa naissance), jamais le compteur
+        ; de substitution.
+        lda   #1
+        sta   globals.realBoss
         rts
+
+; Les boites de l'essaim : avant puis arriere de chacun des huit Dops.
+dopswarm.boxes
+        fill  0,2*8*9
 
 ; Fin du stage 6 : on enchaîne sur le stage 7. La campagne remonte
 ; jusqu'au stage 8, qui rend la main au title.

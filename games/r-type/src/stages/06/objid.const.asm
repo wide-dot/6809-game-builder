@@ -13,8 +13,12 @@ ObjID_bossmusic equ 35
 * La bibliotheque d'ennemis que CE stage charge (ses lots — voir
 * src/common/cast.const.asm et l'analyse des lots).
 ObjID_bink equ 36
+* Le BOSS : l'essaim de Dops, un maitre (les seize Dops, en repere arcade) et
+* son renderer groupe, dans leur propre direntry (entree de wave 34 arcade).
+ObjID_dopswarm equ 37
+ObjID_dopswarm_render equ 38
 
-objid.count equ 36
+objid.count equ 38
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id
