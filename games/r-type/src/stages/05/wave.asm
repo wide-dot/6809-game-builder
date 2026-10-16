@@ -75,6 +75,6 @@
 ;$13,$9C,ObjID_pursuer,$00,$50
 ;$13,$B0,ObjID_39,$00,$00
 	fcb   $14,$50,ObjID_pow,$00,$15
-;$14,$F8,ObjID_bellmite,$00,$00
+	fcb   $14,$F8,ObjID_bellmite,$00,$00
 	fcb   $14,$FC,ObjID_bossmusic,$00,$00
 	fdb   $FFFF

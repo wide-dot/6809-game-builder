@@ -43,7 +43,11 @@ ObjID_slither_tail_corpse equ 43
 ObjID_slither_head_hit equ 44
 * Et la QUEUE pendant son flash, pour la meme raison.
 ObjID_slither_tail_hit equ 45
-objid.count equ 45
+* Le BOSS : Bellmite, un maitre (le noyau et ses 37 satellites, en repere
+* arcade) et son renderer groupe, dans leur propre direntry.
+ObjID_bellmite equ 46
+ObjID_bellmite_render equ 47
+objid.count equ 47
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

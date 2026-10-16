@@ -195,6 +195,136 @@ def reduire(im, u):
     return out, (w, h)
 
 
+def reduire_aire(im, u, m, pal, mode='aire', sym='', opacite=0.5):
+    """Rogne au cadre puis reduit 3/8 x 3/4 PAR SURFACE (opt-in, 16/10/2026).
+
+    Le plus proche voisin prend UNE colonne source sur 8/3 : selon l'arrondi,
+    le pixel garde la colonne de gauche ou de droite, et deux moities d'un
+    sprite symetrique tombent sur des colonnes differentes — le sprite reduit
+    perd sa symetrie et ses traits fins sortent ou disparaissent au hasard
+    (constat auteur sur Bellmite). Ici chaque pixel TO8 couvre exactement son
+    rectangle source de 8/3 x 4/3 pixels, couverture fractionnaire comprise.
+    Le cadre etant symetrique autour du point chaud (voir `cadre`), la grille
+    de rectangles l'est aussi : une source symetrique donne une sortie
+    symetrique, sans rien forcer.
+
+    Decision par pixel :
+    - opacite : opaque si la surface couverte de pixels non transparents
+      atteint `opacite` (0,5 par defaut ; egalite = opaque, regle identique en
+      tout point, donc symetrique). Un trait d'UN pixel arcade ne couvre que
+      3/8 d'une colonne TO8 : a 0,5 les rayons fins disparaissent par
+      morceaux, a 0,34 ils restent entiers ;
+    - couleur, mode `aire` : l'index TO8 qui couvre le plus de surface (les
+      couleurs arcade sont quantifiees AVANT, par `correspondance`) — le pixel
+      art garde ses teintes franches, aucune couleur moyenne n'est inventee ;
+      egalite departagee par la distance Lab a la moyenne du rectangle ;
+    - couleur, mode `aire-moyenne` : la moyenne Lab du rectangle, puis la case
+      la plus proche — plus doux, rattrape les traits d'un pixel.
+
+    `sym` force la symetrie quand la source ne l'est pas tout a fait : `x`
+    (miroir gauche-droite), `y`, `xy`, et le suffixe `-forme` ne symetrise
+    que l'OPACITE (la silhouette) en laissant les couleurs locales — c'est ce
+    qui garde l'eclairage d'en haut a gauche d'un sprite arcade ombre.
+    """
+    from fractions import Fraction as F
+    x0, y0, x1, y1 = u
+    aw, ah = x1 - x0 + 1, y1 - y0 + 1
+    w, h = max(1, round(aw * SCALE_X)), max(1, round(ah * SCALE_Y))
+    src = im.load()
+    ps = im.getpalette()
+    fx, fy = F(aw, w), F(ah, h)
+
+    def spans(t, f):
+        a, b = t * f, (t + 1) * f
+        out = []
+        s = int(a)
+        while s < b:
+            cov = min(F(s + 1), b) - max(F(s), a)
+            if cov > 0:
+                out.append((s, cov))
+            s += 1
+        return out
+
+    cells = {}
+    for ty in range(h):
+        sy = spans(ty, fy)
+        for tx in range(w):
+            sx = spans(tx, fx)
+            acc, rgb, tr = {}, [0.0, 0.0, 0.0], F(0)
+            for yy, cy in sy:
+                for xx, cx in sx:
+                    k = cx * cy
+                    i = src[x0 + xx, y0 + yy]
+                    if i == 0:
+                        tr += k
+                        continue
+                    key = m[i]
+                    acc[key] = acc.get(key, F(0)) + k
+                    for c in range(3):
+                        rgb[c] += float(k) * ps[i * 3 + c]
+            cells[(tx, ty)] = (acc, rgb, tr)
+
+    def orbit(tx, ty, which):
+        pts = {(tx, ty)}
+        if 'x' in which:
+            pts |= {(w - 1 - x, y) for x, y in pts}
+        if 'y' in which:
+            pts |= {(x, h - 1 - y) for x, y in pts}
+        return pts
+
+    axes = sym.replace('-forme', '')
+    forme_seule = sym.endswith('-forme')
+    area = fx * fy
+    out = Image.new('P', (w, h))
+    op = out.load()
+    for ty in range(h):
+        for tx in range(w):
+            pts = orbit(tx, ty, axes) if axes else {(tx, ty)}
+            # opacite : moyenne sur l'orbite si la symetrie est demandee
+            tr = sum(cells[p][2] for p in pts) / len(pts)
+            if tr > area * (1 - F(opacite).limit_denominator(100)):
+                op[tx, ty] = 0
+                continue
+            own = [(tx, ty)] if forme_seule or not axes else pts
+            acc, rgb, wt = {}, [0.0, 0.0, 0.0], 0.0
+            for p in own:
+                a, r, t = cells[p]
+                for kk, v in a.items():
+                    acc[kk] = acc.get(kk, F(0)) + v
+                for c in range(3):
+                    rgb[c] += r[c]
+                wt += float(area - t)
+            if not acc:
+                # pixel rendu opaque par la symetrie de forme seule : on prend
+                # la couleur de son miroir
+                for p in pts:
+                    for kk, v in cells[p][0].items():
+                        acc[kk] = acc.get(kk, F(0)) + v
+                    for c in range(3):
+                        rgb[c] += cells[p][1][c]
+                    wt += float(area - cells[p][2])
+            moy = tuple(v / wt for v in rgb) if wt else (0, 0, 0)
+
+            def rgb_of(kk):
+                return pal[kk[0]] if isinstance(kk, tuple) else pal[kk]
+            if mode == 'aire-moyenne':
+                cands = sorted(set(acc) | set(range(1, 17)) - {0},
+                               key=lambda kk: A.dist_lab(moy, rgb_of(kk)))
+                keys = [k for k in cands if not isinstance(k, tuple) and k in DISPO_COURANT] \
+                    or list(acc)
+                op[tx, ty] = keys[0]
+                continue
+            best = max(acc.values())
+            ties = [kk for kk, v in acc.items() if v == best]
+            ties.sort(key=lambda kk: (A.dist_lab(moy, rgb_of(kk)), str(kk)))
+            v = ties[0]
+            op[tx, ty] = v[(tx + ty) & 1] if isinstance(v, tuple) else v
+    return out, (w, h)
+
+
+DISPO_COURANT = ()
+
+
 def correspondance(im_src, pal, dispo, forcer=None):
     """{index arcade -> index TO8}, en Lab — SAUF les couleurs forcees.
 
@@ -227,12 +357,15 @@ def correspondance(im_src, pal, dispo, forcer=None):
     return m
 
 
-def convertir(objet, spec_pal, dry, suffixe, forcer=None, dedup=False, marge=0):
+def convertir(objet, spec_pal, dry, suffixe, forcer=None, dedup=False, marge=0,
+              reduction='voisin', sym='', opacite=0.5, poses=None):
     base = objet if os.path.isdir(objet) else 'src/enemies/%s' % objet
     orig = os.path.join(base, 'images/original')
     if not os.path.isdir(orig):
         sys.exit('%s : pas de images/original/' % base)
     pal, dispo = palette_cible(spec_pal)
+    global DISPO_COURANT
+    DISPO_COURANT = tuple(dispo)
     plat = [v for i in range(256) for v in (pal[i] if i < 17 else (0, 0, 0))]
 
     jeux = {}
@@ -247,6 +380,8 @@ def convertir(objet, spec_pal, dry, suffixe, forcer=None, dedup=False, marge=0):
           % (base, spec_pal, len(dispo)))
     total = 0
     for nom, chemins in sorted(jeux.items()):
+        if poses and nom not in poses:
+            continue
         u = cadre(chemins, Image.open(chemins[0]).size)
         if u is None:
             print('  %-16s VIDE (que de la transparence) — passe' % (nom or '.'))
@@ -272,13 +407,16 @@ def convertir(objet, spec_pal, dry, suffixe, forcer=None, dedup=False, marge=0):
         cycle = []
         for n, p in enumerate(chemins):
             im = Image.open(p)
-            petit, _ = reduire(im, u)
             m = correspondance(im, pal, dispo, forcer)
-            px = petit.load()
-            for y in range(h):
-                for x in range(w):
-                    v = m[px[x, y]]
-                    px[x, y] = v[(x + y) & 1] if isinstance(v, tuple) else v
+            if reduction == 'voisin':
+                petit, _ = reduire(im, u)
+                px = petit.load()
+                for y in range(h):
+                    for x in range(w):
+                        v = m[px[x, y]]
+                        px[x, y] = v[(x + y) & 1] if isinstance(v, tuple) else v
+            else:
+                petit, _ = reduire_aire(im, u, m, pal, reduction, sym, opacite)
             petit.putpalette(plat)
             if dedup:
                 cle = petit.tobytes()
@@ -364,6 +502,21 @@ def main():
                          'calcul. Plusieurs reservations separees par des '
                          'points-virgules (le dome du compiler en prend trois : '
                          'ombre, corps et halo oscillent chacun sur sa case).')
+    ap.add_argument('--reduction', default='voisin',
+                    choices=('voisin', 'aire', 'aire-moyenne'),
+                    help="voisin (defaut, l'art deja embarque) ; aire : chaque "
+                         "pixel TO8 couvre son rectangle source, couleur "
+                         "majoritaire ; aire-moyenne : moyenne Lab du rectangle")
+    ap.add_argument('--symetrie', default='',
+                    help="x, y ou xy (avec --reduction aire*) : force la "
+                         "symetrie ; suffixe -forme pour ne symetriser que la "
+                         "silhouette (x-forme, xy-forme)")
+    ap.add_argument('--opacite', type=float, default=0.5,
+                    help="avec --reduction aire* : part de surface opaque qui "
+                         "rend un pixel TO8 opaque (0,34 garde les traits fins)")
+    ap.add_argument('--poses', default=None,
+                    help="ne convertir que ces repertoires de poses (liste a "
+                         "virgules) — pour donner a chaque pose son reglage")
     ap.add_argument('-h', '--help', action='store_true')
     a = ap.parse_args()
     if a.help:
@@ -397,7 +550,8 @@ def main():
         return convertir(a.objet, a.ecrire_palette, a.dry_run, a.out_suffixe,
                          forcer, a.dedup)
     return convertir(a.objet, a.palette, a.dry_run, a.out_suffixe, forcer,
-                     a.dedup, a.marge_droite)
+                     a.dedup, a.marge_droite, a.reduction, a.symetrie, a.opacite,
+                     a.poses.split(',') if a.poses else None)
 
 
 
