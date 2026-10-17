@@ -58,9 +58,9 @@
 ; ecretee a 188, un demi-pixel arcade.
 ;
 ; ABANDONNE (meme arbitrage que le brood) : les sons (0x5D ponte, 0x57 coup,
-; 0x52 mort), le clignotement de coup par palette d'objet (0x55), et
-; l'escalade de PV du second loop (8e08 : 70 PV si [0x2F2D] — pas de second
-; loop chez nous).
+; 0x52 mort) et le clignotement de coup par palette d'objet (0x55).
+; L'escalade de PV du second tour (8e09 : 70 PV si [0x2F2D]) est portee
+; (globals.loop).
 ;*******************************************************************************
 ; -----------------------------------------------------------------------------
 ; L'ETAT : dans zoid.equ — la ponte du brood, dans l'AUTRE unite, seme deux
@@ -210,9 +210,13 @@ zoid.HatchBody
         lda   zoid.count,u
         suba  zoid.drop+1
         bhi   @tick
-        ; l'eclosion s'acheve (8e04..8e11) : 4 PV, verrou vierge, rodage
-        ; des la prochaine trame
+        ; l'eclosion s'acheve (8e04..8e11) : 4 PV — 70 au second tour
+        ; (8e09 : second_loop) —, verrou vierge, rodage des la prochaine trame
         lda   #zoid_hitdamage
+        tst   globals.loop
+        beq   >
+        lda   #70
+!       sta   zoid.AABB+AABB.p,u
         sta   zoid.lastP,u
         clr   zoid.lock,u
         clr   zoid.freeze,u

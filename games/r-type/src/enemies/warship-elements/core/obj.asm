@@ -31,7 +31,9 @@
 ;    ce qui fait passer le noyau et ses explosions DEVANT la coque — relu le
 ;    10/09/2026 ; ici le noyau est un sprite au-dessus de la couche, il n'y a
 ;    rien a faire. La coque, elle, se detruit zone par zone : part.Wreck ;
-;  - difficulte fixe (politique v1) : 128 trames ouvert, un feu par 8 trames ;
+;  - 128 trames ouvert et un feu par 8 trames, 64 et 4 au second tour
+;    (globals.loop) OU quand le Force du joueur est au niveau 2 ou plus
+;    ([0x3E] >= 2, dddd/dfcc — core.Hard) ;
 ;  - le feu n'a pas de son de lancement (0x5d, sans equivalent v2) ;
 ;  - le feu choisit son image par l'identite du slot objet (e06c) : ici un
 ;    compteur tournant, meme diversite.
@@ -71,9 +73,11 @@ core.hp     equ ext_variables+19   ; 19    les PV, gardes hors phase ouverte
 core.CLOSED  equ 1536              ; dcc0 : 0x600 trames de dormance
 core.SLIDE   equ 36                ; dce6/df85 : 0x24
 core.ANIM    equ 63                ; dd72/de56 : 0x3f
-core.OPEN    equ 128               ; ddd3 : 0x80 (0x40 en difficile — non retenu)
+core.OPEN    equ 128               ; ddd3 : 0x80
+core.OPEN2   equ 64                ; dde4 : 0x40 au second tour
 core.PUMP    equ 63                ; df95 : 0x3f
 core.FIRE    equ 8                 ; dfc9 : masque 7, un feu toutes les 8 trames
+core.FIRE2   equ 4                 ; dfd3 : masque 3 au second tour
 ; core.SLIDEPX : clip.equ (14 : l'ancre impaire de 13 etait rendue a 14)
 core.FLASH   equ 2                 ; de30 : six trames de flash, une sur deux — ici DEUX
                                    ; RENDUS (un rendu compense ~7 trames : six trames
@@ -217,8 +221,11 @@ core.Opening
         bne   @rts
         ; OUVERT (ddd3) : la boite s'elargit a gauche, les coups comptent, et
         ; seules les armes la rencontrent (de2b : v3_skip_player)
+        ldd   #core.OPEN2
+        lbsr  core.Hard                ; ddd3 / dddd : second tour ou Force >= 2
+        beq   >
         ldd   #core.OPEN
-        std   core.timer,u
+!       std   core.timer,u
         clr   core.flash,u
         _Collision_RemoveAABB core.AABB,AABB_list_ennemy
         _Collision_CleanLinksAABB core.AABB ; changer de liste : les liens vierges (macros.asm)
@@ -298,6 +305,20 @@ core.Closing
         lbra  core.ToSlide
 @rts    rts
 
+; Z = 1 : la forme RAPIDE du noyau (ddd3/dddd, dfc2/dfcc) — second tour
+; (second_loop) ou Force du joueur au niveau 2 ou plus ([0x3E] >= 2).
+core.Hard
+        pshs  a
+        tst   globals.loop
+        bne   @hard
+        lda   globals.forcepodlevel
+        cmpa  #2
+        bhs   @hard
+        andcc #$FB                     ; Z = 0 : la forme normale
+        puls  a,pc
+@hard   orcc  #$04                     ; Z = 1
+        puls  a,pc
+
 core.ToPump
         ldd   #core.PUMP
         std   core.timer,u
@@ -311,16 +332,22 @@ core.Pump
         lbsr  core.Tick
         lbne  core.Vanish
         lbsr  core.ShowClosed
+        ldb   #core.FIRE2
+        lbsr  core.Hard                ; dfc2 / dfcc : second tour ou Force >= 2
+        beq   >                        ; (core.Hard rend B intact)
+        ldb   #core.FIRE
+!       pshs  b                        ; la periode du tour
         lda   core.flash,u
         adda  layer.drop+1
-@tire   cmpa  #core.FIRE
+@tire   cmpa  ,s
         blo   @garde
-        suba  #core.FIRE
+        suba  ,s
         pshs  a
         lbsr  core.Fire
         puls  a
         bra   @tire
-@garde  sta   core.flash,u
+@garde  leas  1,s
+        sta   core.flash,u
         lbsr  core.Elapse
         bne   @rts
         lda   #1                       ; dff1 : la prochaine glissade ouvre

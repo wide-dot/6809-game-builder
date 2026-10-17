@@ -16,12 +16,12 @@ Quatre tables, toutes dans le segment de donnees 0x1000 :
              en compte 37 vivantes).
   1000:6002  bellmite_parent_target_positions
              32 cibles {x:word, y:word}, indexees par random & 0x1F.
-  1000:8FD0  vitesses d'attaque des satellites, difficulte 0
-             (bellmite_difficulty_satellite_velocity_table_base[0]) :
-             16 directions {vx:word, vy:word} en 8.8, indexees par le code
-             de set_direction_to (0x00 = N ... 0x3C = NNW, pas de 4).
-  1000:5F5C  bellmite_difficulty_phase_period : 4 mots, on garde l'indice 0
-             (difficulte fixe, politique du portage).
+  1000:5F64  bellmite_difficulty_satellite_velocity_table_base : une table
+             de vitesses d'attaque par difficulte (0x8FD0, 0x9050, 0x9090,
+             0x90D0), chacune 16 directions {vx:word, vy:word} en 8.8,
+             indexees par le code de set_direction_to (0x00 = N ... 0x3C =
+             NNW, pas de 4).
+  1000:5F5C  bellmite_difficulty_phase_period : 4 mots, par difficulte.
 
 Les IMAGES ne passent pas par ce script : elles sortent du catalogue de
 re.arcade.r-type (entree `bellmite`, export --export-catalog) copie dans
@@ -77,15 +77,16 @@ def pairs(rom, off, n):
 def render(rom):
     sats = satellites(rom)
     targets = pairs(rom, 0x6002, 32)
-    vel = pairs(rom, 0x8FD0, 16)
+    bases = [b & 0xFFFF for b in words(rom, 0x5F64, 4)]
+    vels = [pairs(rom, b, 16) for b in bases]
     period = words(rom, 0x5F5C, 4)
     lines = [
         '; GENERE par tools/gen_bellmite.py depuis la ROM arcade — ne pas editer.',
         '; Repere ARCADE (x a droite, y vers le haut), valeurs non converties.',
         '',
-        '; 1000:5F5C bellmite_difficulty_phase_period : %s (indice 0 retenu)'
-        % ' '.join('$%02X' % p for p in period),
-        'bellmite.PERIOD equ $%04X' % (period[0] & 0xFFFF),
+        '; 1000:5F5C bellmite_difficulty_phase_period, par difficulte',
+        'bellmite.Period',
+        '        fdb   ' + ','.join('$%04X' % (p & 0xFFFF) for p in period),
         'bellmite.NSAT   equ %d' % len(sats),
         '',
         '; 1000:5F6C les decalages d\'orbite des satellites, {x, y}',
@@ -96,13 +97,17 @@ def render(rom):
     lines += ['', '; 1000:6002 les 32 cibles du noyau, {x, y}', 'bellmite.Targets']
     for i, (x, y) in enumerate(targets):
         lines.append('        fdb   $%04X,$%04X  ; %2d' % (x & 0xFFFF, y & 0xFFFF, i))
-    lines += ['', '; 1000:8FD0 vitesses d\'attaque (difficulte 0), {vx, vy} en 8.8,',
-              '; indexees par le code de direction (pas de 4 : N, NNE ... NNW)',
-              'bellmite.AttackVel']
+    lines += ['', '; 1000:5F64 les vitesses d\'attaque, une table par difficulte',
+              'bellmite.AttackVels',
+              '        fdb   ' + ','.join('bellmite.AttackVel%d' % d for d in range(4))]
     names = ('N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
              'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW')
-    for i, (x, y) in enumerate(vel):
-        lines.append('        fdb   %d,%d%s; $%02X %s' % (x, y, ' ' * max(1, 12 - len('%d,%d' % (x, y))), 4 * i, names[i]))
+    for d, (base, vel) in enumerate(zip(bases, vels)):
+        lines += ['', '; 1000:%04X vitesses d\'attaque (difficulte %d), {vx, vy} en 8.8,' % (base, d),
+                  '; indexees par le code de direction (pas de 4 : N, NNE ... NNW)',
+                  'bellmite.AttackVel%d' % d]
+        for i, (x, y) in enumerate(vel):
+            lines.append('        fdb   %d,%d%s; $%02X %s' % (x, y, ' ' * max(1, 12 - len('%d,%d' % (x, y))), 4 * i, names[i]))
     return '\n'.join(lines) + '\n'
 
 

@@ -10,8 +10,17 @@ OBJID_CONST_08 equ 1
 ObjID_pow equ 33
 ObjID_checkpoint equ 34
 ObjID_bossmusic equ 35
+* Le BOSS : le Bydo core, un maitre (toute sa famille, en repere arcade) et
+* le renderer groupe de ses Win, dans leur propre direntry (entree de wave
+* bydo $0040).
+ObjID_bydo equ 36
+ObjID_bydo_render equ 37
+* La FIN DU JEU : le directeur du generique et la flotte, et le renderer
+* groupe de la flotte (stage8.ending), nes par le main apres le fondu.
+ObjID_ending equ 38
+ObjID_ending_render equ 39
 
-objid.count equ 35
+objid.count equ 39
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

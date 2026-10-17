@@ -16,14 +16,26 @@
 ; boule de feu et sa paire de poses. Une entree nulle est la PORTE D'ARC :
 ; dans ces directions la tourelle ne tire pas.
 ;
+; LA REAPPARITION (40:d6f5, d71d, d77b) : detruite, la tourelle reste en
+; place, sans tir ni collision, 256 trames, puis revient a 14 PV ; elle se
+; montre en clignotant ses 32 dernieres trames. Au premier tour le delai est
+; rearme tant que le maitre a moins de 0x1C30 trames (son compteur +0x32 —
+; ici warship.age0, l'age du maitre que le spawner depose et que la tourelle
+; avance) : elle ne revient qu'en fin de combat ; au second tour
+; (globals.loop) elle revient toujours. La mort du maitre la retire
+; (globals.bossDefeated, le geste du core).
+;
 ; ECARTS v2 : position dans le repere de la couche (layer.asm) ; pas de sons ;
-; pas de clignotement de coup (campagne hit a part).
+; pas de clignotement de coup (campagne hit a part) ; la tourelle qui
+; clignote avant de revenir garde sa derniere pose (l'arcade la revise).
 ;*******************************************************************************
 fturret.AABB    equ ext_variables      ; 0..8
 fturret.mapX    equ ext_variables+9    ; 9,10
 fturret.y0      equ ext_variables+11   ; 11,12
 fturret.cam0    equ ext_variables+13   ; 13,14
 fturret.cnt     equ ext_variables+15   ; 15  le compteur de cadence (128)
+fturret.delay   equ ext_variables+16   ; 16,17 le delai de reapparition
+                                       ; (18,19 : warship.age0, layer.asm)
 
 fturret.HP      equ 14                 ; 40:d5e5 MOV byte ptr [BP+0x2f],0xe
 
@@ -36,6 +48,7 @@ fturret.Routines
         fdb   fturret.Init
         fdb   fturret.Live
         fdb   fturret.Deleted
+        fdb   fturret.Respawn
 
 fturret.Init
         jsr   layer.evenX
@@ -63,36 +76,10 @@ fturret.Init
         ; PAS DE RTS : elle vit des sa premiere trame
 
 fturret.Live
-        ldb   gfxlock.frameDrop.count
-        bne   >
-        incb
-!       clra
-        std   layer.drop
+        jsr   fturret.Drop
         lda   fturret.AABB+AABB.p,u
         lbeq  fturret.Boom
-
-        ; --- la couche la porte ---------------------------------------------
-        jsr   layer.evenX
-        pshs  d
-        ldd   fturret.mapX,u
-        subd  ,s++
-        addd  glb_camera_x_pos
-        std   x_pos,u
-        ldd   fturret.y0,u
-        ldx   fturret.cam0,u
-        jsr   layer.followY
-        std   y_pos,u
-
-        ; --- la fenetre ------------------------------------------------------
-        ldd   x_pos,u
-        subd  glb_camera_x_pos
-        stb   fturret.AABB+AABB.cx,u
-        cmpd  #layer.XGONE
-        lbhi  fturret.Vanish
-        ldd   y_pos,u
-        stb   fturret.AABB+AABB.cy,u
-        addd  #6
-        cmpd  #204+6
+        jsr   fturret.Place
         lbhi  fturret.Vanish
 
         ; --- la visee : la roue de la variante ------------------------------
@@ -166,19 +153,93 @@ fturret.Boom
         ldb   #warship_turret_front_scoreIdx
         jsr   AwardScore
         jsr   LoadObject_x
-        beq   fturret.Vanish
+        beq   >
         _ldd  ObjID_explosion,explosion.subtype.smallx2+explosion.sfx.turret
         std   id,x
         ldd   x_pos,u
         std   x_pos,x
         ldd   y_pos,u
         std   y_pos,x
+!       _Collision_RemoveAABB fturret.AABB,AABB_list_ennemy
+        ldd   #$0100                   ; d6f5 : 256 trames
+        std   fturret.delay,u
+        lda   #3                       ; d6fa : le tick d'attente
+        sta   routine,u
+        rts
 fturret.Vanish
+        _Collision_RemoveAABB fturret.AABB,AABB_list_ennemy
+fturret.Gone
         lda   #2
         sta   routine,u
-        _Collision_RemoveAABB fturret.AABB,AABB_list_ennemy
         jmp   DeleteObject
 fturret.Deleted
         rts
+
+; --- detruite : l'attente avant de revenir (40:d71d) ---------------------------
+fturret.Respawn
+        jsr   fturret.Drop
+        lda   globals.bossDefeated     ; d765 : le maitre meurt, elle part
+        bne   fturret.Gone
+        tst   globals.loop             ; d71d : au second tour, le delai court
+        bne   @run
+        ldd   warship.age0,u           ; d727 : au premier, il est rearme tant
+        cmpd  #$1C30                   ; que le maitre a moins de 0x1C30 trames
+        bhs   @run
+        ldd   #$0100                   ; d72e
+        std   fturret.delay,u
+@run    ldd   fturret.delay,u          ; d73f
+        subd  layer.drop
+        bls   @back                    ; d742 : expire, elle revient
+        std   fturret.delay,u
+        jsr   fturret.Place
+        bhi   fturret.Gone             ; d76c : sortie de l'ecran
+        ldd   fturret.delay,u
+        cmpd  #$20                     ; d744 : invisible jusqu'aux 32 dernieres
+        bhs   @rts
+        bitb  #1                       ; d74a : puis une trame sur deux
+        beq   @rts
+        jmp   DisplaySprite
+@rts    rts
+@back   lda   #fturret.HP              ; d77b : 14 PV, le tick de vie
+        sta   fturret.AABB+AABB.p,u
+        _Collision_CleanLinksAABB fturret.AABB ; RemoveAABB laisse les vieux
+        _Collision_AddAABB fturret.AABB,AABB_list_ennemy ; liens : boucle sinon
+        lda   #1
+        sta   routine,u
+        rts
+
+; --- le pas du tick : layer.drop, et l'age du maitre qui avance ----------------
+fturret.Drop
+        ldb   gfxlock.frameDrop.count
+        bne   >
+        incb
+!       clra
+        std   layer.drop
+        addd  warship.age0,u
+        std   warship.age0,u
+        rts
+
+; --- la couche la porte, puis la fenetre : HI = hors de l'ecran ----------------
+fturret.Place
+        jsr   layer.evenX
+        pshs  d
+        ldd   fturret.mapX,u
+        subd  ,s++
+        addd  glb_camera_x_pos
+        std   x_pos,u
+        ldd   fturret.y0,u
+        ldx   fturret.cam0,u
+        jsr   layer.followY
+        std   y_pos,u
+        ldd   x_pos,u
+        subd  glb_camera_x_pos
+        stb   fturret.AABB+AABB.cx,u
+        cmpd  #layer.XGONE
+        bhi   @rts
+        ldd   y_pos,u
+        stb   fturret.AABB+AABB.cy,u
+        addd  #6
+        cmpd  #204+6
+@rts    rts
 
         INCLUDE "src/enemies/warship-elements/frontturret/tables.asm"

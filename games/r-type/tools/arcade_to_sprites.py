@@ -52,6 +52,12 @@ ressort en index 0, jamais quantifié.
                      `palette_dediee()`.
     --dry-run        n'écrit rien, affiche la géométrie et les couleurs
     --out-suffixe S  suffixe de sortie (défaut : aucun, écrit dans images/)
+    --opaque         le jeu est un PATCH DE DÉCOR (cellules de tuiles que la
+                     borne écrit dans la RAM du plan de fond, ex. la bouche du
+                     Bydo) : sous lui il n'y a rien, son index 0 s'affiche
+                     NOIR. Dans le cadre, la transparence devient du noir et
+                     le sprite TO8 est un rectangle plein qui recouvre la
+                     carte.
 """
 import argparse
 import os
@@ -358,7 +364,7 @@ def correspondance(im_src, pal, dispo, forcer=None):
 
 
 def convertir(objet, spec_pal, dry, suffixe, forcer=None, dedup=False, marge=0,
-              reduction='voisin', sym='', opacite=0.5, poses=None):
+              reduction='voisin', sym='', opacite=0.5, poses=None, opaque=False):
     base = objet if os.path.isdir(objet) else 'src/enemies/%s' % objet
     orig = os.path.join(base, 'images/original')
     if not os.path.isdir(orig):
@@ -383,6 +389,14 @@ def convertir(objet, spec_pal, dry, suffixe, forcer=None, dedup=False, marge=0,
         if poses and nom not in poses:
             continue
         u = cadre(chemins, Image.open(chemins[0]).size)
+        if opaque and u is not None:
+            # a patch is a rectangle of cells: its frame is the union as is,
+            # never widened to the reduction grid (that would blacken the map
+            # around it) — the object code places it by its corner
+            bs = [boite(Image.open(c)) for c in chemins]
+            bs = [b for b in bs if b]
+            u = (min(b[0] for b in bs), min(b[1] for b in bs),
+                 max(b[2] for b in bs), max(b[3] for b in bs))
         if u is None:
             print('  %-16s VIDE (que de la transparence) — passe' % (nom or '.'))
             continue
@@ -407,6 +421,8 @@ def convertir(objet, spec_pal, dry, suffixe, forcer=None, dedup=False, marge=0,
         cycle = []
         for n, p in enumerate(chemins):
             im = Image.open(p)
+            if opaque:
+                im = noircir(im, u)
             m = correspondance(im, pal, dispo, forcer)
             if reduction == 'voisin':
                 petit, _ = reduire(im, u)
@@ -517,6 +533,9 @@ def main():
     ap.add_argument('--poses', default=None,
                     help="ne convertir que ces repertoires de poses (liste a "
                          "virgules) — pour donner a chaque pose son reglage")
+    ap.add_argument('--opaque', action='store_true',
+                    help="patch de decor : la transparence du cadre devient "
+                         "du noir (cf. l'aide)")
     ap.add_argument('-h', '--help', action='store_true')
     a = ap.parse_args()
     if a.help:
@@ -551,7 +570,25 @@ def main():
                          forcer, a.dedup)
     return convertir(a.objet, a.palette, a.dry_run, a.out_suffixe, forcer,
                      a.dedup, a.marge_droite, a.reduction, a.symetrie, a.opacite,
-                     a.poses.split(',') if a.poses else None)
+                     a.poses.split(',') if a.poses else None, a.opaque)
+
+
+def noircir(im, u):
+    """--opaque : l'index 0 du cadre u devient un index NOIR (le dernier de la
+palette, repeint en noir s'il le faut) — le fond nu de la borne."""
+    im = im.copy()
+    pl = im.getpalette()
+    pl += [0] * (768 - len(pl))
+    noir = next((i for i in range(1, 256) if pl[3 * i:3 * i + 3] == [0, 0, 0]
+                 and i != im.info.get('transparency', 0)), 255)
+    pl[3 * noir:3 * noir + 3] = [0, 0, 0]
+    im.putpalette(pl)
+    px = im.load()
+    for y in range(u[1], u[3] + 1):
+        for x in range(u[0], u[2] + 1):
+            if px[x, y] == 0:
+                px[x, y] = noir
+    return im
 
 
 

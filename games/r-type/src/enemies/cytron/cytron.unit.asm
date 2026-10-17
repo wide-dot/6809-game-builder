@@ -44,6 +44,7 @@ pscroll.gum.grow  EXTERNAL
         INCLUDE "src/common/lib/scale.asm"
         ; _loadFirePreset : le preset de tir, charge par sous-routine paginee.
         INCLUDE "src/common/lib/projectile.macro.asm"
+        INCLUDE "src/common/lib/object.const.asm" ; les champs de tir (cytron.fire)
         ; Les scripts de mouvement vivent dans l'objet d'animation commun ;
         ; ce que la table de variantes porte est un DECALAGE dans sa LUT.
         INCLUDE "src/common/fx/animation/index.equ"

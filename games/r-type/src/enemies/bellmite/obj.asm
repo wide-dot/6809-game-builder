@@ -332,7 +332,12 @@ bm.ParentInit
         ldd   #0
         std   bm.d36
         clr   bm.pfl
-        ldd   #bellmite.PERIOD           ; b2c9 phase period (difficulty 0)
+        pshs  x
+        ldx   #bellmite.Period           ; b2c1 phase period by difficulty
+        ldb   globals.difficulty
+        aslb
+        ldd   b,x                        ; b2c9
+        puls  x
         std   bm.c10
         ldd   #$0100
         std   bm.c12                     ; b2d1
@@ -589,7 +594,10 @@ bm.SatAttackInit
         sta   S.st,y
         clr   bm.f34                     ; b619
         jsr   bm.Direction               ; b621 B = code 0..$3C
-        ldx   #bellmite.AttackVel        ; b62e difficulty 0
+        ldx   #bellmite.AttackVels       ; b626 the table of the difficulty
+        lda   globals.difficulty
+        asla
+        ldx   a,x                        ; b62e
         abx
         ldd   ,x
         std   S.vx,y

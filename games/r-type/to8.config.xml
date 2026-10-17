@@ -5374,6 +5374,45 @@
                             gensymbols="gen/stages/08/map/map.const.asm"
                             lean="false"/>
 
+                <!-- L'EPAVE DE LA SALLE (0x40:EAA9) : a la mort du noyau, la
+                     borne nettoie deux colonnes de 64 px de son plan de fond.
+                     Une bande de UNE image (tools/gen_bydo_wreck.py), posee par
+                     tilemap.stamp sur les colonnes 55-59 (rendues denses), les
+                     deux plans : le defilement reprend apres. La bande porte
+                     ses voisines de carte (55 et 60) : les tuiles impaires,
+                     decalees d'un pixel, en prennent un a leurs bords. -->
+                <leanscroll image="src/stages/08/wreck/in.png" gendir="gen/stages/08/wreck"
+                            gensymbols="gen/stages/08/wreck/wreck-map.const.asm"
+                            lean="false"/>
+
+                <file name="stage8.wreck.even" linkdata="DATA" arena="stage8.foes"
+                      gendir="gen/stages/08/wreck-even">
+                    <lwasm gensource="gen/stages/08/wreck-even.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <gfxcomp gendir="gen/stages/08/wreck-even"
+                                 gensource="gen/stages/08/wreck-even/includes.asm">
+                            <image name="wreckEven" filename="gen/stages/08/wreck/even.png" grid="12x12">
+                                <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="stage8.wreck.odd" linkdata="DATA" arena="stage8.foes"
+                      gendir="gen/stages/08/wreck-odd">
+                    <lwasm gensource="gen/stages/08/wreck-odd.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <gfxcomp gendir="gen/stages/08/wreck-odd"
+                                 gensource="gen/stages/08/wreck-odd/includes.asm">
+                            <image name="wreckOdd" filename="gen/stages/08/wreck/odd.png" grid="12x12">
+                                <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <file name="stage8.tiles.even" linkdata="DATA" arena="stage8.gfx"
                       gendir="gen/stages/08/tiles-even">
                     <gfxcomp gendir="gen/stages/08/tiles-even"
@@ -5398,11 +5437,71 @@
                     <lwasm gensource="gen/stages/08/stage8-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilecols map="gen/stages/08/map/even.bin" label="map.even"
-                                  tiles="stage8.tiles.even" variant="ND0" maprows="15"
+                                  tiles="stage8.tiles.even" variant="ND0" maprows="15" dense="55-59"
                                   gensource="gen/stages/08/map-even.asm"/>
                         <tilecols map="gen/stages/08/map/odd.bin" label="map.odd"
-                                  tiles="stage8.tiles.odd" variant="ND0" maprows="15"
+                                  tiles="stage8.tiles.odd" variant="ND0" maprows="15" dense="55-59"
                                   gensource="gen/stages/08/map-odd.asm"/>
+                        <!-- L'epave : UN descripteur pour les deux plans. -->
+                        <tilepatch map="gen/stages/08/wreck/even.bin" label="wreck"
+                                   mapodd="gen/stages/08/wreck/odd.bin"
+                                   tiles="stage8.wreck.even" variant="ND0"
+                                   tilesodd="stage8.wreck.odd" variantodd="ND0"
+                                   cols="5" rows="15" frames="1" firstcol="0" col="55" row="0" hold="1"
+                                   gensymbols="gen/stages/08/wreck/wreck.const.asm"
+                                   gensource="gen/stages/08/wreck-map.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Le boss du stage 8 : le Bydo core, porte en repere arcade
+                     (src/enemies/bydo/obj.asm). Sa tete et ses tentacules sont
+                     des PATCHS DE DECOR (recettes de tuiles que la borne ecrit
+                     dans le plan de fond), opaques, dessines par le crochet
+                     avant de la boucle (stage.frameFront) ; les Win reprennent
+                     les images de src/enemies/win. Une page : le code, les
+                     huit tentacules, les trois Win ; une autre pour les cinq tetes. -->
+                <file name="stage8.bydo" linkdata="DATA" arena="stage8.foes">
+                    <lwasm gensource="gen/enemies/stage8-bydo.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <asm filename="gen/directories/dir8/entries.asm"/>
+                        <asm filename="src/enemies/bydo/bydo.unit.asm"/>
+                        <gfxcomp file="stage8.bydo" gendir="gen/enemies/stage8-bydo"
+                                 gensource="gen/enemies/stage8-bydo/includes.asm"
+                                 genindex="gen/enemies/stage8-bydo/index.asm">
+                            <images dir="src/enemies/bydo/images/tentacle" names="bydo_tentacle"/>
+                            <images dir="src/enemies/win/images/default" names="bydo_win"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="stage8.bydo.head" linkdata="DATA" arena="stage8.foes">
+                    <lwasm gensource="gen/enemies/stage8-bydo-head.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <gfxcomp file="stage8.bydo.head" gendir="gen/enemies/stage8-bydo-head"
+                                 gensource="gen/enemies/stage8-bydo-head/includes.asm"
+                                 genindex="gen/enemies/stage8-bydo-head/index.asm">
+                            <images dir="src/enemies/bydo/images/head" names="bydo_head"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- La FIN DU JEU (src/stages/08/ending/) : le directeur du
+                     generique, la flotte de R-9 et ses images (les poses du
+                     vaisseau, une par palette arcade), en repere arcade. Les
+                     chaines du generique sont residentes, dans le main. -->
+                <file name="stage8.ending" linkdata="DATA" arena="stage8.foes">
+                    <lwasm gensource="gen/stages/08/ending.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <asm filename="gen/directories/dir8/entries.asm"/>
+                        <asm filename="src/stages/08/ending/ending.unit.asm"/>
+                        <gfxcomp file="stage8.ending" gendir="gen/stages/08/ending"
+                                 gensource="gen/stages/08/ending/includes.asm"
+                                 genindex="gen/stages/08/ending/index.asm">
+                            <images dir="src/stages/08/ending/images/fleet" names="fleet" shifts="0,1"/>
+                        </gfxcomp>
                     </lwasm>
                 </file>
 
@@ -5440,6 +5539,11 @@
                     <load name="stage8.maps"/>
                     <load name="stage8.wave"/>
                     <load name="stage8.collision"/>
+                    <load name="stage8.bydo"/>
+                    <load name="stage8.bydo.head"/>
+                    <load name="stage8.ending"/>
+                    <load name="stage8.wreck.even"/>
+                    <load name="stage8.wreck.odd"/>
                     <load name="stage8"/>
                 </scene>
 

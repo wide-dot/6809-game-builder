@@ -7,8 +7,8 @@ le code d'un portage pour que la vérification soit possible.
 
 Clients : Bellmite, le boss du stage 5, puis le Compiler (stage 4), réécrit
 1:1 le 16/10/2026 parce que ses déplacements divergeaient, puis l'essaim de
-Dops (stage 6) et Bronco (stage 7), portés le même jour. Prochain : le boss
-du stage 8.
+Dops (stage 6), Bronco (stage 7) et le Bydo core (stage 8), portés le même
+jour : tous les boss sont désormais portés 1:1.
 
 ## Le constat qui rend la méthode possible
 
@@ -142,7 +142,123 @@ pursuer, le bug, le geld et le POW (à l'envers). Le bug, chargé au stage 7
 avec sa palette, est repris tel quel ; le pursuer et le geld portent les
 couleurs de leurs stages (cases 13-16) et sont reconvertis.
 
-## Les entrées que le port ne calcule pas comme la borne
+## Quand le boss peint le décor : les patchs du Bydo
+
+La tête du Bydo core et ses tentacules ne sont pas des sprites : la borne
+écrit des RECETTES DE TUILES dans la RAM du plan de fond (40:C335, 8×8
+cellules {tuile, attribut} ; 40:C434, 7×6 tuiles à attribut fixe 0x81), avec
+le bit de priorité — devant les sprites. Trois outils pour les reprendre :
+
+- l'extracteur sait les dessiner (moteur `tile_block` du catalog,
+  `cols`/`rows`/`attr`, palette de fond du stage : 0x140 au stage 8) ;
+- `PILOT_BGDUMP=1` écrit, à chaque capture, la RAM du plan de fond et ses
+  caméras (`bg<gc>.bin`) : on y retrouve la recette peinte et sa cellule
+  (colonne 48, ligne 27 pour la tête, soit l'écran 8·(col−8), 8·(ligne−16)) ;
+- `arcade_to_sprites.py --opaque` : sous un patch il n'y a rien, son index 0
+  s'affiche NOIR ; le cadre est l'union exacte des recettes, jamais élargie.
+
+Sur TO8 les patchs sont des images opaques dessinées APRÈS les tuiles (le
+crochet `stage.frameFront` de `stage-main.asm`, opt-in), à leur place sur la
+CARTE : leur x suit la caméra, pas le x arcade. Il faut donc que la caméra
+TO8 s'arrête où celle de la borne s'arrête : 1 536 px arcade, 576 sur TO8
+(corrélation de la capture arcade avec `map/in.png`). Le noyau lui-même
+n'est qu'une horloge : sa chronologie (1000:6416) appelle les Win, la
+bouche, les poses de la tête et l'arrêt du défilement.
+
+## La fin du jeu : une horloge de wave qui suit le défilement
+
+Après le Bydo core, la borne ne passe pas par un « stage cleared » : les
+dernières entrées de la wave du stage 8 font la fin du jeu — le champ
+d'étoiles ($0DE8), la flotte de 18 R-9 ($0F28, 40:FB10 ; le nom Ghidra
+« floating score pickups » est faux), six palettes qui font scintiller les
+vaisseaux ($0F78) et le directeur du générique ($1130, 40:EEAB). Piège : la
+**horloge de wave suit le défilement**, pas le temps (elle s'arrête quand le
+noyau fige le décor, repart à 0xC0 par trame à sa mort) ; ces créations
+tombent donc à des trames arcade fixes après la mort du noyau, et le port les
+pose comme telles depuis `ending.gc0` (la trame du fondu du décor, 16698
+dans la trace : mort + 0x260).
+
+Le texte est un plan de tuiles qui monte (0x2EC4/0x2EC6, 9 bits + fraction,
+0,5 px par trame) : le directeur écrit des lignes de tilemap, le dessin les
+place à `(8 (ligne − 16) − Y) mod 512`. `PILOT_PEEK` (liste d'adresses de la
+RAM de jeu, un mot chacune par trame) a donné ces registres ; la référence
+les compare avec le directeur et les vaisseaux. `PILOT_SNDLOG` (les commandes
+audio de chaque trame) a montré la musique : 0x19 (boss) à l'arrêt du
+défilement, 0x1A (« Like a Hero ») au nettoyage de la salle, rien d'autre
+avant le stage suivant. Côté TO8 : le défilement repart sur la queue vide de
+la carte (120 px ajoutés à `map/in.png`), le noyau lance le fondu palette du
+décor à l'heure arcade, la voie `FADE_ENDING` de l'objet commun de fin
+attend CE fondu, efface au noir (le vaisseau seul), puis rend la main
+(`STATUS_ENDING`) ; le stage 8 joue la fin sans décor ni bandeau, et ne
+passe au « bonus game » (stage 1, score gardé) qu'une fois le noir complet.
+Les vaisseaux de la flotte ont leur variante décalée d'un pixel.
+
+## Le second tour : la difficulté 2
+
+La borne recalcule sa difficulté (0x2F2E) à chaque trame dans le tic du
+joueur (40:2036) : `(second_loop ? 2 : DIP Hard ? 1 : 0) + (Force ≥ 2 ?
+1 : 0)`, plafond 3 — le dernier terme lit le niveau de Force du joueur
+(0x3E, son record +0x1E). `second_loop` (0x2F2D) recopie à chaque départ de
+stage le compteur de tours du joueur (0x2F42), que la fin incrémente
+(40:EE7B) — et le game over aussi (40:EFE3) : sur la borne, un continue
+joue la suite en forme de second tour, et le continue n'est offert que si
+ce compteur reste sous 2 (40:12c1). Mesuré sous MAME (DIP par défaut,
+vaisseau sans Force, sonde jetable sur les états `stage<N>`) : 0 sur les
+huit stages du premier tour, 2 dès le stage 1 du second, et le compteur de
+stage de la borne passe à 9.
+
+Le port tient le compteur dans `globals.loop` (semé avec la partie, avancé
+par la fin du jeu et par le continue accepté ; la fin du premier tour
+consomme le quota de continue, comme le compteur unique de la borne). Ce qui lit la difficulté
+(Ghidra n'en voit pas toutes les lectures : un balayage des octets
+`2e 2f` / `2d 2f` de la ROM en trouve 12 et 6 de plus) :
+
+- déjà branché : presets de tir communs, Tabrok et ses missiles, P-Staff,
+  Brood, Scant, Wick, Cancer ;
+- branché le 16/10 : PV du noyau du Shell (6/10/25/40), PV et tir du Cytron
+  (1000:9294 — à la difficulté 0 il ne tire PAS : le port tirait par le
+  preset de sa variante), vitesse de la Geld (1, 1,5, 2, 3 px), cadence et
+  vitesse des lasers et seuils des tourelles du Compiler, période et
+  vitesses d'attaque de Bellmite (tables par difficulté régénérées par
+  `gen_compiler.py` / `gen_bellmite.py`) ;
+- au second tour seulement (`globals.loop`) : PV des Zoid (70), du réacteur
+  de queue (250 : le potentiel d'une boîte est un octet signé plafonné à
+  126, la boîte en porte 125 et une réserve la recharge), noyau du vaisseau
+  (ouvert 64 trames, un feu toutes les 4), cadence (0x20) et salve
+  (1000:414E, ~1,8 fois plus rapide) de l'Outslay ;
+- les tourelles de proue du vaisseau RÉAPPARAISSENT (40:d6f5..d77b), aux
+  deux tours : 256 trames après leur destruction, à 14 PV, en clignotant
+  leurs 32 dernières trames ; au premier tour seulement une fois le maître
+  âgé de 0x1C30 trames (son compteur +0x32, `warship.age0` chez nous) ;
+- la fin du second tour ne dit pas « ENJOY THE BONUS GAME AGAIN » : le
+  directeur attend 0x120 trames puis la borne passe au game over (40:EF5D)
+  — chez nous le noir puis la séquence GAME OVER du corps de stage, sans
+  continue.
+
+- le numéro de stage EFFECTIF prend +8 au second tour (40:f0c9, 0x2FCD) :
+  la case de score par stage (seize cases, une par stage des deux tours),
+  les lignes du récapitulatif STAGE SCORE et le « STAGE n CLEARED »
+  (1000:8BE0 : « 9 » à « 16 ») le lisent — `ranking.stageNo`, et
+  `ranking.resetHere` pour le continue.
+
+- le terme Force ≥ 2 : la difficulté est une fonction pure du tour et du
+  niveau de Force (DIP par défaut), recalculée par `_difficulty.update`
+  (variables.asm) là où l'un des deux change — semis de partie, ramassage,
+  mort, fin du jeu, continue ; le noyau du vaisseau prend aussi sa forme
+  rapide sur Force ≥ 2 (`core.Hard`, dddd/dfcc). Règle de l'auteur
+  (16/10) : du 1:1 avec la borne tant que c'est techniquement possible.
+
+Pas encore porté : Mid, Pursuer, Cheetah et Mikun (les ennemis eux-mêmes ne
+le sont pas) devront lire la difficulté.
+
+Piège de banc relevé au passage : le Compiler a une trame AVEUGLE, gc0+1 —
+ses résidus arcade sont écrits au Tick de la trame suivante. Tant qu'aucun
+rendu ne tombait dessus, le banc disait IDENTIQUE ; un décalage de cadence
+l'y a fait tomber. Le profil la déclare (`blind = 1`) et la comparaison
+l'écarte en le disant.
+
+
+
 
 Un écart assumé du port qui touche l'état du boss devient une ENTRÉE du
 banc, comme la graine : la valeur de la borne est imposée, l'injection est
@@ -196,6 +312,8 @@ son délai), `kill` tue 26 satellites puis le noyau.
 | bellmite kill | 168 | 37 789 | identique |
 | compiler idle | 1 684 | 87 478 | identique (26 morts de segments sur les gommes en entrée) |
 | compiler kill | 328 | 11 416 | identique (gauche, bas puis droite, cascades jouées) |
+| bydo idle | 1 776 | 21 361 | identique (combat complet, mort au délai 0x2000, phases et cascade : 440 tirages rejoués) |
+| ending idle | 753 | 3 012 | identique (du fondu du noyau à la fin du directeur : 18 vaisseaux, directeur, défilement du texte) |
 
 Les valeurs de l'essaim comptent l'état du gestionnaire et la liste des
 Dops comme une valeur chacune : chaque rendu compare toutes les positions

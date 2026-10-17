@@ -94,8 +94,10 @@ depuis `out/`. Trous connus au 18/08/2026 :
 - **gomander** : au catalog mais son moteur de rendu `tile_grid indirect`
   n'est pas décodé par l'extracteur de sprites — à implémenter côté
   extracteur le jour du boss ;
-- **bellmite** (5), **bronco** (7), **bydo** (8) : routine identifiée mais
-  aucune entrée de catalog ;
+- ~~bellmite, bronco, bydo~~ : au catalog depuis le 16/10/2026 ; le moteur
+  `tile_block` y décrit les patchs de décor (recettes de tuiles écrites dans
+  la RAM du plan de fond : la tête du Bydo) — à convertir avec
+  `arcade_to_sprites.py --opaque` et à dessiner après les tuiles ;
 - toute nouvelle famille de tables du seg `0x1000` (scripts d'émission,
   recettes de sprites, vélocités…) repérée dans les plates : si elle entre
   dans le jeu, elle mérite son exporteur.

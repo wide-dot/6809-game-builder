@@ -17,6 +17,15 @@ STAGE_SCENE equ scenes.stage8
 ; La carte de ce stage est en colonnes creuses (<tilecols> dans le config) :
 ; stage-main.asm appelle ScrollCols/DrawTilesCols et pose tilemap.mode.
 stage.TILES_COLS equ 1
+; Ce stage peint DEVANT ses tuiles : la tete et les tentacules du Bydo sont
+; des patchs du plan de fond arcade a bit de priorite (devant les sprites),
+; et nos tuiles passent apres les sprites. stage-main.asm appelle
+; stage.frameFront juste apres elles (crochet opt-in, les autres stages n'en
+; paient rien).
+stage.FRONT equ 1
+; Ce stage termine le JEU : apres le fondu, la sequence de fin de la borne
+; (src/stages/08/ending/) — pas de HUD, des etoiles, la flotte, le generique.
+stage.ENDING equ 1
 
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT
@@ -95,6 +104,32 @@ endlevel.Object       EXTERNAL
 ; Le marqueur de musique du boss, seme par la wave : il pose le drapeau que
 ; stage.endTick releve pour changer de morceau.
 bossmusic.Object      EXTERNAL
+
+; Le BOSS, dans son propre direntry (stage8.bydo) : le noyau (toute sa
+; famille, en repere arcade) et le renderer groupe de ses Win. Ses boites,
+; ses creneaux et ses deux boucles de dessin sont RESIDENTS (plus bas).
+bydo.Object       EXTERNAL
+bydo.Render       EXTERNAL
+bydo.boxes        EXPORT
+bydo.slots        EXPORT
+bydo.DrawAll      EXPORT
+
+; LA FIN DU JEU, dans son propre direntry (stage8.ending) : le directeur du
+; generique et la flotte, en repere arcade. Ce qui doit etre RESIDENT vit
+; ici (plus bas) : l'etat que la boucle lit, et le texte, que le dessin lit
+; avec la page du HUD montee.
+ending.Object     EXTERNAL
+ending.Render     EXTERNAL
+ending.rowText    EXPORT
+ending.textY      EXPORT
+ending.hudOff     EXPORT
+ending.done       EXPORT
+ending.gc0        EXPORT
+ending.black      EXPORT
+ending.music      EXPORT
+sounds.ending.ymm EXTERNAL
+sounds.boss.ymm   EXTERNAL
+hud.drawStr       EXTERNAL
 
 ; Le fondu de palette : un objet monte comme un autre depuis le 04/08 — le
 ; stage l'arme a l'ouverture et le fait tourner dans sa boucle.
@@ -214,7 +249,12 @@ stage.openingSequence
 ; ---------------------------------------------------------------------------
 stage.frameBlit
         _Obj_RunB ObjID_endstage,#endstage.BLIT
-        rts
+        ; le generique, sur le noir et les etoiles, SOUS les vaisseaux : la
+        ; police du HUD peint des cellules pleines
+        lda   ending.on
+        beq   @rts
+        jsr   ending.DrawText
+@rts    rts
 
 ; La phase publiée est directement la variable résidente que l'objet écrit.
 stage.overlayPhase equ main.endstage.phase
@@ -245,32 +285,107 @@ main.endstage.rallyY     fdb endstage.RALLY_Y_ENDING
 ; La duree armee par bossDefeated et la voie du fondu, publiees par LE
 ; STAGE (endlevel.const.asm) : le compte du Dobkeratops, le fondu par
 ; tramage — les valeurs d'avant le 08/09/2026.
-main.endstage.duration   fdb endstage.DURATION
-main.endstage.fadeMode   fcb endstage.FADE_PIXEL
+main.endstage.duration   fdb endstage.DURATION_LATCHED ; le Bydo leve le drapeau a l'heure arcade
+main.endstage.fadeMode   fcb endstage.FADE_ENDING ; le tramage, puis la sequence de fin
 
 stage.endTick
+        ; LES MUSIQUES DU BOSS ET DE LA FIN : le noyau pose les drapeaux a
+        ; l'heure arcade (0x19 en 40:C2F0, 0x1A en 40:C210), le stage change
+        ; de morceau — le lecteur ne se monte pas depuis un objet pagine.
+        lda   globals.nextGameMode
+        beq   >
+        clr   globals.nextGameMode
+        jsr   IrqOff
+        _GetCartPageB
+        pshs  b
+        _ymm.obj.play #map.RAM_OVER_CART+common.music.ymm.page,#sounds.boss.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
+        puls  b
+        _SetCartPageB
+        jsr   IrqOn
+!       lda   ending.music
+        beq   >
+        clr   ending.music
+        jsr   IrqOff
+        _GetCartPageB
+        pshs  b
+        _ymm.obj.play #map.RAM_OVER_CART+stage8.music.ymm.page,#sounds.ending.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
+        puls  b
+        _SetCartPageB
+        jsr   IrqOn
         ; La sequence de fin decide, pas la camera — voir le commentaire des
-        ; trois rendez-vous. Pas de bloc musique de boss : la wave v1 du
-        ; niveau 8 n'a pas le marqueur, et son bloc musical n'a pas la place
-        ; des donnees.
+        ; trois rendez-vous.
+!       lda   ending.on
+        bne   stage.endTick.ending
         _Obj_RunB ObjID_endstage,#endstage.TICK
         cmpb  #endstage.STATUS_JINGLE
         beq   stage.endTick.jingle
+        cmpb  #endstage.STATUS_ENDING
+        beq   stage.endTick.start
         cmpb  #endstage.STATUS_DONE
         beq   stage.endTick.done
         rts
 
+stage.endTick.start
+        ; LA FIN DU JEU (16/10/2026). Le tramage est fini, le vaisseau seul
+        ; sur le noir : l'objet commun s'arrete la et le stage reprend
+        ; l'ecran — la boucle repeint (phase 0), sans decor (plainBackdrop :
+        ; le noir et les etoiles), sans HUD, et l'objet de fin deroule la
+        ; chronologie de la borne. Le vaisseau reste gare au point de
+        ; ralliement, comme sur la borne.
+        lda   #1
+        sta   ending.on
+        sta   ending.hudOff
+        sta   globals.plainBackdrop
+        clr   main.endstage.phase
+        jsr   LoadObject_x
+        beq   >
+        lda   #ObjID_ending
+        sta   id,x
+!       rts
+
+stage.endTick.ending
+        lda   ending.black              ; 40:EF89 le noir
+        beq   >
+        clr   ending.black
+        jsr   ending.FadeBlack
+!       lda   ending.done               ; 40:EF9D, le directeur est fini
+        beq   @rts
+        ldb   palettefade+routine       ; ... et le noir est complet
+        cmpb  #o_fade_routine_idle
+        bne   @rts
+        deca                            ; 1 : le bonus game
+        lbeq  stage.handOver
+        clr   globals.lives             ; 2 : 40:EF5D, le second tour finit
+        lda   #mainloop.state.CHECKPOINT ; au GAME OVER du corps de stage (vies
+        sta   mainloop.state            ; a zero, que le decompte rend
+@rts    rts                             ; negatives ; continue refuse)
+
+; le noir de la fin : la palette vers le noir, 16 pas de 4 trames
+ending.FadeBlack
+        pshs  u
+        ldu   #palettefade
+        clr   routine,u
+        lda   #1                        ; chronometre : par trame VIDEO
+        sta   o_fade_drop,u
+        ldx   #Pal_black
+        stx   o_fade_dst,u
+        lda   #4
+        sta   o_fade_wait,u
+        ldd   Pal_current
+        std   o_fade_src,u
+        ldd   #0
+        std   o_fade_sleep,u
+        std   o_fade_callback,u
+        puls  u,pc
+
 stage.endTick.jingle
-        ; Pas de jingle non plus (l'index v1 du niveau 8 ne portait ni boss
-        ; ni jingle) : on arrete simplement le theme, le fondu et le releve
-        ; de score se font en silence.
-        jsr   IrqOff
-        _GetCartPageB
-        pshs  b
-        jsr   ymm.stop                    ; lecteur resident : appel direct
-        puls  b
-        _SetCartPageB
-        jsr   IrqOn
+        ; Pas de jingle : la fin du jeu joue deja sa musique (le noyau l'a
+        ; lancee au nettoyage de la salle). L'autopilote prend le vaisseau,
+        ; qui ne peut plus mourir — le terrain est coupe : le defilement
+        ; repart sur la queue blanche de la carte, que la collision ne
+        ; connait pas.
+        lda   #1
+        sta   terrainCollision.disabled
         rts
 
 stage.endTick.done
@@ -301,18 +416,184 @@ stage.setup
         ; l'ouverture ET au rechargement de checkpoint — stage.setup couvre
         ; les deux, comme au stage 1.
         _Obj_RunB ObjID_endstage,#endstage.INIT
+        ; la fin du jeu n'a pas commence (ouverture et retour au checkpoint)
+        clr   ending.on
+        clr   ending.music
+        clr   ending.hudOff
+        clr   ending.done
+        clr   ending.black
+        ldx   #ending.rowText
+        ldb   #64
+!       clr   ,x+
+        decb
+        bne   <
+        ; CE STAGE A SON BOSS : le Bydo core leve lui-meme le drapeau de fin
+        ; (40:C21C, 0x180 trames apres sa mort), jamais le compteur de
+        ; substitution.
+        lda   #1
+        sta   globals.realBoss
+        ; Ses creneaux sont residents et le crochet avant les lit a chaque
+        ; trame : eteints a l'ouverture ET au rechargement de checkpoint.
+        ldx   #bydo.slots
+!       clr   ,x
+        leax  6,x
+        cmpx  #bydo.slotsEnd
+        blo   <
         rts
 
-; Fin du stage 8 : la campagne est finie, retour au title.
+;*******************************************************************************
+; LE BYDO — ce qui doit etre RESIDENT (src/enemies/bydo/obj.asm)
+;
+; Ses boites (Collision_Do les parcourt avec une autre page montee), ses
+; creneaux de dessin et les deux boucles qui les dessinent : les Win par leur
+; renderer groupe (bydo.DrawAll, dans BuildSprites), la tete et les
+; tentacules par le crochet avant (stage.frameFront, apres les tuiles).
+;*******************************************************************************
+bydo.boxes
+        fill  0,5*9                    ; 4 Win, la bouche
+bydo.slots                             ; [on, x, y, imageset(2), page]
+        fill  0,4*6                    ; les Win
+bydo.slotsFront
+        fill  0,2*6                    ; les tentacules, puis la tete
+bydo.slotsEnd
+
+bydo.DrawAll
+        ldd   #bydo.slotsFront
+        std   bydo.DrawSlots.end
+        ldx   #bydo.slots
+        bra   bydo.DrawSlots
+stage.frameFront
+        ldd   #bydo.slotsEnd
+        std   bydo.DrawSlots.end
+        ldx   #bydo.slotsFront
+; X = the first slot, bydo.DrawSlots.end the end: every lit slot, its page
+; mounted (Y untouched: BuildSprites calls the first entry)
+bydo.DrawSlots
+        _GetCartPageA
+        sta   @page
+@loop   lda   ,x
+        beq   @next
+        stx   @slot
+        lda   5,x                        ; the picture's page
+        _SetCartPageA
+        ldd   1,x
+        ldx   3,x                        ; its imageset
+        pshs  a,b
+        _sprite.cull bydo.DrawSlots.off
+        lda   ,s
+        suba  imgset.center,x
+        ldb   1,s
+        pshs  x
+        jsr   DRS_XYToAddress
+        puls  x
+        ldx   14,x                       ; its routine
+        ldu   <glb_screen_location_2
+        jsr   ,x
+bydo.DrawSlots.off
+        leas  2,s
+        ldx   #0
+@slot   equ   *-2
+@next   leax  6,x
+        cmpx  #0
+bydo.DrawSlots.end equ *-2
+        blo   @loop
+        lda   #0
+@page   equ   *-1
+        _SetCartPageA
+        rts
+
+; Fin du stage 8 : la fin du jeu jouee, « ENJOY THE BONUS GAME AGAIN » —
+; la borne repart au stage 1 (le second tour), score garde.
 stage.handOver
         jsr   IrqOff
         ; Même geste qu'au stage 1 : la musique s'arrête avant l'échange, voir
         ; le commentaire de son handOver.
         jsr   ymm.stop                    ; lecteur resident : appel direct
 
-        clr   game.stage                   ; la partie est finie
-        clrb                               ; 0 : le title
+        ; le second tour : son compteur et sa difficulte sont poses par la
+        ; fin du jeu (ending/obj.asm, 40:EE7B)
+        clr   game.stage                   ; le second tour : le stage 1
+        ldb   #1
         jmp   game.stage.switch
+
+;*******************************************************************************
+; LA FIN DU JEU — ce qui doit etre RESIDENT (src/stages/08/ending/obj.asm)
+;
+; L'etat que la boucle lit (HUD coupe, noir, fin), les lignes ecrites par le
+; directeur (une case par ligne de tilemap arcade : rang de chaine + 1, 0 =
+; vide) et le defilement du texte. Le dessin monte la page du HUD, dont la
+; police peint le generique : les chaines doivent donc etre ICI.
+;*******************************************************************************
+ending.on      fcb   0
+ending.music   fcb   0                 ; le noyau : la musique de fin (0x1A)
+ending.hudOff  fcb   0
+ending.done    fcb   0
+ending.black   fcb   0
+ending.gc0     fdb   0                 ; la trame arcade du fondu (le noyau l'ecrit)
+ending.textY   fdb   0                 ; le Y du texte, entier 9 bits
+ending.row     fcb   0
+ending.rx      fdb   0
+ending.wy      fdb   0
+ending.rowText fill  0,64
+
+; ecran : y = (8 (ligne - 16) - Y) mod 512 en pixels arcade, une ligne dessinee
+; quand elle est entiere sur le champ (TO8 : 10 + 3y/4, lignes 11 a 190)
+ending.DrawText
+        _GetCartPageA
+        pshs  a
+        lda   #map.RAM_OVER_CART+common.hud.page
+        _SetCartPageA
+        ldx   #ending.rowText+16
+        lda   #16
+        sta   ending.row
+@loop   ldb   ,x
+        beq   @next
+        stx   ending.rx
+        lda   ending.row
+        suba  #16
+        ldb   #8
+        mul
+        subd  ending.textY
+        anda  #1                        ; mod 512
+        cmpd  #232
+        bhi   @skip
+        std   ending.wy                 ; 3y/4
+        aslb
+        rola
+        addd  ending.wy
+        lsra
+        rorb
+        lsra
+        rorb
+        addd  #10
+        cmpb  #11
+        blo   @skip
+        cmpb  #183
+        bhi   @skip
+        addb  #3                        ; the glyph's anchor is its 4th line
+        lda   #40
+        mul
+        addd  #$C000
+        tfr   d,u
+        ldb   [ending.rx]
+        decb
+        aslb
+        ldy   #ending.Strings
+        ldy   b,y
+        ldb   ,y+                       ; its column
+        leau  b,u
+        jsr   hud.drawStr
+@skip   ldx   ending.rx
+@next   leax  1,x
+        inc   ending.row
+        lda   ending.row
+        cmpa  #64
+        blo   @loop
+        puls  a
+        _SetCartPageA
+        rts
+
+        INCLUDE "src/stages/08/ending/text.asm"
 
 ;*******************************************************************************
 ; L'index d'objets et la wave — les données réelles du niveau 2

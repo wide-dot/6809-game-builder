@@ -42,7 +42,15 @@ rreactor.cycle  equ ext_variables+15   ; 15  le compteur de cycle (256)
 rreactor.prevP  equ ext_variables+16   ; 16  le potentiel au tick d'avant : une
                                        ;     baisse = un coup, la pose blanche
 
-rreactor.HP     equ 20                 ; 40:cbf3 : 20 PV (250 au second tour)
+rreactor.extra  equ ext_variables+17   ; 17  la reserve de PV (second tour)
+                                       ;     (18,19 : warship.age0, layer.asm)
+
+rreactor.HP     equ 20                 ; 40:cbf3 : 20 PV
+; 40:cbfe : 250 PV au second tour. Le potentiel d'une boite est un octet
+; SIGNE (1..126, struct_AABB.equ) : la boite en porte CAP, la reserve le
+; reste, et chaque tick la recharge de ce que les coups ont pris.
+rreactor.CAP    equ 125
+rreactor.HP2    equ 250
 
 ; react.Show — INSCRIRE une piece du groupe chez le manager des pieces
 ; mobiles (wsmgr.asm), qui la dessine par tranches de 16x12 au fond.
@@ -95,8 +103,14 @@ rreactor.Init
                                        ; les pieces mobiles du vaisseau derriere tout autre sprite
         stb   priority,u
         _Collision_AddAABB rreactor.AABB,AABB_list_ennemy
+        clr   rreactor.extra,u
         lda   #rreactor.HP
-        sta   rreactor.AABB+AABB.p,u
+        tst   globals.loop             ; cbf7 : second_loop -> 250 PV
+        beq   >
+        ldb   #rreactor.HP2-rreactor.CAP
+        stb   rreactor.extra,u
+        lda   #rreactor.CAP
+!       sta   rreactor.AABB+AABB.p,u
         sta   rreactor.prevP,u
         ldd   #rreactor.BODYBOX
         std   rreactor.AABB+AABB.rx,u
@@ -110,8 +124,10 @@ rreactor.Live
 !       clra
         std   layer.drop
         lda   rreactor.AABB+AABB.p,u
-        lbeq  rreactor.Boom
-
+        bne   >
+        tst   rreactor.extra,u         ; vide, mais la reserve reste : la
+        lbeq  rreactor.Boom            ; recharge de fin de tick le relance
+!
         jsr   layer.evenX
         pshs  d
         ldd   rreactor.mapX,u
@@ -165,7 +181,9 @@ rreactor.Live
         ldx   #react.sl.rear_reactor.0
         lda   rreactor.AABB+AABB.p,u   ; LE FLASH DE COUP : la pose blanche a la
         cmpa  rreactor.prevP,u         ; place du corps quand p a baisse
-        sta   rreactor.prevP,u
+        pshs  cc
+        jsr   rreactor.Refill          ; (pose aussi prevP)
+        puls  cc
         bhs   >
         ldx   #react.sl.rear_reactor_hit.0
         lda   rreactor.AABB+AABB.cx,u
@@ -174,6 +192,28 @@ rreactor.Live
 !       lda   rreactor.AABB+AABB.cx,u
         ldb   rreactor.AABB+AABB.cy,u
         jmp   react.Show
+
+; La reserve du second tour : p += min(CAP - p, reserve), la reserve
+; d'autant ; prevP = p. X est preserve.
+rreactor.Refill
+        ldb   rreactor.extra,u
+        beq   @done
+        lda   #rreactor.CAP
+        suba  rreactor.AABB+AABB.p,u   ; A = la place dans la boite
+        pshs  a
+        cmpb  ,s+
+        bls   @t                       ; la reserve tient : elle passe toute
+        tfr   a,b                      ; sinon la place seule
+@t      pshs  b
+        lda   rreactor.extra,u
+        suba  ,s
+        sta   rreactor.extra,u
+        lda   rreactor.AABB+AABB.p,u
+        adda  ,s+
+        sta   rreactor.AABB+AABB.p,u
+@done   lda   rreactor.AABB+AABB.p,u
+        sta   rreactor.prevP,u
+        rts
 
 ; A = la phase visee ; Z = 1 si elle vient d'etre franchie dans ce pas.
 ; Le tour de 64 peut s'enrouler dans le meme pas — d'ou les deux cas.

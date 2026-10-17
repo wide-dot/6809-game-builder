@@ -53,6 +53,7 @@ ranking.stageAdd EXTERNAL
 ; zero depuis ce stage (ranking.reset), et le GAME OVER arme lui-meme son
 ; morceau, puisqu'il vient desormais AVANT l'ecran CONTINUE.
 ranking.reset EXTERNAL
+ranking.resetHere EXTERNAL
 sounds.gameover.ymm EXTERNAL
 game.music.stop EXTERNAL
 
@@ -121,8 +122,10 @@ stage.main
         ; score vient de charger D = 1000 — A valait 3, la partie se jouait en
         ; difficulte 3 sans le savoir, et au palier 3 les Pata-Pata de l'ecran
         ; de score tirent (preset de tir 0 non vide des le palier 2, comme sur
-        ; la borne). Zero, tant que la rampe n'est pas portee.
+        ; la borne). Zero au premier tour, comme la borne (mesure MAME, DIP
+        ; normal) ; le second tour la passe a 2 (handOver du stage 8, 40:EE7B).
         clr   globals.difficulty
+        clr   globals.loop             ; le premier tour (0x2F42 = 0)
         ; Les vies vivent dans le bloc `globals`, pas dans le moteur : c'est la
         ; variable de la v1 (main.asm:127), celle que le HUD dessine. Deux, comme
         ; elle — le compteur du banc en faisait trois sans raison.
@@ -690,10 +693,10 @@ stage.frame.bgDone
         ; la passe ERASE est partie avec le chantier effacement.
         ;
         ; Garde a l'assemblage : stages 1 et 4 (le boss Compiler a son champ,
-        ; variant 1). Le stage 8 a son entree de wave commentee ; l'activer =
-        ; elargir CETTE garde et celle du spawner (le produit est nul si
-        ; STAGE_ID vaut l'un des stages a etoiles), et decommenter sa wave.
- IFEQ (STAGE_ID-1)*(STAGE_ID-4)
+        ; variant 1) et 8 (la sequence de fin, variant 3 : c'est l'objet de
+        ; fin qui l'arme, pas la wave — le spawner reste aux stages 1 et 4).
+        ; Le produit est nul si STAGE_ID vaut l'un des stages a etoiles.
+ IFEQ (STAGE_ID-1)*(STAGE_ID-4)*(STAGE_ID-8)
         lda   #map.RAM_OVER_CART+common.starfield.page
         ldx   #starfield.draw
         jsr   paged.call
@@ -755,6 +758,14 @@ stage.frame.noTiles
         bra   stage.overlay.off
 
 stage.overlay.normal
+ IFDEF stage.ENDING
+        ; LA SEQUENCE DE FIN n'a pas de bandeau (la borne le coupe, 0x2EBE = 0
+        ; en 0x40:EEC2) : ni HUD, ni masque — ses libelles (1P-, BEAM) font
+        ; partie de l'image du masque. Le tramage a noirci les bandes, rien
+        ; ne les repeint : les sprites sont tenus entiers dans le champ.
+        lda   ending.hudOff
+        lbne  stage.overlay.off
+ ENDC
         ; Le masque, par-dessus tout le reste — c'est l'ordre de la v1, ou il
         ; venait apres DrawSprites. Il couvre les bandes ou le scroll laisse
         ; ses artefacts, donc il doit etre le dernier a peindre.
@@ -1170,8 +1181,7 @@ stage.death.ready                      ; atteint aussi depuis le continue accept
         sta   globals.score+2
         std   globals.stageScoreBase
         sta   globals.stageScoreBase+2
-        ldb   game.stage
-        jsr   ranking.reset
+        jsr   ranking.resetHere        ; le stage courant, numero effectif
         ; La musique du stage reprend sa place (celle du continue tournait) :
         ; `_ymm.obj.play` coupe l'IRQ et ne la rend pas, le READY se joue en
         ; silence jusqu'au rechargement de checkpoint, qui la rallume — voir la
@@ -1429,6 +1439,15 @@ stage.frame.tiles
         jsr   DrawTilesCols
  ELSE
         jsr   DrawTiles
+ ENDC
+ IFDEF stage.FRONT
+        ; CE QUE LE STAGE PEINT SUR SES TUILES (16/10/2026) : le stage 8 y
+        ; dessine la tete et les tentacules du Bydo, des patchs du plan de
+        ; fond arcade. Ils suivent les tuiles, d'un cote des sprites ou de
+        ; l'autre (globals.tilesBehind : a la mort du noyau, la borne efface
+        ; les bits de priorite de tout son fond, patchs compris). Opt-in : un
+        ; stage sans stage.FRONT n'en paie rien.
+        jsr   stage.frameFront
  ENDC
 @done   rts
 

@@ -44,6 +44,7 @@ InitSequence
         lda   #SCORE_HOLD_FRAMES            ; arme la pause ecran noir post fade-out
         sta   scoreHold.timer
         clr   blackClear.pages
+        clr   globals.endFade
         ldd   #0
         std   readoutWait.timer
         rts
@@ -144,6 +145,12 @@ Tick
         inc   main.endstage.phase
         lbra  @none2
 @glide
+        ; LA FIN DU JEU ne s'arrete pas au bout de la carte : la borne defile
+        ; encore sous le fondu de son decor (0xC0 par trame) — pas d'attente
+        ; de camera, seulement le vaisseau a l'arret
+        lda   main.endstage.fadeMode
+        cmpa  #endstage.FADE_ENDING
+        beq   @still
         ; arm the fade only when BOTH buffers rest at the cap — the exact
         ; condition of Scroll's early-out (see obj_endstage.asm, the residue
         ; measured when DrawTiles repaints over the dissolve)
@@ -161,12 +168,12 @@ Tick
         ; au-dessus : des vitesses nulles = dans la zone morte, donc arrive.
         ; L'autopilote converge toujours (1 px par trame, sans obstacle), la
         ; condition ne peut pas bloquer la sequence.
-        ldd   player1+x_vel
+@still  ldd   player1+x_vel
         bne   >
         ldd   player1+y_vel
         bne   >
         lda   main.endstage.fadeMode
-        lbne  @paletteBlack
+        lbne  @paletteBlack                 ; voies palette et fin du jeu
         inc   main.endstage.phase           ; -> 3 : le PRE-FONDU, deux rendus sans
         lda   #2                            ; sprites ni managers, champ repeint,
         sta   prefade.timer                 ; vaisseau seul (cf. stage-main.asm)
@@ -181,7 +188,12 @@ Tick
         ; il n'a jamais disparu. Le releve, lui, attend SON heure arcade :
         ; endstage.READOUT_WAIT trames apres le noir (decision auteur,
         ; 08/09/2026 : la reapparition tout de suite, le decompte a l'heure).
-        lda   palettefade+routine
+        lda   main.endstage.fadeMode
+        cmpa  #endstage.FADE_ENDING
+        bne   >
+        lda   globals.endFade               ; fin du jeu : SON fondu, lance par
+        lbeq  @none2                        ; le noyau (40:C238), et fini
+!       lda   palettefade+routine
         cmpa  #o_fade_routine_idle
         lbne  @none2                        ; le fondu de mort n'est pas fini
         lda   #4
@@ -203,14 +215,23 @@ Tick
         jsr   InitFadeOut
         lbra  @none2
 @notPrefade
+        cmpa  #endstage.PHASE_ENDING
+        lbeq  @ending
         cmpa  #5
         lbhs  @scoreWait
         ; phase 4
         lda   main.endstage.fadeMode
         lbeq  @none2                         ; voie pixel : Blit dissout, attendre
+        cmpa  #endstage.FADE_ENDING
+        bne   >
+        lda   blackClear.pages              ; fin du jeu : le noir fait sur les
+        lbne  @none2                        ; deux tampons, le stage prend la
+        lda   #endstage.PHASE_ENDING        ; suite (pas de releve)
+        sta   main.endstage.phase
+        lbra  @none2
         ; voie palette : la palette remonte depuis Blit ; le releve attend son
         ; heure arcade (READOUT_WAIT trames apres le noir)
-        ldd   readoutWait.timer
+!       ldd   readoutWait.timer
         subd  gfxlock.frameDrop.count_w
         lbgt  @readoutWait
         lda   #1
@@ -236,6 +257,10 @@ Tick
         ldb   #endstage.STATUS_DONE
         rts
 @none2  ldb   #endstage.STATUS_NONE
+        rts
+@ending
+        ; voie de fin du jeu : le noir est fait, le stage prend la suite
+        ldb   #endstage.STATUS_ENDING
         rts
 
 * ---------------------------------------------------------------------------

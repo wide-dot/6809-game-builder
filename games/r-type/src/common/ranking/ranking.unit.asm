@@ -38,6 +38,7 @@
 
 ranking.insert     EXPORT
 ranking.reset      EXPORT
+ranking.resetHere  EXPORT
 ranking.stageAdd   EXPORT
 ranking.table      EXPORT
 ranking.stage      EXPORT
@@ -164,6 +165,10 @@ ranking.insert
 ; Appelée au SEMIS D'UNE PARTIE FRAÎCHE et au CONTINUE ACCEPTÉ, là où le score
 ; repart de zéro : ces seize cases décrivent UN crédit, pas la machine.
 ;-------------------------------------------------------------------------------
+; ranking.resetHere — la même chose depuis le stage COURANT, numéro effectif
+; (le continue accepté : le compteur de tours y est déjà avancé).
+ranking.resetHere
+        bsr   ranking.stageNo
 ranking.reset
         stb   ranking.firstStage       ; B = le premier stage du crédit (0..15)
         ldx   #ranking.stage
@@ -173,6 +178,18 @@ ranking.reset
         blo   @z
         clr   ranking.rank
         rts
+
+;-------------------------------------------------------------------------------
+; ranking.stageNo — B = le numéro EFFECTIF du stage courant, 0-base : la borne
+; ajoute 8 au second tour (40:f0c9, second_loop), d'où ses seize cases et ses
+; « STAGE 9 » à « STAGE 16 ». Le compteur de tours est globals.loop.
+;-------------------------------------------------------------------------------
+ranking.stageNo
+        ldb   game.stage
+        tst   globals.loop
+        beq   @rts
+        addb  #8
+@rts    rts
 
 ;-------------------------------------------------------------------------------
 ; ranking.stageAdd — cumuler une récompense dans la case du stage courant
@@ -192,7 +209,7 @@ ranking.reset
 ;-------------------------------------------------------------------------------
 ranking.stageAdd
         pshs  d,x
-        ldb   game.stage
+        bsr   ranking.stageNo
         cmpb  #ranking.STAGES
         bhs   @out                     ; hors table : on ne cumule rien
         lda   #3
@@ -392,7 +409,8 @@ ranking.timer.sub
         rts
 
 ranking.scr.reveal
-        lda   game.stage               ; les lignes : les stages du crédit…
+        lbsr  ranking.stageNo          ; les lignes : les stages du crédit…
+        tfr   b,a
         cmpa  #ranking.STAGES-1
         blo   >
         lda   #ranking.STAGES-1

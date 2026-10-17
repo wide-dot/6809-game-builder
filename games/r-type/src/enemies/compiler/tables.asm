@@ -1,15 +1,19 @@
 ; GENERE par tools/gen_compiler.py depuis la ROM arcade — ne pas editer.
 ; Repere ARCADE (x a droite, y vers le haut), valeurs non converties.
 
-; 1000:5844 la cadence des lasers (difficulte 0 ; 48/40/32/24)
-cpl.CADENCE  equ 48
-; 1000:5848 la vitesse du laser horizontal (difficulte 0), 8.8
-cpl.LASER_VX equ $0300
-; 8E10 + preset*6 : les seuils de tir des tourelles (difficulte 0)
-cpl.P30.THR  equ 128
-cpl.P30.RST  equ 192
-cpl.P40.THR  equ 64
-cpl.P40.RST  equ 128
+; 1000:5844 la cadence des lasers, par difficulte
+cpl.Cadence
+        fcb   48,40,32,24
+; 1000:5848 la vitesse du laser horizontal, par difficulte, 8.8
+cpl.LaserVx
+        fdb   $0300,$0380,$0400,$0480
+; 8E10 + difficulte*96 + preset*6 : les seuils de tir des tourelles,
+; par difficulte {preset 0x30 : seuil, remise ; preset 0x40 : idem}
+cpl.TurretPre
+        fdb   128,192,64,128
+        fdb   64,128,64,112
+        fdb   48,88,40,64
+        fdb   40,72,24,48
 
 ; 1000:5850 / 5860 les hauteurs du laser, piece droite puis gauche
 cpl.PoolR

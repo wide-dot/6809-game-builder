@@ -47,9 +47,6 @@
 ;   sur ce stage : la touche ne se voit donc pas. Le compteur est tenu quand
 ;   meme pour que le portage du clignotement soit un branchement, pas une
 ;   reecriture.
-; V2-DEVIATION: les PV arcade sont indexes par la difficulte (3/5/8/14). La v2
-;   n'a pas de selecteur de difficulte : on prend la premiere valeur, comme le
-;   reste du cast.
 ; ---------------------------------------------------------------------------
 
 AABB_0   equ ext_variables      ; AABB struct (9 bytes)
@@ -143,9 +140,21 @@ Init
         subd  #3
         std   y_pos,u
 
-        ; --- le preset de tir (f932 : seuils + vitesse, par difficulte)
-        ldb   subtype_w+1,u
-        _loadFirePreset
+        ; --- le preset de tir (f932 : 1000:9294, par DIFFICULTE seule — le
+        ; subtype n'y est pour rien, contrairement a load_fire_preset ; a la
+        ; difficulte 0 le Cytron ne tire pas) ; le compteur part de zero
+        ; (69a3 : +0x26 = 0)
+        ldx   #cytron.fire
+        ldb   globals.difficulty
+        aslb
+        aslb
+        abx
+        ldd   ,x
+        std   fireVelocityPreset,u     ; et fireThreshold,u
+        ldd   2,x
+        std   fireReset,u
+        ldd   #0
+        std   fireCounter,u
 
         ; --- le script de mouvement : le quartet HAUT du subtype le choisit.
         ; f95c : BX = (CL & 0xF0) >> 2, soit SEIZE variantes de 4 octets — et
@@ -190,7 +199,9 @@ Init
 
         ; --- la boite de collision (arcade 0x2E36 : -12..+12 sur les deux axes)
         _Collision_AddAABB AABB_0,AABB_list_ennemy
-        lda   #cytron_hitdamage
+        ldb   globals.difficulty       ; 6991 : PV par difficulte (1000:2D8C)
+        ldx   #cytron.hp
+        lda   b,x
         sta   AABB_0+AABB.p,u
         _ldd  cytron_hitbox_x,cytron_hitbox_y
         std   AABB_0+AABB.rx,u
@@ -351,3 +362,19 @@ PresetXYIndex ; 0x18dd0
 
 ; les scripts de mouvement, exportes de la rom arcade
         INCLUDE "src/enemies/cytron/movescript.asm"
+
+; les PV par difficulte (1000:2D8C, lus a 40:6991)
+cytron.hp
+        fcb   3,5,8,14
+; le tir par difficulte (1000:9294, load_cytron_fire_thresholds 40:f932),
+; au format de loadFirePreset : {vitesse, seuil}, remise a zero. La vitesse
+; arcade est un pointeur de table (0x8F90 + 0x40 n) : rang n + 1.
+cytron.fire
+        fcb   0,$00
+        fdb   $0000
+        fcb   2,$C0                    ; 0x8FD0
+        fdb   $0140
+        fcb   3,$40                    ; 0x9010
+        fdb   $0080
+        fcb   5,$28                    ; 0x9090
+        fdb   $0048

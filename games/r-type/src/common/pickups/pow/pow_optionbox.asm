@@ -75,7 +75,7 @@ Live
         cmpa  #3                        ; Speed ?
         beq   @speed
         cmpa  #7                        ; Missiles ?
-        beq   @missiles
+        lbeq  @missiles
         cmpa  #1                        ; Counter-ground laser ?
         beq   >
         lda   #2                        ; reste : subtype 4 = counter-air (les subtypes sans
@@ -101,6 +101,7 @@ Live
         inca
         sta   globals.forcepodlevel
 !
+        _difficulty.update              ; le Force compte dans la difficulte
         ; LE MEME SON POUR TOUT BONUS RAMASSE (decision auteur, 04/09/2026) :
         ; lasers, vitesse, missiles — et le bit device, qui le joue lui-meme
         ; (bitdevice/obj.asm). Seule la sortie par la gauche ne passe pas ici.
