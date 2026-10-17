@@ -27,6 +27,7 @@ terrainCollision.nerves EXPORT
         INCLUDE "engine/system/to8/map.const.asm"
 
 lvlMapWidth equ 66 ; stage 01 width
+TERRAIN_LEFT_MARGIN equ 1 ; les sondes a gauche du viewport lisent la vraie colonne
 ; La borne d'impact du moteur de collision, en px : la v1 la posait dans son
 ; game mode (1584 = 132 colonnes x 12 px, le niveau entier). Equate
 ; d'assemblage, locale a l'unite — le map_width du resident est un defaut que

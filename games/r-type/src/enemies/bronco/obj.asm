@@ -1658,8 +1658,10 @@ bro.Publish
         aslb
         ldx   #bro.SegSets
         ldx   b,x
-        lda   #map.RAM_OVER_CART+bro.PG_MAIN
+        lda   #map.RAM_OVER_CART+bro.PG_LAMP
         jsr   bro.Slot
+        inc   ,u                         ; 2 : the lamps carry their 1 px
+                                         ; shifted variant (bronco.DrawAll)
         tfr   y,d
         subd  #bro.Segs
         jsr   bro.SegRank

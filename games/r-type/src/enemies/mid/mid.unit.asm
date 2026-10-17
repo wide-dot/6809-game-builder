@@ -1,7 +1,11 @@
 ;*******************************************************************************
-; Le lot F de la bibliothèque : mid, en squelette (voir obj.asm).
-; Même charpente que le cast du stage 2 : le bouchon compte le spawn dans
-; les témoins du banc puis rend le slot.
+; mid — the stage 5 and 7 spinning vessel and its horizontal laser, one
+; direntry of the shared library (lib.mid, arena `enemies`)
+;
+; The laser is the same object born with its father's id and a marked
+; subtype: one entry, one page, nothing to align between the two stages'
+; object ids. The entry is the FIRST byte of the unit
+; (docs/lang/en/migration/unit-entry-point.md). Porting sheet: obj.asm.
 ;*******************************************************************************
 
 mid.Object EXPORT
@@ -10,16 +14,18 @@ mid.Object EXPORT
 
  SECTION code
 
-        INCLUDE "src/common/bench.const.asm"
-
-lib.mid.stub
-        ldd   bench.spawns              ; temoin du banc : ce spawn a eu lieu,
-        addd  #1                        ; atteint par l'index du stage charge
-        std   bench.spawns
-        lda   bench.stage
-        sta   bench.spawnStage
-        jsr   UnloadObject_u            ; implementation vide : rendre le slot
-        rts
+        INCLUDE "engine/system/to8/memory-map.equ"
+        INCLUDE "src/common/engine/ram.const.asm"
+        INCLUDE "engine/constants.asm"
+        INCLUDE "engine/macros.asm"
+        INCLUDE "engine/collision/macros.asm"
+        INCLUDE "engine/collision/struct_AABB.equ"
+        INCLUDE "engine/system/to8/map.const.asm"
+        ; the common ids (explosion) are the same in every stage
+        INCLUDE "src/stages/01/objid.const.asm"
+        INCLUDE "src/enemies/enemies_properties.asm"
+        INCLUDE "src/common/fx/explosion/explosion.const.asm"
+        INCLUDE "src/common/state/variables.asm"
 
         INCLUDE "src/enemies/mid/obj.asm"
 

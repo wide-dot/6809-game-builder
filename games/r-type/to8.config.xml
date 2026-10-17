@@ -2443,11 +2443,55 @@
                         </gfxcomp>
                     </lwasm>
                 </file>
-                <!-- mid n'existe pas encore : squelette, l'implementation viendra de
-                     la reference arcade. -->
-                <file name="lib.mid" arena="enemies" codec="none">
+                <!-- Le Mid (stages 5 et 7) et son laser horizontal, le meme objet :
+                     huit poses et quatre images de laser, sur les couleurs
+                     communes (tools/arcade_to_sprites.py mid), decalage 0 seul :
+                     il vole, comme le Scant. -->
+                <file name="lib.mid" linkdata="DATA" arena="enemies">
                     <lwasm gensource="gen/enemies/mid.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
                         <asm filename="src/enemies/mid/mid.unit.asm"/>
+                        <gfxcomp file="lib.mid" gendir="gen/enemies/mid"
+                                gensource="gen/enemies/mid/includes.asm"
+                                genindex="gen/enemies/mid/index.asm">
+                            <image name="mid_0" filename="src/enemies/mid/images/default/00.png" index="0">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="mid_1" filename="src/enemies/mid/images/default/01.png" index="1">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="mid_2" filename="src/enemies/mid/images/default/02.png" index="2">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="mid_3" filename="src/enemies/mid/images/default/03.png" index="3">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="mid_4" filename="src/enemies/mid/images/default/04.png" index="4">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="mid_5" filename="src/enemies/mid/images/default/05.png" index="5">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="mid_6" filename="src/enemies/mid/images/default/06.png" index="6">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="mid_7" filename="src/enemies/mid/images/default/07.png" index="7">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="midlaser_0" filename="src/enemies/mid/images/laser/00.png" index="8">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="midlaser_1" filename="src/enemies/mid/images/laser/01.png" index="9">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="midlaser_2" filename="src/enemies/mid/images/laser/02.png" index="10">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="midlaser_3" filename="src/enemies/mid/images/laser/03.png" index="11">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
                     </lwasm>
                 </file>
 
@@ -5214,6 +5258,38 @@
                     </gfxcomp>
                 </file>
 
+                <!-- le FAST (src/enemies/fast/) : le chasseur leger du stage 7,
+                     sa pose et sa variante decalee d'un pixel -->
+                <file name="stage7.fast" linkdata="DATA" arena="stage7.foes">
+                    <lwasm gensource="gen/enemies/stage7-fast.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <asm filename="gen/directories/dir7/entries.asm"/>
+                        <asm filename="src/enemies/fast/fast.unit.asm"/>
+                        <gfxcomp file="stage7.fast" gendir="gen/enemies/stage7-fast"
+                                 gensource="gen/enemies/stage7-fast/includes.asm"
+                                 genindex="gen/enemies/stage7-fast/index.asm">
+                            <images dir="src/enemies/fast/images/animation" names="fast" shifts="0,1"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <!-- le BOLDO (src/enemies/boldo/) : l'obstacle flottant, ses quatre
+                     tranches de 12 px (tools/gen_boldo_slices.py) et leur variante
+                     decalee d'un pixel (la place des panneaux, decision auteur) -->
+                <file name="stage7.boldo" linkdata="DATA" arena="stage7.foes">
+                    <lwasm gensource="gen/enemies/stage7-boldo.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <asm filename="gen/directories/dir7/entries.asm"/>
+                        <asm filename="src/enemies/boldo/boldo.unit.asm"/>
+                        <gfxcomp file="stage7.boldo" gendir="gen/enemies/stage7-boldo"
+                                 gensource="gen/enemies/stage7-boldo/includes.asm"
+                                 genindex="gen/enemies/stage7-boldo/index.asm">
+                            <images dir="src/enemies/boldo/images/slices" names="boldo" shifts="0,1"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <file name="stage7.maps" linkdata="DATA" bake="all" arena="stage7.gfx">
                     <lwasm gensource="gen/stages/07/stage7-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
@@ -5241,7 +5317,6 @@
                         <gfxcomp file="stage7.bronco" gendir="gen/enemies/stage7-bronco"
                                  gensource="gen/enemies/stage7-bronco/includes.asm"
                                  genindex="gen/enemies/stage7-bronco/index.asm">
-                            <images dir="src/enemies/bronco/images/segment" names="bronco_segment"/>
                             <images dir="src/enemies/bronco/images/main_head" names="bronco_main_head"/>
                             <images dir="src/enemies/bronco/images/main_head_flash" names="bronco_main_head_flash"/>
                             <images dir="src/enemies/bronco/images/main_arm0" names="bronco_main_arm0"/>
@@ -5252,6 +5327,21 @@
                             <images dir="src/enemies/bronco/images/main_arm1_flash" names="bronco_main_arm1_flash"/>
                             <images dir="src/enemies/bronco/images/main_arm2_flash" names="bronco_main_arm2_flash"/>
                             <images dir="src/enemies/bronco/images/main_arm3_flash" names="bronco_main_arm3_flash"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- les lampes de Bronco (les trappes d'ou tombent les debris) et
+                     leur variante decalee d'un pixel : leur propre page, bronco
+                     ne tenait plus dans la sienne avec elles -->
+                <file name="stage7.bronco.lamps" linkdata="DATA" arena="stage7.foes">
+                    <lwasm gensource="gen/enemies/stage7-bronco-lamps.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <gfxcomp file="stage7.bronco.lamps" gendir="gen/enemies/stage7-bronco-lamps"
+                                 gensource="gen/enemies/stage7-bronco-lamps/includes.asm"
+                                 genindex="gen/enemies/stage7-bronco-lamps/index.asm">
+                            <images dir="src/enemies/bronco/images/segment" names="bronco_segment" shifts="0,1"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
@@ -5340,8 +5430,11 @@
                     <load name="stage7.wave"/>
                     <load name="stage7.bronco"/>
                     <load name="stage7.bronco.junk"/>
+                    <load name="stage7.bronco.lamps"/>
                     <load name="stage7.bronco.chaser"/>
                     <load name="stage7.collision"/>
+                    <load name="stage7.fast"/>
+                    <load name="stage7.boldo"/>
                     <load name="stage7"/>
                     <load name="stage7.bugres"/>
 </scene>

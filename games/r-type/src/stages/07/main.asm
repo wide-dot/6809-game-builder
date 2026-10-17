@@ -17,6 +17,10 @@ STAGE_SCENE equ scenes.stage7
 ; La carte de ce stage est en colonnes creuses (<tilecols> dans le config) :
 ; stage-main.asm appelle ScrollCols/DrawTilesCols et pose tilemap.mode.
 stage.TILES_COLS equ 1
+; Le Fast, dans son direntry (stage7.fast).
+fast.Object       EXTERNAL
+; Le Boldo, dans son direntry (stage7.boldo).
+boldo.Object      EXTERNAL
 
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT
@@ -369,6 +373,7 @@ bronco.DrawAll
         ldx   #bronco.slots
 @loop   lda   ,x
         beq   @next
+        sta   @shift                     ; 2 : the cell has its ND1 variant
         stx   @slot
         lda   5,x                        ; the cell's page
         _SetCartPageA
@@ -382,8 +387,20 @@ bronco.DrawAll
         pshs  x
         jsr   DRS_XYToAddress
         puls  x
-        ldx   14,x                       ; its routine
-        ldu   <glb_screen_location_2
+        ; the lamps (slot at 2) carry their 1 px shifted variant (ND1, its
+        ; routine at 17): on the odd x, as BuildSprites picks it (x ^ centre)
+        lda   #0
+@shift  equ   *-1
+        cmpa  #2
+        bne   @nd0
+        lda   ,s
+        eora  imgset.center,x
+        bita  #1
+        beq   @nd0
+        ldx   17,x                       ; ND1
+        bra   @draw
+@nd0    ldx   14,x                       ; its routine
+@draw   ldu   <glb_screen_location_2
         jsr   ,x
 bronco.DrawAll.off
         leas  2,s

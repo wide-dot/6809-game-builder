@@ -284,6 +284,14 @@ terrainCollision.yOffset equ *-22 ; minus vertical viewport position * 2
         fdb   30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth
  ENDC
         
+ IFDEF TERRAIN_LEFT_MARGIN
+        ; V2-DEVIATION 2026-10-17 : the eight entries left of the viewport
+        ; offset (screen x 0..7 with a small sub-tile rest), which v1 left to
+        ; whatever precedes the table (the tail of yOffset : a column far
+        ; ahead). The arcade probe reads the real column there (fast, stage 7) :
+        ; the previous map byte, its last three tiles (masks below).
+        fcb   $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF
+ ENDC
 terrainCollision.xOffset equ *-8 ; minus horizontal viewport position
         fcb   0,0,0 ; x_pos 0
         fcb   0,0,0
@@ -352,6 +360,9 @@ terrainCollision.xOffset equ *-8 ; minus horizontal viewport position
         fcb   7,7,7
  ENDC
 
+ IFDEF TERRAIN_LEFT_MARGIN
+        fcb   $04,$04,$02,$02,$02,$01,$01,$01 ; tiles 5, 6, 7 of that byte
+ ENDC
 terrainCollision.xMask equ *-8 ; minus horizontal viewport position
         fcb   $80,$80,$80 ; x_pos 0
         fcb   $40,$40,$40

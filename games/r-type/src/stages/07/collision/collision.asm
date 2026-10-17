@@ -22,6 +22,7 @@ terrainCollision.unit EXPORT
         INCLUDE "engine/system/to8/map.const.asm"
 
 lvlMapWidth equ 48 ; stage 07 width (terrain.asm v1)
+TERRAIN_LEFT_MARGIN equ 1 ; les sondes a gauche du viewport lisent la vraie colonne
 ; La borne d'impact, en px : la largeur de la carte de CE stage.
 map_width   equ 96*12
 

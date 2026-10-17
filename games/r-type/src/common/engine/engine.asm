@@ -21,6 +21,9 @@ ENGINE_RESIDENT equ 1
 ; (Scroll, DrawTiles, tilemap.patch.dense — 476 o) ne sont pas assemblees,
 ; scroll-map-buffered-even.asm ne fournit que ses variables et InitScroll.
 TILEMAP_DENSE_OFF equ 1
+; Une ligne de wave par trame au plus, comme tick_object_wave de la borne : des
+; lignes simultanees naissent a une trame d'ecart, dans l'ordre de la table.
+OBJECTWAVE_ONE_PER_FRAME equ 1
 
  SECTION code
 
@@ -269,12 +272,12 @@ AABB_list_armor              fdb   0,0
 ; mode v1 (Collision_ClearLists, main.asm) : les listes vivent ici, leur
 ; nettoyage aussi.
 Collision_ClearLists
-        ldd   #0
+        clra
+        clrb
         ldy   #AABB_list_friend
-        ldx   #9*2                     ; neuf listes de deux mots
 !       std   ,y++
-        leax  -1,x
-        bne   <
+        cmpy  #AABB_list_friend+9*4    ; neuf listes de deux mots
+        blo   <
         ; LA TABLE DU MANAGER DE TIRS SE VIDE AVEC LES TETES — ici meme, pour
         ; que CHAQUE appelant obtienne l'invariant sans y penser. Ses boites
         ; sont chainees dans AABB_list_foefire : vider les tetes en laissant
@@ -628,7 +631,8 @@ Collision_OnLoose
 ; InitGlobals ne les pose que sous ifdef DrawSprites (pack bg-erase) — il
 ; savait deja que la convention change ; ce talon les fixe explicitement.
 InitDrawSprites
-        ldd   #0
+        clra
+        clrb
         std   glb_camera_x_offset
         std   glb_camera_y_offset
         rts

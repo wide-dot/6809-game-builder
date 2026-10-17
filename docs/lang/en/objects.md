@@ -165,6 +165,15 @@ tile. The resident half (`terrainCollision.main.asm`) mounts the page per
 call. A sensor at x maps to column `(x-8)/24` and tile `((x-8)%24)/3`, and a
 scan reports a wall's left edge as `col*24 + tile*3 + 8`.
 
+The column tables start at the viewport's left edge, screen x 8. A sensor in
+the eight pixels left of it (an enemy probing ahead of itself as it leaves the
+screen) indexes before the tables, into whatever precedes them. Define
+`TERRAIN_LEFT_MARGIN` in the terrain unit and eight more entries are assembled
+there (16 bytes per unit), reading the previous map byte : the column that is
+really there, which is what the arcade's probe reads too. Without the define
+the unit is v1's byte for byte. A sensor further left than the camera's
+sub-tile rest still wraps the byte index : clamp it to the camera.
+
 One thing v2 makes explicit that v1 hid : the mounted code reads the resident
 sensors and boss-follow state directly. Under `undefextern` that coupling was
 invisible ; here the terrain unit declares eight `EXTERNAL`s and the game
@@ -177,6 +186,14 @@ spawns each one when `gfxlock.frame.gameCount` reaches its timestamp. A spawn
 that lands n frames late carries n in `wave_frame_drop`, which is how a wave
 stays in step with the arcade timeline across dropped frames. `subtype_w` is
 16 bits and overlaps `render_flags` : read it before setting them.
+
+Define `OBJECTWAVE_ONE_PER_FRAME` (r-type does) and `ObjectWave` fires at most
+one entry per frame, like the R-Type arcade's wave tick : an entry fires on
+frame `max(timestamp, previous fire + 1)`, so entries sharing a timestamp are
+spread one frame apart in table order, and `wave_frame_drop` counts from the
+frame it actually fired on. It costs 26 bytes and nothing while no entry is
+due. An enemy whose behaviour reads the arcade's frame counter (a parity, a
+seed) needs it : it is born on the arcade's frame, not the table's.
 
 `AutoScroll` moves the camera by an 8.8 step with a carried remainder, one of
 four directions, for a set number of frames, and disarms itself at the

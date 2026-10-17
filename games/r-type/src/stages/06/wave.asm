@@ -116,6 +116,11 @@
 ;$13,$14,ObjID_newt,$00,$10
 	fcb   $13,$18,ObjID_pow,$00,$37
 ;$13,$88,ObjID_39,$00,$00
+;   (ObjID 39, 40:F366 : la transition musicale de la borne — au premier
+;   appel 0x21 puis 0x20 384 trames apres, ensuite les pieces du stage, table
+;   0x8C16 tout de suite et 0x8C0C 256 trames apres (stage 7 : 0x15 a 4800,
+;   0x14 a 5056, mesure sous MAME). Notre arrangement ADNZ n'a qu'un morceau
+;   par stage : pas de piece de transition a jouer.)
 ;$13,$C4,ObjID_dop,$00,$2A
 ;$14,$98,ObjID_newt,$00,$17
 ;$14,$A0,ObjID_newt,$00,$10

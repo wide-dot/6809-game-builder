@@ -41,6 +41,7 @@ BG_OWN_CAMERA equ 1
         INCLUDE "src/stages/03/collision/collision.equ"
 
 lvlMapWidth equ 48 ; stage 03 width (terrain.asm v1)
+TERRAIN_LEFT_MARGIN equ 1 ; les sondes a gauche du viewport lisent la vraie colonne
  IFNE lvlMapWidth-bship.COLSTRIDE
         ERROR le stride du plan de fond a derive de lvlMapWidth
  ENDC

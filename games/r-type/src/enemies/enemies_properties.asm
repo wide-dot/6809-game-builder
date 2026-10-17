@@ -203,6 +203,25 @@ mikun_hitbox_x		equ 3
 mikun_hitbox_y		equ 7
 mikun_hitdamage		equ 1
 
+; Fast (stage 7). Boite arcade 1000:39AC : f4 ff 0c 00 des deux cotes, soit
+; -12..+12 : 12 x 0,375 = 4,5 -> 4 en X, 12 x 0,75 = 9 en Y. Mort au premier
+; coup (do_collision_v1), score $86EC.
+fast_hitbox_x		equ 4
+fast_hitbox_y		equ 9
+fast_hitdamage		equ 1
+
+; mid (1000:29CA : +/-9, +/-5) et son laser (1000:84FE : +/-16, +/-4)
+mid_hitbox_x		equ 3
+mid_hitbox_y		equ 4
+mid_hitdamage		equ 1
+midlaser_hitbox_x	equ 6
+midlaser_hitbox_y	equ 3
+
+; Boldo (stage 7). Boite arcade 1000:3072 : +/-56, +/-18 -> rayons 21 et
+; 13 (13,5). 200 PV (6eb6), portes par la boite (125) et une reserve.
+boldo_hitbox_x		equ 21
+boldo_hitbox_y		equ 13
+
 ; Outslay (stage 2). Boite arcade 1000:427c : 16x16 centree, soit 8 px de
 ; demi-cote -> 8 x 0.375 = 3 en X et 8 x 0.75 = 6 en Y... mais l'arcade
 ; compte en pixels arcade et la boite v2 en pixels larges : la demi-largeur
