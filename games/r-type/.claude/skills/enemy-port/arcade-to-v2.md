@@ -413,6 +413,47 @@ que `obj_endlevel` honore désormais avant son combat de substitution.
   dans le subtype.
 - Plafond : les ObjID d'un ensemble co-chargeable ≤ 127 (`RunObjects`
   indexe par `id*2` sur 8 bits).
+- **Une ligne par trame** (17/10/2026) : la borne ne tire qu'une ligne de
+  wave par trame (tick_object_wave 40:1BA7) ; r-type pose
+  `OBJECTWAVE_ONE_PER_FRAME`, des lignes simultanées naissent donc à une
+  trame d'écart, et `wave_frame_drop` compte depuis la trame de naissance
+  réelle. Un objet qui retrouve sa ligne par l'heure (`gameCount −
+  wave_frame_drop`) doit être indexé par CETTE trame : son générateur
+  simule la file sur toute la table.
+- **L'origine du compteur global d'un stage** est celle de `frame_time`
+  (0x2F4A, demi-trames) : la trame où son entier vaut le début du stage.
+  Lire son octet décimal dans une trace (`PILOT_PEEK=2f4a`) : s'il vaut $80
+  à l'état d'entrée de référence, l'origine est une trame AVANT (stage 7 :
+  63830, pas 63831). Une parité ou une graine tirée du compteur en dépend.
+
+## L'enfant d'un ennemi de bibliothèque : l'identifiant du père (17/10/2026)
+
+Un ennemi de l'arène commune (`enemies`) sert plusieurs stages dont les
+identifiants d'objets diffèrent (le Mid : 37 au stage 5, 41 au stage 7). Son
+enfant (le laser) n'a pas besoin d'identifiant à lui : il naît avec celui de
+son père (`lda id,u` / `sta id,x`) et un sous-type marqué ($FF en octet
+haut), et l'Init du même objet aiguille sur ce marqueur. Même unité, même
+page, même `Img_Page_Index` : rien à aligner entre les stages, aucune ligne
+d'index. Le retard de l'enfant = les trames qui restent dans le rendu du
+père après celle de la naissance (`n − 1`) ; il tourne dans le même passage
+de `RunObjects` (les nouveaux objets sont ajoutés en fin de liste).
+
+## Un trajet sans hasard se précalcule (17/10/2026)
+
+Avant de porter une logique qui sonde le décor à chaque trame, se demander
+si le trajet ne dépend que de la naissance. Les conditions :
+- aucun tirage ;
+- aucune entrée du joueur dans le mouvement ;
+- un décor et une caméra fonctions de l'horloge seule ;
+- une naissance fixée par la wave, reprise au checkpoint comprise.
+
+Si c'est le cas, un générateur rejoue la borne hors ligne et n'écrit que les
+changements, `{trame, état}` ; le runtime avance et compare une horloge.
+C'est ce qu'ont reçu les Dops et les Newts du stage 6
+(`tools/gen_stage6_paths.py`) : leur coût a disparu, et une valeur que le
+runtime ne pouvait pas connaître (une fraction héritée d'un enregistrement
+recyclé) y est cuite depuis la partie de référence. Méthode :
+`doc/fidelite-arcade.md`, « Quand le trajet ne dépend que de la naissance ».
 
 ## L'attribut de SpriteRecipe, et la profondeur (décodé le 21/08/2026)
 

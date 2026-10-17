@@ -172,6 +172,12 @@ stage.stateKept
         clr   globals.realBoss         ; par defaut : le combat de substitution
         clr   globals.plainBackdrop    ; le decor reprend ses droits
         clr   globals.tilesBehind      ; ... et repasse DEVANT les sprites
+ IFDEF stage.TILES_BEHIND
+        ; ... sauf sur un stage dont TOUTES les cellules sont en priorite 0
+        ; a la borne (stage 6 : ses 1 842 cellules pleines du plan avant) :
+        ; le decor y passe sous les sprites du debut a la fin.
+        inc   globals.tilesBehind
+ ENDC
         clr   globals.tilesDrop        ; ... a sa hauteur (scroll_vp_y_pos = 11)
         clr   globals.foeBgSolid       ; le fond n'est du sol pour les ennemis
                                        ; terrestres que la ou le stage le dit
@@ -740,6 +746,13 @@ stage.frame.faded
         ; tuiles et tout le plan passe sous les sprites (etude : doc/etude-
         ; priorite-tilemap-2026-09.md). Un tst par trame ; le dessin des tuiles
         ; est une sous-routine appelee d'un des deux cotes de BuildSprites.
+ IFDEF stage.TILES_PRIO
+        ; LA PRIORITE PAR CELLULE (17/10/2026) : sur un stage qui la declare,
+        ; les tuiles de priorite 0 a la borne vivent dans une seconde table
+        ; (<tilecols behind=...>, map.even.behind / map.odd.behind), peinte
+        ; ICI, avant les sprites ; le reste suit le chemin ordinaire.
+        jsr   stage.frame.tilesBack
+ ENDC
         lda   globals.tilesBehind
         beq   >
         jsr   stage.frame.tiles
@@ -1355,7 +1368,15 @@ stage.checkpointReset
         ; bitmap des patches survivait a la mort.)
         jmp   bship.patch.reset
  ELSE
+ IFEQ STAGE_ID-6
+        ; Le stage 6 y libere les places de boites de ses Dops de la wave : la
+        ; purge d'objets du checkpoint les efface sans passer par leur code
+        ; (src/enemies/dop/dops.asm).
+        clr   dops.used
         rts
+ ELSE
+        rts
+ ENDC
  ENDC
  ENDC
 
@@ -1475,5 +1496,41 @@ stage.frame.tiles
         jsr   stage.frameFront
  ENDC
 @done   rts
+
+ IFDEF stage.TILES_PRIO
+* ---------------------------------------------------------------------------
+* stage.frame.tilesBack — les cellules DERRIERE les sprites (17/10/2026)
+*
+* La borne range la priorite par cellule (bits 6-7 de l'attribut, groupe 0 de
+* MAME = derriere les sprites). Les stages 7 et 8 melangent les deux : murs
+* bleus des couloirs du 7 derriere, machinerie devant ; au 8, le mur du fond
+* de la salle du noyau derriere (tools/gen_tile_priority.py, doc/etude-
+* priorite-tilemap-2026-09.md §8). <tilecols behind=...> sort ces cellules
+* dans une seconde table de meme forme : on la donne a DrawTilesCols a la
+* place de la table de la parite courante, le temps d'un appel. Memes gardes
+* que stage.frame.tiles ; un prologue et un en-tete par colonne visible de
+* plus, ~350 cycles par trame.
+* ---------------------------------------------------------------------------
+stage.frame.tilesBack
+        lda   stage.overlayPhase
+        cmpa  #endstage.PHASE_FADE
+        bhs   @done
+        lda   globals.plainBackdrop
+        bne   @done
+        lda   #1
+        sta   glb_camera_move
+        ldx   tile_buffer              ; la table de la parite courante...
+        pshs  x
+        cmpx  scroll_map_even
+        bne   @odd
+        ldx   #map.even.behind         ; ... et sa jumelle
+        bra   @draw
+@odd    ldx   #map.odd.behind
+@draw   stx   tile_buffer
+        jsr   DrawTilesCols
+        puls  x
+        stx   tile_buffer
+@done   rts
+ ENDC
 
 

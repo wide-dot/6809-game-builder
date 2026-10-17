@@ -1079,9 +1079,39 @@ un vidage de la RAM de tuiles (`PILOT_TILEDUMP`) et le modèle Python
 du TO8 rend les mêmes réponses dans l'arène ; le port sonde cette carte en
 coordonnées arcade (tranche assemblée par `INCLUDEBIN` à offset). IDENTIQUE
 au premier passage sous toje : combat complet (421 rendus) et mise à mort
-(448 rendus) ; le stage 6 passe au 7. Les 45 Dops ordinaires de la wave du
-stage 6 restent à brancher. Le clignotement de coup est une image par sens
-(16 poses ne tiennent pas dans la page).
+(448 rendus) ; le stage 6 passe au 7. Le clignotement de coup est une image
+par sens (16 poses ne tiennent pas dans la page).
+
+**Les Dops ordinaires et le Newt du stage 6 (17/10/2026)**
+(`src/enemies/dop/dops.asm`, `src/enemies/newt/`, unité `stage6.cast`) :
+45 + 23 lignes de wave, TRAJETS PRÉCALCULÉS. Ni l'un ni l'autre ne tire au
+hasard, la carte est fixe et la caméra vaut min(g/2, 2684), donc tout le
+trajet découle de la naissance. `tools/gen_stage6_paths.py` rejoue
+`run_dop`/`run_newt` hors ligne et n'écrit que les virages, les sorties et
+les gigues d'un Newt coincé (`src/stages/06/paths.asm`, 806 entrées,
+2,8 Ko, auto-vérifié). Le runtime fait un pas et une comparaison par trame,
+sans sonde. Fenêtre g 1500-2000 : 5,88 img/s en sondant, 6,69 avec un cache
+de sondes, **8,63 précalculé = la cadence du stage sans eux**. La fraction
+de y qu'un Newt hérite de l'occupant précédent de son enregistrement (que
+le runtime ne peut pas connaître) vient de la partie de référence. Sous
+toje, IDENTIQUES à la borne : Dops 118 rendus, Newts 136, 0 écart. Méthode
+et critères : `games/r-type/doc/fidelite-arcade.md`, « Quand le trajet ne
+dépend que de la naissance ».
+
+**Décor devant ou derrière les sprites, cellule par cellule (17/10/2026)**.
+La priorité arcade relevée sur la ROM (bits 6-7 de l'attribut de chaque
+cellule) : stages 1 à 5 tout devant (ce que le port faisait), stage 6 TOUT
+derrière, stages 7 et 8 mélangés (au 7, murs bleus derrière et machinerie
+devant ; au 8, dont le décor est le plan ARRIÈRE arcade, seulement le mur du
+fond de la salle du noyau derrière). Stage 6 : `stage.TILES_BEHIND` lève
+`globals.tilesBehind` à l'entrée, coût nul. Stages 7-8 : `<tilecols
+behind=masque>` (masque par `tools/gen_tile_priority.py`) sort les cellules
+« derrière » dans une seconde table de même forme, que
+`stage.frame.tilesBack` (`stage.TILES_PRIO`) donne à `DrawTilesCols` avant
+les sprites. Le moteur résident n'est pas touché ; coût estimé à ~350 cycles
+par trame. Seul écart : 10 et 12 tuiles du plan impair, des raccords d'un
+pixel, rangées à la majorité. Détail : `games/r-type/doc/etude-priorite-
+tilemap-2026-09.md` §8 ; manuel `tilemaps.md`.
 
 **Bronco (boss du stage 7) porté 1:1 le même jour** (`src/enemies/bronco/`,
 wave `$11A0`) : gestionnaire minuté, cinq lampes, débris lâchés au hasard,
@@ -1147,6 +1177,81 @@ identique à celui que le wick avait recopié à la main). Cadence du stage
 −8 %, −17 % au plus chargé (14 émetteurs, ~10 Mikun) ; une pose coûte 559
 cycles en moyenne. Le stage 8 est entièrement porté, à l'exception des
 palettes cycliques (écart documenté).
+
+**Les panneaux de la ville du stage 7 : abandonnés (17/10/2026, décision
+auteur)**. Portés puis retirés le même jour : les débris que la borne écrit
+dans son plan avant sont visuels à 98 % (610 de leurs 625 cellules tombent
+sur du mur), et la cascade d'explosions sortait de l'écran (panneaux collés
+aux bords, notre moteur jette un sprite qui n'est pas entier). Restait une
+vraie zone mortelle de 64x64 (40:8D31, 32 trames, ~21 lignes dans le
+couloir) : abandonnée avec le reste. Leurs 30 lignes de wave restent,
+branchées sur l'objet vide (la file d'une ligne par trame les compte). La
+place va aux variantes décalées d'un pixel du Boldo et des lampes de Bronco
+(`stage7.bronco.lamps`, leur page à elles ; `bronco.DrawAll` prend ND1 sur
+x impair pour un créneau marqué 2). Le mode `<tilepatch columns>` qui
+portait les débris n'a pas été gardé.
+
+**Le Fast du stage 7 (17/10/2026)** (`src/enemies/fast/`, 6 lignes de
+wave) : dérive à 2 px/trame arcade, sonde le décor 0x20 px devant, s'arrête
+et s'évade en Y au sens tiré sur le bit 0 du compteur global, rebondit sur
+sonde de côté. Les trois évasions du début de stage tombent à la trame et
+dans le sens de la borne (bas, haut, bas), vérifiées sous toje contre la
+trace MAME (`probe_foreground_tile` rejouée en Lua). Il a fallu quatre
+corrections qui servent ailleurs : (1) la parité se prend trame rejouée par
+trame rejouée, pas sur le compteur du rendu ; (2) l'origine du compteur est
+`frame_time`, horloge en DEMI-trames de la borne dont l'entier avance aux
+trames impaires — une trame avant l'état d'entrée de référence (GC0 du
+stage 7 = 63830, pas 63831) ; (3) **la borne ne tire qu'une ligne de wave
+par trame** (tick_object_wave 40:1BA7) : `OBJECTWAVE_ONE_PER_FRAME`, option
+de l'engine posée par r-type, étale les lignes simultanées d'une trame dans
+l'ordre de la table (20 lignes du stage 7 bougent, panneaux compris ; quatre du boss du stage 1,
+de 1-2 trames, dans le bruit de rendu de ses pièces) — 26 octets du résident,
+qui n'avait plus que 24 libres : deux `ldd #0` et une boucle de
+`Collision_ClearLists` resserrés, marge 1 octet sous le lecteur YMM ; (4)
+`TERRAIN_LEFT_MARGIN` : les tables de colonne de terrainCollision commencent
+à l'écran 8, une sonde à l'écran 0-7 lisait la queue de `yOffset` (une
+colonne au loin) — huit entrées de plus par unité de collision lisent
+l'octet de carte précédent, comme la borne. Et l'abscisse de naissance
+recule de la caméra parcourue pendant le retard (`late × $30`), comme le
+Cytron.
+
+**Le Mid des stages 5 et 7 (17/10/2026)** (`src/enemies/mid/`, `lib.mid`
+de l'arène commune, 16 lignes de wave) : il file à −2 px/trame arcade ANCRÉ
+À L'ÉCRAN (tiré par la caméra, `x += caméra − caméra_old`), tourne sur huit
+poses en phase sur le compteur global, et lâche un laser horizontal (40:E6AB,
+−6 à −12 px/trame, période 48 à 8 trames selon la difficulté, liste
+« intouchable » : le contact tue, les armes passent). Le laser est le même
+objet né avec l'identifiant de son père et un sous-type marqué. Naissances
+et tirs IDENTIQUES à la borne à la trame sur les 14 Mid du stage 5 (trace
+MAME contre point d'arrêt toje), 3 377 octets, 8,3 img/s au plus chargé
+(sept Mid et leurs lasers). Le catalog de re.arcade.r-type déclarait une
+seule image de laser : quatre (paires de cellules, 0x184CE + 12·n).
+
+**Le Boldo du stage 7 (17/10/2026)** (`src/enemies/boldo/`, `stage7.boldo`,
+3 847 octets) : l'obstacle flottant, 200 PV, sans tir. Il naît À GAUCHE de
+l'écran (x 0x110, à moitié dehors), ancré au décor, et avance de 0,75
+px/trame tant que le décor 64 px devant lui est libre. Notre moteur de
+sprites ne rogne pas : comme la borne (quatre recettes de deux cellules), il
+se dessine en QUATRE TRANCHES de 12 px (`tools/gen_boldo_slices.py`), trois
+esclaves nées avec son identifiant ; il entre ainsi colonne par colonne.
+Les 200 PV : 125 dans la boîte, la réserve recharge (le réacteur du stage 3).
+Sa mort reprend la chaîne de la borne telle quelle — un curseur avancé de
+deux octets pour des paires de quatre : dix-sept petites explosions qui se
+chevauchent, plus la grosse grise et brune. Trajectoire comparée à MAME :
+même pente, écart constant de ~1 px TO8 (la fraction que la borne hérite de
+l'occupant précédent du slot).
+
+**Le reste de l'inventaire du stage 7 (17/10/2026)** : les deux
+`cyclingPalette` et le `palette_blackout_15_bg_cadence3` d'avant le boss
+n'agissent que sur la palette de tuiles 11, celle du SEUL plan de fond arcade
+(le mur vert de la ville) — que nous ne dessinons pas, fond noir par décision
+auteur : sans objet, noté dans la wave. L'ObjID 39 (40:F366) est une
+transition MUSICALE, pas un fondu : au premier appel de la partie 0x21 puis
+0x20, ensuite les pièces du stage (stage 7 : 0x15 à la trame 4800, 0x14 à
+5056, puis le boss 0x19 à 5281, mesuré sous MAME). L'arrangement ADNZ n'a
+qu'un morceau par stage : rien à jouer sans nouvelles pièces (stages 2, 4-7).
+La doc son appelle 0x1A « stop » (c'est « Like a Hero ») et 0x21 « fondu »
+(non observé ici : la trace partait d'un état où la porte était déjà levée).
 
 **Le second tour (16/10/2026)** : `globals.loop`, le compteur de tours de la
 borne (0x2F42 → second_loop), avancé par la fin du jeu et par le continue

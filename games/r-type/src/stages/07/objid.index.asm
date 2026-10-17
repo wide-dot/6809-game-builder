@@ -51,6 +51,9 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender
         fcb   map.RAM_OVER_CART+stage7.bronco.page ; ObjID_bronco
         fcb   map.RAM_OVER_CART+stage7.bronco.page ; ObjID_bronco_render
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_city_panel
+        fcb   map.RAM_OVER_CART+stage7.fast.page ; ObjID_fast
+        fcb   map.RAM_OVER_CART+stage7.boldo.page ; ObjID_boldo
 Obj_Index_Page.end
 
 Obj_Index_Address
@@ -106,6 +109,9 @@ Obj_Index_Address
         fdb   bug.Render ; ObjID_bugrender
         fdb   bronco.Object ; ObjID_bronco
         fdb   bronco.Render ; ObjID_bronco_render
+        fdb   stage.placeholder ; ObjID_city_panel
+        fdb   fast.Object ; ObjID_fast
+        fdb   boldo.Object ; ObjID_boldo
 Obj_Index_Address.end
 
 Ani_Page_Index
@@ -155,6 +161,9 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender
         fcb   map.RAM_OVER_CART+stage7.bronco.page ; ObjID_bronco
         fcb   map.RAM_OVER_CART+stage7.bronco.page ; ObjID_bronco_render
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_city_panel
+        fcb   map.RAM_OVER_CART+stage7.fast.page ; ObjID_fast
+        fcb   map.RAM_OVER_CART+stage7.boldo.page ; ObjID_boldo
 Ani_Page_Index.end
 
 Ani_Asd_Index
@@ -204,6 +213,9 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_bugrender
         fdb   Ani_Asd_none ; ObjID_bronco
         fdb   Ani_Asd_none ; ObjID_bronco_render
+        fdb   Ani_Asd_none ; ObjID_city_panel
+        fdb   Ani_Asd_none ; ObjID_fast
+        fdb   Ani_Asd_none ; ObjID_boldo
 Ani_Asd_Index.end
 
 Ani_Asd_none
@@ -256,6 +268,9 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+lib.bug.page ; ObjID_bugrender
         fcb   map.RAM_OVER_CART+stage7.bronco.page ; ObjID_bronco
         fcb   map.RAM_OVER_CART+stage7.bronco.page ; ObjID_bronco_render
+        fcb   map.RAM_OVER_CART+stage.page ; ObjID_city_panel
+        fcb   map.RAM_OVER_CART+stage7.fast.page ; ObjID_fast
+        fcb   map.RAM_OVER_CART+stage7.boldo.page ; ObjID_boldo
 Img_Page_Index.end
 
 * GARDE-FOU. Les cinq tables sont indexees par l'identifiant d'objet : le

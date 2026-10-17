@@ -61,6 +61,10 @@ set_bronco_chaser_leg5_0   EXTERNAL
 set_bronco_chaser_leg6_0   EXTERNAL
 set_bronco_chaser_leg7_0   EXTERNAL
 set_bronco_chaser_leg8_0   EXTERNAL
+set_bronco_segment_0       EXTERNAL
+set_bronco_segment_1       EXTERNAL
+set_bronco_segment_2       EXTERNAL
+set_bronco_segment_3       EXTERNAL
 set_bug_2                  EXTERNAL
 set_bug_10                 EXTERNAL
 
@@ -84,6 +88,7 @@ set_bug_10                 EXTERNAL
 bro.PG_MAIN   equ stage7.bronco.page
 bro.PG_JUNK   equ stage7.bronco.junk.page
 bro.PG_CHASER equ stage7.bronco.chaser.page
+bro.PG_LAMP   equ stage7.bronco.lamps.page
 
         INCLUDE "src/enemies/bronco/obj.asm"
 

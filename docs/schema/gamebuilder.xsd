@@ -3287,6 +3287,9 @@
       <xs:attribute name="bitdepth" type="int6809">
         <xs:annotation><xs:documentation>bits per tile index in the map, 16 if omitted</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="behind" type="xs:string">
+        <xs:annotation><xs:documentation>mask of the cells drawn BEHIND the sprites (one byte per map cell, column major, non zero = behind) : they move to a second table of the same shape, &lt;label&gt;.behind, which the stage draws before the sprites ; none if omitted</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 

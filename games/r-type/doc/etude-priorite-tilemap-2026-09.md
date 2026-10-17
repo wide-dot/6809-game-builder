@@ -155,3 +155,43 @@ Ghidra `maincpu` 40:A4CD, 40:A44C, 40:E883 (`init_foreground_tilemap`),
 - Vérifié sous toje : rtype_bench 7/7 ; sonde `tools/gomander_death_probe.py`
   identique au 1er passage (cascade +2, outslay 3 → 0, stage 3 atteint), et
   les captures montrent les explosions PAR-DESSUS le corps du boss.
+
+## 8. La priorité par cellule, stage par stage (17/10/2026)
+
+Relevé sur la ROM. L'attribut de chaque cellule est lu dans son
+enregistrement de groupe de tuiles, avec le décodage de l'extracteur
+BallField de re.arcade.r-type : au stage 6, ce décodage retrouve
+`level6_f_cellmeta.bin` à 0 écart. Les cellules « pleines » sont celles qui
+ont au moins un pixel opaque dans l'export du plan.
+
+| stage | plan de la carte | devant (groupe 2) | derrière (groupe 0) |
+|---|---|---|---|
+| 1 à 5 | avant | toutes | — |
+| 6 | avant | — | 1 842, toutes |
+| 7 | avant | 1 970 (machinerie verte) | 1 240 (murs bleus des couloirs) |
+| 8 | ARRIÈRE (le plan avant est vide) | 2 048 | 164 (le mur bleu du fond de la salle du noyau, les 8 dernières colonnes) |
+
+La v2 peignait tout le décor après les sprites : c'était juste sur les
+stages 1 à 5, faux sur tout le 6 (les tuyaux passaient par-dessus les Dops
+et coupaient les Newts dans les captures de `tools/stage6_video.py`), et
+faux sur les parties « derrière » des stages 7 et 8. Réalisé :
+
+- **Stage 6** : `stage.TILES_BEHIND`. L'entrée du stage lève
+  `globals.tilesBehind` (la solution A), et le décor passe sous les sprites
+  du début à la fin. Coût nul.
+- **Stages 7 et 8** : la solution B, par une autre voie que le §4. Le moteur
+  est résident et n'a plus d'octet libre ; `DrawTilesCols` reste donc tel
+  quel. `<tilecols behind=masque>` sort les cellules masquées dans une
+  seconde table de même forme, `map.even.behind` / `map.odd.behind`.
+  `stage.frame.tilesBack` (sous `stage.TILES_PRIO`) la donne à
+  `DrawTilesCols` avant les sprites, à la place de la table de la parité
+  courante. Coût estimé à ~350 cycles par trame, non mesuré ; ~600 octets
+  de tables par stage.
+- Les masques viennent de `tools/gen_tile_priority.py` (ROM + `in.png`, un
+  octet par cellule de carte, `--check`). Une tuile TO8 de 12×12 couvre
+  4×2 cellules arcade. Sur le plan pair, aucune ne mélange les deux
+  priorités. Sur le plan impair, décalé d'un pixel, 10 (stage 7) et 12
+  (stage 8) tuiles mélangent : ce sont des raccords d'un pixel de large,
+  rangés à la majorité de leurs pixels. C'est le seul écart.
+- La mort d'un boss (`globals.tilesBehind`) passe toujours par le §7 :
+  table « derrière » puis table ordinaire, toutes deux avant les sprites.

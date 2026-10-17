@@ -339,6 +339,23 @@ patch (`tilemap.patch.sparse`) copies the three dense bytes of each cell and
 skips the offset. The rectangle of a `<tilepatch>` or `<tilereset>` must
 therefore fall entirely inside dense columns.
 
+**Cells behind the sprites : `behind`.** The overlay frame draws the map
+after the sprites, so the whole map hides them. When some cells must sit
+behind the sprites instead (the arcade's per cell priority, which a game
+may port), `behind="mask.bin"` names a mask of one byte per map cell,
+column major like the map, non zero for a cell behind. The table under
+`label` then holds the other cells only, and a second table of the same
+shape is emitted beside it, `label.behind`, with the masked ones. The
+frame draws it before the sprites by handing it to `DrawTilesCols` in place
+of the current plane's table for one call (`tile_buffer`), then draws the
+usual table after them. The cost is that second call : one prologue and one
+column header per visible column, about 350 cycles a frame, and two bytes
+plus a terminator per column and plane in the map unit. A dense column keeps
+its fixed layout in `label` and may not hold a masked cell (the build says
+which). Without `behind` the output is unchanged. r-type uses it on stages 7
+and 8, with a mask per plane (`tools/gen_tile_priority.py` reads the
+priority of every arcade cell in the ROM).
+
 Validation : `examples/tilescroll/to8-cols.config.xml` builds the same
 example over the column engine (`TILES_COLS` defined) ; the whole initial
 scroll, both planes and the patch animation included, renders pixel for

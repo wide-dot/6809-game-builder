@@ -119,6 +119,61 @@ tranche d'arène est assemblée dans le boss depuis le même fichier
 (`INCLUDEBIN fichier,offset,longueur`, une ligne par rangée) : aucune copie de
 l'asset, une seule source.
 
+## Quand le trajet ne dépend que de la naissance : le précalculer
+
+Les 45 Dops ordinaires et les 23 Newts de la wave du stage 6 sondent la carte
+à chaque trame : trois sondes par Dop, une par Newt, une RAM de tuiles en
+anneau à modéliser pour le Newt, qui regarde au-delà du bord droit. Portée
+telle quelle, cette logique faisait tomber le stage à 5,88 img/s sur la
+fenêtre g 1500-2000. Même avec un cache des réponses de sonde, on restait
+à 6,69.
+
+Or rien dans ces trajets n'est variable :
+- aucun tirage aléatoire ;
+- vitesse fixe par voie ou par phase ;
+- carte fixe ;
+- caméra du stage fonction de l'horloge seule (min(g/2, 2684)) ;
+- trame de naissance fixée par la wave (file d'une création par trame), et
+  après une reprise au checkpoint, par la wave relancée à 3200.
+
+Le trajet d'un objet est donc une fonction de sa naissance et de son jeton,
+comme la flotte de la fin (`profil-fin-2026-10.md`).
+`tools/gen_stage6_paths.py` rejoue `run_dop` et `run_newt` hors ligne, avec
+les modèles vérifiés contre la trace MAME. Il n'écrit que les CHANGEMENTS
+(`src/stages/06/paths.asm`, un chemin par naissance) :
+- `{trame absolue, voie ou phase}` à chaque virage, appliqué APRÈS le
+  déplacement de la trame, comme à la borne ;
+- `{trame, $FF}` quand `is_visible_range` lâche l'objet ;
+- `{trame, phase + $80}` pour une GIGUE : un Newt coincé au bout d'un tuyau
+  fait demi-tour à chaque trame, et sur place jusqu'à la fin du stage. Sans ce
+  repli, 950 runs d'une trame ; le runtime fait la bascule lui-même après
+  chaque pas jusqu'à l'entrée suivante.
+
+Le générateur décode son propre format et le compare au modèle trame par
+trame avant d'écrire : 806 entrées, 2,8 Ko. Au runtime, une trame = un pas et
+une comparaison d'horloge, plus aucune sonde ; la carte de collision et le
+code de sonde sortent de l'unité. La fenêtre passe à **8,63 img/s, la cadence
+du stage sans aucun Dop ni Newt** : leur logique ne coûte plus rien de
+mesurable.
+
+Le précalcul paie une seconde fois. `create_newt` pose la partie entière de
+y et LAISSE la fraction du dernier occupant de l'enregistrement. Le runtime
+ne pouvait pas la connaître : c'était un écart documenté (96 rendus sur 133 à
+1 px, 3 avec un virage décalé de 8 px). Cette fraction appartient à la partie
+jouée, et le générateur porte celle de la partie de référence, relevée sur la
+trace (un octet devant chaque chemin). Les Newts deviennent identiques à la
+borne sous toje : 136 rendus, 0 écart. Les Dops aussi : 118 rendus, 0 écart.
+
+Critères pour reconnaître un candidat :
+- aucun tirage dans la logique de mouvement ;
+- aucune entrée qui dépende du joueur dans le mouvement (viser le vaisseau
+  au moment du TIR reste au runtime : le tir du Newt le fait) ;
+- un environnement fonction de l'horloge seule ;
+- une naissance déterminée par la wave, à vérifier aussi pour la reprise.
+
+La mort par le joueur n'est pas un obstacle : elle arrête seulement le
+chemin.
+
 ## Piège de trace : une trame de jeu sur deux trames vidéo
 
 Quand la borne ralentit (Bronco crée neuf objets d'un coup), une trame de

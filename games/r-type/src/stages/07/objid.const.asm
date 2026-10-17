@@ -25,8 +25,17 @@ ObjID_bugrender equ 49
 * renderer groupe, dans leur propre direntry (entree de wave bronco $11A0).
 ObjID_bronco equ 50
 ObjID_bronco_render equ 51
+* Les panneaux de la ville : leurs lignes de wave restent (la borne cree ces
+* objets, et la file d'une ligne par trame les compte), branchees sur l'objet
+* vide — explosions, zone mortelle et debris abandonnes (decision auteur,
+* 17/10/2026 : des effets presque purement visuels, la place va aux decalages).
+ObjID_city_panel equ 52
+* Le Fast (stage7.fast) : le chasseur leger qui evite le decor.
+ObjID_fast equ 53
+* Le Boldo (stage7.boldo) : l'obstacle flottant, en quatre tranches.
+ObjID_boldo equ 54
 
-objid.count equ 51
+objid.count equ 54
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

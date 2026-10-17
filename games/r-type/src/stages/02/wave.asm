@@ -39,6 +39,11 @@
 	fcb   $0E,$88,ObjID_outslay,$00,$04
 	fcb   $0F,$64,ObjID_pow,$00,$07
 ;$13,$60,ObjID_39,$00,$00
+;   (ObjID 39, 40:F366 : la transition musicale de la borne — au premier
+;   appel 0x21 puis 0x20 384 trames apres, ensuite les pieces du stage, table
+;   0x8C16 tout de suite et 0x8C0C 256 trames apres (stage 7 : 0x15 a 4800,
+;   0x14 a 5056, mesure sous MAME). Notre arrangement ADNZ n'a qu'un morceau
+;   par stage : pas de piece de transition a jouer.)
 	fcb   $14,$80,ObjID_gomander,$00,$00
 	fcb   $14,$FC,ObjID_bossmusic,$00,$00
 	fdb   $FFFF

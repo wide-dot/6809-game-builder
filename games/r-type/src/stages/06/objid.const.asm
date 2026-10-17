@@ -17,8 +17,13 @@ ObjID_bink equ 36
 * son renderer groupe, dans leur propre direntry (entree de wave 34 arcade).
 ObjID_dopswarm equ 37
 ObjID_dopswarm_render equ 38
+* Les Dops de la wave (stage6.cast) : le code et la carte a part, les images
+* de l'essaim.
+ObjID_dop equ 39
+* Les Newts de la wave et leurs tirs (stage6.cast).
+ObjID_newt equ 40
 
-objid.count equ 38
+objid.count equ 40
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id
