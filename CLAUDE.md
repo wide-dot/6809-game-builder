@@ -1079,9 +1079,39 @@ un vidage de la RAM de tuiles (`PILOT_TILEDUMP`) et le modèle Python
 du TO8 rend les mêmes réponses dans l'arène ; le port sonde cette carte en
 coordonnées arcade (tranche assemblée par `INCLUDEBIN` à offset). IDENTIQUE
 au premier passage sous toje : combat complet (421 rendus) et mise à mort
-(448 rendus) ; le stage 6 passe au 7. Les 45 Dops ordinaires de la wave du
-stage 6 restent à brancher. Le clignotement de coup est une image par sens
-(16 poses ne tiennent pas dans la page).
+(448 rendus) ; le stage 6 passe au 7. Le clignotement de coup est une image
+par sens (16 poses ne tiennent pas dans la page).
+
+**Les Dops ordinaires et le Newt du stage 6 (17/10/2026)**
+(`src/enemies/dop/dops.asm`, `src/enemies/newt/`, unité `stage6.cast`) :
+45 + 23 lignes de wave, TRAJETS PRÉCALCULÉS. Ni l'un ni l'autre ne tire au
+hasard, la carte est fixe et la caméra vaut min(g/2, 2684), donc tout le
+trajet découle de la naissance. `tools/gen_stage6_paths.py` rejoue
+`run_dop`/`run_newt` hors ligne et n'écrit que les virages, les sorties et
+les gigues d'un Newt coincé (`src/stages/06/paths.asm`, 806 entrées,
+2,8 Ko, auto-vérifié). Le runtime fait un pas et une comparaison par trame,
+sans sonde. Fenêtre g 1500-2000 : 5,88 img/s en sondant, 6,69 avec un cache
+de sondes, **8,63 précalculé = la cadence du stage sans eux**. La fraction
+de y qu'un Newt hérite de l'occupant précédent de son enregistrement (que
+le runtime ne peut pas connaître) vient de la partie de référence. Sous
+toje, IDENTIQUES à la borne : Dops 118 rendus, Newts 136, 0 écart. Méthode
+et critères : `games/r-type/doc/fidelite-arcade.md`, « Quand le trajet ne
+dépend que de la naissance ».
+
+**Décor devant ou derrière les sprites, cellule par cellule (17/10/2026)**.
+La priorité arcade relevée sur la ROM (bits 6-7 de l'attribut de chaque
+cellule) : stages 1 à 5 tout devant (ce que le port faisait), stage 6 TOUT
+derrière, stages 7 et 8 mélangés (au 7, murs bleus derrière et machinerie
+devant ; au 8, dont le décor est le plan ARRIÈRE arcade, seulement le mur du
+fond de la salle du noyau derrière). Stage 6 : `stage.TILES_BEHIND` lève
+`globals.tilesBehind` à l'entrée, coût nul. Stages 7-8 : `<tilecols
+behind=masque>` (masque par `tools/gen_tile_priority.py`) sort les cellules
+« derrière » dans une seconde table de même forme, que
+`stage.frame.tilesBack` (`stage.TILES_PRIO`) donne à `DrawTilesCols` avant
+les sprites. Le moteur résident n'est pas touché ; coût estimé à ~350 cycles
+par trame. Seul écart : 10 et 12 tuiles du plan impair, des raccords d'un
+pixel, rangées à la majorité. Détail : `games/r-type/doc/etude-priorite-
+tilemap-2026-09.md` §8 ; manuel `tilemaps.md`.
 
 **Bronco (boss du stage 7) porté 1:1 le même jour** (`src/enemies/bronco/`,
 wave `$11A0`) : gestionnaire minuté, cinq lampes, débris lâchés au hasard,

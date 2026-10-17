@@ -17,6 +17,11 @@ STAGE_SCENE equ scenes.stage6
 ; La carte de ce stage est en colonnes creuses (<tilecols> dans le config) :
 ; stage-main.asm appelle ScrollCols/DrawTilesCols et pose tilemap.mode.
 stage.TILES_COLS equ 1
+; Le decor SOUS les sprites, tout le stage : a la borne, les 1 842 cellules
+; pleines du plan avant de ce stage sont toutes en priorite 0 (bits 6-7 de
+; l'attribut nuls, groupe 0 de MAME) — les Newts rampent PAR-DESSUS les
+; tuyaux, les Dops passent devant (doc/etude-priorite-tilemap-2026-09.md §8).
+stage.TILES_BEHIND equ 1
 
 Obj_Index_Page    EXPORT
 Obj_Index_Address EXPORT
@@ -134,6 +139,12 @@ dopswarm.Render   EXTERNAL
 ; Ses boites de collision (deux par Dop) vivent ICI, en RAM residente :
 ; Collision_Do les parcourt avec une autre page montee.
 dopswarm.boxes    EXPORT
+; Les Dops et les Newts de la wave, dans leur direntry (stage6.cast), et les
+; boites des Dops ICI (deux par place) avec le masque des places prises.
+dop.Object        EXTERNAL
+newt.Object       EXTERNAL
+dops.boxes        EXPORT
+dops.used         EXPORT
 
 ; Le cast d'ennemis, un direntry chacun.
 bug.Object      EXTERNAL
@@ -338,6 +349,14 @@ stage.setup
 ; Les boites de l'essaim : avant puis arriere de chacun des huit Dops.
 dopswarm.boxes
         fill  0,2*8*9
+
+; Les boites des Dops de la wave : avant puis arriere de chacune des huit
+; places, et les places prises (remises a zero par stage.checkpointReset : la
+; purge d'objets du checkpoint ne passe pas par leur code).
+dops.boxes
+        fill  0,2*8*9
+dops.used
+        fcb   0
 
 ; Fin du stage 6 : on enchaîne sur le stage 7. La campagne remonte
 ; jusqu'au stage 8, qui rend la main au title.

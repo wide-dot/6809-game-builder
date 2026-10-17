@@ -44,6 +44,8 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
         fcb   map.RAM_OVER_CART+stage6.dopswarm.page ; ObjID_dopswarm
         fcb   map.RAM_OVER_CART+stage6.dopswarm.page ; ObjID_dopswarm_render
+        fcb   map.RAM_OVER_CART+stage6.cast.page ; ObjID_dop
+        fcb   map.RAM_OVER_CART+stage6.cast.page ; ObjID_newt
 Obj_Index_Page.end
 
 Obj_Index_Address
@@ -92,6 +94,8 @@ Obj_Index_Address
         fdb   bink.Object ; ObjID_bink
         fdb   dopswarm.Object ; ObjID_dopswarm
         fdb   dopswarm.Render ; ObjID_dopswarm_render
+        fdb   dop.Object ; ObjID_dop
+        fdb   newt.Object ; ObjID_newt
 Obj_Index_Address.end
 
 Ani_Page_Index
@@ -134,6 +138,8 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
         fcb   map.RAM_OVER_CART+stage6.dopswarm.page ; ObjID_dopswarm
         fcb   map.RAM_OVER_CART+stage6.dopswarm.page ; ObjID_dopswarm_render
+        fcb   map.RAM_OVER_CART+stage6.cast.page ; ObjID_dop
+        fcb   map.RAM_OVER_CART+stage6.cast.page ; ObjID_newt
 Ani_Page_Index.end
 
 Ani_Asd_Index
@@ -176,6 +182,8 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_bink
         fdb   Ani_Asd_none ; ObjID_dopswarm
         fdb   Ani_Asd_none ; ObjID_dopswarm_render
+        fdb   Ani_Asd_none ; ObjID_dop
+        fdb   Ani_Asd_none ; ObjID_newt
 Ani_Asd_Index.end
 
 Ani_Asd_none
@@ -221,6 +229,8 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+lib.bink.page ; ObjID_bink
         fcb   map.RAM_OVER_CART+stage6.dopswarm.page ; ObjID_dopswarm
         fcb   map.RAM_OVER_CART+stage6.dopswarm.page ; ObjID_dopswarm_render
+        fcb   map.RAM_OVER_CART+stage6.dopswarm.page ; ObjID_dop (les images de l'essaim)
+        fcb   map.RAM_OVER_CART+stage6.newt.img.page ; ObjID_newt (ses images)
 Img_Page_Index.end
 
 * GARDE-FOU. Les cinq tables sont indexees par l'identifiant d'objet : le

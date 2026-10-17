@@ -34,6 +34,14 @@ import lombok.extern.slf4j.Slf4j;
  *
  * Measured on r-type (10 to 37 % full cells) the table weighs 40 to 50 % of
  * the dense one, and the scroll never visits an empty cell.
+ *
+ * `behind` names a mask (one byte per map cell, column major like the map,
+ * non zero = the cell is drawn BEHIND the sprites) : the table under `label`
+ * then holds the other cells only, and a second table of the same shape,
+ * `label.behind`, the masked ones — the stage draws it before the sprites,
+ * the first one after (the arcade's per cell priority, r-type stages 7-8).
+ * A dense column keeps a fixed layout in `label` : it may hold no masked
+ * cell. Without `behind` the output is unchanged.
  */
 @Slf4j
 public class TilecolsPlugin {
@@ -51,6 +59,7 @@ public class TilecolsPlugin {
 		String nullTile = Attribute.getString(node, ctx, "nulltile", "tilemap.null");
 		String section = Attribute.getString(node, ctx, "section", "map");
 		int bitdepth = Attribute.getInteger(node, ctx, "bitdepth", 16);
+		String behindPath = Attribute.getString(node, ctx, "behind", "");
 
 		if (bitdepth != 8 && bitdepth != 16) {
 			throw new Exception("tilecols " + label + " : bitdepth must be 8 or 16");
@@ -100,6 +109,16 @@ public class TilecolsPlugin {
 			}
 		}
 
+		byte[] behind = null;
+		if (!behindPath.isBlank()) {
+			String file = ctx.path + File.separator + behindPath;
+			behind = Files.readAllBytes(Paths.get(file));
+			if (behind.length != entries) {
+				throw new Exception("tilecols " + label + " : behind mask " + file + " is " + behind.length
+						+ " bytes, the map has " + entries + " cells");
+			}
+		}
+
 		com.widedot.m6809.gamebuilder.spi.globals.Machines.Machine machine =
 				ctx.machines.required("<tilecols>");
 		StringBuilder source = new StringBuilder();
@@ -128,38 +147,14 @@ public class TilecolsPlugin {
 		// entry's page a real one
 		String anyPage = used.isEmpty() ? "1" : machine.pageExpr + "adr_" + tiles + "_" + used.first() + "_" + variant + "$PAGE";
 
-		source.append(label).append(" EXPORT").append(System.lineSeparator());
-		source.append(" SECTION ").append(section).append(System.lineSeparator());
-		source.append(label).append(System.lineSeparator());
-		for (int c = 0; c < cols; c++) {
-			source.append("        fdb   ").append(label).append(".c").append(c).append(System.lineSeparator());
+		int[] stats = new int[3];
+		columns(source, label, ids, cols, rows, isDense, behind, false, tiles, variant,
+				machine.pageExpr, anyPage, nullTile, rowstep, section, stats);
+		if (behind != null) {
+			columns(source, label + ".behind", ids, cols, rows, isDense, behind, true, tiles, variant,
+					machine.pageExpr, anyPage, nullTile, rowstep, section, stats);
 		}
-		int full = 0, nulls = 0, bytes = cols * 2;
-		for (int c = 0; c < cols; c++) {
-			source.append(label).append(".c").append(c).append(System.lineSeparator());
-			for (int r = 0; r < rows; r++) {
-				int id = ids[c * rows + r];
-				if (id == 0 && !isDense[c]) {
-					continue;
-				}
-				if (id == 0) {
-					source.append("        fcb   ").append(anyPage).append(System.lineSeparator());
-					source.append("        fdb   ").append(nullTile).append(System.lineSeparator());
-					nulls++;
-				} else {
-					String symbol = "adr_" + tiles + "_" + id + "_" + variant;
-					source.append("        fcb   ").append(machine.pageExpr).append(symbol)
-							.append("$PAGE").append(System.lineSeparator());
-					source.append("        fdb   ").append(symbol).append(System.lineSeparator());
-					full++;
-				}
-				source.append("        fdb   ").append(r * rowstep).append(System.lineSeparator());
-				bytes += 5;
-			}
-			source.append("        fcb   0").append(System.lineSeparator());
-			bytes += 1;
-		}
-		source.append(" ENDSECTION").append(System.lineSeparator());
+		int full = stats[0], nulls = stats[1], bytes = stats[2];
 
 		Path path = Paths.get(gensource);
 		if (path.getParent() != null) {
@@ -169,5 +164,58 @@ public class TilecolsPlugin {
 		log.info("tilecols {} : {} columns, {} full cells, {} null cells of dense columns, {} bytes at run time (dense table : {})",
 				label, cols, full, nulls, bytes, entries * 3);
 		return path.toFile();
+	}
+
+	/**
+	 * One column table : the word per column, then each column's list. With a
+	 * mask, `back` selects the masked cells (the behind table, never dense) or
+	 * the others. stats : full cells, null cells, bytes — accumulated.
+	 */
+	static void columns(StringBuilder source, String label, int[] ids, int cols, int rows,
+			boolean[] isDense, byte[] behind, boolean back, String tiles, String variant,
+			String pageExpr, String anyPage, String nullTile, int rowstep, String section,
+			int[] stats) throws Exception {
+		String nl = System.lineSeparator();
+		source.append(label).append(" EXPORT").append(nl);
+		source.append(" SECTION ").append(section).append(nl);
+		source.append(label).append(nl);
+		for (int c = 0; c < cols; c++) {
+			source.append("        fdb   ").append(label).append(".c").append(c).append(nl);
+		}
+		stats[2] += cols * 2;
+		for (int c = 0; c < cols; c++) {
+			boolean dense = isDense[c] && !back;
+			source.append(label).append(".c").append(c).append(nl);
+			for (int r = 0; r < rows; r++) {
+				int id = ids[c * rows + r];
+				boolean masked = behind != null && id != 0 && behind[c * rows + r] != 0;
+				if (masked && isDense[c]) {
+					throw new Exception("tilecols " + label + " : column " + c
+							+ " is dense and has a cell behind the sprites (row " + r + ")");
+				}
+				if (id != 0 && masked != back) {
+					id = 0;                // the other table's cell
+				}
+				if (id == 0 && !dense) {
+					continue;
+				}
+				if (id == 0) {
+					source.append("        fcb   ").append(anyPage).append(nl);
+					source.append("        fdb   ").append(nullTile).append(nl);
+					stats[1]++;
+				} else {
+					String symbol = "adr_" + tiles + "_" + id + "_" + variant;
+					source.append("        fcb   ").append(pageExpr).append(symbol)
+							.append("$PAGE").append(nl);
+					source.append("        fdb   ").append(symbol).append(nl);
+					stats[0]++;
+				}
+				source.append("        fdb   ").append(r * rowstep).append(nl);
+				stats[2] += 5;
+			}
+			source.append("        fcb   0").append(nl);
+			stats[2] += 1;
+		}
+		source.append(" ENDSECTION").append(nl);
 	}
 }

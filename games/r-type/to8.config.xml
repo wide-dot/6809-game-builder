@@ -5123,6 +5123,107 @@
                 <!-- Le boss du stage 6 : l'essaim de Dops, porte en repere arcade
                      (src/enemies/dop/obj.asm). Son maitre et son renderer groupe
                      partagent cette page avec les images. -->
+                <!-- Le cast du stage 6 (src/stages/06/cast.unit.asm) : les Dops de la
+                     wave (leurs images sont celles de l'essaim), les Newts et leur
+                     tir (images : stage6.newt.img), et la carte de collision entiere
+                     du stage qu'ils sondent. -->
+                <!-- les poses du Newt, ses deux blanches et son tir : leur page a
+                     elles (Img_Page_Index de ObjID_newt), le code est au cast -->
+                <file name="stage6.newt.img" linkdata="DATA" arena="stage6.foes">
+                    <lwasm gensource="gen/stages/06/newtimg.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <gfxcomp file="stage6.newt.img" gendir="gen/stages/06/newtimg"
+                                 gensource="gen/stages/06/newtimg/includes.asm"
+                                 genindex="gen/stages/06/newtimg/index.asm">
+                            <image name="newt_h_0" filename="src/enemies/newt/images/horizontal/00.png" index="0">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_h_1" filename="src/enemies/newt/images/horizontal/01.png" index="1">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_h_2" filename="src/enemies/newt/images/horizontal/02.png" index="2">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_h_3" filename="src/enemies/newt/images/horizontal/03.png" index="3">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_h_4" filename="src/enemies/newt/images/horizontal/04.png" index="4">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_ha_0" filename="src/enemies/newt/images/horizontal-alt/00.png" index="5">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_ha_1" filename="src/enemies/newt/images/horizontal-alt/01.png" index="6">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_ha_2" filename="src/enemies/newt/images/horizontal-alt/02.png" index="7">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_ha_3" filename="src/enemies/newt/images/horizontal-alt/03.png" index="8">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_ha_4" filename="src/enemies/newt/images/horizontal-alt/04.png" index="9">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_va_0" filename="src/enemies/newt/images/vertical-alt/00.png" index="10">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_va_1" filename="src/enemies/newt/images/vertical-alt/01.png" index="11">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_va_2" filename="src/enemies/newt/images/vertical-alt/02.png" index="12">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_va_3" filename="src/enemies/newt/images/vertical-alt/03.png" index="13">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_va_4" filename="src/enemies/newt/images/vertical-alt/04.png" index="14">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_v_0" filename="src/enemies/newt/images/vertical/00.png" index="15">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_v_1" filename="src/enemies/newt/images/vertical/01.png" index="16">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_v_2" filename="src/enemies/newt/images/vertical/02.png" index="17">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_v_3" filename="src/enemies/newt/images/vertical/03.png" index="18">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_v_4" filename="src/enemies/newt/images/vertical/04.png" index="19">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_hit_h_0" filename="src/enemies/newt/images/hit-h/00.png" index="20">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newt_hit_v_0" filename="src/enemies/newt/images/hit-v/00.png" index="21">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newtfire_0" filename="src/enemies/newt/fire/images/default/00.png" index="22">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newtfire_1" filename="src/enemies/newt/fire/images/default/01.png" index="23">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newtfire_2" filename="src/enemies/newt/fire/images/default/02.png" index="24">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                            <image name="newtfire_3" filename="src/enemies/newt/fire/images/default/03.png" index="25">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+                <file name="stage6.cast" linkdata="DATA" arena="stage6.foes">
+                    <lwasm gensource="gen/stages/06/cast.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <asm filename="src/stages/06/cast.unit.asm"/>
+                    </lwasm>
+                </file>
                 <file name="stage6.dopswarm" linkdata="DATA" arena="stage6.foes">
                     <lwasm gensource="gen/enemies/stage6-dopswarm.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -5206,6 +5307,8 @@
                     <load name="stage6.maps"/>
                     <load name="stage6.wave"/>
                     <load name="stage6.dopswarm"/>
+                    <load name="stage6.cast"/>
+                    <load name="stage6.newt.img"/>
                     <load name="stage6.collision"/>
                     <load name="stage6"/>
                 </scene>
@@ -5294,9 +5397,11 @@
                     <lwasm gensource="gen/stages/07/stage7-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilecols map="gen/stages/07/map/even.bin" label="map.even"
+                                  behind="src/stages/07/map/behind-even.bin"
                                   tiles="stage7.tiles.even" variant="ND0" maprows="15"
                                   gensource="gen/stages/07/map-even.asm"/>
                         <tilecols map="gen/stages/07/map/odd.bin" label="map.odd"
+                                  behind="src/stages/07/map/behind-odd.bin"
                                   tiles="stage7.tiles.odd" variant="ND0" maprows="15"
                                   gensource="gen/stages/07/map-odd.asm"/>
                     </lwasm>
@@ -5530,9 +5635,11 @@
                     <lwasm gensource="gen/stages/08/stage8-maps.asm">
                         <asm filename="engine/system/to8/map.const.asm"/>
                         <tilecols map="gen/stages/08/map/even.bin" label="map.even"
+                                  behind="src/stages/08/map/behind-even.bin"
                                   tiles="stage8.tiles.even" variant="ND0" maprows="15" dense="55-59"
                                   gensource="gen/stages/08/map-even.asm"/>
                         <tilecols map="gen/stages/08/map/odd.bin" label="map.odd"
+                                  behind="src/stages/08/map/behind-odd.bin"
                                   tiles="stage8.tiles.odd" variant="ND0" maprows="15" dense="55-59"
                                   gensource="gen/stages/08/map-odd.asm"/>
                         <!-- L'epave : UN descripteur pour les deux plans. -->

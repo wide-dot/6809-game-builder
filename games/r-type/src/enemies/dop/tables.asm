@@ -42,3 +42,23 @@ dsw.Look
         fdb   -12,-24,12,0  ; B voie 1
         fdb   -28,12,0,-12  ; B voie 2
         fdb   -12,24,12,0  ; B voie 3
+
+; 1000:9324 le depart d'un Dop ordinaire, par bits 0-3 du jeton :
+; {x ecran, y, voie}
+dsw.Preset
+        fdb   712,344,2  ; 0
+        fdb   712,328,2  ; 1
+        fdb   712,264,2  ; 2
+        fdb   712,200,2  ; 3
+        fdb   712,184,2  ; 4
+        fdb   648,136,3  ; 5
+        fdb   576,136,3  ; 6
+        fdb   480,136,3  ; 7
+        fdb   384,136,3  ; 8
+        fdb   312,184,0  ; 9
+        fdb   312,264,0  ; A
+        fdb   312,344,0  ; B
+        fdb   384,392,1  ; C
+        fdb   480,392,1  ; D
+        fdb   576,392,1  ; E
+        fdb   648,392,1  ; F

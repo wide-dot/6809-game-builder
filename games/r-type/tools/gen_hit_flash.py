@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Le flash de coup du brood et du zoid : la silhouette blanche de CHAQUE pose.
+"""Le flash de coup du brood, du zoid et du Newt : la silhouette blanche de CHAQUE pose.
 
 L'arcade fait clignoter l'objet touche en echangeant sa palette (le brood par
 draw_brood_with_hit_blink 40:8035, le zoid par draw_zoid_sprite_with_hit_blink,
@@ -38,6 +38,12 @@ JEUX = (
     ('src/enemies/brood/images/embedded', 'src/enemies/brood/images/hit',
      (('00', '00'), ('01', '01'), ('04', '02'), ('05', '03'))),
     ('src/enemies/zoid/images/zoid',      'src/enemies/zoid/images/hit',
+     (('00', '00'),)),
+    # le Newt (17/10/2026) : une blanche par orientation, la pose 0, comme
+    # le zoid (draw_newt_with_hit_blink 40:737D, 12 trames a 25 %)
+    ('src/enemies/newt/images/horizontal', 'src/enemies/newt/images/hit-h',
+     (('00', '00'),)),
+    ('src/enemies/newt/images/vertical',   'src/enemies/newt/images/hit-v',
      (('00', '00'),)),
 )
 

@@ -222,6 +222,10 @@ midlaser_hitbox_y	equ 3
 boldo_hitbox_x		equ 21
 boldo_hitbox_y		equ 13
 
+; Newt (stage 6). Boite arcade 1000:333E : +/-16 -> rayons 6 et 12. Deux PV.
+newt_hitbox_x		equ 6
+newt_hitbox_y		equ 12
+
 ; Outslay (stage 2). Boite arcade 1000:427c : 16x16 centree, soit 8 px de
 ; demi-cote -> 8 x 0.375 = 3 en X et 8 x 0.75 = 6 en Y... mais l'arcade
 ; compte en pixels arcade et la boite v2 en pixels larges : la demi-largeur

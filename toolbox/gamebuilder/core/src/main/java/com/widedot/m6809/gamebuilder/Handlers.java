@@ -385,7 +385,8 @@ public final class Handlers {
 			.opt("dense", STRING, "columns emitted with ALL their rows (empty ones pointing the null tile), so a rectangle patch finds a fixed address : ranges like 4-5,10")
 			.opt("nulltile", STRING, "the routine an empty cell of a dense column calls, tilemap.null if omitted")
 			.opt("section", STRING, "section of the table, map if omitted")
-			.opt("bitdepth", INT, "bits per tile index in the map, 16 if omitted"));
+			.opt("bitdepth", INT, "bits per tile index in the map, 16 if omitted")
+			.opt("behind", STRING, "mask of the cells drawn BEHIND the sprites (one byte per map cell, column major, non zero = behind) : they move to a second table of the same shape, <label>.behind, which the stage draws before the sprites ; none if omitted"));
 		spec(element("tilepatch").doc("generate the animation blocks tilemap.patch writes into a scroll map, and the descriptor its sequencer reads, baked in a .static section")
 			.req("map", STRING, "tile index .bin of the frame strip (leanscroll output), frames laid side by side, column major")
 			.req("label", STRING, "label of the generated descriptor")

@@ -12,6 +12,8 @@ tables sont recopiees TELLES QUELLES, sans conversion.
              {vx, vy} (droite, bas, gauche, haut)
   1000:2A40  la sonde d'anticipation par voie, variante A puis B (2A60) :
              {premier pas x, y, pas suivant x, y}, en pixels
+  1000:9324  les seize departs des Dops ordinaires (load_dop_preset_position_
+             and_direction 40:F9C9, bits 0-3 du jeton) : {x ecran, y, voie}
 
 La carte des tuiles ne passe pas par ce script : le port lit la carte de
 collision du stage 6 (src/stages/06/terrain/level6_fc.bin) par INCLUDEBIN,
@@ -48,6 +50,7 @@ def render(rom):
     pre = words(rom, 0x931C, 4)
     vel = words(rom, 0x2A80, 32)
     look = words(rom, 0x2A40, 32)
+    preset = words(rom, 0x9324, 48)
     L = [
         '; GENERE par tools/gen_dopswarm.py depuis la ROM arcade — ne pas editer.',
         '; Repere ARCADE (x a droite, y vers le haut), valeurs non converties.',
@@ -70,6 +73,11 @@ def render(rom):
     for i in range(0, 32, 4):
         L.append('        fdb   ' + ','.join('%d' % v for v in look[i:i + 4])
                  + '  ; %s voie %d' % ('AB'[i // 16], (i // 4) & 3))
+    L += ['', '; 1000:9324 le depart d\'un Dop ordinaire, par bits 0-3 du jeton :',
+          '; {x ecran, y, voie}', 'dsw.Preset']
+    for i in range(16):
+        x, y, lane = preset[3 * i:3 * i + 3]
+        L.append('        fdb   %d,%d,%d  ; %X' % (x, y, lane, i))
     return '\n'.join(L) + '\n'
 
 

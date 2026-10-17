@@ -438,6 +438,23 @@ d'index. Le retard de l'enfant = les trames qui restent dans le rendu du
 père après celle de la naissance (`n − 1`) ; il tourne dans le même passage
 de `RunObjects` (les nouveaux objets sont ajoutés en fin de liste).
 
+## Un trajet sans hasard se précalcule (17/10/2026)
+
+Avant de porter une logique qui sonde le décor à chaque trame, se demander
+si le trajet ne dépend que de la naissance. Les conditions :
+- aucun tirage ;
+- aucune entrée du joueur dans le mouvement ;
+- un décor et une caméra fonctions de l'horloge seule ;
+- une naissance fixée par la wave, reprise au checkpoint comprise.
+
+Si c'est le cas, un générateur rejoue la borne hors ligne et n'écrit que les
+changements, `{trame, état}` ; le runtime avance et compare une horloge.
+C'est ce qu'ont reçu les Dops et les Newts du stage 6
+(`tools/gen_stage6_paths.py`) : leur coût a disparu, et une valeur que le
+runtime ne pouvait pas connaître (une fraction héritée d'un enregistrement
+recyclé) y est cuite depuis la partie de référence. Méthode :
+`doc/fidelite-arcade.md`, « Quand le trajet ne dépend que de la naissance ».
+
 ## L'attribut de SpriteRecipe, et la profondeur (décodé le 21/08/2026)
 
 `write_1_sprite_b` (0x0040_1BE9) construit un sprite matériel depuis un objet

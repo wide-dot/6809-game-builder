@@ -17,6 +17,10 @@ STAGE_SCENE equ scenes.stage7
 ; La carte de ce stage est en colonnes creuses (<tilecols> dans le config) :
 ; stage-main.asm appelle ScrollCols/DrawTilesCols et pose tilemap.mode.
 stage.TILES_COLS equ 1
+; LA PRIORITE PAR CELLULE : les murs bleus des couloirs sont derriere les
+; sprites a la borne (groupe 0), la machinerie verte devant — la carte porte
+; une seconde table, peinte avant les sprites (stage.frame.tilesBack).
+stage.TILES_PRIO equ 1
 ; Le Fast, dans son direntry (stage7.fast).
 fast.Object       EXTERNAL
 ; Le Boldo, dans son direntry (stage7.boldo).
@@ -38,6 +42,8 @@ Pal_black         EXPORT
 ; plan de carte, donc il suffit de les lui designer.
 map.even          EXTERNAL
 map.odd           EXTERNAL
+map.even.behind   EXTERNAL
+map.odd.behind    EXTERNAL
 
 ; La wave vit dans le comblement du pageset des tuiles impaires : sa page est
 ; celle que le rangement lui a donnee, et le builder l'ecrit en equate.
