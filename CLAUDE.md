@@ -1126,6 +1126,14 @@ gardé. Directeur et flotte IDENTIQUES à la borne sous toje (753 rendus) ;
 enchaînement complet vérifié (stage 8 → stage 1, trame 13 300). L'horloge
 de wave arcade suit le défilement : les créations de la fin sont des trames
 fixes après la mort du noyau. `PILOT_PEEK` trace des globales de la borne.
+Performance de la fin (17/10) : la flotte est PRÉCALCULÉE (`gen_ending.py`
+la fait voler depuis la ROM, `stage8.fleet` lit ses changements à l'écran
+une fois par rendu — vérifiée identique à la borne trame par trame, `--check`),
+chaque ligne du générique est un sprite compilé (`stage8.credits`), le
+cadre ne repeint que les colonnes latérales et la fin de la ligne 10 (où
+l'IRQ pose sa pile pendant `clearBlast`), l'effacement saute les colonnes ;
+texte et vaisseaux entrent par les bandes. Pleine charge : 100 578 → 63 038
+cycles (`games/r-type/doc/profil-fin-2026-10.md`).
 
 **Le second tour (16/10/2026)** : `globals.loop`, le compteur de tours de la
 borne (0x2F42 → second_loop), avancé par la fin du jeu et par le continue

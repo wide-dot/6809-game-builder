@@ -5501,6 +5501,38 @@
                                  gensource="gen/stages/08/ending/includes.asm"
                                  genindex="gen/stages/08/ending/index.asm">
                             <images dir="src/stages/08/ending/images/fleet" names="fleet" shifts="0,1"/>
+                            <!-- le cadre du champ de jeu pendant la fin : le masque
+                                 du jeu sans ses libelles du HUD (tools/gen_ending.py),
+                                 compile d'un seul passage -->
+                            <image name="viewport" filename="src/stages/08/ending/images/viewport/00.png">
+                                <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+                            </image>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- la flotte de la fin, precalculee (tools/gen_ending.py) : ses
+                     enregistrements et leur lecture, une fois par rendu -->
+                <file name="stage8.fleet" linkdata="DATA" arena="stage8.foes">
+                    <lwasm gensource="gen/stages/08/fleet.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <asm filename="gen/directories/dir8/entries.asm"/>
+                        <asm filename="src/stages/08/ending/fleet.unit.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- le generique de la fin : une ligne = un sprite compile
+                     transparent (tools/gen_ending.py), et son dessin -->
+                <file name="stage8.credits" linkdata="DATA" arena="stage8.foes">
+                    <lwasm gensource="gen/stages/08/credits.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <asm filename="gen/directories/dir8/entries.asm"/>
+                        <asm filename="src/stages/08/ending/credits.unit.asm"/>
+                        <gfxcomp gendir="gen/stages/08/credits"
+                                 gensource="gen/stages/08/credits/includes.asm">
+                            <images dir="src/stages/08/ending/images/lines" names="cline" shifts="0" position="top-left"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
@@ -5542,6 +5574,8 @@
                     <load name="stage8.bydo"/>
                     <load name="stage8.bydo.head"/>
                     <load name="stage8.ending"/>
+                    <load name="stage8.credits"/>
+                    <load name="stage8.fleet"/>
                     <load name="stage8.wreck.even"/>
                     <load name="stage8.wreck.odd"/>
                     <load name="stage8"/>
