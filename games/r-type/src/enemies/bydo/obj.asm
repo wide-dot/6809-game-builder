@@ -41,7 +41,9 @@
 ; AFTER the tiles by the stage's front hook (stage.frameFront, stage 8 main,
 ; bydo.DrawFront), at their place on the map: their screen x follows the
 ; camera, not the arcade x. The wins are the engine's sprites of
-; src/enemies/win, drawn by a grouped renderer (bydo.DrawAll).
+; src/enemies/win, drawn by a grouped renderer (bydo.DrawAll); their three
+; poses and the 1 px shifted variants (picked on the x parity, as
+; BuildSprites does) live in stage8.win (bydo.PG_WIN).
 ;
 ; DEVIATIONS (V2-DEVIATION):
 ; - collision runs once per render (engine); the Force-in-mouth test reads
@@ -63,6 +65,11 @@
 ;   the core publishes its clock's start (ending.gc0, the bg fade's frame);
 ; - sounds: the cascade's explosions carry the drawn sound; the boss music
 ;   (0x19, 40:C2F0) and the ending's (0x1A, 40:C210) are played by the stage;
+;   0x1A is not heard when it is queued: measured on the arcade's sound, the
+;   sound stops 0x180 frames after the death (the end of phase 1 — the port
+;   asks the stage for that silence, ending.music $FF) and "Like a Hero"
+;   ends when the blackout after ENJOY is complete; the ending's manager
+;   starts our arrangement from that end (ending.T_MUSIC);
 ;   the other effects (win entries, fireball, stinger) are not;
 ; - the bg fade (40:C238) is the palette fade to black of the stage
 ;   (stage.deathFadeOut), the ship's colours with it; the end route then
@@ -394,12 +401,12 @@ bydo.Ph1
         ldx   #wreck
         jsr   tilemap.stamp
         puls  u
-        lda   #1                         ; c210 0x1A: the ending's music
-        sta   ending.music
 !       ldd   bydo.c30
         subd  #1
         std   bydo.c30
         bne   @rts
+        lda   #$FF                       ; the sound stops here (0x1A, queued
+        sta   ending.music               ; at c210, measured: silence at +384)
         lda   #1                         ; c21c the end of the game: the
         sta   globals.bossDefeated       ; end-level flag, a faster scroll
         ldd   bydo.savedVel
@@ -1142,7 +1149,7 @@ bydo.Publish
 !       aslb
         ldx   #bydo.WinSets
         ldx   b,x
-        lda   #map.RAM_OVER_CART+bydo.PG
+        lda   #map.RAM_OVER_CART+bydo.PG_WIN
         jsr   bydo.Slot
         tfr   y,d
         subd  #bydo.Wins

@@ -1109,7 +1109,9 @@ tuiles à bit de priorité) : extraits par le moteur `tile_block` du catalog,
 convertis opaques (`arcade_to_sprites.py --opaque`), dessinés après les
 tuiles par un crochet opt-in de `stage-main.asm` (`stage.FRONT` /
 `stage.frameFront`, stage 8 seul) à leur place sur la carte. Deux pages de
-`stage8.foes` ; `PILOT_BGDUMP` vide la RAM du plan de fond de la borne.
+`stage8.foes` ; les trois poses du Win et leur variante décalée d'un pixel
+(17/10/2026, choisie sur la parité comme `BuildSprites`) dans `stage8.win`,
+arène `stage8.gfx` ; `PILOT_BGDUMP` vide la RAM du plan de fond de la borne.
 **Et la fin du jeu derrière lui** (`src/stages/08/ending/`) : à la mort,
 l'épave de la salle est un `tilemap.stamp` (`<tilepatch>` sur les colonnes
 55-59 de la carte : la colonne 55 et le premier pixel de la 60 portent les
@@ -1126,6 +1128,25 @@ gardé. Directeur et flotte IDENTIQUES à la borne sous toje (753 rendus) ;
 enchaînement complet vérifié (stage 8 → stage 1, trame 13 300). L'horloge
 de wave arcade suit le défilement : les créations de la fin sont des trames
 fixes après la mort du noyau. `PILOT_PEEK` trace des globales de la borne.
+
+**Le Mikun porté (17/10/2026)** (`src/enemies/mikun/`, direntries
+`stage8.mikun` + `stage8.mikun.img` — 21,6 Ko avec les variantes décalées
+d'un pixel, qui ne coûtent aucun cycle — dans l'arène `stage8.gfx`, où les
+tuiles du stage 8 laissent la place ; `stage8.foes` ne tenait plus) : les
+32 lignes de wave du stage 8 créent chacune un émetteur invisible, ancré au
+décor (0x2ED4 = 0x2ED0 au stage 8, mesuré sous MAME), qui lance un Mikun
+vers le joueur toutes les 48 à 320 trames. Le compte initial est
+`random_ax` ET (période − 1) : un masque, pas un modulo, et un compte nul ne
+lance jamais. L'émetteur est le seul à tirer pendant le stage (trace MAME) :
+une copie privée de `random_ax`, réensemencée aux multiples de 512 du
+compteur global (phase de l'état d'entrée, 7834), rend les 104 naissances
+du stage aux instants de la borne (1,6 trame d'écart moyen, granularité du
+rendu). Vitesse par difficulté, deux poses par direction (28 distinctes,
+catalog `mikun/frames`), tables par `tools/gen_mikun.py` (le pool 9010 est
+identique à celui que le wick avait recopié à la main). Cadence du stage
+−8 %, −17 % au plus chargé (14 émetteurs, ~10 Mikun) ; une pose coûte 559
+cycles en moyenne. Le stage 8 est entièrement porté, à l'exception des
+palettes cycliques (écart documenté).
 
 **Le second tour (16/10/2026)** : `globals.loop`, le compteur de tours de la
 borne (0x2F42 → second_loop), avancé par la fin du jeu et par le continue

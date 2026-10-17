@@ -680,8 +680,19 @@ stage.frame.bgDone
         ; reste — stack-blast maison, lignes 11-190 (cf. clearblast.asm ; la
         ; fenetre par timeline est retiree le 06/09/2026, decision auteur).
         ; Il adresse les deux plans lui-meme : rien a poser avant l'appel.
+ IFDEF stage.ENDING
+        ; LA FIN DU JEU efface l'INTERIEUR du viewport seul : ses colonnes
+        ; noires sont repeintes apres les sprites (ending/clear.asm).
+        lda   ending.hudOff
+        beq   >
+        lda   #map.RAM_OVER_CART+stage8.ending.page
+        ldx   #ending.ClearField
+        bra   stage.frame.clear
+!
+ ENDC
         lda   #map.RAM_OVER_CART+common.overlay.page
         ldx   #playfield.clearBlast
+stage.frame.clear
         jsr   paged.call
  ENDC
  ENDC
@@ -760,11 +771,25 @@ stage.frame.noTiles
 stage.overlay.normal
  IFDEF stage.ENDING
         ; LA SEQUENCE DE FIN n'a pas de bandeau (la borne le coupe, 0x2EBE = 0
-        ; en 0x40:EEC2) : ni HUD, ni masque — ses libelles (1P-, BEAM) font
-        ; partie de l'image du masque. Le tramage a noirci les bandes, rien
-        ; ne les repeint : les sprites sont tenus entiers dans le champ.
+        ; en 0x40:EEC2) mais garde le cadre du champ de jeu : SON image, le
+        ; masque du jeu sans les libelles du HUD (images/viewport, compilee
+        ; d'un seul passage) a la place du masque et du HUD.
+        ; Le generique PAR-DESSUS TOUT, comme sur la borne : apres les sprites
+        ; (une ligne = un sprite compile, credits.unit.asm) ; il ne sort pas
+        ; du champ, les colonnes noires viennent ensuite.
         lda   ending.hudOff
-        lbne  stage.overlay.off
+        beq   >
+        lda   #map.RAM_OVER_CART+stage8.credits.page
+        ldx   #credits.Draw
+        jsr   paged.call
+        ldd   #$A000
+        std   <glb_screen_location_1
+        ldu   #$C000
+        lda   #map.RAM_OVER_CART+stage8.ending.page
+        ldx   #adr_viewport_ND0
+        jsr   paged.call
+        bra   stage.overlay.off
+!
  ENDC
         ; Le masque, par-dessus tout le reste — c'est l'ordre de la v1, ou il
         ; venait apres DrawSprites. Il couvre les bandes ou le scroll laisse

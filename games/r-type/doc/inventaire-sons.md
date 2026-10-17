@@ -132,7 +132,7 @@ ce qui a un identifiant en gras.
 | 0x5F | traînée du Gouger, billes de l'orbe Gomander | manque | non confirmé |
 | 0x61 | décollage du Tabrok | manque | non confirmé |
 | 0x62 | destruction d'un nerf optique | manque, implémenté aujourd'hui | non confirmé |
-| 0x64 | entrée en scène du Mikun, tir de Dobkeratops | manque | non confirmé |
+| 0x64 | entrée en scène des Win B/C/D (40:978D-9801, le Bydo), tir de Dobkeratops | manque | non confirmé |
 
 ### Interface
 

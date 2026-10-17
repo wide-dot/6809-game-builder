@@ -990,16 +990,11 @@ class Ending:
             d = {'st': dst}
             if dst >= 2:
                 d.update({'d10': w('ending.d10'), 'd12': w('ending.d12'), 'd14': w('ending.d14')})
-        ships = []
-        r0 = sym['ending.Ships'] - base
-        for i in range(sym['ending.NSHIP']):
-            r = r0 + i * sym['S.SZ']
-            f = lambda k, n=1: int.from_bytes(bytes(mem[r + sym[k]:r + sym[k] + n]), 'big')
-            if f('S.st'):
-                ships.append([f('S.x', 3), f('S.y', 3), f('S.p', 2), f('S.c', 2)])
-        ships.sort()
+        # the fleet is precomputed since 17/10/2026 (fleet.unit): no ship
+        # state in this page any more. Its flight is checked against this
+        # reference OFFLINE, frame by frame (tools/gen_ending.py --check).
         y = (w('ending.y') << 8) | b('ending.yf')
-        return {'gc': w('ending.gc'), 'dir': d, 'ships': ships, 'y': y,
+        return {'gc': w('ending.gc'), 'dir': d, 'ships': [], 'y': y,
                 'speed': w('ending.speed'), 'p': {'st': dst}}
 
     def done(self, st):
@@ -1007,7 +1002,7 @@ class Ending:
 
     @staticmethod
     def flat(st):
-        return {'dir': st['dir'], 'ships': st['ships'], 'y': st['y'], 'speed': st['speed']}
+        return {'dir': st['dir'], 'y': st['y'], 'speed': st['speed']}
 
     def seed(self, t, sym, base, ref):
         """the creations fall at offsets from the clock's start: g0 too"""
@@ -1019,28 +1014,9 @@ class Ending:
         pass
 
     def settle(self, t, sym, base, refs, g, live, stats):
-        """the ships born in frame g: their position fractions are leftovers"""
-        a = refs.get(g)
-        if a is None or live.get('g') == g or not a['ships']:
-            return
-        live['g'] = g
-        sz, cnt = sym['S.SZ'], sym['ending.NSHIP']
-        r0 = base + sym['ending.Ships']
-        m = list(t.read('%04X' % r0, cnt * sz))
-        for i in range(cnt):
-            r = i * sz
-            f = lambda k, n=1: int.from_bytes(bytes(m[r + sym[k]:r + sym[k] + n]), 'big')
-            if not f('S.st') or f('S.c', 2) or live.get(('s', i)):
-                continue
-            for sh in a['ships']:
-                if sh[2] == f('S.p', 2) and sh[3] == 0 and sh[1] >> 8 == f('S.y', 2):
-                    put = lambda ad, vals: t.call('write_memory', {
-                        'addr': '%04X' % ad, 'bytes': ['%02X' % v for v in vals]})
-                    put(r0 + r + sym['S.x'] + 2, [sh[0] & 0xFF])
-                    put(r0 + r + sym['S.y'] + 2, [sh[1] & 0xFF])
-                    live[('s', i)] = True
-                    break
-
+        """the fleet's leftover fractions are baked into its precomputed
+        records (tools/gen_ending.py reads them from this reference)"""
+        pass
 
 PROFILES = {'bellmite': Bellmite(), 'compiler': Compiler(), 'dopswarm': Dopswarm(),
             'bronco': Bronco(), 'bydo': Bydo(),

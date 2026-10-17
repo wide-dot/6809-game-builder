@@ -193,6 +193,50 @@ attend CE fondu, efface au noir (le vaisseau seul), puis rend la main
 passe au « bonus game » (stage 1, score gardé) qu'une fois le noir complet.
 Les vaisseaux de la flotte ont leur variante décalée d'un pixel.
 
+Le texte du générique est, sur la borne, au-dessus de tout (étoiles et
+vaisseaux). Côté TO8, chaque ligne est UN
+sprite compilé transparent (`tools/gen_ending.py` relit les glyphes du HUD
+en simulant leur code et sort `images/lines/NN.png` ; gfxcomp : index 0
+transparent, index n = couleur n − 1), dans son propre fichier
+(`stage8.credits`, arène `stage8.foes`, 14,9 Ko), dessiné par la passe de
+surimpression après les sprites, avant les colonnes noires. Mesuré sur
+les 580 rendus de la séquence (code généré compté instruction par
+instruction) : pire rendu 15 706 cycles contre 34 868 glyphe par glyphe,
+moyenne 3 305 contre 7 303.
+
+Le cadre : les deux colonnes de 8 px sont repeintes à chaque rendu
+(`images/viewport`, 5 121 cycles : un `PSHU D,X` par ligne et par plan, la
+colonne droite d'une ligne et la gauche de la suivante étant contiguës), à
+la place du masque du jeu (8 049). Elles font entrer les vaisseaux : la
+flotte n'est plus refusée dès qu'elle touche un bord, un vaisseau à cheval
+sur le retour de ligne déborde dans la colonne de la ligne voisine, cachée.
+Les bandes du haut et du bas font de même pour le texte : une ligne est
+dessinée dès qu'elle mord sur le champ (son haut de la ligne 3 à la 191),
+puis les lignes de bande qu'elle a couvertes sont remises au noir
+(`credits.Band`, 100 cycles par ligne et par plan, seulement quand une
+ligne est à cheval). Hors de là, rien ne dessine dans ces bandes — sauf UNE
+chose, trouvée sous toje (point d'arrêt d'écriture sur la vidéo) :
+l'effacement du champ (`playfield.clearBlast`) empile son noir avec S, de la
+ligne 190 à la 11, et une IRQ qui tombe à la fin pose ses 12 octets de
+registres sous S, octets 28 à 39 de la ligne 10. Le masque du jeu le cache
+en jeu ; le cadre de la fin repeint ce bout de ligne.
+
+La commande n'est pas le son. Mesuré sur la piste audio d'un enregistrement
+MAME (17/10, de la mort du noyau au second tour) : 0x1A est posée 0x100
+trames après la mort, mais le son s'ARRÊTE à +0x180 (fin de la phase 1 du
+noyau, explosions comprises), un silence, et « Like a Hero » se TAIT quand
+le noir qui suit ENJOY est complet (18 917 = le noir de 40:EF89 à 18 867 +
+ses 48 trames), sans commande audio. Le port coupe à la fin de la phase 1
+(`ending.music` $FF) et CALE LE MORCEAU PAR SA FIN (décision de l'auteur) :
+notre arrangement YM2413 (adnz) n'est pas l'enregistrement de la borne, sa
+dernière note est à la trame 1 976 à 50 Hz, d'où un départ à
+`ending.T_MUSIC` = 2 219 − 1 976 = 243 sur l'horloge de la fin (entre les
+étoiles et la flotte). Le caler sur le noyau le faisait partir en avance :
+côté TO8 l'horloge de la fin ne démarre qu'après le fondu et l'effacement
+au noir. Vérifié sur la capture TO8 : dernière note à 63,9 s, noir complet
+à 64,0 s. Écart restant, de la machine : le chargement du stage 1 ajoute un
+long noir silencieux que la borne n'a pas.
+
 ## Le second tour : la difficulté 2
 
 La borne recalcule sa difficulté (0x2F2E) à chaque trame dans le tic du
@@ -248,8 +292,10 @@ consomme le quota de continue, comme le compteur unique de la borne). Ce qui lit
   rapide sur Force ≥ 2 (`core.Hard`, dddd/dfcc). Règle de l'auteur
   (16/10) : du 1:1 avec la borne tant que c'est techniquement possible.
 
-Pas encore porté : Mid, Pursuer, Cheetah et Mikun (les ennemis eux-mêmes ne
-le sont pas) devront lire la difficulté.
+Pas encore porté : Mid, Pursuer et Cheetah (les ennemis eux-mêmes ne le sont
+pas) devront lire la difficulté. Le Mikun la lit depuis le 17/10/2026 : sa
+vitesse de lancement vient de la table de la difficulté courante (1000:4284,
+le pool du pique du wick).
 
 Piège de banc relevé au passage : le Compiler a une trame AVEUGLE, gc0+1 —
 ses résidus arcade sont écrits au Tick de la trame suivante. Tant qu'aucun

@@ -529,7 +529,10 @@ python3 tools/arcade_to_sprites.py boldo    --palette 07
 python3 tools/arcade_to_sprites.py mikun --palette 08 \
     --forcer 80,136,104:14 --forcer 56,112,80:13 \
     --forcer 32,88,56:12   --forcer 8,64,32:12 \
-    --forcer 0,128,160:4   --forcer 0,176,192:5 --forcer 0,248,248:6
+    --forcer 0,128,160:4   --forcer 0,176,192:5 --forcer 0,248,248:6 --dedup
+# (17/10/2026) images/original/frames = les 32 recettes du catalog mikun/frames
+# (16 directions x 2 poses) ; --dedup en garde 28 et ecrit cycle.txt, que
+# tools/gen_mikun.py lit pour la table des poses.
 # Les enfants d'objets (jamais cites par une wave, donc absents de l'inventaire
 # de cast) : le zoid eclot du brood (stage 2), le win est la spirale du kit
 # mikun (stage 8, ses images suivent celles du mikun en ROM), les

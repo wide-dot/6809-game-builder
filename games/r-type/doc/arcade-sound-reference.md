@@ -162,7 +162,7 @@ start, scheduled transition, immediate transition.
 | `0x5F` | `SFX_GOUGER_TRAIL` / Gomander orb pellet emission | `run_gouger`, `tick_gomander_orb_pellet_run` |
 | `0x61` | `SFX_TABROK_TAKEOFF`; also the bottom reactor's flame ejection | `missile_launch_swap_handler`, `tick_warship_bottom_reactor` |
 | `0x62` | `SFX_OPTICAL_NERVE_DESTROY` — a Dobkeratops optic nerve dies | `dobkeratops_erase_optical_nerves` |
-| `0x64` | scene-entry announce (Mikun variants B/C/D — variant A is silent); also Dobkeratops fire | Mikun spawns ×3, `run_dobkeratops_fire` |
+| `0x64` | scene-entry announce (Win variants B/C/D — variant A is silent); also Dobkeratops fire | `create_win_b/c/d` (40:97C1, 97FB, 9835), `run_dobkeratops_fire` |
 | `0x65` | a Bronco auxiliary fighter appears | `tick_bronco_helper_periodic_spawner` |
 | `0x66` | Bronco main-attack phase transition | `tick_bronco_main_attack_subchild_phase1` |
 | `0x67` | cyclic cue every `0x180` frames during the Bronco attack | `tick_bronco_helper_main_attack` |

@@ -196,6 +196,13 @@ wick_hitbox_x		equ 3
 wick_hitbox_y		equ 6
 wick_hitdamage		equ 1
 
+; Mikun (stage 8). Boite arcade 1000:436C : f7 ff 09 00 des deux cotes, soit
+; -9..+9 — un RAYON de 9 : 9 x 0,375 = 3,4 -> 3 en X, 9 x 0,75 = 6,75 -> 7
+; en Y. Mort au premier coup (do_collision_v1, pas de PV), score $86EC.
+mikun_hitbox_x		equ 3
+mikun_hitbox_y		equ 7
+mikun_hitdamage		equ 1
+
 ; Outslay (stage 2). Boite arcade 1000:427c : 16x16 centree, soit 8 px de
 ; demi-cote -> 8 x 0.375 = 3 en X et 8 x 0.75 = 6 en Y... mais l'arcade
 ; compte en pixels arcade et la boite v2 en pixels larges : la demi-largeur

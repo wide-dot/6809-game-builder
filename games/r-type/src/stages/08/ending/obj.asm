@@ -5,10 +5,10 @@
 ; ----------------------------------------
 ;   wave entries of stage 8, after the core:
 ;     $0DE8 ObjID_starfield (variant 3) ... starfield.init (common)
-;     $0F28 40:FB10 the fleet ............. ending.FleetNew
+;     $0F28 40:FB10 the fleet ............. fleet.unit (precomputed)
 ;     $0F78 40:FB9C six cycling palettes .. not ported (see below)
 ;     $1130 40:EEAB the credits director .. ending.Dir
-;   40:FB53 a ship of the fleet ........... ending.Ship
+;   40:FB53 a ship of the fleet ........... flown by tools/gen_ending.py
 ;   40:EEB5 / EF09 / EF1E / EF83 / EF97 ... ending.Dir phases 1 to 5
 ;   40:ED93 blit_text_string_fg ........... ending.Write (a row of rowText)
 ;
@@ -16,14 +16,18 @@
 ; the arcade's: it starts at ending.gc0, the frame the core's bg fade starts
 ; (its death + 0x260, written by the core), and the wave's creations fall at
 ; their arcade frames — the wave clock follows the scroll (0xC0 a frame once
-; the core is dead), so they are fixed offsets from there. List order: the
-; director (0x0100) before the ships (0xFF70); a record ticks from the frame
-; after its creation.
+; the core is dead), so they are fixed offsets from there.
+;
+; THE FLEET IS PRECOMPUTED (17/10/2026): its flight depends on the clock
+; alone, so tools/gen_ending.py flies it from the ROM and fleet.unit.asm reads
+; its screen changes once per render (the clock in ending.clock) — no frame-
+; by-frame replay of 18 ships; this page only replays the director and the
+; text's scroll, a few dozen cycles a frame.
 ;
 ; THE TEXT is a fg tilemap that scrolls up (0x2EC4/0x2EC6, 9.8, 0.5 px a
 ; frame from 0x40:EF13): the director writes descriptors in rows, the stage 8
-; main draws the rows (ending.rowText) at (8 (row - 16) - Y) mod 512 with the
-; HUD's font (its strings are resident: text.asm).
+; credits unit draws the rows (ending.rowText) at (8 (row - 16) - Y) mod 512,
+; one compiled line each (credits.unit.asm).
 ;
 ; DEVIATIONS (V2-DEVIATION):
 ; - the six cycling palettes (40:FBED, the ships' shimmer) are not ported:
@@ -31,8 +35,7 @@
 ; - the starfield is the engine's (common), variant 3, not the arcade's 91
 ;   stars (40:E430);
 ; - the text is the HUD's 4 px font: a line is 4 px a glyph where the arcade
-;   is 3 (its 8 px at 3/8), placed at the arcade's column and kept whole on
-;   the playfield; a line is drawn when it is whole on the playfield;
+;   is 3 (its 8 px at 3/8), placed at the arcade's column;
 ; - the director's wait (40:EF09, the fg loader catching up its target) is
 ;   its measured length: three frames;
 ; - the bg palette fade of the ENJOY line (40:EF7A) is not played; the
@@ -48,16 +51,16 @@
 ending.T_STARS equ 16800-16698          ; the starfield, wave $0DE8
 ending.T_FLEET equ 17013-16698          ; the fleet, wave $0F28
 ending.T_DIR   equ 17360-16698          ; the director, wave $1130
+; THE MUSIC IS TIMED BY ITS END (decision of the author, 17/10/2026): on the
+; arcade, "Like a Hero" falls silent when the blackout after ENJOY is complete
+; (the sound measured on a MAME recording: 18917 = the blackout of 40:EF89 at
+; 18867 + its 48 frames). Our arrangement (adnz, YM2413) is not the arcade's
+; recording, so its START is derived from its END: its last note is at 50 Hz
+; frame 1976 (sample 1742832 of rtype-ending.vgm, no key-off after it), the
+; ending's clock runs at one arcade frame per 50 Hz frame, hence
+ending.T_MUSIC equ 18917-16698-1976     ; 243: between the stars and the fleet
 
-; --- a ship, 40:FB53 ------------------------------------------------------------
-S.st          equ 0                     ; 0 none, 1 flying
-S.x           equ 1                     ; 1,2 int (+4), 3 frac (+3)
-S.y           equ 4                     ; 4,5 int (+8), 6 frac (+7)
-S.p           equ 7                     ; 7,8 its script entry, arcade (+0x10)
-S.c           equ 9                     ; 9,10 its frame count (+0x12)
-S.col         equ 11                    ; its colour rank (+0x06)
-S.pose        equ 12                    ; the pose of its last frame, 0..2
-S.SZ          equ 13
+; --- the fleet: precomputed (fleet.unit.asm, tools/gen_ending.py) -----------
 ending.NSHIP  equ 18
 
 ; --- the director, 40:EEB5.. ---------------------------------------------------
@@ -81,12 +84,11 @@ ending.Object
 @clr    clr   ,x+
         subd  #1
         bne   @clr
-        ldx   #ending.Slots
-        ldb   #ending.NSHIP
-!       clr   ,x
-        leax  ending.SLOTSZ,x
-        decb
-        bne   <
+        pshs  u                         ; (fleet.Init uses U, X and Y)
+        lda   #map.RAM_OVER_CART+stage8.fleet.page
+        ldx   #fleet.Init               ; the fleet, precomputed (fleet.unit)
+        jsr   paged.call
+        puls  u
         ldd   ending.gc0                ; the arcade frame of the bg fade
         std   ending.gc
         std   ending.g0
@@ -148,14 +150,7 @@ ending.Tick                         ; test hook: frame ending.gc, before any act
         lda   ending.dst                ; 0x0100 the director
         beq   >
         jsr   ending.Dir
-!       ldy   #ending.Ships             ; 0xFF70 the ships
-@s      lda   S.st,y
-        beq   >
-        jsr   ending.Ship
-!       leay  S.SZ,y
-        cmpy  #ending.ShipsEnd
-        blo   @s
-        ldd   ending.gc                 ; the wave's creations, at their frames
+!       ldd   ending.gc                 ; the wave's creations, at their frames
         subd  ending.g0
         cmpd  #ending.T_STARS
         bne   >
@@ -163,105 +158,16 @@ ending.Tick                         ; test hook: frame ending.gc, before any act
         lda   #map.RAM_OVER_CART+common.starfield.page
         ldx   #starfield.init
         jmp   paged.call
-!       cmpd  #ending.T_FLEET
-        lbeq  ending.FleetNew
-        cmpd  #ending.T_DIR
+!       cmpd  #ending.T_MUSIC
+        bne   >
+        lda   #1                        ; "Like a Hero", timed by its end
+        sta   ending.music
+        rts
+!       cmpd  #ending.T_DIR
         bne   @rts
         lda   #ending.D_P1
         sta   ending.dst
 @rts    rts
-
-;*******************************************************************************
-; THE FLEET — 40:FB10 (creation), 40:FB53 (a ship)
-;*******************************************************************************
-ending.FleetNew
-        ldx   #ending.Fleet
-        ldy   #ending.Ships
-@n      lda   #1
-        sta   S.st,y
-        ldd   ,x                        ; +0x10 its script
-        std   S.p,y
-        ldd   #$0120                    ; fb34 x = 0x120 (the frac: a leftover)
-        std   S.x,y
-        clr   S.x+2,y
-        ldd   2,x                       ; fb39 y
-        std   S.y,y
-        clr   S.y+2,y
-        clr   S.c,y
-        clr   S.c+1,y
-        lda   4,x
-        sta   S.col,y
-        lda   #1
-        sta   S.pose,y
-        leax  5,x
-        leay  S.SZ,y
-        cmpx  #ending.FleetEnd
-        blo   @n
-        rts
-
-; Y = the ship
-ending.Ship
-        ldd   S.c,y                     ; fb53
-        addd  #1
-        std   S.c,y
-        ldd   S.p,y
-        std   ending.wP                 ; this frame's entry
-        addd  #8                        ; fb59 the next entry's start
-        jsr   ending.RomW
-        cmpd  S.c,y
-        bhi   >                         ; fb60 not reached yet
-        ldd   S.p,y
-        addd  #8
-        std   S.p,y
-!       ldd   ending.wP                 ; fb66 vx
-        addd  #2
-        jsr   ending.RomW
-        leax  S.x,y
-        jsr   ending.Move
-        ldd   ending.wP                 ; fb6f vy
-        addd  #4
-        jsr   ending.RomW
-        leax  S.y,y
-        jsr   ending.Move
-        ldd   ending.wP                 ; fb78 its picture
-        addd  #6
-        jsr   ending.RomW
-        std   ending.wT
-        ldx   #ending.Poses
-        clrb
-!       ldu   ,x++
-        cmpu  ending.wT
-        beq   >
-        incb
-        cmpb  #2
-        blo   <
-!       stb   S.pose,y
-        ldd   S.x,y                     ; fb83 off on the right
-        cmpd  #$02E0
-        blo   @rts
-        clr   S.st,y
-@rts    rts
-
-; D = arcade address in the script range -> D = the word there (LE)
-ending.RomW
-        subd  #ending.SCRIPT_LO
-        addd  #ending.Scripts
-        tfr   d,x
-        ldb   ,x
-        lda   1,x
-        rts
-
-; X = position (int:2, frac:1), D = signed 8.8
-ending.Move
-        pshs  a
-        addb  2,x
-        stb   2,x
-        puls  b
-        sex
-        adcb  1,x
-        adca  ,x
-        std   ,x
-        rts
 
 ;*******************************************************************************
 ; THE DIRECTOR — 40:EEB5 .. EF97
@@ -404,75 +310,12 @@ ending.Clear
 ending.Publish
         ldd   ending.y                  ; the text's scroll, int (9 bits)
         std   ending.textY
-        ldu   #ending.Slots
-        ldy   #ending.Ships
-@s      clr   ,u
-        lda   S.st,y
-        beq   @n
-        ldd   S.x,y
-        pshs  y
-        ldy   S.y,y
-        jsr   ending.ToScreen
-        puls  y
-        adda  #screen_left
-        addb  #screen_top
-        std   1,u
-        lda   S.col,y                   ; its picture: colour * 3 + pose
-        ldb   #3
-        mul
-        addb  S.pose,y
-        aslb
-        ldx   #ending.FleetSets
-        ldx   b,x
-        stx   3,u
-        lda   #1
-        sta   ,u
-@n      leau  ending.SLOTSZ,u
-        leay  S.SZ,y
-        cmpy  #ending.ShipsEnd
-        blo   @s
-        rts
-
-; D = arcade x, Y = arcade y -> A = x, B = y on the screen (0-based, clamped)
-ending.ToScreen
-        subd  #320
-        std   ending.wT
-        aslb
-        rola
-        addd  ending.wT
-        asra
-        rorb
-        asra
-        rorb
-        asra
-        rorb
-        addd  #8
-        jsr   ending.Clamp
-        stb   ending.wX
-        tfr   y,d
-        std   ending.wT
-        aslb
-        rola
-        addd  ending.wT
-        asra
-        rorb
-        asra
-        rorb
-        std   ending.wT
-        ldd   #297
-        subd  ending.wT
-        jsr   ending.Clamp
-        lda   ending.wX
-        rts
-
-ending.Clamp
-        tsta
-        beq   @rts
-        bmi   @lo
-        ldb   #255
-        rts
-@lo     clrb
-@rts    rts
+        ldd   ending.gc                 ; the fleet: its precomputed records
+        subd  ending.g0                 ; at the ending's clock (fleet.unit)
+        std   ending.clock
+        lda   #map.RAM_OVER_CART+stage8.fleet.page
+        ldx   #fleet.Update
+        jmp   paged.call
 
 ;*******************************************************************************
 ; THE GROUPED RENDERER — every lit ship slot; this page is the one
@@ -525,7 +368,30 @@ ending.DrawAll
         ldd   1,x
         ldx   3,x                        ; its imageset
         pshs  a,b
-        _sprite.cull ending.DrawAll.off
+        ; ON THE BANDS: a ship enters and leaves straddling the edge. The
+        ; screen memory runs on from a line's last byte to the next line's
+        ; first, and the black side columns (images/viewport, 8 px each,
+        ; drawn after the sprites) meet across that wrap: what sticks out of
+        ; the right edge lands in the next line's left column, what sticks out
+        ; of the left edge in the previous line's right column — both hidden.
+        ; So the horizontal test is the bands' window, 8 px past either edge,
+        ; not the screen's (_sprite.cull); the vertical one is unchanged.
+        lda   ,s
+        adda  imgset.x1,x
+        suba  #screen_left-8             ; 0 = 8 px left of the screen
+        cmpa  #160+16-1
+        bhi   ending.DrawAll.off
+        adda  imgset.xsize,x
+        cmpa  #160+16
+        bhi   ending.DrawAll.off
+        lda   1,s
+        adda  imgset.y1,x
+        suba  #screen_top
+        cmpa  #screen_bottom-screen_top
+        bhi   ending.DrawAll.off
+        adda  imgset.ysize,x
+        cmpa  #screen_bottom-screen_top+1
+        bhi   ending.DrawAll.off
         lda   ,s
         suba  imgset.center,x
         ldb   1,s
@@ -547,24 +413,14 @@ ending.DrawAll.off
         leas  2,s
         ldx   ending.wS
 @next   leax  ending.SLOTSZ,x
-        cmpx  #ending.SlotsEnd
+        cmpx  #ending.Slots+ending.NSHIP*ending.SLOTSZ
         blo   @loop
         rts
-
-;*******************************************************************************
-; THE PICTURES
-;*******************************************************************************
-ending.FleetSets
-        fdb   set_fleet_0,set_fleet_1,set_fleet_2,set_fleet_3,set_fleet_4,set_fleet_5
-        fdb   set_fleet_6,set_fleet_7,set_fleet_8,set_fleet_9,set_fleet_10,set_fleet_11
-        fdb   set_fleet_12,set_fleet_13,set_fleet_14,set_fleet_15,set_fleet_16,set_fleet_17
 
 ;*******************************************************************************
 ; THE DATA (page) — cleared at every Init
 ;*******************************************************************************
 ending.nfr    fcb   0
-ending.Slots  fill  0,ending.NSHIP*ending.SLOTSZ
-ending.SlotsEnd
 
 ending.Data
 ending.gc     fdb   0                    ; the arcade global counter (0x2EB6)
@@ -577,12 +433,7 @@ ending.d10    fdb   0                    ; +0x10 (the table: a rank here)
 ending.d12    fdb   0                    ; +0x12
 ending.d14    fdb   0                    ; +0x14
 ending.wait   fcb   0
-ending.wP     fdb   0
-ending.wT     fdb   0
-ending.wX     fcb   0
 ending.wS     fdb   0
-ending.Ships  fill  0,ending.NSHIP*S.SZ
-ending.ShipsEnd
 ending.DataEnd
 
         INCLUDE "src/stages/08/ending/tables.asm"

@@ -58,6 +58,9 @@ Ani_Asd_common    EXTERNAL
 ; ce symbole — paged.call suffit a l'atteindre. Les deux stages partagent
 ; stage-main.asm, donc les deux le declarent.
 adr_playfield_mask_ND0 EXTERNAL
+adr_viewport_ND0  EXTERNAL
+credits.Draw      EXTERNAL
+ending.ClearField EXTERNAL
 ; L'effacement du champ de jeu, meme page : peint en tete de trame.
 adr_playfield_clear_ND0 EXTERNAL
 playfield.clearBlast    EXTERNAL
@@ -114,6 +117,11 @@ bydo.boxes        EXPORT
 bydo.slots        EXPORT
 bydo.DrawAll      EXPORT
 
+; LE MIKUN, dans son propre direntry (stage8.mikun) : l'emetteur invisible de
+; la wave et le mikun qu'il pond.
+mikun.Object      EXTERNAL
+mikun.Unit        EXTERNAL
+
 ; LA FIN DU JEU, dans son propre direntry (stage8.ending) : le directeur du
 ; generique et la flotte, en repere arcade. Ce qui doit etre RESIDENT vit
 ; ici (plus bas) : l'etat que la boucle lit, et le texte, que le dessin lit
@@ -124,12 +132,13 @@ ending.rowText    EXPORT
 ending.textY      EXPORT
 ending.hudOff     EXPORT
 ending.done       EXPORT
+ending.Slots      EXPORT
+ending.clock      EXPORT
 ending.gc0        EXPORT
 ending.black      EXPORT
 ending.music      EXPORT
 sounds.ending.ymm EXTERNAL
 sounds.boss.ymm   EXTERNAL
-hud.drawStr       EXTERNAL
 
 ; Le fondu de palette : un objet monte comme un autre depuis le 04/08 — le
 ; stage l'arme a l'ouverture et le fait tourner dans sa boucle.
@@ -249,12 +258,7 @@ stage.openingSequence
 ; ---------------------------------------------------------------------------
 stage.frameBlit
         _Obj_RunB ObjID_endstage,#endstage.BLIT
-        ; le generique, sur le noir et les etoiles, SOUS les vaisseaux : la
-        ; police du HUD peint des cellules pleines
-        lda   ending.on
-        beq   @rts
-        jsr   ending.DrawText
-@rts    rts
+        rts
 
 ; La phase publiée est directement la variable résidente que l'objet écrit.
 stage.overlayPhase equ main.endstage.phase
@@ -302,16 +306,20 @@ stage.endTick
         puls  b
         _SetCartPageB
         jsr   IrqOn
-!       lda   ending.music
-        beq   >
-        clr   ending.music
-        jsr   IrqOff
-        _GetCartPageB
+!       ldb   ending.music              ; 1 : la musique de fin, $FF : le
+        beq   >                         ; silence (les instants mesures sur
+        clr   ending.music              ; la borne, voir bydo/obj.asm)
+        jsr   IrqOff                    ; (rend B intact)
+        incb
+        bne   @play
+        jsr   ymm.stop
+        bra   @on
+@play   _GetCartPageB
         pshs  b
-        _ymm.obj.play #map.RAM_OVER_CART+stage8.music.ymm.page,#sounds.ending.ymm,#ymm.LOOP,#ymm.NO_CALLBACK
+        _ymm.obj.play #map.RAM_OVER_CART+stage8.music.ymm.page,#sounds.ending.ymm,#ymm.NO_LOOP,#ymm.NO_CALLBACK
         puls  b
         _SetCartPageB
-        jsr   IrqOn
+@on     jsr   IrqOn
         ; La sequence de fin decide, pas la camera — voir le commentaire des
         ; trois rendez-vous.
 !       lda   ending.on
@@ -460,11 +468,14 @@ bydo.slotsEnd
 bydo.DrawAll
         ldd   #bydo.slotsFront
         std   bydo.DrawSlots.end
+        lda   #1                         ; the wins have their shifted variant
+        sta   bydo.DrawSlots.shift
         ldx   #bydo.slots
         bra   bydo.DrawSlots
 stage.frameFront
         ldd   #bydo.slotsEnd
         std   bydo.DrawSlots.end
+        clr   bydo.DrawSlots.shift       ; the patches sit on even columns
         ldx   #bydo.slotsFront
 ; X = the first slot, bydo.DrawSlots.end the end: every lit slot, its page
 ; mounted (Y untouched: BuildSprites calls the first entry)
@@ -486,8 +497,19 @@ bydo.DrawSlots
         pshs  x
         jsr   DRS_XYToAddress
         puls  x
-        ldx   14,x                       ; its routine
-        ldu   <glb_screen_location_2
+        ; a win moves by ONE pixel: the variant shifted by 1 px (ND1, its
+        ; routine at 17) on the odd x, as BuildSprites picks it (x ^ centre)
+        lda   #0
+bydo.DrawSlots.shift equ *-1
+        beq   @nd0
+        lda   ,s
+        eora  imgset.center,x
+        bita  #1
+        beq   @nd0
+        ldx   17,x                       ; ND1
+        bra   @draw
+@nd0    ldx   14,x                       ; ND0
+@draw   ldu   <glb_screen_location_2
         jsr   ,x
 bydo.DrawSlots.off
         leas  2,s
@@ -521,79 +543,23 @@ stage.handOver
 ;
 ; L'etat que la boucle lit (HUD coupe, noir, fin), les lignes ecrites par le
 ; directeur (une case par ligne de tilemap arcade : rang de chaine + 1, 0 =
-; vide) et le defilement du texte. Le dessin monte la page du HUD, dont la
-; police peint le generique : les chaines doivent donc etre ICI.
+; vide) et le defilement du texte. Le dessin vit dans l'unite de la fin, avec
+; sa police (ending.DrawText).
 ;*******************************************************************************
 ending.on      fcb   0
-ending.music   fcb   0                 ; le noyau : la musique de fin (0x1A)
+ending.music   fcb   0                 ; 1 : la musique de fin, $FF : le silence
 ending.hudOff  fcb   0
 ending.done    fcb   0
 ending.black   fcb   0
 ending.gc0     fdb   0                 ; la trame arcade du fondu (le noyau l'ecrit)
 ending.textY   fdb   0                 ; le Y du texte, entier 9 bits
-ending.row     fcb   0
-ending.rx      fdb   0
-ending.wy      fdb   0
 ending.rowText fill  0,64
+; la flotte : ses 18 creneaux [allume, x, y, image (2), -], remplis par
+; fleet.unit a chaque rendu et dessines par le rendu groupe de la fin ;
+; l'horloge de la fin qu'il lit
+ending.Slots   fill  0,18*6
+ending.clock   fdb   0
 
-; ecran : y = (8 (ligne - 16) - Y) mod 512 en pixels arcade, une ligne dessinee
-; quand elle est entiere sur le champ (TO8 : 10 + 3y/4, lignes 11 a 190)
-ending.DrawText
-        _GetCartPageA
-        pshs  a
-        lda   #map.RAM_OVER_CART+common.hud.page
-        _SetCartPageA
-        ldx   #ending.rowText+16
-        lda   #16
-        sta   ending.row
-@loop   ldb   ,x
-        beq   @next
-        stx   ending.rx
-        lda   ending.row
-        suba  #16
-        ldb   #8
-        mul
-        subd  ending.textY
-        anda  #1                        ; mod 512
-        cmpd  #232
-        bhi   @skip
-        std   ending.wy                 ; 3y/4
-        aslb
-        rola
-        addd  ending.wy
-        lsra
-        rorb
-        lsra
-        rorb
-        addd  #10
-        cmpb  #11
-        blo   @skip
-        cmpb  #183
-        bhi   @skip
-        addb  #3                        ; the glyph's anchor is its 4th line
-        lda   #40
-        mul
-        addd  #$C000
-        tfr   d,u
-        ldb   [ending.rx]
-        decb
-        aslb
-        ldy   #ending.Strings
-        ldy   b,y
-        ldb   ,y+                       ; its column
-        leau  b,u
-        jsr   hud.drawStr
-@skip   ldx   ending.rx
-@next   leax  1,x
-        inc   ending.row
-        lda   ending.row
-        cmpa  #64
-        blo   @loop
-        puls  a
-        _SetCartPageA
-        rts
-
-        INCLUDE "src/stages/08/ending/text.asm"
 
 ;*******************************************************************************
 ; L'index d'objets et la wave — les données réelles du niveau 2

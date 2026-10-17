@@ -45,6 +45,9 @@ Obj_Index_Page
         fcb   map.RAM_OVER_CART+stage8.bydo.page ; ObjID_bydo_render
         fcb   map.RAM_OVER_CART+stage8.ending.page ; ObjID_ending
         fcb   map.RAM_OVER_CART+stage8.ending.page ; ObjID_ending_render
+        fcb   map.RAM_OVER_CART+stage8.mikun.page ; ObjID_mikun
+        fcb   map.RAM_OVER_CART+stage8.mikun.page ; ObjID_mikun_unit
+        fcb   map.RAM_OVER_CART+stage8.mikun.page ; ObjID_mikun_unit2
 Obj_Index_Page.end
 
 Obj_Index_Address
@@ -94,6 +97,9 @@ Obj_Index_Address
         fdb   bydo.Render ; ObjID_bydo_render
         fdb   ending.Object ; ObjID_ending
         fdb   ending.Render ; ObjID_ending_render
+        fdb   mikun.Object ; ObjID_mikun
+        fdb   mikun.Unit ; ObjID_mikun_unit
+        fdb   mikun.Unit ; ObjID_mikun_unit2
 Obj_Index_Address.end
 
 Ani_Page_Index
@@ -137,6 +143,9 @@ Ani_Page_Index
         fcb   map.RAM_OVER_CART+stage8.bydo.page ; ObjID_bydo_render
         fcb   map.RAM_OVER_CART+stage8.ending.page ; ObjID_ending
         fcb   map.RAM_OVER_CART+stage8.ending.page ; ObjID_ending_render
+        fcb   map.RAM_OVER_CART+stage8.mikun.page ; ObjID_mikun
+        fcb   map.RAM_OVER_CART+stage8.mikun.page ; ObjID_mikun_unit
+        fcb   map.RAM_OVER_CART+stage8.mikun.page ; ObjID_mikun_unit2
 Ani_Page_Index.end
 
 Ani_Asd_Index
@@ -180,6 +189,9 @@ Ani_Asd_Index
         fdb   Ani_Asd_none ; ObjID_bydo_render
         fdb   Ani_Asd_none ; ObjID_ending
         fdb   Ani_Asd_none ; ObjID_ending_render
+        fdb   Ani_Asd_none ; ObjID_mikun
+        fdb   Ani_Asd_none ; ObjID_mikun_unit
+        fdb   Ani_Asd_none ; ObjID_mikun_unit2
 Ani_Asd_Index.end
 
 Ani_Asd_none
@@ -226,6 +238,9 @@ Img_Page_Index
         fcb   map.RAM_OVER_CART+stage8.bydo.page ; ObjID_bydo_render
         fcb   map.RAM_OVER_CART+stage8.ending.page ; ObjID_ending
         fcb   map.RAM_OVER_CART+stage8.ending.page ; ObjID_ending_render
+        fcb   map.RAM_OVER_CART+stage8.mikun.page ; ObjID_mikun
+        fcb   map.RAM_OVER_CART+stage8.mikun.page ; ObjID_mikun_unit
+        fcb   map.RAM_OVER_CART+stage8.mikun.img.page ; ObjID_mikun_unit2
 Img_Page_Index.end
 
 * GARDE-FOU. Les cinq tables sont indexees par l'identifiant d'objet : le
