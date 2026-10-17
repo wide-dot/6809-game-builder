@@ -117,6 +117,11 @@ bydo.boxes        EXPORT
 bydo.slots        EXPORT
 bydo.DrawAll      EXPORT
 
+; LE MIKUN, dans son propre direntry (stage8.mikun) : l'emetteur invisible de
+; la wave et le mikun qu'il pond.
+mikun.Object      EXTERNAL
+mikun.Unit        EXTERNAL
+
 ; LA FIN DU JEU, dans son propre direntry (stage8.ending) : le directeur du
 ; generique et la flotte, en repere arcade. Ce qui doit etre RESIDENT vit
 ; ici (plus bas) : l'etat que la boucle lit, et le texte, que le dessin lit
@@ -463,11 +468,14 @@ bydo.slotsEnd
 bydo.DrawAll
         ldd   #bydo.slotsFront
         std   bydo.DrawSlots.end
+        lda   #1                         ; the wins have their shifted variant
+        sta   bydo.DrawSlots.shift
         ldx   #bydo.slots
         bra   bydo.DrawSlots
 stage.frameFront
         ldd   #bydo.slotsEnd
         std   bydo.DrawSlots.end
+        clr   bydo.DrawSlots.shift       ; the patches sit on even columns
         ldx   #bydo.slotsFront
 ; X = the first slot, bydo.DrawSlots.end the end: every lit slot, its page
 ; mounted (Y untouched: BuildSprites calls the first entry)
@@ -489,8 +497,19 @@ bydo.DrawSlots
         pshs  x
         jsr   DRS_XYToAddress
         puls  x
-        ldx   14,x                       ; its routine
-        ldu   <glb_screen_location_2
+        ; a win moves by ONE pixel: the variant shifted by 1 px (ND1, its
+        ; routine at 17) on the odd x, as BuildSprites picks it (x ^ centre)
+        lda   #0
+bydo.DrawSlots.shift equ *-1
+        beq   @nd0
+        lda   ,s
+        eora  imgset.center,x
+        bita  #1
+        beq   @nd0
+        ldx   17,x                       ; ND1
+        bra   @draw
+@nd0    ldx   14,x                       ; ND0
+@draw   ldu   <glb_screen_location_2
         jsr   ,x
 bydo.DrawSlots.off
         leas  2,s

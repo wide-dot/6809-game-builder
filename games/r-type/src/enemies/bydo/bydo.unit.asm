@@ -1,8 +1,9 @@
 ;*******************************************************************************
 ; bydo — the stage 8 boss, its own direntry (stage8.bydo)
 ;
-; The core, the grouped renderer of the wins, the tentacle patches and the
-; wins share this page; the head's five frames have their own. The entry is the
+; The core, the grouped renderer of the wins and the tentacle patches share
+; this page; the head's five frames have their own, and so do the wins' three
+; poses with their 1 px shifted variants (stage8.win). The entry is the
 ; FIRST byte of the unit (docs/lang/en/migration/unit-entry-point.md).
 ; Porting sheet: obj.asm.
 ;*******************************************************************************
@@ -15,6 +16,11 @@ bydo.Render EXPORT
 Obj_Index_Page    EXTERNAL
 Obj_Index_Address EXTERNAL
 Img_Page_Index    EXTERNAL
+
+; the three win poses and their 1 px shifted variants (stage8.win)
+set_bydo_win_0    EXTERNAL
+set_bydo_win_1    EXTERNAL
+set_bydo_win_2    EXTERNAL
 
 ; the head's five frames, on their own page (stage8.bydo.head)
 set_bydo_head_0   EXTERNAL
@@ -50,6 +56,7 @@ wreck             EXTERNAL
 ; the pages of the pictures (the patches are drawn by the stage's front hook)
 bydo.PG       equ stage8.bydo.page
 bydo.PG_HEAD  equ stage8.bydo.head.page
+bydo.PG_WIN   equ stage8.win.page
 
         INCLUDE "src/enemies/bydo/obj.asm"
 

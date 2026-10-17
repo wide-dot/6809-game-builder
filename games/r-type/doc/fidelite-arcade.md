@@ -292,8 +292,10 @@ consomme le quota de continue, comme le compteur unique de la borne). Ce qui lit
   rapide sur Force ≥ 2 (`core.Hard`, dddd/dfcc). Règle de l'auteur
   (16/10) : du 1:1 avec la borne tant que c'est techniquement possible.
 
-Pas encore porté : Mid, Pursuer, Cheetah et Mikun (les ennemis eux-mêmes ne
-le sont pas) devront lire la difficulté.
+Pas encore porté : Mid, Pursuer et Cheetah (les ennemis eux-mêmes ne le sont
+pas) devront lire la difficulté. Le Mikun la lit depuis le 17/10/2026 : sa
+vitesse de lancement vient de la table de la difficulté courante (1000:4284,
+le pool du pique du wick).
 
 Piège de banc relevé au passage : le Compiler a une trame AVEUGLE, gc0+1 —
 ses résidus arcade sont écrits au Tick de la trame suivante. Tant qu'aucun

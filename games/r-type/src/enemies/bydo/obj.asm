@@ -41,7 +41,9 @@
 ; AFTER the tiles by the stage's front hook (stage.frameFront, stage 8 main,
 ; bydo.DrawFront), at their place on the map: their screen x follows the
 ; camera, not the arcade x. The wins are the engine's sprites of
-; src/enemies/win, drawn by a grouped renderer (bydo.DrawAll).
+; src/enemies/win, drawn by a grouped renderer (bydo.DrawAll); their three
+; poses and the 1 px shifted variants (picked on the x parity, as
+; BuildSprites does) live in stage8.win (bydo.PG_WIN).
 ;
 ; DEVIATIONS (V2-DEVIATION):
 ; - collision runs once per render (engine); the Force-in-mouth test reads
@@ -1147,7 +1149,7 @@ bydo.Publish
 !       aslb
         ldx   #bydo.WinSets
         ldx   b,x
-        lda   #map.RAM_OVER_CART+bydo.PG
+        lda   #map.RAM_OVER_CART+bydo.PG_WIN
         jsr   bydo.Slot
         tfr   y,d
         subd  #bydo.Wins

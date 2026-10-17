@@ -19,8 +19,14 @@ ObjID_bydo_render equ 37
 * groupe de la flotte (stage8.ending), nes par le main apres le fondu.
 ObjID_ending equ 38
 ObjID_ending_render equ 39
+* Le MIKUN (stage8.mikun) : l'emetteur invisible qu'une ligne de wave cree,
+* et le mikun visible qu'il lance — deux identifiants pour le meme code,
+* un par page de poses (directions 0-7 : stage8.mikun, 8-15 : stage8.mikun.img).
+ObjID_mikun equ 40
+ObjID_mikun_unit equ 41
+ObjID_mikun_unit2 equ 42
 
-objid.count equ 39
+objid.count equ 42
 objid.animation equ ObjID_animation
 
 * RunObjects scales an id with aslb+abx (id*2 in B, RunObjects.asm) : an id

@@ -5470,7 +5470,21 @@
                                  gensource="gen/enemies/stage8-bydo/includes.asm"
                                  genindex="gen/enemies/stage8-bydo/index.asm">
                             <images dir="src/enemies/bydo/images/tentacle" names="bydo_tentacle"/>
-                            <images dir="src/enemies/win/images/default" names="bydo_win"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <!-- les trois poses du Win et leur variante decalee d'un pixel :
+                     stage8.bydo est plein, elles vivent a part, dans l'arene
+                     des tuiles du stage 8 (bydo.PG_WIN) -->
+                <file name="stage8.win" linkdata="DATA" arena="stage8.gfx">
+                    <lwasm gensource="gen/enemies/stage8-win.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <gfxcomp file="stage8.win" gendir="gen/enemies/stage8-win"
+                                 gensource="gen/enemies/stage8-win/includes.asm"
+                                 genindex="gen/enemies/stage8-win/index.asm">
+                            <images dir="src/enemies/win/images/default" names="bydo_win" shifts="0,1"/>
                         </gfxcomp>
                     </lwasm>
                 </file>
@@ -5537,6 +5551,40 @@
                     </lwasm>
                 </file>
 
+                <!-- le MIKUN (src/enemies/mikun/) : l'emetteur invisible de la
+                     wave, le mikun qu'il lance et ses 28 poses (16 directions
+                     x 2, catalog mikun/frames, cycle.txt) -->
+                <file name="stage8.mikun" linkdata="DATA" arena="stage8.gfx">
+                    <lwasm gensource="gen/enemies/stage8-mikun.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <asm filename="gen/directories/dir8/entries.asm"/>
+                        <asm filename="src/enemies/mikun/mikun.unit.asm"/>
+                        <!-- les poses des directions 0 a 7 (00-13) ; celles de 8 a 15
+                             (14-27) dans stage8.mikun.img : avec leur variante decalee
+                             d'un pixel, les 28 ne tiennent pas dans une page -->
+                        <gfxcomp file="stage8.mikun" gendir="gen/enemies/stage8-mikun"
+                                 gensource="gen/enemies/stage8-mikun/includes.asm"
+                                 genindex="gen/enemies/stage8-mikun/index.asm">
+                            <images dir="src/enemies/mikun/images/frames" names="mikun" match="0[0-9].png" shifts="0,1"/>
+                            <images dir="src/enemies/mikun/images/frames" names="mikun" match="1[0-3].png" shifts="0,1"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
+                <file name="stage8.mikun.img" linkdata="DATA" arena="stage8.gfx">
+                    <lwasm gensource="gen/enemies/stage8-mikun-img.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="gen/directories/dir10/entries.asm"/>
+                        <gfxcomp file="stage8.mikun.img" gendir="gen/enemies/stage8-mikun-img"
+                                 gensource="gen/enemies/stage8-mikun-img/includes.asm"
+                                 genindex="gen/enemies/stage8-mikun-img/index.asm">
+                            <images dir="src/enemies/mikun/images/frames" names="mikunb" match="1[4-9].png" shifts="0,1"/>
+                            <images dir="src/enemies/mikun/images/frames" names="mikunb" match="2[0-7].png" shifts="0,1"/>
+                        </gfxcomp>
+                    </lwasm>
+                </file>
+
                 <file name="stage8" linkdata="DATA" region="stage">
                     <lwasm gensource="gen/stages/08/stage08-main.asm">
                         <asm filename="gen/directories/disk0/entries.asm"/>
@@ -5573,9 +5621,12 @@
                     <load name="stage8.collision"/>
                     <load name="stage8.bydo"/>
                     <load name="stage8.bydo.head"/>
+                    <load name="stage8.win"/>
                     <load name="stage8.ending"/>
                     <load name="stage8.credits"/>
                     <load name="stage8.fleet"/>
+                    <load name="stage8.mikun"/>
+                    <load name="stage8.mikun.img"/>
                     <load name="stage8.wreck.even"/>
                     <load name="stage8.wreck.odd"/>
                     <load name="stage8"/>
