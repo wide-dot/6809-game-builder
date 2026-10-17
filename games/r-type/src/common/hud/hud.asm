@@ -465,8 +465,18 @@ hud.scoreReadout
 @draw
         lda   game.stage                      ; le numero du stage COURANT :
         inca                                  ;   game.stage garde le dernier
-        adda  #'0'                            ;   stage acheve (0 en stage 1)
-        sta   hud.str.stageNum
+        tst   globals.loop                    ;   stage acheve (0 en stage 1) ;
+        beq   >                               ;   +8 au second tour (40:f0c9),
+        adda  #8                              ;   « 9 » a « 16 » (1000:8BE0)
+!       ldb   #' '
+        cmpa  #10
+        blo   >
+        suba  #10                             ; deux chiffres : « 1 » puis
+        tfr   a,b                             ;   l'unite
+        addb  #'0'
+        lda   #1
+!       adda  #'0'
+        std   hud.str.stageNum
         ldu   #hud.line1U                     ; "STAGE n CLEARED" (static; redrawn each frame so
         ldy   #hud.str.cleared                ;   both video buffers carry it)
         jsr   hud.drawStr
@@ -533,8 +543,8 @@ hud.drawStr
 ; HUD est commun aux huit stages, la chaine ne peut pas porter un numero
 ; d'assemblage. La police a tous les chiffres (numbers_addr).
 hud.str.cleared  fcc 'S T A G E   '
-hud.str.stageNum fcc '1'
-                 fcc '   C L E A R E D'
+hud.str.stageNum fcc '1 '                     ; deux cases : « 9 » ou « 16 »
+                 fcc '  C L E A R E D'
                  fcb 0
 hud.str.score   fcc 'STAGE SCORE '
                 fcb 0
@@ -785,6 +795,12 @@ hud.cont.accept
         inc   game.continueUsed
         ldb   #2
         stb   globals.lives
+        ; LE CONTINUE PASSE LA SUITE EN DIFFICULTE 2, comme la borne : son
+        ; game over incremente le compteur de tours (40:EFE3, 0x2F42) que le
+        ; depart de stage recopie dans second_loop (40:1011) — la reprise
+        ; joue la forme de second tour.
+        inc   globals.loop
+        _difficulty.update
         bra   hud.cont.leave
 
 hud.cont.refuse

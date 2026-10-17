@@ -1,8 +1,9 @@
 ; GENERE par tools/gen_bellmite.py depuis la ROM arcade — ne pas editer.
 ; Repere ARCADE (x a droite, y vers le haut), valeurs non converties.
 
-; 1000:5F5C bellmite_difficulty_phase_period : $33 $20 $18 $10 (indice 0 retenu)
-bellmite.PERIOD equ $0033
+; 1000:5F5C bellmite_difficulty_phase_period, par difficulte
+bellmite.Period
+        fdb   $0033,$0020,$0018,$0010
 bellmite.NSAT   equ 37
 
 ; 1000:5F6C les decalages d'orbite des satellites, {x, y}
@@ -80,9 +81,13 @@ bellmite.Targets
         fdb   $0288,$0128  ; 30
         fdb   $0268,$00E0  ; 31
 
+; 1000:5F64 les vitesses d'attaque, une table par difficulte
+bellmite.AttackVels
+        fdb   bellmite.AttackVel0,bellmite.AttackVel1,bellmite.AttackVel2,bellmite.AttackVel3
+
 ; 1000:8FD0 vitesses d'attaque (difficulte 0), {vx, vy} en 8.8,
 ; indexees par le code de direction (pas de 4 : N, NNE ... NNW)
-bellmite.AttackVel
+bellmite.AttackVel0
         fdb   0,544       ; $00 N
         fdb   208,512     ; $04 NNE
         fdb   400,400     ; $08 NE
@@ -99,3 +104,63 @@ bellmite.AttackVel
         fdb   -544,240    ; $34 WNW
         fdb   -400,400    ; $38 NW
         fdb   -208,512    ; $3C NNW
+
+; 1000:9050 vitesses d'attaque (difficulte 1), {vx, vy} en 8.8,
+; indexees par le code de direction (pas de 4 : N, NNE ... NNW)
+bellmite.AttackVel1
+        fdb   0,656       ; $00 N
+        fdb   256,624     ; $04 NNE
+        fdb   496,496     ; $08 NE
+        fdb   672,288     ; $0C ENE
+        fdb   768,0       ; $10 E
+        fdb   672,-288    ; $14 ESE
+        fdb   496,-496    ; $18 SE
+        fdb   256,-624    ; $1C SSE
+        fdb   0,-656      ; $20 S
+        fdb   -256,-624   ; $24 SSW
+        fdb   -496,-496   ; $28 SW
+        fdb   -672,-288   ; $2C WSW
+        fdb   -768,0      ; $30 W
+        fdb   -672,288    ; $34 WNW
+        fdb   -496,496    ; $38 NW
+        fdb   -256,624    ; $3C NNW
+
+; 1000:9090 vitesses d'attaque (difficulte 2), {vx, vy} en 8.8,
+; indexees par le code de direction (pas de 4 : N, NNE ... NNW)
+bellmite.AttackVel2
+        fdb   0,736       ; $00 N
+        fdb   304,704     ; $04 NNE
+        fdb   560,560     ; $08 NE
+        fdb   768,320     ; $0C ENE
+        fdb   848,0       ; $10 E
+        fdb   768,-320    ; $14 ESE
+        fdb   560,-560    ; $18 SE
+        fdb   304,-704    ; $1C SSE
+        fdb   0,-736      ; $20 S
+        fdb   -304,-704   ; $24 SSW
+        fdb   -560,-560   ; $28 SW
+        fdb   -768,-320   ; $2C WSW
+        fdb   -848,0      ; $30 W
+        fdb   -768,320    ; $34 WNW
+        fdb   -560,560    ; $38 NW
+        fdb   -304,704    ; $3C NNW
+
+; 1000:90D0 vitesses d'attaque (difficulte 3), {vx, vy} en 8.8,
+; indexees par le code de direction (pas de 4 : N, NNE ... NNW)
+bellmite.AttackVel3
+        fdb   0,800       ; $00 N
+        fdb   320,752     ; $04 NNE
+        fdb   592,608     ; $08 NE
+        fdb   832,352     ; $0C ENE
+        fdb   912,0       ; $10 E
+        fdb   832,-352    ; $14 ESE
+        fdb   592,-608    ; $18 SE
+        fdb   320,-752    ; $1C SSE
+        fdb   0,-800      ; $20 S
+        fdb   -320,-752   ; $24 SSW
+        fdb   -592,-608   ; $28 SW
+        fdb   -832,-352   ; $2C WSW
+        fdb   -912,0      ; $30 W
+        fdb   -832,352    ; $34 WNW
+        fdb   -592,608    ; $38 NW
+        fdb   -320,752    ; $3C NNW

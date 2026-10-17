@@ -157,9 +157,41 @@ globals.foeBgSolid         equ GLOBAL_VARIABLES+155 ; 1 octet, 0 = fond ignore
 * n'ont plus de sens et sa lecture est du temps perdu.
 globals.plainBackdrop      equ GLOBAL_VARIABLES+156 ; 1 octet, 0 = decor normal
 
-* +157, +159, +160 : LIBRES depuis le 16/10/2026. Ils portaient l'etat du
-* Compiler (pieces tombees, rythme du laser roulant) ; son portage 1:1 le
-* tient dans ses propres records (src/enemies/compiler/obj.asm).
+* LE FONDU DE LA FIN DU JEU EST LANCE (16/10/2026) : le Bydo core le pose en
+* lancant le fondu palette du decor (40:C238) ; la voie FADE_ENDING de l'objet
+* de fin attend ce fondu-la, pas un autre. Remis a zero par l'INIT de l'objet.
+globals.endFade            equ GLOBAL_VARIABLES+157 ; 1 octet
+
+* LE TOUR (16/10/2026) : le compteur de tours du joueur de la borne (0x2F42,
+* recopie dans second_loop 0x2F2D a chaque depart de stage). La fin du jeu
+* l'incremente (40:EE7B), un continue accepte aussi (le game over, 40:EFE3).
+* Non nul : la difficulte vaut 2, et les ennemis qui testent second_loop
+* prennent leur forme de second tour (PV du Zoid et du reacteur, noyau et
+* tourelles du vaisseau, tir de l'Outslay) ; la fin du jeu mene au game over.
+* Seme a zero avec la partie (stage-main.asm, game.fresh).
+globals.loop               equ GLOBAL_VARIABLES+159 ; 1 octet
+
+* LA DIFFICULTE DE LA BORNE (40:2036, recalculee a chaque trame dans le tic
+* du joueur) : (second_loop ? 2 : DIP Hard ? 1 : 0) + (Force >= 2 ? 1 : 0),
+* plafond 3 — 0x3E est le niveau de Force (0 = pas de pod), notre
+* globals.forcepodlevel. Le DIP est celui par defaut (Normal). Fonction pure
+* du tour et du Force : le port la recalcule la ou l'un des deux change
+* (semis de partie, ramassage, mort, passage de tour, continue). 19 octets,
+* A et B detruits.
+_difficulty.update MACRO
+        clra
+        tst   globals.loop
+        beq   >
+        lda   #2
+!       ldb   globals.forcepodlevel
+        cmpb  #2
+        blo   >
+        inca
+!       sta   globals.difficulty
+ ENDM
+
+* +160 : LIBRE depuis le 16/10/2026 (ancien etat du Compiler, que son
+* portage 1:1 tient dans ses propres records).
 
 * CE STAGE A-T-IL UN VRAI BOSS ? (29/08/2026)
 *

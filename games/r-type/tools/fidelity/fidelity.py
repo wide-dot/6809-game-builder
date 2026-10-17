@@ -33,7 +33,7 @@ Quand le flux aleatoire est PARTAGE (le Compiler et le champ d'etoiles), la
 reference porte la valeur recue par chaque tirage de la famille et le banc
 l'ecrit dans D au crochet `<boss>.Drawn` (profil avec `draws`).
 
-Usage (depuis games/r-type/), <boss> = bellmite | compiler | dopswarm | bronco :
+Usage (depuis games/r-type/), <boss> = bellmite | compiler | dopswarm | bronco | bydo | ending :
   python3 tools/fidelity/fidelity.py arcade <boss>          # MAME -> ref
   python3 tools/fidelity/fidelity.py arcade <boss> --check  # ref a jour ?
   python3 tools/fidelity/fidelity.py to8 <boss> dist/to8.fd [--out f]
@@ -213,6 +213,11 @@ class Compiler:
     ticks = (0xA762, 0xA982, 0xA9C1, 0xAA0F, 0xAB62, 0xACE7, 0xB073, 0xAC4C,
              0xE6AB, 0xE6C0, 0xAEFB, 0xAF6F)
     budget = 7400
+    # the first frame after the creation is BLIND: its leftovers (position
+    # fractions, turret clocks) are written at the Tick of the NEXT frame
+    # (tick(), gc0+2), so a render that falls on gc0+1 cannot match. Seen
+    # once a timing change made the first render fall there (16/10/2026).
+    blind = 1
     env = {'PILOT_RNGLOG': '1'}
     pin_arcade = (512, 228)
     pin_to8 = (80, 126)
@@ -780,8 +785,266 @@ class Bronco:
             put(base + sym['bro.axf'], [a['ma'][0] & 0xFF])
 
 
+class Bydo:
+    """The Bydo core (stage 8): a clock that walks a timeline, its mouth's
+    child, the wins it lets go, its death phases and explosion cascade. Its
+    reading of the arcade records is the model's (models/bydo_model.py)."""
+    name = 'bydo'
+    stage = 8
+    unit = 'stage8.bydo'
+    lwmap = 'gen/enemies/build/stage8-bydo.lwmap'
+    hook = 'bydo'
+    data = ('bydo.Data', 'bydo.DataEnd')
+    gcsym, rngsym = 'bydo.gc', 'bydo.rng'
+    ticks = ('c0ca-c46d', 0x983B, 0x98A8)
+    budget = 9300
+    env = {'PILOT_RNGLOG': '1', 'PILOT_START': 'c0ca', 'PILOT_WAIT': '40000'}
+    pin_arcade = (512, 228)
+    pin_to8 = (80, 126)
+    # the timeout kills it at 0x2000: the idle scenario plays the whole fight
+    scenarios = {'idle': []}
+    OWN = {0xC28E, 0xC2B0, 0xC2BB, 0xC2D1, 0xC2DD}
+    CORE = {1: 'run', 2: 'ph1', 3: 'ph2', 4: 'ph3', 5: 'gone'}
+    SCRIPTS = {0xA872: 0x278, 0xA90C: 0x2A0, 0xA96C: 0x2A0, 0xA9F6: 0x2A0}
+
+    def __init__(self):
+        from models import bydo_model
+        self.model = bydo_model
+        self.reset()
+
+    def reset(self):
+        self.prev = None
+
+    def draws(self, f):
+        if self.prev is None:
+            st = tuple(f['rng'])                 # nothing draws at creation
+        else:
+            st = tuple(self.prev)
+            if (f['gc'] & 0x1FF) == 0:
+                st = (5, 1, 3)
+        out = []
+        for caller in f.get('rc', []):
+            a, b, c = st
+            na = (b + c) & 0xFF
+            if caller in self.OWN:
+                out.append([caller, (c << 8) | na])
+            st = (na, a, b)
+        self.prev = f['rng']
+        return out
+
+    def arcade(self, frame, seen):
+        v = self.model.arcade_view(frame)
+        core = v['core']
+        if core is None:
+            core = {'st': 'gone'}
+        elif core['st'] not in ('ph2', 'ph3'):
+            core = dict(core)
+            del core['c10']
+        rank = {n: k for k, n in self.CORE.items()}[core['st']] if (seen or v['core']) else 0
+        return {'gc': frame['gc'], 'd': self.draws(frame), 'rng': frame['rng'],
+                'core': core, 'mouth': v['mouth'], 'cascade': v['cascade'],
+                'wins': [list(t) for t in v['wins']], 'p': {'st': rank}}
+
+    def to8(self, sym, mem, base):
+        def b(name, off=0):
+            return mem[sym[name] - base + off]
+
+        def w(name, off=0):
+            return (b(name, off) << 8) | b(name, off + 1)
+        st = self.CORE[b('bydo.cst')] if b('bydo.cst') else 'gone'
+        core = {'st': st}
+        if st != 'gone':
+            core.update({'c30': w('bydo.c30'), 'cur': 0x6416 + 4 * b('bydo.ci'),
+                         'x': w('bydo.x'), 'y': w('bydo.y'), 'f32': b('bydo.f32'),
+                         'f33': b('bydo.f33'), 'f36': b('bydo.f36'), 'f38': w('bydo.f38')})
+            if st in ('ph2', 'ph3'):
+                core['c10'] = w('bydo.c10')
+        mouth = None
+        if b('bydo.mst'):
+            mouth = {'st': b('bydo.mst'), 'x': w('bydo.mx'), 'y': 0x11C, 'c20': w('bydo.mc20')}
+        wins = []
+        r0 = sym['bydo.Wins'] - base
+        for i in range(sym['bydo.NWIN']):
+            r = r0 + i * sym['W.SZ']
+            f = lambda k, n=1: int.from_bytes(bytes(mem[r + sym[k]:r + sym[k] + n]), 'big')
+            if f('W.st'):
+                wins.append([f('W.st'), f('W.x', 3), f('W.y', 3), f('W.s12', 2), f('W.s14', 2),
+                             f('W.s16'), f('W.s17'), f('W.c20'), f('W.c22', 2)])
+        wins.sort()
+        return {'gc': w('bydo.gc'), 'core': core, 'mouth': mouth, 'wins': wins,
+                'cascade': {'c20': w('bydo.kc20')} if b('bydo.kst') else None,
+                'p': {'st': b('bydo.cst')}}
+
+    def done(self, st):
+        return st['core']['st'] == 'gone'
+
+    @staticmethod
+    def flat(st):
+        out = {'core.' + k: v for k, v in st['core'].items()}
+        for k in ('mouth', 'wins', 'cascade'):
+            out[k] = st[k]
+        return out
+
+    def seed(self, t, sym, base, ref):
+        """the background scroll's phase: the frame of the mouth's first step"""
+        put = lambda a, vals: t.call('write_memory', {
+            'addr': '%04X' % a, 'bytes': ['%02X' % v for v in vals]})
+        gc0, x0 = ref[0]['gc'], None
+        for s_ in ref[1:]:
+            if s_['mouth']:
+                x = s_['mouth']['x']
+                if x0 is not None and x != x0:
+                    put(base + sym['bydo.sacc'], [0x00 if (s_['gc'] - gc0) % 2 == 0 else 0x80])
+                    return
+                x0 = x
+
+    def tick(self, t, sym, base, refs, g, gc0):
+        pass
+
+    def settle(self, t, sym, base, refs, g, live, stats):
+        """records born in frame g: the arcade's leftovers (the wins' position
+        fractions, image byte and chase counter, the mouth's +0x20). A birth
+        is told by the record's state: not moved yet"""
+        a = refs.get(g)
+        if a is None or live.get('g') == g:
+            return
+        live['g'] = g
+        put = lambda ad, vals: t.call('write_memory', {
+            'addr': '%04X' % ad, 'bytes': ['%02X' % v for v in vals]})
+        sz, cnt = sym['W.SZ'], sym['bydo.NWIN']
+        r0 = base + sym['bydo.Wins']
+        m = list(t.read('%04X' % r0, cnt * sz))
+        for i in range(cnt):
+            r = i * sz
+            f = lambda k, n=1: int.from_bytes(bytes(m[r + sym[k]:r + sym[k] + n]), 'big')
+            s12 = f('W.s12', 2)
+            if (f('W.st') != 1 or s12 not in self.SCRIPTS or f('W.x', 2) != self.SCRIPTS[s12]
+                    or f('W.c20') or live.get(('w', i, s12))):
+                continue
+            for tw in a['wins']:
+                if tw[3] == s12 and tw[4] == f('W.s14', 2) and tw[1] >> 8 == f('W.x', 2):
+                    put(r0 + r + sym['W.x'], [tw[1] >> 16, (tw[1] >> 8) & 0xFF, tw[1] & 0xFF])
+                    put(r0 + r + sym['W.y'], [tw[2] >> 16, (tw[2] >> 8) & 0xFF, tw[2] & 0xFF])
+                    put(r0 + r + sym['W.s16'], [tw[5]])
+                    put(r0 + r + sym['W.c22'], [tw[8] >> 8, tw[8] & 0xFF])
+                    live[('w', i, s12)] = True
+                    break
+        if a['mouth'] and not live.get('mouth'):
+            mm = t.read('%04X' % (base + sym['bydo.mst']), 5)
+            if mm[0] == 1 and (mm[1] << 8 | mm[2]) == 0x2C4 and mm[3] == 0 and mm[4] == 0:
+                live['mouth'] = True
+                c = a['mouth']['c20']
+                put(base + sym['bydo.mc20'], [c >> 8, c & 0xFF])
+
+
+class Ending:
+    """The end of the game (stage 8): the credits director, the fleet of R-9
+    and the text's scroll, from the frame of the core's bg fade (16698, the
+    first tick of 40:C275). The port's clock starts there (ending.gc0)."""
+    name = 'ending'
+    stage = 8
+    unit = 'stage8.ending'
+    lwmap = 'gen/stages/08/build/ending.lwmap'
+    hook = 'ending'
+    data = ('ending.Data', 'ending.DataEnd')
+    gcsym, rngsym = 'ending.gc', None
+    ticks = (0xC275, 'eeb5-efad', 0xFB53)
+    budget = 2300
+    env = {'PILOT_START': 'c275', 'PILOT_WAIT': '40000', 'PILOT_PEEK': '2ec4,2ec6,2ef0'}
+    pin_arcade = (512, 228)
+    pin_to8 = None
+    scenarios = {'idle': []}
+    DIR = {0xEEB5: 1, 0xEF09: 2, 0xEF1E: 3, 0xEF83: 4, 0xEF97: 5}
+
+    def arcade(self, frame, seen):
+        pk = frame['pk']
+        d, ships = None, []
+        for o in frame['o']:
+            b = bytes.fromhex(o['r'])
+            w = lambda k: b[k] | (b[k + 1] << 8)
+            pos = lambda k: ((w(k + 1) << 8) | b[k]) & 0xFFFFFF
+            t = o['t']
+            if t in self.DIR:
+                st = self.DIR[t]
+                d = {'st': st}
+                if st >= 2:
+                    d10 = w(0x10)
+                    d.update({'d10': (d10 - 0x88E8) // 2 if st in (2, 3) else d10,
+                              'd12': w(0x12), 'd14': w(0x14)})
+            elif t == 0xFB53:
+                ships.append([pos(3), pos(7), w(0x10), w(0x12)])
+        ships.sort()
+        return {'gc': frame['gc'], 'd': [], 'dir': d, 'ships': ships,
+                'y': ((pk[1] & 1) << 16) | pk[0], 'speed': pk[2],
+                'p': {'st': 1 if (d or ships) else 0}}
+
+    def to8(self, sym, mem, base):
+        def b(name, off=0):
+            return mem[sym[name] - base + off]
+
+        def w(name, off=0):
+            return (b(name, off) << 8) | b(name, off + 1)
+        dst = b('ending.dst')
+        d = None
+        if dst and dst <= 5:
+            d = {'st': dst}
+            if dst >= 2:
+                d.update({'d10': w('ending.d10'), 'd12': w('ending.d12'), 'd14': w('ending.d14')})
+        ships = []
+        r0 = sym['ending.Ships'] - base
+        for i in range(sym['ending.NSHIP']):
+            r = r0 + i * sym['S.SZ']
+            f = lambda k, n=1: int.from_bytes(bytes(mem[r + sym[k]:r + sym[k] + n]), 'big')
+            if f('S.st'):
+                ships.append([f('S.x', 3), f('S.y', 3), f('S.p', 2), f('S.c', 2)])
+        ships.sort()
+        y = (w('ending.y') << 8) | b('ending.yf')
+        return {'gc': w('ending.gc'), 'dir': d, 'ships': ships, 'y': y,
+                'speed': w('ending.speed'), 'p': {'st': dst}}
+
+    def done(self, st):
+        return st['p']['st'] == 6
+
+    @staticmethod
+    def flat(st):
+        return {'dir': st['dir'], 'ships': st['ships'], 'y': st['y'], 'speed': st['speed']}
+
+    def seed(self, t, sym, base, ref):
+        """the creations fall at offsets from the clock's start: g0 too"""
+        g = ref[0]['gc']
+        t.call('write_memory', {'addr': '%04X' % (base + sym['ending.g0']),
+                                'bytes': ['%02X' % (g >> 8), '%02X' % (g & 255)]})
+
+    def tick(self, t, sym, base, refs, g, gc0):
+        pass
+
+    def settle(self, t, sym, base, refs, g, live, stats):
+        """the ships born in frame g: their position fractions are leftovers"""
+        a = refs.get(g)
+        if a is None or live.get('g') == g or not a['ships']:
+            return
+        live['g'] = g
+        sz, cnt = sym['S.SZ'], sym['ending.NSHIP']
+        r0 = base + sym['ending.Ships']
+        m = list(t.read('%04X' % r0, cnt * sz))
+        for i in range(cnt):
+            r = i * sz
+            f = lambda k, n=1: int.from_bytes(bytes(m[r + sym[k]:r + sym[k] + n]), 'big')
+            if not f('S.st') or f('S.c', 2) or live.get(('s', i)):
+                continue
+            for sh in a['ships']:
+                if sh[2] == f('S.p', 2) and sh[3] == 0 and sh[1] >> 8 == f('S.y', 2):
+                    put = lambda ad, vals: t.call('write_memory', {
+                        'addr': '%04X' % ad, 'bytes': ['%02X' % v for v in vals]})
+                    put(r0 + r + sym['S.x'] + 2, [sh[0] & 0xFF])
+                    put(r0 + r + sym['S.y'] + 2, [sh[1] & 0xFF])
+                    live[('s', i)] = True
+                    break
+
+
 PROFILES = {'bellmite': Bellmite(), 'compiler': Compiler(), 'dopswarm': Dopswarm(),
-            'bronco': Bronco()}
+            'bronco': Bronco(), 'bydo': Bydo(),
+            'ending': Ending()}
 
 
 # =============================================================================
@@ -987,6 +1250,10 @@ def cmd_to8(prof, image, out, shots=(), scen='idle'):
         print('stage %d atteint, passation vers le stage %d' % (via, prof.stage), flush=True)
 
     def pin():
+        # a profile without a pinned point leaves the ship alone (the
+        # ending: the autopilot parks it, and a pinned ship never arrives)
+        if prof.pin_to8 is None:
+            return
         c = t.read('%04X' % cam, 2)
         x = ((c[0] << 8) | c[1]) + prof.pin_to8[0]
         t.call('write_memory', {'addr': '%04X' % (player + xpos),
@@ -1146,10 +1413,14 @@ def cmd_compare(prof, to8_path, scen='idle'):
                 key = tag + '.' + k if tag else k
                 count[key] = count.get(key, 0) + 1
                 first.setdefault(key, (gc, a.get(k), b.get(k)))
-    renders = 0
+    renders, blinded = 0, 0
+    gc_first = min(ref)
     for o in obs:
         a = ref.get(o['gc'])
         if a is None:
+            continue
+        if 0 < o['gc'] - gc_first <= getattr(prof, 'blind', 0):
+            blinded += 1                # a state the bench completes later
             continue
         renders += 1
         if hasattr(prof, 'flat'):
@@ -1163,7 +1434,8 @@ def cmd_compare(prof, to8_path, scen='idle'):
         diff('helper', {'h': a['h']}, {'h': o['h']}, o['gc'])
     gc0 = min(ref)
     print('%s : %d rendus TO8 compares a la borne, %d valeurs'
-          % (prof.name, renders, checked))
+          % (prof.name, renders, checked)
+          + (' (%d rendu aveugle ecarte, trame gc0+1)' % blinded if blinded else ''))
     if not renders:
         print('AUCUN rendu compare — la trace TO8 est vide ou hors horloge')
         return 2

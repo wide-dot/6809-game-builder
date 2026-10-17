@@ -213,11 +213,14 @@ LiveContinue
         tst   potential_set,u
         bne   @try
         inc   potential_set,u ; reset lock
-        lda   #6              ; if gate reached, shell are weak
-        ldb   subtype,u
+        ldb   subtype,u       ; if gate reached, shell are weak
         cmpb  #11
-        beq   @blue           ; beq if shell with blue eye
-        lda   #2
+        bne   @plain          ; bne if shell without the blue eye
+        ldb   globals.difficulty ; the core's HP by difficulty (40:6b19,
+        ldy   #shell.coreHp   ; 1000:2E3E: 6/10/25/40)
+        lda   b,y
+        bra   @blue
+@plain  lda   #2
 @blue   sta   AABB.p,x        ; reset potential
 @try    jsr   tryFoeFireShell ; if gate reached, fire !
         leax  AABB_0,u        ; restore x pointer
@@ -951,3 +954,7 @@ gateTiles.mask
         fcb   %00000001
         fcb   %10000000
         fcb   %10000000
+
+; the core's HP by difficulty (1000:2E3E, read at 40:6b19)
+shell.coreHp
+        fcb   6,10,25,40

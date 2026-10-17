@@ -1097,6 +1097,48 @@ CELLULES arcade (une cellule partagée compilée une fois) sur trois pages de
 Trace : une trame de jeu sur deux trames vidéo (ralentissement) se fusionne
 désormais (dernière capture, tous les appelants).
 
+**Le Bydo core (boss du stage 8) porté 1:1 le même jour** (`src/enemies/bydo/`,
+wave `$0040`) : une horloge qui déroule une chronologie (1000:6416 : quatre
+Win scriptés puis libérés, la bouche et ses tentacules, les poses de la tête,
+l'arrêt du défilement) et meurt au délai 0x2000 ou après 0x500 trames de
+Force dans la bouche ; phases de mort et cascade d'explosions (seuls tirages,
+rejoués). Modèle Python identique, puis port IDENTIQUE sous toje sur le
+combat complet jusqu'à la sortie du noyau (1 779 rendus, 440 tirages). La
+tête et les tentacules sont des PATCHS DU PLAN DE FOND arcade (recettes de
+tuiles à bit de priorité) : extraits par le moteur `tile_block` du catalog,
+convertis opaques (`arcade_to_sprites.py --opaque`), dessinés après les
+tuiles par un crochet opt-in de `stage-main.asm` (`stage.FRONT` /
+`stage.frameFront`, stage 8 seul) à leur place sur la carte. Deux pages de
+`stage8.foes` ; `PILOT_BGDUMP` vide la RAM du plan de fond de la borne.
+**Et la fin du jeu derrière lui** (`src/stages/08/ending/`) : à la mort,
+l'épave de la salle est un `tilemap.stamp` (`<tilepatch>` sur les colonnes
+55-59 de la carte : la colonne 55 et le premier pixel de la 60 portent les
+coutures du plan impair, décalé d'un pixel — sans elles un trait noir suit
+l'épave au défilement) ; le défilement repart sur une queue vide de la carte
+(120 px) sous le fondu palette du décor que lance le noyau ; l'objet commun
+de fin a une voie `FADE_ENDING` (voie palette sans attente de caméra,
+`globals.endFade`, puis `STATUS_ENDING`, sans relevé) ; musiques de boss
+(0x19) et de fin (« Like a Hero », 0x1A, `PILOT_SNDLOG`) ; le stage 8
+joue alors la séquence de la borne — étoiles (variant 3), flotte de 18 R-9,
+générique écrit avec la police du HUD (`stage.ENDING` coupe bandeau et
+masque), « ENJOY THE BONUS GAME AGAIN » — puis repart au stage 1, score
+gardé. Directeur et flotte IDENTIQUES à la borne sous toje (753 rendus) ;
+enchaînement complet vérifié (stage 8 → stage 1, trame 13 300). L'horloge
+de wave arcade suit le défilement : les créations de la fin sont des trames
+fixes après la mort du noyau. `PILOT_PEEK` trace des globales de la borne.
+
+**Le second tour (16/10/2026)** : `globals.loop`, le compteur de tours de la
+borne (0x2F42 → second_loop), avancé par la fin du jeu et par le continue
+accepté ; `globals.difficulty` suit la formule de la borne, (tour ? 2 : 0) +
+(Force ≥ 2 ? 1 : 0), recalculée par `_difficulty.update` (mesuré sous MAME :
+0 au premier tour sans Force, 2 au second). Les ennemis qui figeaient la difficulté 0 la lisent
+(Shell, Cytron, Geld, Compiler, Bellmite) ; les formes de second tour sont
+portées (PV Zoid 70 et réacteur 250 — réserve au-delà des 126 d'une boîte —,
+noyau et Outslay plus rapides), les tourelles de proue réapparaissent, et la
+fin du second tour mène au game over, et le numéro de stage effectif prend +8
+(scores par stage, récapitulatif, « STAGE 9 CLEARED »). Règle de l'auteur :
+du 1:1 avec la borne tant que c'est techniquement possible. Détail : `games/r-type/doc/fidelite-arcade.md`.
+
 ## Dettes / pièges connus
 
 - `engine/pack/mub.asm` : chemins d'INCLUDE invalides (fichiers dans `sound/mucom88/`).

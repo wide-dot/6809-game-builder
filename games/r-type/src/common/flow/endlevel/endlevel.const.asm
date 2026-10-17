@@ -19,6 +19,8 @@ endstage.BLIT          equ 2         ; command: in-lock blits (pixel fade)
 endstage.STATUS_NONE   equ 0         ; status: nothing to do
 endstage.STATUS_JINGLE equ 1         ; status: main must start the clear jingle
 endstage.STATUS_DONE   equ 2         ; status: the level is over, main hands over
+endstage.STATUS_ENDING equ 3         ; status: the GAME is over (stage 8) : the
+                                     ; dissolve is done, the stage plays its ending
 
 ; la chronologie de la sequence (memes valeurs que le stage 1)
 endstage.DURATION equ $C0            ; arcade: run_dobkeratops arms +0x22 = $C0 frames
@@ -34,6 +36,12 @@ endstage.DURATION_LATCHED equ $10
 ; doc/analyse-explosions-boss-stage2-2026-09.md §9.
 endstage.FADE_PIXEL   equ 0
 endstage.FADE_PALETTE equ 1
+; LA VOIE DE LA FIN DU JEU (16/10/2026, stage 8) : la voie palette, sans
+; attente de camera (la borne defile encore sous son fondu) et sur le fondu
+; que le noyau lance lui-meme (globals.endFade) ; au noir, PAS de releve —
+; l'objet rend la main au stage (STATUS_ENDING), qui joue la sequence de fin.
+endstage.FADE_ENDING  equ 2
+endstage.PHASE_ENDING equ 6          ; la phase ou la voie de fin s'arrete
 endstage.READIN_WAIT  equ 8          ; fondu d'entree du releve : 16 pas x 8 =
                                      ; 128 trames (borne : 31 x 4 = 124, f01b)
 endstage.READOUT_WAIT equ 170        ; du noir au releve : sur la borne, apres

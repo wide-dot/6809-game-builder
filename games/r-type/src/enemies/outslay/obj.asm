@@ -186,13 +186,19 @@ outslay.MasterInit
         lda   #2
         sta   anim_frame_duration,u
         ; 91a6 / 91af : l'horloge de tir. bit2 du token -> periode $C0, sinon
-        ; $50 ; premiere echeance a periode + $28.
+        ; $50 ($20 au second tour : 9197, 1000:40B6 + 8) ; premiere echeance
+        ; a periode + $28.
         ldb   #0
 @token  equ   *-1
         andb  #4
         beq   >
-        ldb   #$C0-$50
-!       addb  #$50
+        ldb   #$C0
+        bra   @per
+!       ldb   #$50
+        tst   globals.loop
+        beq   @per
+        ldb   #$20
+@per
         stb   outslay.mClkBase,u
         clra
         addd  #$28
@@ -737,7 +743,10 @@ outslay.wFy equ *-2
         aslb
         aslb                           ; 4 octets par direction
         ldy   #outslay.ShotVelocity
-        leay  b,y
+        tst   globals.loop             ; 95a6 : second_loop -> 1000:414e
+        beq   >
+        ldy   #outslay.ShotVelocity2
+!       leay  b,y
         ldd   ,y
         std   x_vel,x
         ldd   2,y
@@ -1066,6 +1075,18 @@ outslay.Variants
 ; rejouable de re.arcade.r-type (PresetWordXYVel, records de 6 octets).
 outslay.ShotVelocity
         INCLUDE "src/enemies/outslay/1411e_outslay-shotVelocity.asm"
+; 1000:414e — la salve du second tour, ~1,8 fois plus rapide ; meme
+; conversion que l'export du premier (vx x 0,375, vy x -0,75 : elle rend
+; 1411e a l'identique)
+outslay.ShotVelocity2
+        fdb   $0000,$FD60
+        fdb   $0120,$FE20
+        fdb   $0180,$0000
+        fdb   $0120,$01E0
+        fdb   $0000,$02A0
+        fdb   $FEE0,$01E0
+        fdb   $FE80,$0000
+        fdb   $FEE0,$FE20
 
 ; Les pools de poses. Tete et finalizer partagent 1000:419e (le finalizer
 ; decale de 8) — suiveurs OST, chemin moteur, images sur l'autre page. Cou

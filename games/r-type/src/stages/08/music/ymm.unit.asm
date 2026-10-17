@@ -24,10 +24,16 @@
 ;*******************************************************************************
 
 sounds.level8.ymm     EXPORT
+; « Like a Hero », la fin du jeu (music.xml) : jouee au nettoyage de la salle
+; du Bydo, commande arcade 0x1A (40:C1F7 — la seule commande musicale entre
+; la mort du noyau et le stage suivant, relevee par PILOT_SNDLOG).
+sounds.ending.ymm     EXPORT
 
  SECTION code
 
 sounds.level8.ymm
         INCLUDEBIN "src/stages/08/music/adnz/ymm/music.ymm"
+sounds.ending.ymm
+        INCLUDEBIN "src/stages/08/music/adnz/ymm/ending.ymm"
 
  ENDSECTION

@@ -33,6 +33,11 @@
         <vgm2ymm filename="src/stages/07/music/adnz/vgm/music.vgm" genbinary="src/stages/07/music/adnz/ymm/music.ymm" codec="zx0"/>
         <vgm2vgc filename="src/stages/08/music/adnz/vgm/music.vgm" genbinary="src/stages/08/music/adnz/vgc/music.vgc"/>
         <vgm2ymm filename="src/stages/08/music/adnz/vgm/music.vgm" genbinary="src/stages/08/music/adnz/ymm/music.ymm" codec="zx0"/>
+        <!-- LA FIN DU JEU : « Like a Hero », l'arrangement YM2413 de
+             l'auteur, joue au nettoyage de la salle du Bydo (commande arcade
+             0x1A, 40:C1F7). Un morceau de plus dans le repertoire du stage 8,
+             nomme par le morceau. -->
+        <vgm2ymm filename="src/stages/08/music/adnz/vgm/rtype-ending.vgm" genbinary="src/stages/08/music/adnz/ymm/ending.ymm" codec="zx0"/>
         <vgm2vgc filename="src/common/flow/bossmusic/music/vgm/music.vgm" genbinary="src/common/flow/bossmusic/music/vgc/music.vgc"/>
         <vgm2ymm filename="src/common/flow/bossmusic/music/vgm/music.vgm" genbinary="src/common/flow/bossmusic/music/ymm/music.ymm" codec="zx0"/>
         <vgm2vgc filename="src/common/flow/clearstage/music/vgm/music.vgm" genbinary="src/common/flow/clearstage/music/vgc/music.vgc"/>

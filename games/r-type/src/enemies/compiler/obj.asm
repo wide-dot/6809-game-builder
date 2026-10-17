@@ -350,10 +350,14 @@ cpl.PartNew
         clr   P.f28+1,y
         clr   P.w34,y
         clr   P.w34+1,y
-        lda   #cpl.CADENCE               ; a7d6 / a903: right and left only
-        sta   P.c20,y
+        pshs  x                          ; a7c9 / a8f6: the cadence by
+        ldx   #cpl.Cadence               ; difficulty
+        ldb   globals.difficulty
+        lda   b,x
+        puls  x
+        sta   P.c20,y                    ; a7d6 / a903: right and left only
+        tfr   a,b
         clra
-        ldb   #cpl.CADENCE
         std   P.c22,y
         lda   #40                        ; a7a4 HP_max 0x28
         sta   P.pp,y
@@ -371,17 +375,22 @@ cpl.TurretNew
         ldd   cpl.wT2
         std   T.oy,x
         clr   T.fire,x                   ; a leftover in the arcade (the bench)
+        pshs  u                          ; f8a7: its preset's row at the
+        ldb   globals.difficulty         ; difficulty (8E10 + diff*96)
+        aslb
+        aslb
+        aslb
+        ldu   #cpl.TurretPre
+        leau  b,u
         lda   T.pre,x
         cmpa  #$30
-        bne   >
-        ldd   #cpl.P30.THR
+        beq   >
+        leau  4,u
+!       ldd   ,u
         std   T.thr,x
-        ldd   #cpl.P30.RST
-        bra   @rst
-!       ldd   #cpl.P40.THR
-        std   T.thr,x
-        ldd   #cpl.P40.RST
-@rst    std   T.rst,x
+        ldd   2,u
+        std   T.rst,x
+        puls  u
         pshs  x
         jsr   cpl.Draw                   ; f8e4
         puls  x
@@ -606,7 +615,10 @@ cpl.Volley
 !       ldd   b,u
         addd  P.y,y
         std   Z.y,x
-        ldd   #cpl.LASER_VX              ; ab54
+        ldb   globals.difficulty         ; ab4c / ae46: by difficulty
+        aslb
+        ldu   #cpl.LaserVx
+        ldd   b,u                        ; ab54
         std   Z.vx,x
         lda   cpl.wSide
         sta   Z.side,x

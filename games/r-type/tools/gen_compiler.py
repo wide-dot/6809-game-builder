@@ -39,25 +39,28 @@ def words(rom, a, n):
 
 
 def render(rom):
-    cad = rom[SEG + 0x5844]
-    lvx = words(rom, 0x5848, 1)[0]
+    cad = list(rom[SEG + 0x5844:SEG + 0x5848])
+    lvx = words(rom, 0x5848, 4)
     pool_r = words(rom, 0x5850, 8)
     pool_l = words(rom, 0x5860, 8)
     tdir = struct.unpack_from('<32H', rom, SEG + 0x5870)
-    pre = {p: struct.unpack_from('<3H', rom, SEG + 0x8E10 + (p >> 4) * 6) for p in (0x30, 0x40)}
+    pre = {(d, p): struct.unpack_from('<3H', rom, SEG + 0x8E10 + d * 96 + (p >> 4) * 6)
+           for d in range(4) for p in (0x30, 0x40)}
     L = [
         '; GENERE par tools/gen_compiler.py depuis la ROM arcade — ne pas editer.',
         '; Repere ARCADE (x a droite, y vers le haut), valeurs non converties.',
         '',
-        '; 1000:5844 la cadence des lasers (difficulte 0 ; 48/40/32/24)',
-        'cpl.CADENCE  equ %d' % cad,
-        '; 1000:5848 la vitesse du laser horizontal (difficulte 0), 8.8',
-        'cpl.LASER_VX equ $%04X' % (lvx & 0xFFFF),
-        '; 8E10 + preset*6 : les seuils de tir des tourelles (difficulte 0)',
-        'cpl.P30.THR  equ %d' % pre[0x30][0],
-        'cpl.P30.RST  equ %d' % pre[0x30][1],
-        'cpl.P40.THR  equ %d' % pre[0x40][0],
-        'cpl.P40.RST  equ %d' % pre[0x40][1],
+        '; 1000:5844 la cadence des lasers, par difficulte',
+        'cpl.Cadence',
+        '        fcb   ' + ','.join(str(v) for v in cad),
+        '; 1000:5848 la vitesse du laser horizontal, par difficulte, 8.8',
+        'cpl.LaserVx',
+        '        fdb   ' + ','.join('$%04X' % (v & 0xFFFF) for v in lvx),
+        '; 8E10 + difficulte*96 + preset*6 : les seuils de tir des tourelles,',
+        '; par difficulte {preset 0x30 : seuil, remise ; preset 0x40 : idem}',
+        'cpl.TurretPre'] + [
+        '        fdb   %d,%d,%d,%d' % (pre[d, 0x30][0], pre[d, 0x30][1], pre[d, 0x40][0], pre[d, 0x40][1])
+        for d in range(4)] + [
         '',
         '; 1000:5850 / 5860 les hauteurs du laser, piece droite puis gauche',
         'cpl.PoolR',

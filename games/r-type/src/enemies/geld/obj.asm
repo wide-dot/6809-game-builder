@@ -29,12 +29,11 @@
 ; La table de spawn : slots 0..2 -> 3, 3..8 -> 1, 9..11 -> 2, 12..15 -> 0.
 ;
 ; LES VITESSES (0x1000:3F86, 4 variantes x 4 difficultes, en 8.8) : la
-; premiere difficulte donne 1 px/trame arcade, soit nos pas d'echelle.
+; premiere difficulte donne 1 px/trame arcade, soit nos pas d'echelle ; les
+; suivantes 1,5, 2 et 3 px — geld.speed multiplie le pas du tick.
 ;
 ; ECARTS ASSUMES
 ; --------------
-; V2-DEVIATION: pas de selecteur de difficulte en v2 — on prend la premiere
-;   valeur de la table, comme tout le cast.
 ; V2-DEVIATION: l'arcade choisit son sprite d'engagement dans une table de
 ;   16 cases dont 4 sont VIDES sur des combinaisons pourtant atteignables
 ;   (elle y lirait des ordures — voir la plate de run_geld). On ne porte pas
@@ -152,12 +151,14 @@ Patrol.entry
         ldb   #geld.STEPY
         lda   gfxlock.frameDrop.count
         mul
+        jsr   geld.speed
         sta   geld.step,u              ; le pas entier de ce tick
         jsr   moveYPos8.8
         bra   @moved
 @up     ldb   #geld.STEPY             ; 2 = UP arcade : chez nous y DECROIT
         lda   gfxlock.frameDrop.count
         mul
+        jsr   geld.speed
         sta   geld.step,u
         _negd
         jsr   moveYPos8.8
@@ -165,12 +166,14 @@ Patrol.entry
 @right  ldb   #geld.STEPX
         lda   gfxlock.frameDrop.count
         mul
+        jsr   geld.speed
         sta   geld.step,u
         jsr   moveXPos8.8
         bra   @moved
 @left   ldb   #geld.STEPX
         lda   gfxlock.frameDrop.count
         mul
+        jsr   geld.speed
         sta   geld.step,u
         _negd
         jsr   moveXPos8.8
@@ -481,3 +484,33 @@ geld.explode
         jmp   DeleteObject
 AlreadyDeleted
         rts
+
+; ---------------------------------------------------------------------------
+; geld.speed — D = le deplacement du tick a 1 px/trame arcade ; rend D a la
+; vitesse de la difficulte (1000:3F86 : 1, 1,5, 2, 3 px/trame arcade, lue a
+; 40:8fa4 et 8fbc). Le pas tient sur 16 bits, plus sur un octet.
+; ---------------------------------------------------------------------------
+geld.speed
+        pshs  d
+        ldb   globals.difficulty
+        beq   @x1
+        cmpb  #2
+        blo   @x15
+        beq   @x2
+        puls  d                        ; 3 : 2D + D
+        pshs  d
+        aslb
+        rola
+        addd  ,s++
+        rts
+@x2     puls  d                        ; 2 : 2D
+        aslb
+        rola
+        rts
+@x15    puls  d                        ; 1 : D + D/2
+        pshs  d
+        lsra
+        rorb
+        addd  ,s++
+        rts
+@x1     puls  d,pc

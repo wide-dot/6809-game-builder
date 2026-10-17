@@ -206,6 +206,7 @@ checkpoint.armament.lose
         decb
         bne   <
         clr   globals.missileUnlocked
+        _difficulty.update              ; le Force perdu ne compte plus
         rts
 
 ; L'OUVERTURE D'UN STAGE — on reprend ce qu'on possede.
