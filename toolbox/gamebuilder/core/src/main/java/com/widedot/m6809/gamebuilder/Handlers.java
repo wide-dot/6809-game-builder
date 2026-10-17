@@ -208,6 +208,7 @@ public final class Handlers {
 			.opt("file", STRING, "file name the images end up in ; the index reads their page from <file>$PAGE, required with genindex")
 			.opt("imageset", STRING, "name the measured geometry is handed over under, for an <imageset> element to index a set whose code is spread over pages")
 			.opt("section", STRING, "SECTION wrapping the generated includes, code if omitted ; none for a host that already opened one")
+			.opt("share", STRING, "none (default) or identical : a variant drawing the same pixels with the same encoder as one compiled before in its set (an imageset's slices, or this file with genindex) shares that routine instead of compiling its own : an image symmetric about its axis, the mirror of another image. Only through an index : no adr_ symbol of its own")
 			.opt("linearbits", INT, "video memory linear bits")
 			.opt("planarbits", INT, "video memory planar bits")
 			.opt("linebytes", INT, "video memory bytes per line")

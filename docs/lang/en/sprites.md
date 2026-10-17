@@ -221,7 +221,36 @@ id equate an `externPg` relocation resolves against is defined — the baked
 form does not read it, but one source serves both modes.
 
 Exported for the rest of the game to link against : `set_<name>`,
-`idx_<name>`, and every `adr_<name>_<variant>`.
+`idx_<name>`, and every `adr_<name>_<variant>` (but a shared variant's, below).
+
+### Shared variants : `share="identical"`
+
+A variant drawing exactly the same pixels with the same encoder as one compiled
+before need not be compiled again : an image symmetric about its axis is its
+own mirror, and an image is often the mirror of another (a ball opening to
+the left and the same ball opening to the right). With `share="identical"` on
+the `<gfxcomp>`, such a variant compiles nothing : its index entry points at
+the first variant's routine — the same code, the same page.
+
+```xml
+<gfxcomp imageset="ball" share="identical" gendir="..." gensource="...">
+```
+
+- The test is the variant's content after mirror and shift (its pixels, the
+  encoder, the shift, the position, the planes, the alpha, the size and the
+  video memory model) : what decides the emitted code, the name left out.
+- Variants are shared within the set — every slice of a spread set (each
+  `<gfxcomp imageset=...>`), or this file with `genindex` — never between
+  sets : a set's images are loaded together, so the routine an entry points
+  at is there when it is drawn.
+- A shared variant has **no** `adr_<name>_<variant>` of its own : code that
+  calls a drawing routine by name, outside the index, keeps `share="none"`
+  (the default, every variant compiled as before) for that set. The build
+  says so — an undefined `adr_` symbol.
+- The 1bpp encoders keep their own routines.
+
+Measured on Sonic 2's Oil Ocean : the launch ball's 8 frames in their 4
+mirrors are 14 distinct drawings, 32 compiled before (21.6 KB to 10.5 KB).
 
 ### Two ways to reach the second plane
 
