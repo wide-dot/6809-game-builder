@@ -137,9 +137,11 @@ la description de la PR en garde la trace.
   double-buffer, musiques YMM+VGC), `examples/loader-ut` (banc de test du loader, 15/15),
   `examples/sprites` (chaîne sprites compilés, 4 encodeurs), `examples/objects` (banc
   object manager, 12/12 — sans affichage, résultats en `$9C00`),
-  `examples/overlay` (banc du pack sprites overlay, 22/22, résultats + checksums
+  `examples/overlay` (banc du pack sprites overlay, 25/25, résultats + checksums
   VRAM en `$9C00` — c'est le banc DIFFÉRENTIEL des optimisations de BuildSprites :
-  deux builds ne différant que par le moteur doivent produire le même bloc),
+  deux builds ne différant que par le moteur doivent produire le même bloc ;
+  rejoué par `ci/toje-bench/overlay_ut.py` depuis le 17/10/2026, avec t23..t25,
+  la ligne d'écran négative),
   `examples/tlsf-ut` (tests unitaires TLSF sur machine),
   `examples/bm4s` (le 320x200 4 couleurs `$41` : `videomode="bm4s"` de
   gfxcomp, `_gfxmode.setBM4S`, banc `ci/toje-bench/bm4s_ut.py`),

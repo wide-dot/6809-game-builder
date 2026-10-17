@@ -127,6 +127,12 @@
                                 <encoder name="bdraw" mirror="none" shift="0"/>
                                 <encoder name="draw"  mirror="none" shift="0"/>
                             </image>
+                            <!-- drop : drawn 8 lines under its origin, the
+                                 probe for a negative screen line (t23..t25) -->
+                            <image name="drop" filename="src/assets/sprites/drop.png" index="18">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                                <encoder name="draw" mirror="none" shift="1"/>
+                            </image>
                         </gfxcomp>
                     </lwasm>
                 </file>

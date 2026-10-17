@@ -36,6 +36,7 @@ _y_pos                   equ dp_engine+19 ; word
 _image_set               equ dp_engine+21 ; word
 _nbchild                 equ dp_engine+23 ; byte
 _render_flags            equ dp_engine+24 ; byte
+_ycorr                   equ dp_engine+25 ; byte - V2-DEVIATION : $28 (256 lines) if the screen line is negative, else 0
 
 ; V2-DEVIATION: setdp neutralized, the obj target rejects it. Extended
 ; addressing stays correct, and operands explicitly forced with < are unaffected.
@@ -231,6 +232,7 @@ BuildSprites
 ;
         ; check out of range position 
         ; ---------------------------       
+        clr   <_ycorr                       ; V2-DEVIATION : a line on the screen, see _ycorr
         lda   <_render_flags
         bita  #render_no_range_ctrl_mask
         lbne  @computescreenaddress         ; skip out of range control if option is set
@@ -297,6 +299,8 @@ BuildSprites
         ldd   <_y_pos 
         addd  <glb_camera_y_offset
         subd  <glb_camera_y_pos        
+        anda  #$28                          ; V2-DEVIATION : a negative line, see _ycorr
+        sta   <_ycorr
  IFDEF BuildSprites.HALFLINE
         andb  #$FE                          ; V2-DEVIATION : an even line, see below
  ENDC
@@ -307,7 +311,11 @@ BuildSprites
         subd  <glb_camera_x_pos
         bcc   >                             ; no carry, continue
         subb  #$60                          ; skip x position (ignore 160-255 values )
-        dec   @ypx                          ; move y position one line up
+        lda   @ypx                          ; V2-DEVIATION : line 0, one line up : line -1
+        bne   @up
+        lda   #$28
+        sta   <_ycorr
+@up     dec   @ypx                          ; move y position one line up
 !       tfr   b,a
         ldb   #0 ; d is loaded with xy_pixel
 @ypx    equ   *-1         
@@ -359,6 +367,11 @@ BuildSprites
         suba  #$60                          ; x-loop, skip x_pixel (160-255)
         decb                                ; get x position one line up
 !       subb  #28                           ; move y ref. to 0
+        bcc   @computescreenaddress         ; V2-DEVIATION : above line 28, a negative line
+        pshs  a
+        lda   #$28
+        sta   <_ycorr
+        puls  a
 @computescreenaddress
         lsra                                ; x=x/2, sprites moves by 2 pixels on x axis
         lsra                                ; x=x/2, RAMA RAMB enterlace  
@@ -369,6 +382,7 @@ BuildSprites
         mul
         addd  #$C000                        ; (dynamic)
 @lbyte1 equ   *-1
+        suba  <_ycorr                       ; V2-DEVIATION : a negative line, 256 lines back
         std   <glb_screen_location_2
         suba  #$20
         std   <glb_screen_location_1     
@@ -379,6 +393,7 @@ BuildSprites
         mul
         addd  #$A000                        ; (dynamic)
 @lbyte2 equ   *-1      
+        suba  <_ycorr                       ; V2-DEVIATION : a negative line, 256 lines back
         std   <glb_screen_location_2
         addd  #$2001
         std   <glb_screen_location_1
@@ -518,6 +533,8 @@ BuildSprites
         ldd   _y_pos 
         addd  glb_camera_y_offset
         subd  glb_camera_y_pos        
+        anda  #$28                          ; V2-DEVIATION : a negative line, see _ycorr
+        sta   <_ycorr
  IFDEF BuildSprites.HALFLINE
         andb  #$FE                          ; V2-DEVIATION : an even line, see below
  ENDC
@@ -528,7 +545,11 @@ BuildSprites
         subd  glb_camera_x_pos
         bcc   >                             ; no carry, continue
         subb  #$60                          ; skip x position (ignore 160-255 values )
-        dec   @ypx                          ; move y position one line up
+        lda   @ypx                          ; V2-DEVIATION : line 0, one line up : line -1
+        bne   @up
+        lda   #$28
+        sta   <_ycorr
+@up     dec   @ypx                          ; move y position one line up
 !       tfr   b,a
         ldb   #0 ; d is loaded with xy_pixel
 @ypx    equ   *-1        
@@ -541,6 +562,7 @@ BuildSprites
         mul
         addd  #$C000                        ; (dynamic)
 @lbyte1 equ   *-1
+        suba  <_ycorr                       ; V2-DEVIATION : a negative line, 256 lines back
         std   glb_screen_location_2
         suba  #$20
         std   glb_screen_location_1     
@@ -551,6 +573,7 @@ BuildSprites
         mul
         addd  #$A000                        ; (dynamic)
 @lbyte2 equ   *-1      
+        suba  <_ycorr                       ; V2-DEVIATION : a negative line, 256 lines back
         std   glb_screen_location_2
         addd  #$2001
         std   glb_screen_location_1

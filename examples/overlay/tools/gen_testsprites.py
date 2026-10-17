@@ -41,6 +41,19 @@ mp = m.load()
 mp[0,0] = 3                          # red corner
 m.save('marker.png')
 
+# drop : 12x40, its last 12 rows opaque : drawn 8 lines under its origin,
+# the probe for a negative screen line (t23..t25)
+d = new(12,40)
+dp = d.load()
+for x in range(12):
+    for y in range(28,40):
+        edge = x in (0,11) or y in (28,39)
+        dp[x,y] = 3 if edge else 2
+for y in range(29,32):
+    for x in range(1,4):
+        if x+y < 33: dp[x,y] = 1
+d.save('drop.png')
+
 # probes : opaque rectangles, every width and height 12..15 — one pixel
 # steps across a 4 pixel range cover every mod-4 anchoring class of the
 # encoders. The bench draws each one's bdraw AND draw routine at the same
@@ -51,7 +64,7 @@ for w in range(12, 16):
         p = new(w, h, 2)               # colour 1, white — uniform on purpose
         p.save(f'probe_{w}x{h}.png')
 
-for n in ('glyph.png','marker.png'):
+for n in ('glyph.png','marker.png','drop.png'):
     im = Image.open(n)
     print(f"  {n:<12} {im.size[0]}x{im.size[1]}")
 print("  probes 12..15 x 12..15")
