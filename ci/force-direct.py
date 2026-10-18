@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Give back to the engine's v1 files the direct addressing v1's `setdp` gave.
+"""
+Give back to the engine's v1 files the direct addressing v1's `setdp` gave.
 
 v1 assembled each unit absolutely under a `setdp` (dp/256 in the game loop,
 $E7 in the IRQ handlers) that every included file inherited : an operand in
@@ -35,7 +36,7 @@ lsr neg ora orb rol ror sbca sbcb sta stb std sts stu stx sty suba subb subd tst
 
 
 def mode(code):
-    """'direct', 'extended' or None (no memory operand of these two modes)"""
+    """Say 'direct', 'extended' or None (no operand of these two modes)."""
     op = code[0]
     if op in (0x10, 0x11):
         if len(code) < 2:
@@ -50,43 +51,68 @@ def mode(code):
 
 
 def words(text):
-    """the words before a ';' comment (the listing may drop a '*' one)"""
+    """Return the words before a ';' comment (a listing may drop a '*' one)."""
     return text.split(';')[0].split()
 
 
+def read_text(path):
+    """Return a file's lines."""
+    with open(path, encoding='utf-8', errors='replace') as f:
+        return f.read().split('\n')
+
+
+def observed(v1_text, v1_to_v2):
+    """Map (v1 path, line) to the set of modes v1's listings show for it."""
+    seen = {}
+    for lst in glob.glob(LISTINGS, recursive=True):
+        with open(lst, encoding='utf-8', errors='replace') as f:
+            for line in f:
+                m = LINE.match(line)
+                if not m or not m.group(3).strip().startswith('./engine/'):
+                    continue
+                how = mode(bytes.fromhex(m.group(2)))
+                n, src = int(m.group(4)), words(m.group(5))
+                if how is None or not src or not any(w.lower() in CPU for w in src[:2]):
+                    continue
+                hint = m.group(3).strip()[2:]
+                hits = [p for p, t in v1_text.items()
+                        if p.startswith(hint) and n <= len(t) and words(t[n - 1])[:len(src)] == src]
+                if len(hits) == 1 and hits[0] in v1_to_v2:
+                    seen.setdefault((hits[0], n), set()).add(how)
+    return seen
+
+
+def force(v1_lines, text, lines):
+    """Add the '<' to the v2 lines aligned with v1's ; return how many."""
+    at = {}
+    for tag, i1, i2, j1, _ in difflib.SequenceMatcher(None, v1_lines, text, autojunk=False).get_opcodes():
+        if tag == 'equal':
+            for k in range(i2 - i1):
+                at[i1 + k + 1] = j1 + k + 1
+    done = 0
+    for n in lines:
+        k = at.get(n)
+        m = INSTR.match(text[k - 1]) if k else None
+        if not m or m.group(2).lower() not in CPU or m.group(4).startswith(('#', '<', '>', '[')) \
+                or ',' in m.group(4).split(';')[0]:
+            continue
+        text[k - 1] = m.group(1) + m.group(2) + m.group(3) + '<' + m.group(4)
+        done += 1
+    return done
+
+
 def main(argv):
+    """Force the operands (or count them with --check)."""
     check = '--check' in argv
-    manifest = list(csv.DictReader(open(os.path.join(ROOT, 'engine', 'v1-manifest.csv'), encoding='utf-8')))
-    v1_to_v2 = {r['v1_path']: r['v2_path'] for r in manifest if not r['deviations'].startswith('KEPT-V2')}
+    with open(os.path.join(ROOT, 'engine', 'v1-manifest.csv'), encoding='utf-8') as f:
+        v1_to_v2 = {r['v1_path']: r['v2_path'] for r in csv.DictReader(f)
+                    if not r['deviations'].startswith('KEPT-V2')}
     # every v1 engine file is a candidate source : a listing's file name is cut
     # to 16 characters, a line is attributed only when one file alone matches
-    v1_text = {}
-    for f in glob.glob(os.path.join(V1, 'engine', '**', '*.asm'), recursive=True):
-        v1_text[os.path.relpath(f, V1)] = open(f, encoding='utf-8', errors='replace').read().split('\n')
-
-    seen = {}                                   # (v1 path, line) -> set of modes
-    for lst in glob.glob(LISTINGS, recursive=True):
-        for l in open(lst, encoding='utf-8', errors='replace'):
-            m = LINE.match(l)
-            if not m:
-                continue
-            hint = m.group(3).strip()
-            if not hint.startswith('./engine/'):
-                continue
-            how = mode(bytes.fromhex(m.group(2)))
-            if how is None:
-                continue
-            n, src = int(m.group(4)), words(m.group(5))
-            if not src or not any(w.lower() in CPU for w in src[:2]):
-                continue
-            hits = [p for p, t in v1_text.items()
-                    if p.startswith(hint[2:]) and n <= len(t) and words(t[n - 1])[:len(src)] == src]
-            if len(hits) != 1 or hits[0] not in v1_to_v2:
-                continue
-            seen.setdefault((hits[0], n), set()).add(how)
-
+    v1_text = {os.path.relpath(f, V1): read_text(f)
+               for f in glob.glob(os.path.join(V1, 'engine', '**', '*.asm'), recursive=True)}
     pending, both = {}, []
-    for (p, n), modes in sorted(seen.items()):
+    for (p, n), modes in sorted(observed(v1_text, v1_to_v2).items()):
         line = v1_text[p][n - 1]
         if '<' in line.split(';')[0]:
             continue
@@ -94,33 +120,16 @@ def main(argv):
             pending.setdefault(p, []).append(n)
         elif 'direct' in modes:
             both.append('%s:%d %s' % (p, n, line.strip()))
-
     total = 0
     for p, lines in sorted(pending.items()):
-        v2 = v1_to_v2[p]
-        path = os.path.join(ROOT, v2)
-        text = open(path, encoding='utf-8', errors='replace').read().split('\n')
-        at = {}
-        for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, v1_text[p], text, autojunk=False).get_opcodes():
-            if tag == 'equal':
-                for k in range(i2 - i1):
-                    at[i1 + k + 1] = j1 + k + 1
-        done = 0
-        for n in lines:
-            k = at.get(n)
-            m = INSTR.match(text[k - 1]) if k else None
-            if m and m.group(2).lower() not in CPU:
-                m = None
-            if not m or m.group(4).startswith(('#', '<', '>', '[')) or ',' in m.group(4).split(';')[0]:
-                if k is None:
-                    print('%s:%d changed in v2, left alone : %s' % (v2, n, v1_text[p][n - 1].strip()))
-                continue
-            text[k - 1] = m.group(1) + m.group(2) + m.group(3) + '<' + m.group(4)
-            done += 1
+        path = os.path.join(ROOT, v1_to_v2[p])
+        text = read_text(path)
+        done = force(v1_text[p], text, lines)
         if done:
             if not check:
-                open(path, 'w', encoding='utf-8').write('\n'.join(text))
-            print('%s : %d operand(s) %s' % (v2, done, 'to force direct' if check else 'forced direct'))
+                with open(path, 'w', encoding='utf-8') as f:
+                    f.write('\n'.join(text))
+            print('%s : %d operand(s) %s' % (v1_to_v2[p], done, 'to force direct' if check else 'forced direct'))
             total += done
     for b in both:
         print('two contexts in v1, left alone :', b)
