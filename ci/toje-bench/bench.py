@@ -11,6 +11,11 @@ The example describes its bench in bench.json (docs/lang/en/benches.md) :
      "blocks": {"sweep": ["9D00", 256]}, "until": [["9DFE", "CB"]],
      "frames": 2000}
 
+"joystick" : {"state": {"direction": "right", "button_a": true}, "ready":
+"9BF0"} holds the joystick once the disk booted, then writes $A5 at "ready"
+for the game mode waiting on it (toje reads joystick button B as held : a
+bench tests the directions and A).
+
 "disk" may be a list : the same tests on each disk (an example's targets,
 one per set of options), each line of the reference prefixed with its disk's
 name.
@@ -69,6 +74,12 @@ def main(argv):
     for disk in disks:
         t = Toje()
         t.boot_floppy(os.path.join(ex, disk))
+        joy = desc.get('joystick')
+        if joy:
+            t.call('set_pointer_device', {'device': 'none'})
+            t.call('set_joystick', joy.get('state', {}))
+            t.call('run_frames', {'n': 5, 'timeout_ms': 20000})
+            t.call('write_memory', {'addr': '$' + joy['ready'], 'bytes': ['A5']})
         some = witnesses(t, desc)
         if some is None:
             print('BENCH %s NO VERDICT : the sequence never completed on %s' % (ex, disk))

@@ -1,42 +1,38 @@
 * ---------------------------------------------------------------------------
 * paged.call
 * ----------
-* Appelle une routine qui vit dans une page RAM, depuis du code resident.
+* Calls a routine living in a RAM page, from resident code.
 *
-* C'est le pendant v2 de ce que la v1 obtenait en declarant un objet : la
-* seule raison d'etre de cet objet etait de faire placer le code en banque
-* RAM et de faire monter la page avant l'appel. En v2 les deux sont acquis
-* autrement, et sans indirection :
+* The v2 counterpart of what v1 got by declaring an object, whose only use
+* was to have its code placed in a RAM bank and its page mounted before the
+* call. In v2 both come otherwise, without indirection :
 *
-*   - la PAGE est une constante d'assemblage. Une <region> du layout produit
-*     l'equate <region>.page, et un <direntry> exporte <nom>$PAGE resolu au
-*     chargement ; l'appelant ecrit donc la page en immediat.
-*   - l'ADRESSE est un symbole de lien. L'unite EXPORTe son entree, le
-*     re-link du chargement de scene la repointe.
+*   - the PAGE is an assembly constant : a layout <region> gives the equate
+*     <region>.page, a <direntry> exports <name>$PAGE resolved at load ; the
+*     caller writes the page as an immediate.
+*   - the ADDRESS is a link symbol : the unit EXPORTs its entry, the scene
+*     load's re-link points it.
 *
-* Un objet, lui, passe par Obj_Index_* parce que la WAVE le designe par
-* identifiant au runtime. Une routine de dessin d'overlay est connue a
-* l'assemblage : elle n'a rien a faire dans cet index.
+* An object goes through Obj_Index_* because a wave names it by its id at
+* run time ; a routine known at assembly has nothing to do in that index.
 *
-* Contrairement a RunPgSubRoutine, aucune operande auto-modifiee : la page
-* d'origine vit sur la pile, donc l'appel est reentrant.
+* Unlike RunPgSubRoutine, no self-modified operand : the caller's page lives
+* on the stack, so the call is reentrant. The code window ($E7E6,
+* $0000-$3FFF) is independent of the video one ($E7E5, $A000-$DFFF) :
+* mounting a drawing routine's page leaves the buffer it draws into alone.
 *
-* Le fenetrage du CODE ($E7E6, $0000-$3FFF) est independant de celui de la
-* memoire VIDEO ($E7E5, $A000-$DFFF) : monter la page d'une routine de dessin
-* ne derange pas le tampon dans lequel elle peint.
+* Migration case : docs/lang/en/migration/paged-routine.md
 *
-* Cas de migration : docs/lang/en/migration/paged-routine.md
-*
-* Entree : A = page a monter, soit map.RAM_OVER_CART+<region>.page
-*          X = adresse d'entree de la routine
-* Sortie : B ecrase. Tout le reste appartient a la routine appelee.
+* In  : A the page to mount, map.RAM_OVER_CART+<region>.page
+*       X the routine's entry
+* Out : B trashed ; the rest is the routine's.
 * ---------------------------------------------------------------------------
 
 paged.call
-        _GetCartPageB                  ; la page de l'appelant, a rendre apres
+        _GetCartPageB                  ; the caller's page, given back after
         pshs  b
-        _SetCartPageA                  ; monte la page de la routine
+        _SetCartPageA                  ; the routine's
         jsr   ,x
         puls  b
-        _SetCartPageB                  ; rend sa page a l'appelant
+        _SetCartPageB
         rts

@@ -1,7 +1,7 @@
 ;*******************************************************************************
 ; Read joypad state
 ;
-; Read Joypads state and store result as Press and Help values :
+; Read Joypads state and store result as Press and Held values :
 ; - One byte with direction for joypad 0 and joypad 1
 ; - One byte with button for joypad 0 and joypad 1
 ;
