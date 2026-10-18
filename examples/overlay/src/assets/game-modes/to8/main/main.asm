@@ -22,13 +22,13 @@
 ; borrow/wrap conversion with non zero camera offsets), the three mirror
 ; subsets, the xloop flag, and a negative screen line — an origin above the
 ; first line, its image under it — in playfield and screen coordinates and
-; at line 0 one line up (t23..t25), and the multisprite path (t26..t30).
+; at line 0 one line up (t23..t25), the multisprite path (t26..t30), and the
+; priority lists DisplaySprite and DeleteObject keep (t31..t39).
 ;
 ; Results at $9C00, loader-ut convention :
-;   +$00 : $CA once the game mode runs
-;   +$01..+$1E : $01 per passing test (t01..t30)
-;   +$1F : $0D once the sequence completed
-;   +$20.. : one word per test, the VRAM checksum it recorded (0 if none)
+;   +0 : $CA once the game mode runs, +1 : TESTS, +2 : $0D once completed
+;   +3.. : $01 per passing test (t01..t39), then one word per test, the VRAM
+;   checksum it recorded (0 if none) — docs/lang/en/benches.md
 ;*******************************************************************************
 
 set_glyph  EXTERNAL
@@ -100,6 +100,15 @@ R.t27   equ res.base+26   ; multisprite : a child rejected by each bound
 R.t28   equ res.base+27   ; multisprite : a child without an image skipped
 R.t29   equ res.base+28   ; multisprite : negative screen line
 R.t30   equ res.base+29   ; multisprite : line 0, one line up
+R.t31   equ res.base+30   ; lists : three objects registered in order
+R.t32   equ res.base+31   ; lists : the middle one moved to another priority
+R.t33   equ res.base+32   ; lists : unregistered (priority 0), then registered again
+R.t34   equ res.base+33   ; lists : the head deleted
+R.t35   equ res.base+34   ; lists : the middle, then the tail deleted
+R.t36   equ res.base+35   ; lists : an object never registered deleted
+R.t37   equ res.base+36   ; lists : DisplaySprite clears the hide flag
+R.t38   equ res.base+37   ; lists : DisplaySprite keeps every register
+R.t39   equ res.base+38   ; lists : DisplaySprite without an image registers nothing
 
 ; checksum slots, same rank ; the plain mirror reference uses a spare slot
 S.t03   equ res.sums+2*2
@@ -129,8 +138,8 @@ S.t27   equ res.sums+2*26
 S.t28   equ res.sums+2*27
 S.t29   equ res.sums+2*28
 S.t30   equ res.sums+2*29
-S.plain equ res.sums+2*40 ; unmirrored glyph at the mirror tests' position
-S.ref26 equ res.sums+2*41 ; t26's two glyphs drawn by the single path
+S.plain equ res.sums+2*TESTS   ; unmirrored glyph at the mirror tests' position
+S.ref26 equ res.sums+2*TESTS+2 ; t26's two glyphs drawn by the single path
 
 ; a multisprite object's children : x, y, imageset (sub2_x_pos onward)
 CHILD   equ obj1+sub2_x_pos
@@ -154,6 +163,8 @@ main
 
         lda   #$CA                 ; the game mode is running
         sta   res.magic
+        lda   #TESTS
+        sta   res.count
 
         ; capture the y1 offsets of both imagesets : the row extent probes
         ; derive their expected first line from the real index, so the bench
@@ -1023,6 +1034,178 @@ t30end
         std   glb_camera_y_offset
         std   glb_camera_x_pos
 
+; ---------------------------------------------------------------------------
+; t31..t39 — the priority lists : a doubly linked list per priority, its
+; first and last objects in Tbl_Priority_First_Entry / Last_Entry. The
+; objects come from the dynamic pool (DeleteObject gives them back to it).
+; ---------------------------------------------------------------------------
+t31
+        jsr   bench.reset
+        jsr   bench.pool
+        tsta
+        lbne  t32
+        ldu   #O1
+        jsr   bench.prio3
+        ldu   #O2
+        jsr   bench.prio3
+        ldu   #O3
+        jsr   bench.prio3
+        ldb   #3
+        ldx   #L.t31
+        jsr   bench.list
+        tsta
+        lbne  t32
+        lda   #1
+        sta   R.t31
+t32
+        ldu   #O2                  ; t31's lists : O2 from 3 to 5
+        lda   #5
+        jsr   DisplaySprite_priority
+        ldb   #3
+        ldx   #L.t32a
+        jsr   bench.list
+        tsta
+        lbne  t33
+        ldb   #5
+        ldx   #L.t32b
+        jsr   bench.list
+        tsta
+        lbne  t33
+        lda   #1
+        sta   R.t32
+t33
+        ldu   #O1                  ; out of list 3, then in again : last
+        clra
+        jsr   DisplaySprite_priority
+        ldb   #3
+        ldx   #L.t33a
+        jsr   bench.list
+        tsta
+        lbne  t34
+        ldu   #O1
+        jsr   bench.prio3
+        ldb   #3
+        ldx   #L.t33b
+        jsr   bench.list
+        tsta
+        lbne  t34
+        lda   #1
+        sta   R.t33
+t34
+        ldu   #O3                  ; list 3 is O3, O1 : the head goes
+        jsr   DeleteObject
+        ldb   #3
+        ldx   #L.t34
+        jsr   bench.list
+        tsta
+        lbne  t35
+        lda   O3+id                ; cleared
+        lbne  t35
+        lda   #1
+        sta   R.t34
+t35
+        jsr   bench.reset
+        jsr   bench.pool
+        tsta
+        lbne  t36
+        ldu   #O1
+        jsr   bench.prio3
+        ldu   #O2
+        jsr   bench.prio3
+        ldu   #O3
+        jsr   bench.prio3
+        ldu   #O2                  ; the middle
+        jsr   DeleteObject
+        ldb   #3
+        ldx   #L.t35a
+        jsr   bench.list
+        tsta
+        lbne  t36
+        ldu   #O3                  ; the tail
+        jsr   DeleteObject
+        ldb   #3
+        ldx   #L.t34
+        jsr   bench.list
+        tsta
+        lbne  t36
+        lda   #1
+        sta   R.t35
+t36
+        jsr   bench.reset
+        jsr   bench.pool
+        tsta
+        lbne  t37
+        ldu   #O1
+        jsr   bench.prio3
+        ldu   #O2                  ; loaded, never displayed
+        jsr   DeleteObject
+        ldb   #3
+        ldx   #L.t34
+        jsr   bench.list
+        tsta
+        lbne  t37
+        ldd   Tbl_Priority_First_Entry  ; the unused entry 0 untouched
+        lbne  t37
+        ldd   Tbl_Priority_Last_Entry
+        lbne  t37
+        lda   O2+id
+        lbne  t37
+        lda   #1
+        sta   R.t36
+t37
+        jsr   bench.reset
+        jsr   bench.pool
+        tsta
+        lbne  t38
+        lda   #render_hide_mask
+        sta   O1+render_flags
+        ldu   #O1
+        jsr   bench.prio3
+        lda   O1+render_flags
+        lbmi  t38
+        lda   #1
+        sta   R.t37
+t38
+        jsr   bench.reset
+        jsr   bench.pool
+        tsta
+        lbne  t39
+        ldu   #O1
+        lda   #3
+        sta   priority,u
+        ldd   #$5AA5
+        ldx   #$1234
+        ldy   #$4321
+        jsr   DisplaySprite
+        cmpd  #$5AA5
+        lbne  t39
+        cmpx  #$1234
+        lbne  t39
+        cmpy  #$4321
+        lbne  t39
+        cmpu  #O1
+        lbne  t39
+        lda   #1
+        sta   R.t38
+t39
+        jsr   bench.reset
+        jsr   bench.pool
+        tsta
+        lbne  benchdone
+        ldd   #0
+        std   O1+image_set
+        ldu   #O1
+        lda   #3
+        sta   priority,u
+        jsr   DisplaySprite
+        ldb   #3
+        ldx   #L.empty
+        jsr   bench.list
+        tsta
+        lbne  benchdone
+        lda   #1
+        sta   R.t39
+
 benchdone
         lda   #$0D
         sta   res.done
@@ -1229,6 +1412,78 @@ bench.glyph1
         lda   #2
         sta   priority,u
         jmp   DisplaySprite
+
+; object U registered at priority 3
+bench.prio3
+        lda   #3
+        jmp   DisplaySprite_priority
+
+; the dynamic pool emptied and its four objects loaded (id 1, the glyph), O1
+; to O4 in that order ; out : A = 0 when LoadObject_u gave them so
+bench.pool
+        ldd   #0
+        ldx   #Dynamic_Object_RAM
+!       std   ,x++
+        cmpx  #Dynamic_Object_RAM_End
+        blo   <
+        std   object_list_first
+        std   object_list_last
+        jsr   InitStack
+        ldy   #bench.pool.order
+@load   jsr   LoadObject_u
+        beq   @fail
+        cmpu  ,y++
+        bne   @fail
+        lda   #1
+        sta   id,u
+        ldx   #set_glyph
+        stx   image_set,u
+        cmpy  #bench.pool.order+8
+        blo   @load
+        clra
+        rts
+@fail   lda   #1
+        rts
+bench.pool.order fdb O1,O2,O3,O4
+
+; is the list of priority B exactly the objects at X (words, 0 ended), first
+; to last, linked both ways, its last entry the last of them ? out : A = 0
+bench.list
+        pshs  b,x,y,u
+        aslb
+        ldy   #Tbl_Priority_First_Entry
+        ldu   b,y
+        ldy   #0                   ; the previous one
+@loop   ldd   ,x++
+        beq   @end
+        pshs  d
+        cmpu  ,s++
+        bne   @fail
+        cmpy  rsv_priority_prev_obj,u
+        bne   @fail
+        tfr   u,y
+        ldu   rsv_priority_next_obj,u
+        bra   @loop
+@end    cmpu  #0
+        bne   @fail
+        ldb   ,s
+        aslb
+        ldx   #Tbl_Priority_Last_Entry
+        cmpy  b,x
+        bne   @fail
+        clra
+        puls  b,x,y,u,pc
+@fail   lda   #1
+        puls  b,x,y,u,pc
+
+L.t31   fdb   O1,O2,O3,0
+L.t32a  fdb   O1,O3,0
+L.t32b  fdb   O2,0
+L.t33a  fdb   O3,0
+L.t33b  fdb   O3,O1,0
+L.t34   fdb   O1,0
+L.t35a  fdb   O1,O3,0
+L.empty fdb   0
 
 ; obj1 as a multisprite object of B children (filled at CHILD), priority 2
 bench.multi
