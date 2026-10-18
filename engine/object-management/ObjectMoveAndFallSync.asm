@@ -3,7 +3,7 @@
 * ---------------------
 * Moves an object under a constant acceleration, once per elapsed frame :
 * each frame the position takes the velocity, then the velocity takes the
-* acceleration (Sonic 2's ObjectMoveAndFall, its gravity a parameter here).
+* acceleration, a parameter here (a fall under gravity).
 * Over k elapsed frames (gfxlock.frameDrop.count, 0 counting for one, as in
 * ObjectMoveSync) that is, exactly :
 *
@@ -26,16 +26,12 @@ ObjectMoveAndFallSync
         _negd
 !       std   @ag                      ; |g|
         jsr   ObjectMoveSync           ; k frames at the velocity of the first
-        ldb   gfxlock.frameDrop.count
-        bne   >
-        ldb   #1
-!       stb   @k
         ; --- y_vel += k*g, 16 bits as the k additions would leave it ---
-        lda   @k
+        lda   ObjectMoveSync.k
         ldb   @ag+1
         mul                            ; k * |g| low byte
         std   @p
-        lda   @k
+        lda   ObjectMoveSync.k
         ldb   @ag
         mul                            ; k * |g| high byte : its low byte counts
         tfr   b,a
@@ -47,7 +43,7 @@ ObjectMoveAndFallSync
 !       addd  y_vel,u
         std   y_vel,u
         ; --- t = k(k-1)/2, 0 to 32385 ---
-        lda   @k
+        lda   ObjectMoveSync.k
         tfr   a,b
         decb
         mul                            ; k(k-1), even
@@ -95,7 +91,6 @@ ObjectMoveAndFallSync
         rts
 @ag     fdb   0
 @sign   fcb   0
-@k      fcb   0
 @p      fdb   0
 @t      fdb   0
 @r      fcb   0,0,0

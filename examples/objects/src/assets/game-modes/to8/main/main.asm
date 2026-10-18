@@ -9,30 +9,42 @@
 ; the edge cases assertable at all — an object deleting itself mid-walk, or
 ; spawning a child mid-walk, leaves nothing on screen to look at.
 ;
-; result table ($9C00) :
-;   +0  : $CA magic (the bench is running)
-;   +1  : T1  InitStack hands out a slot, the list heads follow it
-;   +2  : T2  the pool is finite : the fifth request on four slots is refused
-;   +3  : T3  RunObjects walks the list in order
-;   +4  : T4  an object deletes itself mid-walk and the walk carries on
-;   +5  : T5  an object spawns a child mid-walk and the child runs the same pass
-;   +6  : T6  UnloadObject_x unlinks from the middle of the list
-;   +7  : T7  a freed slot comes back on the next load
-;   +8  : T8  unloading clears the object's data
-;   +9  : T9  an object living in its own page is mounted and run
-;   +10 : T10 ObjectMoveSync applies velocity once per elapsed frame
-;   +11 : T11 ObjectDp_Clear wipes the user direct page and stops where it must
-;   +12 : T12 RunPgSubRoutine runs in another page and restores the caller's
-;   +13 : (byte) the parameter RunPgSubRoutine's callee echoed back
-;   +14 : T13 AnimateSpriteSync spends elapsed frames, not calls
-;   +15 : T14 moveByScript walks a script and applies its steps
-;   +16 : T15 and it too spends elapsed frames, not calls
-;   +17 : T16 AABB collision : the potential matrix, and the list surgery
-;   +18 : T17 ObjectWave spawns on the game clock, with frame drop carried
-;   +19 : T18 AutoScroll moves the camera in 8.8, stops at its limit
-;   +20 : T19 AnimateSpriteSync is AnimateSprite once per elapsed frame
-;   +21 : T20 ObjectMoveAndFallSync is k frames of a move then a fall
-;   +31 : $00 running, $0D all passed, $E0+n : n test(s) failed
+; Witnesses at $9C00, the bench convention (docs/lang/en/benches.md) :
+; $CA, TESTS, $0D once done, a byte per test ($01 pass), a word per test.
+;   T1  InitStack hands out a slot, the list heads follow it
+;   T2  the pool is finite : the fifth request on four slots is refused
+;   T3  RunObjects walks the list in order
+;   T4  an object deletes itself mid-walk and the walk carries on
+;   T5  an object spawns a child mid-walk and the child runs the same pass
+;   T6  UnloadObject_x unlinks from the middle of the list
+;   T7  a freed slot comes back on the next load
+;   T8  unloading clears the object's data
+;   T9  an object living in its own page is mounted and run
+;   T10 ObjectMoveSync applies velocity once per elapsed frame
+;   T11 ObjectDp_Clear wipes the user direct page and stops where it must
+;   T12 RunPgSubRoutine runs in another page and restores the caller's
+;       (word : the parameter the callee echoed back)
+;   T13 AnimateSpriteSync spends elapsed frames, not calls
+;   T14 moveByScript walks a script and applies its steps
+;   T15 and it too spends elapsed frames, not calls
+;   T16 AABB collision : the potential matrix, and the list surgery
+;   T17 ObjectWave spawns on the game clock, with frame drop carried
+;   T18 AutoScroll moves the camera in 8.8, stops at its limit
+;   T19 AnimateSpriteSync is AnimateSprite once per elapsed frame
+;   T20 ObjectMoveAndFallSync is k frames of a move then a fall
+;   T21 ManagedObjects_ClearAll clears the pool and frees the slots in use
+;   T22 InitStack empties the run list
+;   T23 LoadObject_x / UnloadObject_x : the object in X, U kept
+;   T24 UnloadObject_u at both ends of the list, every register kept
+;   T25 ObjectMove : a borrow and a carry across the pixel
+;   T26 ObjectMoveSync : negative velocities across the pixel
+;   T27 AnimateSprite : $FE n goes back, $FF restarts
+;   T28 AnimateSprite : $FD, $FC, $FB, $FA
+;   T29 AnimateSprite : the object's flips, the other render flags kept
+;   T30 AnimateSpriteSync : a command after the image runs at once, and the
+;       look-ahead past $FF / $FE reads the image shown, not the script's end
+;   T31 MarkObjGone, MarkObjGone2, MarkObjGone3 : kept in the window, deleted
+;       past it with the respawn entry freed
 ;*******************************************************************************
 
 ; the paged unit's entry points : resolved at load time, so the game mode
@@ -57,17 +69,54 @@ wave.data       EXTERNAL
 
  opt c,ct
 
+R.t01 equ res.base+0
+R.t02 equ res.base+1
+R.t03 equ res.base+2
+R.t04 equ res.base+3
+R.t05 equ res.base+4
+R.t06 equ res.base+5
+R.t07 equ res.base+6
+R.t08 equ res.base+7
+R.t09 equ res.base+8
+R.t10 equ res.base+9
+R.t11 equ res.base+10
+R.t12 equ res.base+11
+R.t13 equ res.base+12
+R.t14 equ res.base+13
+R.t15 equ res.base+14
+R.t16 equ res.base+15
+R.t17 equ res.base+16
+R.t18 equ res.base+17
+R.t19 equ res.base+18
+R.t20 equ res.base+19
+R.t21 equ res.base+20
+R.t22 equ res.base+21
+R.t23 equ res.base+22
+R.t24 equ res.base+23
+R.t25 equ res.base+24
+R.t26 equ res.base+25
+R.t27 equ res.base+26
+R.t28 equ res.base+27
+R.t29 equ res.base+28
+R.t30 equ res.base+29
+R.t31 equ res.base+30
+W.t12 equ res.sums+2*11
+
+respawn_index equ ext_variables+6         ; the game's field, MarkObjGone reads it
+
         ; the scene loads this file at its attributed place and jumps
         ; to its first byte, so main has to be the first thing emitted
 
 main
         ldx   #result
-        ldb   #32
+        ldb   #3+3*TESTS
 !       clr   ,x+
         decb
         bne   <
         lda   #result.MAGIC
-        sta   result
+        sta   res.magic
+        lda   #TESTS
+        sta   res.count
 
 ; ---------------------------------------------------------------------------
 ; T1 : InitStack hands out a slot, and the list heads follow it
@@ -85,7 +134,7 @@ main
         cmpu  object_list_last
         bne   t1ko
         lda   #$01
-        sta   result+1
+        sta   R.t01
 t1ko
 
 ; ---------------------------------------------------------------------------
@@ -101,7 +150,7 @@ t1ko
         jsr   LoadObject_u
         bne   t2ko                         ; z=0 would mean a fifth slot appeared
         lda   #$01
-        sta   result+2
+        sta   R.t02
 t2ko
 
 ; ---------------------------------------------------------------------------
@@ -125,7 +174,7 @@ t2ko
         tsta
         bne   t3ko
         lda   #$01
-        sta   result+3
+        sta   R.t03
 t3ko
 
 ; ---------------------------------------------------------------------------
@@ -158,7 +207,7 @@ t3ko
         tsta
         bne   t4ko
         lda   #$01
-        sta   result+4
+        sta   R.t04
 t4ko
 
 ; ---------------------------------------------------------------------------
@@ -176,7 +225,7 @@ t4ko
         tsta
         bne   t5ko
         lda   #$01
-        sta   result+5
+        sta   R.t05
 t5ko
 
 ; ---------------------------------------------------------------------------
@@ -203,7 +252,7 @@ t5ko
         tsta
         bne   t6ko
         lda   #$01
-        sta   result+6
+        sta   R.t06
 t6ko
 
 ; ---------------------------------------------------------------------------
@@ -215,7 +264,7 @@ t6ko
         cmpu  t6mid
         bne   t7ko
         lda   #$01
-        sta   result+7
+        sta   R.t07
 t7ko
 
 ; ---------------------------------------------------------------------------
@@ -241,7 +290,7 @@ t7ko
         leax  -1,x
         bne   <
         lda   #$01
-        sta   result+8
+        sta   R.t08
 t8ko
 
 ; ---------------------------------------------------------------------------
@@ -266,7 +315,7 @@ t8ko
         cmpa  #$01
         bne   t9ko
         lda   #$01
-        sta   result+9                     ; replace the magic with the verdict
+        sta   R.t09
 t9ko
 
 ; ---------------------------------------------------------------------------
@@ -303,7 +352,7 @@ t9ko
         cmpd  #$01FD                       ; $0200 - 3 * $01
         bne   t10ko
         lda   #$01
-        sta   result+10
+        sta   R.t10
 t10ko
 
 ; ---------------------------------------------------------------------------
@@ -327,7 +376,7 @@ t10ko
         bne   t11ko
         clr   ,x
         lda   #$01
-        sta   result+11
+        sta   R.t11
 t11ko
 
 ; ---------------------------------------------------------------------------
@@ -352,9 +401,9 @@ t11ko
         cmpa  #$3C                         ; and got its parameter
         bne   t12ko
         lda   #$01
-        sta   result+12
-        lda   #$3C
-        sta   result+13
+        sta   R.t12
+        ldd   #$003C
+        std   W.t12
 t12ko
 
 ; ---------------------------------------------------------------------------
@@ -411,7 +460,7 @@ t12ko
         cmpd  #$1111                       ; and it did leave the first frame
         beq   t13ko
         lda   #$01
-        sta   result+14
+        sta   R.t13
 t13ko
 
 ; ---------------------------------------------------------------------------
@@ -447,7 +496,7 @@ t13ko
         cmpd  #$0103                       ; three steps in
         bne   t14ko
         lda   #$01
-        sta   result+15
+        sta   R.t14
 t14ko
 
 ; ---------------------------------------------------------------------------
@@ -486,7 +535,7 @@ t14ko
         cmpd  #$0103                       ; and that frame moved nothing
         bne   t15ko
         lda   #$01
-        sta   result+16
+        sta   R.t15
 t15ko
 
 ; ---------------------------------------------------------------------------
@@ -602,7 +651,7 @@ t15ko
         cmpa  #1                           ; the removed box was not touched
         lbne  t16ko
         lda   #$01
-        sta   result+17
+        sta   R.t16
 t16ko
 
 ; ---------------------------------------------------------------------------
@@ -665,7 +714,7 @@ t16ko
         ldu   run_object_next,u
         lbne  t17ko
         lda   #$01
-        sta   result+18
+        sta   R.t17
 t17ko
         ldd   #0
         std   gfxlock.frame.gameCount
@@ -709,7 +758,7 @@ t17ko
         lda   glb_camera_move
         lbne  t18ko
         lda   #$01
-        sta   result+19
+        sta   R.t18
 t18ko
 
 ; ---------------------------------------------------------------------------
@@ -770,7 +819,7 @@ t18ko
         jsr   t19same
         lbne  t19ko
         lda   #$01
-        sta   result+20
+        sta   R.t19
 t19ko
 
 ; ---------------------------------------------------------------------------
@@ -791,34 +840,437 @@ t19ko
         jsr   t20run
         lbne  t20ko
         lda   #$01
-        sta   result+21
+        sta   R.t20
 t20ko
 
 ; ---------------------------------------------------------------------------
-; verdict
+; T21 : ManagedObjects_ClearAll clears the pool and frees the slots in use.
+; The pool full and dirty, one ClearAll alone : every byte zero, the list
+; empty, and four slots to hand out again, not five.
 ; ---------------------------------------------------------------------------
-        ldx   #result+1
-        clrb
-verdict.loop
-        cmpx  #result+13                   ; +13 carries a value, not a verdict
-        beq   verdict.next
-        lda   ,x
-        cmpa  #$01
-        beq   verdict.next
+        jsr   bench.reset
+        jsr   bench.fill
+        lbeq  t21ko
+        ldx   #Dynamic_Object_RAM
+        lda   #$FF
+!       sta   ,x+
+        cmpx  #Dynamic_Object_RAM_End
+        bne   <
+        jsr   ManagedObjects_ClearAll
+        ldx   #Dynamic_Object_RAM
+!       lda   ,x+
+        lbne  t21ko
+        cmpx  #Dynamic_Object_RAM_End
+        bne   <
+        ldd   object_list_first
+        lbne  t21ko
+        ldd   object_list_last
+        lbne  t21ko
+        jsr   bench.fill
+        lbeq  t21ko                        ; a slot was lost
+        jsr   LoadObject_u
+        lbne  t21ko
+        lda   #$01
+        sta   R.t21
+t21ko
+
+; ---------------------------------------------------------------------------
+; T22 : InitStack empties the run list along with the free stack.
+; ---------------------------------------------------------------------------
+        jsr   bench.reset
+        jsr   bench.fill
+        jsr   InitStack
+        ldd   object_list_first
+        lbne  t22ko
+        ldd   object_list_last
+        lbne  t22ko
+        jsr   LoadObject_u
+        lbeq  t22ko
+        cmpu  #Dynamic_Object_RAM
+        lbne  t22ko
+        jsr   ManagedObjects_ClearAll      ; the slots T22 left dirty
+        lda   #$01
+        sta   R.t22
+t22ko
+
+; ---------------------------------------------------------------------------
+; T23 : the X variants. LoadObject_x hands the slot out in X and keeps U, a
+; full pool says so with U kept ; UnloadObject_x keeps X and U, and the slot
+; it freed is the next one out.
+; ---------------------------------------------------------------------------
+        jsr   bench.reset
+        ldu   #$1234
+        jsr   LoadObject_x
+        lbeq  t23ko
+        cmpx  #Dynamic_Object_RAM
+        lbne  t23ko
+        cmpu  #$1234
+        lbne  t23ko
+        stx   t23x
+        jsr   LoadObject_x
+        jsr   LoadObject_x
+        jsr   LoadObject_x
+        lbeq  t23ko
+        jsr   LoadObject_x
+        lbne  t23ko                        ; the fifth refused
+        cmpu  #$1234
+        lbne  t23ko
+        ldx   t23x
+        jsr   UnloadObject_x
+        cmpx  t23x
+        lbne  t23ko
+        cmpu  #$1234
+        lbne  t23ko
+        ldd   object_list_first
+        cmpd  #Dynamic_Object_RAM+object_size
+        lbne  t23ko
+        jsr   LoadObject_x
+        lbeq  t23ko
+        cmpx  t23x
+        lbne  t23ko
+        lda   #$01
+        sta   R.t23
+t23ko
+
+; ---------------------------------------------------------------------------
+; T24 : UnloadObject_u at the head then at the tail of a list of three : the
+; middle one is left alone in the list, unlinked both ways, and every
+; register comes back as it went in.
+; ---------------------------------------------------------------------------
+        jsr   bench.reset
+        jsr   LoadObject_u
+        stu   t24a
+        jsr   LoadObject_u
+        stu   t24b
+        jsr   LoadObject_u
+        stu   t24c
+        ldu   t24a
+        ldd   #$1357
+        ldx   #$2468
+        ldy   #$369C
+        jsr   UnloadObject_u
+        cmpd  #$1357
+        lbne  t24ko
+        cmpx  #$2468
+        lbne  t24ko
+        cmpy  #$369C
+        lbne  t24ko
+        cmpu  t24a
+        lbne  t24ko
+        ldu   t24c
+        jsr   UnloadObject_u
+        ldd   object_list_first
+        cmpd  t24b
+        lbne  t24ko
+        ldd   object_list_last
+        cmpd  t24b
+        lbne  t24ko
+        ldu   t24b
+        ldd   run_object_prev,u
+        lbne  t24ko
+        ldd   run_object_next,u
+        lbne  t24ko
+        lda   #$01
+        sta   R.t24
+t24ko
+
+; ---------------------------------------------------------------------------
+; T25 : ObjectMove adds a s8.8 velocity to a 16.8 position. x : $0100.40 by
+; -0.5 borrows from the pixel ; y : $01FF.C0 by +0.5 carries into it.
+; ---------------------------------------------------------------------------
+        jsr   bench.reset
+        lda   #objid.tracer
+        ldb   #$11
+        jsr   bench.newObject
+        ldd   #$0100
+        std   x_pos,u
+        lda   #$40
+        sta   x_sub,u
+        ldd   #$FF80
+        std   x_vel,u
+        ldd   #$01FF
+        std   y_pos,u
+        lda   #$C0
+        sta   y_sub,u
+        ldd   #$0080
+        std   y_vel,u
+        jsr   ObjectMove
+        ldd   x_pos,u
+        cmpd  #$00FF
+        lbne  t25ko
+        lda   x_sub,u
+        cmpa  #$C0
+        lbne  t25ko
+        ldd   y_pos,u
+        cmpd  #$0200
+        lbne  t25ko
+        lda   y_sub,u
+        cmpa  #$40
+        lbne  t25ko
+        lda   #$01
+        sta   R.t25
+t25ko
+
+; ---------------------------------------------------------------------------
+; T26 : ObjectMoveSync over two frames, both velocities negative. x :
+; $0100.00 by 2 x -0.75 = $00FE.80 ; y : $0200.80 by 2 x -0.125 = $0200.40,
+; the negative product carrying back into the same pixel.
+; ---------------------------------------------------------------------------
+        jsr   bench.reset
+        lda   #objid.tracer
+        ldb   #$11
+        jsr   bench.newObject
+        ldd   #$0100
+        std   x_pos,u
+        clr   x_sub,u
+        ldd   #$FF40
+        std   x_vel,u
+        ldd   #$0200
+        std   y_pos,u
+        lda   #$80
+        sta   y_sub,u
+        ldd   #$FFE0
+        std   y_vel,u
+        lda   #2
+        sta   gfxlock.frameDrop.count
+        jsr   ObjectMoveSync
+        clr   gfxlock.frameDrop.count
+        ldd   x_pos,u
+        cmpd  #$00FE
+        lbne  t26ko
+        lda   x_sub,u
+        cmpa  #$80
+        lbne  t26ko
+        ldd   y_pos,u
+        cmpd  #$0200
+        lbne  t26ko
+        lda   y_sub,u
+        cmpa  #$40
+        lbne  t26ko
+        lda   #$01
+        sta   R.t26
+t26ko
+
+; ---------------------------------------------------------------------------
+; T27 : AnimateSprite, D = 0 : an image per call. $FE 2 goes back two images
+; and shows the one it lands on ; $FF restarts on the first.
+; ---------------------------------------------------------------------------
+        jsr   bench.reset
+        lda   #objid.tracer
+        ldb   #$11
+        jsr   bench.newObject
+        ldx   #anim.fe
+        jsr   bench.animSet
+        ldy   #AnimateSprite
+        ldb   #7
+        jsr   bench.animTrace
+        lda   #objid.tracer
+        ldb   #$22
+        jsr   bench.newObject
+        ldx   #anim.ff
+        jsr   bench.animSet
+        ldy   #AnimateSprite
+        ldb   #4
+        jsr   bench.animTrace
+        ldx   #t27want
+        ldb   #11
+        jsr   bench.traceIs
+        tsta
+        lbne  t27ko
+        lda   #$01
+        sta   R.t27
+t27ko
+
+; ---------------------------------------------------------------------------
+; T28 : the other commands. $FD switches to another script from the next
+; call, the image kept ; $FC moves to the next routine and steps over itself ;
+; $FB restarts and clears the secondary routine ; $FA, the script's end,
+; moves the secondary routine on at each call.
+; ---------------------------------------------------------------------------
+        jsr   bench.reset
+        lda   #objid.tracer
+        ldb   #$11
+        jsr   bench.newObject
+        stu   t28a
+        ldx   #anim.fd
+        jsr   bench.animSet
+        lda   #$55
+        sta   routine_secondary,u
+        ldy   #AnimateSprite
+        ldb   #7
+        jsr   bench.animTrace
+        ldu   t28a
+        lda   routine,u
+        cmpa  #1                           ; one $FC
+        lbne  t28ko
+        lda   routine_secondary,u
+        lbne  t28ko                        ; cleared by $FB
+        lda   #objid.tracer
+        ldb   #$22
+        jsr   bench.newObject
+        stu   t28a
+        ldx   #anim.fa
+        jsr   bench.animSet
+        ldy   #AnimateSprite
+        ldb   #3
+        jsr   bench.animTrace
+        ldu   t28a
+        lda   routine_secondary,u
+        cmpa  #2                           ; $FA, twice
+        lbne  t28ko
+        ldx   #t28want
+        ldb   #10
+        jsr   bench.traceIs
+        tsta
+        lbne  t28ko
+        lda   #$01
+        sta   R.t28
+t28ko
+
+; ---------------------------------------------------------------------------
+; T29 : AnimateSprite copies the object's flips (status_flags) onto the
+; sprite's (render_flags) and leaves the other render flags as they were.
+; ---------------------------------------------------------------------------
+        jsr   bench.reset
+        lda   #objid.tracer
+        ldb   #$11
+        jsr   bench.newObject
+        ldx   #anim.fe
+        jsr   bench.animSet
+        lda   #%01110000|render_xmirror_mask
+        sta   render_flags,u
+        lda   #status_yflip_mask
+        sta   status_flags,u
+        jsr   AnimateSprite
+        lda   render_flags,u
+        cmpa  #%01110000|render_ymirror_mask
+        lbne  t29ko
+        lda   #$01
+        sta   R.t29
+t29ko
+
+; ---------------------------------------------------------------------------
+; T30 : AnimateSpriteSync looks one entry past the image it shows. A $FC
+; there runs in the same call, not one image late. Past a $FF or a $FE the
+; image shown is the one the command lands on, and the entry after it is
+; what counts : each script is followed by a byte $FC, the D of a next
+; script, which a look-ahead from the command's own entry would run.
+; ---------------------------------------------------------------------------
+        jsr   bench.reset
+        lda   #1
+        sta   gfxlock.frameDrop.count
+        lda   #objid.tracer
+        ldb   #$11
+        jsr   bench.newObject
+        stu   t30a
+        ldx   #anim.la
+        jsr   bench.animSet
+        ldy   #AnimateSpriteSync
+        ldb   #2
+        jsr   bench.animTrace
+        ldu   t30a
+        lda   routine,u
+        cmpa  #1                           ; the $FC after the second image
+        lbne  t30ko
+        lda   anim_frame,u
+        cmpa  #3                           ; stepped over
+        lbne  t30ko
+        lda   #objid.tracer
+        ldb   #$22
+        jsr   bench.newObject
+        stu   t30a
+        ldx   #anim.lf
+        jsr   bench.animSet
+        ldy   #AnimateSpriteSync
+        ldb   #3
+        jsr   bench.animTrace
+        ldu   t30a
+        lda   routine,u
+        lbne  t30ko                        ; nothing read past the $FF
+        lda   #objid.tracer
+        ldb   #$33
+        jsr   bench.newObject
+        stu   t30a
+        ldx   #anim.le
+        jsr   bench.animSet
+        ldy   #AnimateSpriteSync
+        ldb   #3
+        jsr   bench.animTrace
+        ldu   t30a
+        lda   routine,u
+        lbne  t30ko                        ; nor past the $FE
+        ldx   #t30want
+        ldb   #8
+        jsr   bench.traceIs
+        tsta
+        lbne  t30ko
+        lda   #$01
+        sta   R.t30
+t30ko
+        clr   gfxlock.frameDrop.count
+
+; ---------------------------------------------------------------------------
+; T31 : MarkObjGone keeps an object whose coarse x is within the window
+; ($120 from the coarse camera) and deletes it past it, behind the camera
+; too, freeing its respawn entry (bit 7) ; MarkObjGone2 takes the x in D,
+; MarkObjGone3 does nothing in the window. DisplaySprite and DeleteObject
+; are the bench's : they count.
+; ---------------------------------------------------------------------------
+        jsr   bench.reset
+        ldd   #$0100
+        std   glb_camera_x_pos_coarse
+        clr   bench.displayed
+        clr   bench.deleted
+        lda   #$FF
+        sta   Obj_respawn_data+5
+        lda   #$80
+        sta   Obj_respawn_data
+        ldd   #$0150                       ; in the window
+        jsr   bench.goneObject
+        jsr   MarkObjGone
+        ldd   #$0300                       ; MarkObjGone2 : D in the window
+        jsr   bench.goneObject
+        ldd   #$0150
+        jsr   MarkObjGone2
+        ldd   #$0150                       ; MarkObjGone3 in the window
+        jsr   bench.goneObject
+        jsr   MarkObjGone3
+        lda   bench.displayed
+        cmpa  #2
+        lbne  t31ko
+        lda   bench.deleted
+        lbne  t31ko
+        ldd   #$0300                       ; past the window, respawn entry 5
+        jsr   bench.goneObject
+        lda   #5
+        sta   respawn_index,u
+        jsr   MarkObjGone
+        lda   Obj_respawn_data+5
+        cmpa  #$7F
+        lbne  t31ko
+        ldd   #$00C0                       ; behind the camera, no respawn entry
+        jsr   bench.goneObject
+        jsr   MarkObjGone3
+        lda   Obj_respawn_data
+        cmpa  #$80                         ; entry 0 : not the table's
+        lbne  t31ko
+        lda   bench.deleted
+        cmpa  #2
+        lbne  t31ko
+        clrb                               ; the three kept, the two deleted gone
+        ldu   object_list_first
+!       beq   >
         incb
-verdict.next
-        leax  1,x
-        cmpx  #result+22
-        bne   verdict.loop
-        tstb
-        bne   verdict.failed
-        lda   #result.DONE_OK
-        bra   verdict.write
-verdict.failed
-        addb  #result.DONE_KO
-        tfr   b,a
-verdict.write
-        sta   result+31
+        ldu   run_object_next,u
+        bra   <
+!       cmpb  #3
+        lbne  t31ko
+        lda   #$01
+        sta   R.t31
+t31ko
+
+        lda   #result.DONE
+        sta   res.done
 done    bra   done
 
 t3want   fcb   $11,$22,$33
@@ -885,10 +1337,55 @@ bench.traceIs.ko
         lda   #$FF
         rts
 
+; -> the pool full, z=1 if a slot was refused
+bench.fill
+        ldb   #nb_dynamic_objects
+!       jsr   LoadObject_u
+        beq   >
+        decb
+        bne   <
+        andcc #%11111011                   ; z=0 : every slot handed out
+!       rts
+
+; d = x position -> u = a new tracer there
+bench.goneObject
+        pshs  d
+        lda   #objid.tracer
+        ldb   #$11
+        jsr   bench.newObject
+        puls  d
+        std   x_pos,u
+        rts
+
+; MarkObjGone's two ends, counted
+DisplaySprite
+        inc   bench.displayed
+        rts
+DeleteObject
+        inc   bench.deleted
+        jmp   UnloadObject_u
+
+; b = calls, y = AnimateSprite or AnimateSpriteSync -> after each call, the
+; image's high byte appended to the trace
+bench.animTrace
+        stb   bench.animN
+        sty   bench.animFn
+        pshs  u
+!       ldu   ,s
+        jsr   [bench.animFn]
+        ldu   ,s
+        lda   image_set,u
+        jsr   trace.put
+        dec   bench.animN
+        bne   <
+        puls  u,pc
+
 ; put the object on the fake animation, at its first frame
 bench.animReset
-        ldd   #anim.table
-        std   anim,u
+        ldx   #anim.table
+; x = a script -> the object on it, at its first frame
+bench.animSet
+        stx   anim,u
         clr   anim_frame,u
         clr   anim_frame_duration,u
         clr   anim_flags,u
@@ -1111,6 +1608,19 @@ t20a       fdb   0
 t20b       fdb   0
 t20case    fdb   0
 t20n       fcb   0
+t23x       fdb   0
+t24a       fdb   0
+t24b       fdb   0
+t24c       fdb   0
+t28a       fdb   0
+t30a       fdb   0
+bench.animFn    fdb 0
+bench.displayed fcb 0
+bench.deleted   fcb 0
+
+t27want    fcb   $A1,$A2,$A3,$A2,$A3,$A2,$A3,$B1,$B2,$B1,$B2
+t28want    fcb   $C1,$C1,$C2,$C2,$C3,$C3,$C2,$C5,$C5,$C5
+t30want    fcb   $D1,$D2,$E1,$E2,$E1,$E1,$E2,$E2
 
 ; T20 cases : x_pos, x_vel, y_pos, y_vel, g, k, a pad byte, then what k
 ; frames of ObjectMoveAndFall leave : x_pos, x_sub, y_pos, y_sub, y_vel
@@ -1145,6 +1655,38 @@ anim.table
            fdb   $2222
            fdb   $3333
            fcb   $FF                       ; _resetAnim
+
+; the scripts of T27 to T30, D = 0 : an image per call
+           fcb   0
+anim.fe    fdb   $A1A1,$A2A2,$A3A3
+           fcb   $FE,2                     ; back two images
+           fcb   0
+anim.ff    fdb   $B1B1,$B2B2
+           fcb   $FF,0
+           fcb   0
+anim.fd    fdb   $C1C1
+           fcb   $FD
+           fdb   anim.fd2
+           fcb   0
+anim.fd2   fdb   $C2C2
+           fcb   $FC,0
+           fdb   $C3C3
+           fcb   $FB,0
+           fcb   0
+anim.fa    fdb   $C5C5
+           fcb   $FA,0
+           fcb   0
+anim.la    fdb   $D1D1,$D2D2
+           fcb   $FC,0
+           fdb   $D3D3
+           fcb   0
+anim.lf    fdb   $E1E1,$E2E2
+           fcb   $FF,0
+           fcb   $FC,0                     ; a next script's D, a $FC to a look-ahead
+           fcb   0
+anim.le    fdb   $E1E1,$E2E2
+           fcb   $FE,1
+           fcb   $FC,0
 
 ; The bench script : three steps along +x, then the end of segment marker,
 ; then the end of script word. A byte is  img|xneg|xmov|ypos|ymov|endseg .
@@ -1236,7 +1778,9 @@ moveByScript.NEGYSTEP equ -$0100
         INCLUDE "engine/graphics/camera/AutoScroll.asm"
         INCLUDE "engine/graphics/camera/CheckCameraMove.asm"
         INCLUDE "engine/object-management/RunObjects.asm"
+        INCLUDE "engine/object-management/ObjectMove.asm"
         INCLUDE "engine/object-management/ObjectMoveSync.asm"
+        INCLUDE "engine/object-management/MarkObjGone.asm"
         INCLUDE "engine/object-management/ObjectMoveAndFallSync.asm"
         INCLUDE "engine/object-management/ObjectDp.asm"
         INCLUDE "engine/object-management/RunPgSubRoutine.asm"

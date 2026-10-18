@@ -1,61 +1,68 @@
 * ---------------------------------------------------------------------------
 * RunObjects
-* ------------
-* Subroutines to run, load and unload objects
-*
-* RunObjects
 * ----------
-* Run all object's code
+* The object manager : a pool of nb_dynamic_objects slots, the stack of the
+* free ones, and the run list, doubly linked, walked by RunObjects. A free
+* slot is all zeros.
 *
-* LoadObject_u, LoadObject_x
-* --------------------------
-* Find a empty object slot and link the new object in run list
-* return zero flag when no more memory avaible
-* return the allocated memory in u or x
-*
-* UnloadObject_u, UnloadObject_x
-* ------------------------------
-* Unlink object (u or x) from run list and clear object's data
-*
+* InitStack                    every slot free, the run list empty
+* ManagedObjects_ClearAll      every slot cleared, then InitStack
+* RunObjects                   runs the list's objects in order ; one may
+*                              delete itself or others, or link new ones
+*                              (run the same pass)
+* RunFrozenObjects             clears every object's hide flag, runs nothing
+* LoadObject_u / LoadObject_x  a free slot linked at the end of the list, in
+*                              U / X ; Z set when the pool is full
+* UnloadObject_u / _x          the object U / X unlinked, cleared, freed ;
+*                              every register kept
+* V2-DEVIATION : up to 256 objects (ObjID unsigned, abx) ; Obj_Index_Address
+* read on its own unless OBJ_INDEX_LOCAL (a difference of two symbols does not
+* link across units) ; ClearAll also frees the slots (v1 lost the slots in use).
 * ---------------------------------------------------------------------------
 
 object_list_first fdb   0
 object_list_last  fdb   0
 
-; Stack Structure to hold free object slot addresses
-STACK_SLOT_ADDRESS FILL 0,nb_dynamic_objects*2 
-STACK_SLOT_ADDRESS_END   
-STACK_POINTER FDB 0 ; Stack pointer on the STACK
+RunObjects.freeSlots    fill  0,nb_dynamic_objects*2 ; the free slots' addresses
+RunObjects.freeSlotsEnd
+RunObjects.freeSlot     fdb   0                      ; the top of that stack
 
-; loop to init the Stack
+ManagedObjects_ClearAll
+        ldd   #0
+        ldx   #0
+        leay  ,x
+        ldu   #Dynamic_Object_RAM_End
+!       pshu  d,x,y                    ; six bytes at a time
+        cmpu  #Dynamic_Object_RAM+6
+        bhs   <
+!       cmpu  #Dynamic_Object_RAM      ; then one at a time
+        beq   InitStack
+        pshu  a
+        bra   <
+
 InitStack
-        ldu   #STACK_SLOT_ADDRESS_END  
+        ldu   #RunObjects.freeSlotsEnd
         ldx   #Dynamic_Object_RAM_End-object_size
-@loop   pshu  x
+!       pshu  x                        ; the lowest slot ends on top
         leax  -object_size,x
-        cmpu  #STACK_SLOT_ADDRESS
-        bne   @loop
-        stu   STACK_POINTER    
-        rts    
+        cmpu  #RunObjects.freeSlots
+        bne   <
+        stu   RunObjects.freeSlot
+        ldx   #0
+        stx   object_list_first
+        stx   object_list_last
+        stx   object_list_next
+        rts
 
 RunObjects
         ldu   object_list_first
         beq   @rts
-!       ldb   id,u                     ; Load an object with id=0 allows to book a empty slot
-        beq   @skip                    ; that will be usable later, we need to skip in this case (no object index)
+@loop   ldb   id,u                     ; id 0 : a booked slot, nothing to run
+        beq   @skip
         ldx   #Obj_Index_Page
         abx
-        lda   ,x              
-        _SetCartPageA         
-; V2-DEVIATION: v1 reaches Obj_Index_Address by its offset from Obj_Index_Page,
-; a difference of two symbols the v2 link data cannot carry when the tables
-; live in another unit (r-type : the stage). A game mode that assembles them
-; in the same unit as this routine defines OBJ_INDEX_LOCAL and gets v1's form,
-; four cycles cheaper per object.
-; V2-DEVIATION: up to 256 objects (sonic-2, 13/10/2026 : its level game mode
-; past 127) : the ObjID unsigned everywhere, ABX (aslb overflowed past 127),
-; and the offset of the indirect call left to the assembler (v1 forced 8
-; bits, which overflowed past 127 objects ; the same 8 bits below 128).
+        lda   ,x
+        _SetCartPageA                  ; the object's page
  IFDEF OBJ_INDEX_LOCAL
         abx
  ELSE
@@ -63,175 +70,101 @@ RunObjects
         abx
         abx
  ENDC
-        ldd   run_object_next,u        ; in case of self-deletion by current object
-        std   object_list_next         ; we need to save the next object in run list
+        ldd   run_object_next,u        ; saved : the object may delete itself
+        std   object_list_next
  IFDEF OBJ_INDEX_LOCAL
-        jsr   [Obj_Index_Address-Obj_Index_Page,x]        
+        jsr   [Obj_Index_Address-Obj_Index_Page,x]
  ELSE
-        jsr   [,x]        
+        jsr   [,x]
  ENDC
-        ldu   run_object_next,u        ; do not remove: child object created by last object
-        bne   <                        ; have been added to the list
-        ldu   #0
-object_list_next equ   *-2    
-        bne   <         
-@rts    rts   
+        ldu   run_object_next,u        ; a child linked by the last object is here
+        bne   @loop
+        ldu   #0                       ; else the saved one
+object_list_next equ *-2
+        bne   @loop
+@rts    rts
 @skip   ldu   run_object_next,u
-        bne   <
+        bne   @loop
         rts
 
 RunFrozenObjects
         ldu   object_list_first
         beq   @rts
 !       lda   render_flags,u
-        anda  #^render_hide_mask       ; unset hide flag
+        anda  #^render_hide_mask
         sta   render_flags,u
-        ldu   run_object_next,u        ; do not remove: child object created by last object
-        bne   <                        ; have been added to the list
-@rts    rts   
-
+        ldu   run_object_next,u
+        bne   <
+@rts    rts
 
 LoadObject_u
-        ldu STACK_POINTER              ; is there a free slot ?
-        cmpu #STACK_SLOT_ADDRESS_END   ; 
-        bne @link                      ; Yes a slot is free, let's get it and link it
-        rts                            ; return z=1 when not found
-@link
-        pshs  x
-        leax  2,u                      ; get a the free slot from the slot stack
-        stx   STACK_POINTER            ; updating the slot stack pointer
-        ldu   ,u                       ; U is now pointing to the free slot address  
+        ldu   RunObjects.freeSlot
+        cmpu  #RunObjects.freeSlotsEnd
+        bne   >
+        rts                            ; Z set : the pool is full
+!       pshs  x
+        leax  2,u
+        stx   RunObjects.freeSlot      ; popped
+        ldu   ,u
         ldx   object_list_last
-        beq   >
+        beq   @first
         stu   run_object_next,x
-        stu   object_list_last
         stx   run_object_prev,u
-        puls  x,pc                     ; return z=0 when found
-!       stu   object_list_last
-        stu   object_list_first
-        puls  x,pc                     ; return z=0 when found
+        stu   object_list_last         ; Z clear
+        puls  x,pc
+@first  stu   object_list_first
+        stu   object_list_last         ; Z clear
+        puls  x,pc
 
 LoadObject_x
-        ldx STACK_POINTER              ; is there a free slot ?
-        cmpx #STACK_SLOT_ADDRESS_END   ; 
-        bne @link                      ; Yes a slot is free, let's get it and link it
-        rts                            ; return z=1 when not found
-@link
         pshs  u
-        leau  2,x                      ; get a the free slot from the slot stack
-        stu   STACK_POINTER            ; updating the slot stack pointer
-        ldx   ,x                       ; X is now pointing to the free slot address  
-        ldu   object_list_last
-        beq   >
-        stx   run_object_next,u
-        stx   object_list_last
-        stu   run_object_prev,x
-        puls  u,pc                     ; return z=0 when found
-!       stx   object_list_last
-        stx   object_list_first
-        puls  u,pc                     ; return z=0 when found
+        bsr   LoadObject_u
+        tfr   u,x                      ; the flags kept
+        puls  u,pc
 
 UnloadObject_u
         pshs  d,x,y,u
-        ldx   STACK_POINTER            ; let's update the stack
-        stu   ,--x
-        stx   STACK_POINTER
-        cmpu  object_list_next         ; if current object to delete
-        bne   >                        ; is the following to execute
+        ldx   RunObjects.freeSlot
+        stu   ,--x                     ; pushed
+        stx   RunObjects.freeSlot
+        cmpu  object_list_next         ; RunObjects' next : ours instead
+        bne   >
+        ldd   run_object_next,u
+        std   object_list_next
+!       ldx   run_object_prev,u
         ldy   run_object_next,u
-        sty   object_list_next         ; then update the next object in RunObjects routine
-        beq   @noNext
-!       ldy   run_object_next,u
-        beq   @noNext
-        ldx   run_object_prev,u
-        stx   run_object_prev,y
-        beq   @noPrev
-        sty   run_object_next,x
-        bra   @clearObj
-@noPrev sty   object_list_first
-        bra   @clearObj
-@noNext ldx   run_object_prev,u
-        beq   >
-        sty   run_object_next,x
-!       stx   object_list_last
-        bne   @clearObj
-        stx   object_list_first
-@clearObj
-        leau  object_size,u ; move to end of data object structure
-UnloadObject_clear
-        ldd   #$0000        ; init regs to zero
-        ldx   #$0000
-        leay  ,x
-
-        fill $36,(object_size/6)*2 ; generate object_size/6 assembly instructions $3636 (pshu  d,x,y) 
-
-        IFEQ object_size%6-5
-        pshu  a,x,y
-        ENDC
-
-        IFEQ object_size%6-4
-        pshu  d,x
-        ENDC
-
-        IFEQ object_size%6-3
-        pshu  a,x
-        ENDC
-
-        IFEQ object_size%6-2
-        pshu  d
-        ENDC
-
-        IFEQ object_size%6-1
-        pshu  a
-        ENDC
-
-        
-
-        puls  d,x,y,u,pc
-
-UnloadObject_x
-        pshs  d,x,y,u
-        ; let's update the stack
-        ldu STACK_POINTER
-        pshu X
-        stu STACK_POINTER
-        ; done
-        cmpx  object_list_next         ; if current object to delete
-        bne   >                        ; is the following to execute
-        ldy   run_object_next,x
-        sty   object_list_next         ; then update the next object in RunObjects routine
-        beq   @noNext
-!       ldy   run_object_next,x 
-        beq   @noNext
-        ldu   run_object_prev,x
-        stu   run_object_prev,y
-        beq   @noPrev
-        sty   run_object_next,u
-        bra   @clearObj
-@noPrev sty   object_list_first
-        bra   @clearObj
-@noNext ldu   run_object_prev,x
-        beq   >
-        sty   run_object_next,u
-!       stu   object_list_last
-        bne   @clearObj
-        stu   object_list_first
-@clearObj
-        leau  object_size,x ; move to end of data object structure
-        bra   UnloadObject_clear
-
-ManagedObjects_ClearAll
+        beq   @last
+        stx   run_object_prev,y        ; the next one's previous : ours
+        bra   >
+@last   stx   object_list_last         ; the list's last : our previous
+!       beq   @first                   ; Z from the store of X
+        sty   run_object_next,x        ; the previous one's next : ours
+        bra   @clear
+@first  sty   object_list_first        ; the list's first : our next
+@clear  leau  object_size,u
         ldd   #0
         ldx   #0
         leay  ,x
-        ldu   #Dynamic_Object_RAM_End
-!       cmpu  #Dynamic_Object_RAM+6
-        bls   >
-        pshu  d,x,y
-        bra   <
-!       pshu  a
-        cmpu  #Dynamic_Object_RAM
-        bne   <
-        std   object_list_first
-        std   object_list_last
-        rts
+        fill  $36,(object_size/6)*2    ; pshu d,x,y : six bytes each
+        IFEQ object_size%6-5
+        pshu  a,x,y
+        ENDC
+        IFEQ object_size%6-4
+        pshu  d,x
+        ENDC
+        IFEQ object_size%6-3
+        pshu  a,x
+        ENDC
+        IFEQ object_size%6-2
+        pshu  d
+        ENDC
+        IFEQ object_size%6-1
+        pshu  a
+        ENDC
+        puls  d,x,y,u,pc
+
+UnloadObject_x
+        pshs  u
+        tfr   x,u
+        bsr   UnloadObject_u
+        puls  u,pc

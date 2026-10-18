@@ -1,9 +1,9 @@
 * ---------------------------------------------------------------------------
 * RunPgSubRoutine
-* ------------
-* Subroutine to run a another Sub Routine in a different Memory Page
+* ---------------
+* Calls a subroutine in another page, then puts the caller's page back.
 *
-* input : PSR_Page, PSR_Address, PSR_Param
+* input : PSR_Page the page, PSR_Address the subroutine, PSR_Param its A
 * ---------------------------------------------------------------------------
 
 RunPgSubRoutine 
