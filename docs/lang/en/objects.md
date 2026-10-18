@@ -44,7 +44,7 @@ Dynamic_Object_RAM_End       equ Dynamic_Object_RAM+nb_dynamic_objects*object_si
 ```
 
 `InitStack` fills a stack of free slot addresses, top slot pushed first, so
-the bottom slot is handed out first. `LoadObject_u` (or `_x`) pops one and
+the bottom slot is handed out first, and empties the run list. `LoadObject_u` (or `_x`) pops one and
 links it at the end of the run list; it returns with Z set when the pool is
 empty, and a game that ignores that gets memory it does not own.
 
@@ -53,8 +53,9 @@ empty, and a game that ignores that gets memory it does not own.
 and a stale id or render flag would make the next occupant inherit a life it
 never had.
 
-`ManagedObjects_ClearAll` wipes the pool and both list heads. It does not
-reset the free stack, so it is followed by `InitStack`.
+`ManagedObjects_ClearAll` wipes the pool, then runs `InitStack` : every slot
+free, the run list empty. (Until 18/10/2026 it left the free stack alone, and
+the slots in use at a purge were lost until the next `InitStack`.)
 
 ## The run list
 
@@ -107,7 +108,13 @@ with the engine and therefore leaves alone.
 
 `AnimateSprite` advances one frame per call. `AnimateSpriteSync` advances by
 `gfxlock.frameDrop.count` instead, so a dropped frame is caught up rather than
-lost — the same coupling `ObjectMoveSync` has, and for the same reason.
+lost — the same coupling `ObjectMoveSync` has, and for the same reason. The
+two share one body (`AnimateSprite.asm`, which `AnimateSpriteSync.asm`
+includes) : the script, its commands ($FF restart, $FE n back, $FD another
+animation, $FC and $FA the next routine, $FB restart and the secondary routine
+cleared) and the flips copied from `status_flags`. The Sync variant also runs
+a command that follows the image it shows at once, rather than one image
+late.
 
 At a drop of one the two are the same routine. At a drop of n, a timer gone
 past zero carries its overshoot c' into the next image as `D + 1 + c'` (an
@@ -203,12 +210,14 @@ refresh flag when it moved.
 
 ## The bench
 
-`examples/objects` exercises all of the above and writes its verdict to
-`$9C00`, loader-ut style. It draws nothing on purpose: an object deleting
+`examples/objects` exercises all of the above and writes its witnesses to
+`$9C00`, replayed against its reference by `ci/toje-bench/bench.py`
+([benches](benches.md)). It draws nothing on purpose: an object deleting
 itself mid-walk, or spawning a child mid-walk, leaves nothing on screen to
 look at, so the only way to assert it is to trace it and read the trace back.
 
-Eighteen checks, including both list edge cases, a paged object that reports a
+Thirty-one tests, including both list edge cases, the pool freed by
+`ManagedObjects_ClearAll`, the X variants, every animation command, a paged object that reports a
 byte existing only in its own unit (so a missing mount cannot pass by
 accident, and neither can a stale one), the subpixel arithmetic of
 `ObjectMoveSync`, and the frame budget of `AnimateSpriteSync` and

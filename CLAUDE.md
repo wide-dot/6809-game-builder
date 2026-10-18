@@ -136,7 +136,8 @@ la description de la PR en garde la trace.
 - Exemples de référence : `examples/sound` (le plus complet, TO8 + MO6 : boot, scènes,
   double-buffer, musiques YMM+VGC), `examples/loader-ut` (banc de test du loader, 15/15),
   `examples/sprites` (chaîne sprites compilés, 4 encodeurs), `examples/objects` (banc
-  object manager, 12/12 — sans affichage, résultats en `$9C00`),
+  object manager, mouvement, animation, MarkObjGone, 31/31 — sans affichage,
+  rejoué contre son `bench.ref` depuis le 18/10/2026),
   `examples/overlay` (banc du pack sprites overlay, 39/39, résultats + checksums
   VRAM en `$9C00` — c'est le banc DIFFÉRENTIEL de BuildSprites, chemin simple
   ET multisprite (t26..t30), et des listes de priorité de DisplaySprite et
@@ -206,7 +207,7 @@ des équates réservées dans `glb.const.asm` (caméra, alphaTiles), des docs vi
 (`docs/lang/en/{objects,tilemaps,audio}.md`) et les vues wddebug orphelines :
 
 - ~~**Object manager**~~ : fait le 01/08/2026 (runtime et helpers importés, banc
-  `examples/objects` 12/12). Reste le pipeline d'objets côté builder — un game mode
+  `examples/objects` 31/31). Reste le pipeline d'objets côté builder — un game mode
   écrit encore ses tables d'index à la main
 - **Animation** (v1 : `AnimateSpriteSync.asm`, `moveByScript.asm`)
 - **Tilemap + scrolling** (v1 : `horizontal-scroll/scroll-map-buffered-even.asm` —
