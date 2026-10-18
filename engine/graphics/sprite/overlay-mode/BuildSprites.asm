@@ -36,6 +36,7 @@ _y_pos                   equ dp_engine+19 ; word
 _image_set               equ dp_engine+21 ; word
 _nbchild                 equ dp_engine+23 ; byte
 _render_flags            equ dp_engine+24 ; byte
+_ycorr                   equ dp_engine+25 ; byte - V2-DEVIATION : $28 (256 lines) if the screen line is negative, else 0
 
 ; V2-DEVIATION: setdp neutralized, the obj target rejects it. Extended
 ; addressing stays correct, and operands explicitly forced with < are unaffected.
@@ -53,7 +54,7 @@ _render_flags            equ dp_engine+24 ; byte
 ;   - le fetch de page d'imageset passe par abx ;
 ;   - les bornes ecran se testent en referentiel DECALE : subb #bas puis une
 ;     comparaison NON SIGNEE a la largeur remplace chaque paire haut/bas.
-; Le chemin multisprite (inutilise par R-Type) est laisse strictement 1:1.
+; Le chemin multisprite : adressage DIRECT force aussi (18/10/2026, -47 octets).
 
 BuildSprites
         anda  #0         ; init tmp variables
@@ -231,6 +232,7 @@ BuildSprites
 ;
         ; check out of range position 
         ; ---------------------------       
+        clr   <_ycorr                       ; V2-DEVIATION : a line on the screen, see _ycorr
         lda   <_render_flags
         bita  #render_no_range_ctrl_mask
         lbne  @computescreenaddress         ; skip out of range control if option is set
@@ -297,6 +299,8 @@ BuildSprites
         ldd   <_y_pos 
         addd  <glb_camera_y_offset
         subd  <glb_camera_y_pos        
+        anda  #$28                          ; V2-DEVIATION : a negative line, see _ycorr
+        sta   <_ycorr
  IFDEF BuildSprites.HALFLINE
         andb  #$FE                          ; V2-DEVIATION : an even line, see below
  ENDC
@@ -307,7 +311,11 @@ BuildSprites
         subd  <glb_camera_x_pos
         bcc   >                             ; no carry, continue
         subb  #$60                          ; skip x position (ignore 160-255 values )
-        dec   @ypx                          ; move y position one line up
+        lda   @ypx                          ; V2-DEVIATION : line 0, one line up : line -1
+        bne   @up
+        lda   #$28
+        sta   <_ycorr
+@up     dec   @ypx                          ; move y position one line up
 !       tfr   b,a
         ldb   #0 ; d is loaded with xy_pixel
 @ypx    equ   *-1         
@@ -359,6 +367,11 @@ BuildSprites
         suba  #$60                          ; x-loop, skip x_pixel (160-255)
         decb                                ; get x position one line up
 !       subb  #28                           ; move y ref. to 0
+        bcc   @computescreenaddress         ; V2-DEVIATION : above line 28, a negative line
+        pshs  a
+        lda   #$28
+        sta   <_ycorr
+        puls  a
 @computescreenaddress
         lsra                                ; x=x/2, sprites moves by 2 pixels on x axis
         lsra                                ; x=x/2, RAMA RAMB enterlace  
@@ -369,6 +382,7 @@ BuildSprites
         mul
         addd  #$C000                        ; (dynamic)
 @lbyte1 equ   *-1
+        suba  <_ycorr                       ; V2-DEVIATION : a negative line, 256 lines back
         std   <glb_screen_location_2
         suba  #$20
         std   <glb_screen_location_1     
@@ -379,6 +393,7 @@ BuildSprites
         mul
         addd  #$A000                        ; (dynamic)
 @lbyte2 equ   *-1      
+        suba  <_ycorr                       ; V2-DEVIATION : a negative line, 256 lines back
         std   <glb_screen_location_2
         addd  #$2001
         std   <glb_screen_location_1
@@ -408,7 +423,7 @@ BuildSprites
         ora   #render_hide_mask             ; set hide flag
         sta   render_flags,u  
         lda   mainspr_childsprites,u
-        sta   _nbchild
+        sta   <_nbchild
         ldb   id,u                          ; get object id
         stb   @id
         leay  sub2_x_pos,u
@@ -421,23 +436,23 @@ BuildSprites
         _SetCartPageA        
         ldx   4,y ; get child imageset
         beq   @nextchild                    ; BUGFIX (2026-08-23) : no image for this child
-        stx   _image_set
+        stx   <_image_set
         ldb   image_center_offset,x
         sex
-        std   _image_center_parity          ; store image center parity
+        std   <_image_center_parity          ; store image center parity
         ldb   ,x                            ; ND_ image
         leax  b,x                           ; read imageset index
-        stx   _image_subset
+        stx   <_image_subset
         ldd   2,y
-        std   _y_pos
+        std   <_y_pos
         ldd   ,y
  IFDEF BuildSprites.EVEN_X
         andb  #$FE                          ; V2-DEVIATION : even, as the single path's
  ENDC
-        std   _x_pos
+        std   <_x_pos
         jsr   @processMulti
 @nextchild
-        dec   _nbchild
+        dec   <_nbchild
         beq   @nextobject2
         leay  next_subspr,y
         bra   @computeimageset
@@ -451,15 +466,15 @@ BuildSprites
         ; First thing is to check if the image position is odd or even
         ; and select the appropriate routine. If no routine is found, it will select the avaible routine.
 ;
-        subd  glb_camera_x_pos
-        eorb  _image_center_parity+1        ; case of odd image center switch shifted image with normal
+        subd  <glb_camera_x_pos
+        eorb  <_image_center_parity+1        ; case of odd image center switch shifted image with normal
         andb  #1                            ; index of sub image is encoded in two bits: 00|B0, 01|D0, 10|B1, 11|D1         
         aslb                                ; set bit1 for 1px shifted image  
         orb   #1                            ; set bit0 for overlay sprite
 @c      lda   b,x
         beq   @nodefinedframe
         leax  a,x                           ; read image subset index
-        stx   _mapping_frame
+        stx   <_mapping_frame
         bra   >
 @rts    rts
 @nodefinedframe
@@ -471,64 +486,70 @@ BuildSprites
 @e      lda   b,x
         beq   @rts                          ; no defined frame, nothing will be displayed
         leax  a,x                           ; read image subset index
-        stx   _mapping_frame
+        stx   <_mapping_frame
 !
         lda   page_draw_routine,x           ; save compiled sprite routine
-        sta   _page_draw_routine
+        sta   <_page_draw_routine
         ldd   draw_routine,x
-        std   _draw_routine
+        std   <_draw_routine
 ;
-        ldx   _image_subset
+        ldx   <_image_subset
         ldb   image_subset_x1_offset,x
         sex
-        std   _x1_pixel
+        std   <_x1_pixel
         ldb   image_subset_y1_offset,x
         sex
-        std   _y1_pixel
-        ldx   _image_set
+        std   <_y1_pixel
+        ldx   <_image_set
         ldd   image_x_size,x
-        sta   _x_size+1
-        stb   _y_size+1
+        sta   <_x_size+1
+        stb   <_y_size+1
 ;
-        ldd   _x_pos 
-        addd  _x1_pixel
-        addd  glb_camera_x_offset 
-        addd  glb_camera_x_offset ; use border from other side of the screen 
-        cmpd  glb_camera_x_pos
+        ldd   <_x_pos 
+        addd  <_x1_pixel
+        addd  <glb_camera_x_offset 
+        addd  <glb_camera_x_offset ; use border from other side of the screen 
+        cmpd  <glb_camera_x_pos
         blt   @rts
 ;
-        addd  _x_size
+        addd  <_x_size
         subd  #160 ; screen width
-        subd  glb_camera_x_offset ; use border from other side of the screen 
-        subd  glb_camera_x_offset ; use border from other side of the screen 
-        cmpd  glb_camera_x_pos
+        subd  <glb_camera_x_offset ; use border from other side of the screen 
+        subd  <glb_camera_x_offset ; use border from other side of the screen 
+        cmpd  <glb_camera_x_pos
         bge   @rts
 ;
-        ldd   _y_pos 
-        addd  _y1_pixel
-        addd  glb_camera_y_offset 
-        cmpd  glb_camera_y_pos
+        ldd   <_y_pos 
+        addd  <_y1_pixel
+        addd  <glb_camera_y_offset 
+        cmpd  <glb_camera_y_pos
         blt   @rts
 ;
-        addd  _y_size
+        addd  <_y_size
         subd  #200 ; screen height
-        cmpd  glb_camera_y_pos
+        cmpd  <glb_camera_y_pos
         bge   @rts
 ;
-        ldd   _y_pos 
-        addd  glb_camera_y_offset
-        subd  glb_camera_y_pos        
+        ldd   <_y_pos 
+        addd  <glb_camera_y_offset
+        subd  <glb_camera_y_pos        
+        anda  #$28                          ; V2-DEVIATION : a negative line, see _ycorr
+        sta   <_ycorr
  IFDEF BuildSprites.HALFLINE
         andb  #$FE                          ; V2-DEVIATION : an even line, see below
  ENDC
         stb   @ypx
-        ldd   _x_pos                        ; convert playfield position to screen position
-        addd  glb_camera_x_offset
-        subd  _image_center_parity
-        subd  glb_camera_x_pos
+        ldd   <_x_pos                        ; convert playfield position to screen position
+        addd  <glb_camera_x_offset
+        subd  <_image_center_parity
+        subd  <glb_camera_x_pos
         bcc   >                             ; no carry, continue
         subb  #$60                          ; skip x position (ignore 160-255 values )
-        dec   @ypx                          ; move y position one line up
+        lda   @ypx                          ; V2-DEVIATION : line 0, one line up : line -1
+        bne   @up
+        lda   #$28
+        sta   <_ycorr
+@up     dec   @ypx                          ; move y position one line up
 !       tfr   b,a
         ldb   #0 ; d is loaded with xy_pixel
 @ypx    equ   *-1        
@@ -541,9 +562,10 @@ BuildSprites
         mul
         addd  #$C000                        ; (dynamic)
 @lbyte1 equ   *-1
-        std   glb_screen_location_2
+        suba  <_ycorr                       ; V2-DEVIATION : a negative line, 256 lines back
+        std   <glb_screen_location_2
         suba  #$20
-        std   glb_screen_location_1     
+        std   <glb_screen_location_1     
         bra   >
 @ram2
         sta   @lbyte2
@@ -551,14 +573,15 @@ BuildSprites
         mul
         addd  #$A000                        ; (dynamic)
 @lbyte2 equ   *-1      
-        std   glb_screen_location_2
+        suba  <_ycorr                       ; V2-DEVIATION : a negative line, 256 lines back
+        std   <glb_screen_location_2
         addd  #$2001
-        std   glb_screen_location_1
+        std   <glb_screen_location_1
 !
-        lda   _page_draw_routine
+        lda   <_page_draw_routine
         _SetCartPageA
         pshs  u,y
-        ldu   glb_screen_location_2
+        ldu   <glb_screen_location_2
         jsr   [_draw_routine]               ; draw compilated sprite on screen
         puls  u,y,pc
 

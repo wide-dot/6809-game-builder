@@ -20,18 +20,21 @@
 ; bound rejections, hidden objects, unregistration, back-to-front priority
 ; order, the priority 1 tail, playfield coordinates (accept, reject, and the
 ; borrow/wrap conversion with non zero camera offsets), the three mirror
-; subsets and the xloop flag. The multisprite path is out of scope : R-Type
-; does not use it and it is kept strictly 1:1 with v1.
+; subsets, the xloop flag, and a negative screen line — an origin above the
+; first line, its image under it — in playfield and screen coordinates and
+; at line 0 one line up (t23..t25). The multisprite path is out of scope :
+; R-Type does not use it and it is kept strictly 1:1 with v1.
 ;
 ; Results at $9C00, loader-ut convention :
 ;   +$00 : $CA once the game mode runs
-;   +$01..+$16 : $01 per passing test (t01..t22)
+;   +$01..+$19 : $01 per passing test (t01..t25)
 ;   +$1F : $0D once the sequence completed
 ;   +$20.. : one word per test, the VRAM checksum it recorded (0 if none)
 ;*******************************************************************************
 
 set_glyph  EXTERNAL
 set_marker EXTERNAL
+set_drop EXTERNAL
 set_probe_12x12 EXTERNAL
 set_probe_12x13 EXTERNAL
 set_probe_12x14 EXTERNAL
@@ -90,6 +93,9 @@ R.t19   equ res.base+18   ; x mirror draws a different picture
 R.t20   equ res.base+19   ; y mirror differs from plain and x mirror
 R.t21   equ res.base+20   ; xy mirror differs from all three
 R.t22   equ res.base+21   ; xloop skips the horizontal bounds
+R.t23   equ res.base+22   ; negative screen line, playfield coordinates
+R.t24   equ res.base+23   ; negative screen line, screen coordinates
+R.t25   equ res.base+24   ; line 0, one line up : line -1
 
 ; checksum slots, same rank ; the plain mirror reference uses a spare slot
 S.t03   equ res.sums+2*2
@@ -112,6 +118,9 @@ S.t20   equ res.sums+2*19
 S.t21   equ res.sums+2*20
 S.t22   equ res.sums+2*21
 S.plain equ res.sums+2*22 ; unmirrored glyph at the mirror tests' position
+S.t23   equ res.sums+2*23
+S.t24   equ res.sums+2*24
+S.t25   equ res.sums+2*25
 
         ; the scene loads this file at the game mode region address and jumps
         ; to its first byte : main has to be the first thing emitted, so every
@@ -149,6 +158,12 @@ main
         ldb   image_subset_y1_offset,y
         sex
         std   bench.mrk_y1off
+        ldx   #set_drop
+        lda   ,x
+        leay  a,x
+        ldb   image_subset_y1_offset,y
+        sex
+        std   bench.drp_y1off
 
 ; ---------------------------------------------------------------------------
 ; t01 — glyph imageset : draw-only encoders leave the B slots empty, both
@@ -667,12 +682,134 @@ t22
         jsr   BuildSprites
         ldu   #obj1
         lda   render_flags,u
-        lbpl  benchdone
+        lbpl  t23
         jsr   bench.vramsum
         std   S.t22
-        lbeq  benchdone
+        lbeq  t23
         lda   #1
         sta   R.t22
+
+; ---------------------------------------------------------------------------
+; t23 — a negative screen line, playfield coordinates : the drop at y -4,
+; its image y1off lines under its origin, drawn on its own rows
+; ---------------------------------------------------------------------------
+t23
+        jsr   bench.reset
+        ldd   #0
+        std   glb_camera_x_pos
+        std   glb_camera_y_pos
+        ldu   #obj1
+        lda   #1
+        sta   id,u
+        ldx   #set_drop
+        stx   image_set,u
+        lda   #2
+        sta   priority,u
+        lda   #render_playfieldcoord_mask
+        sta   render_flags,u
+        ldd   #100
+        std   x_pos,u
+        ldd   #-4
+        std   y_pos,u
+        jsr   DisplaySprite
+        jsr   BuildSprites
+        ldu   #obj1
+        lda   render_flags,u
+        lbpl  t24
+        jsr   bench.vramsum
+        std   S.t23
+        lbeq  t24
+        ldd   #-4
+        addd  bench.drp_y1off
+        tfr   b,a
+        ldb   #12
+        jsr   bench.rowextent
+        tsta
+        lbne  t24
+        lda   #1
+        sta   R.t23
+
+; ---------------------------------------------------------------------------
+; t24 — the same in screen coordinates : y_pixel 24, line -4
+; ---------------------------------------------------------------------------
+t24
+        jsr   bench.reset
+        ldu   #obj1
+        lda   #1
+        sta   id,u
+        ldx   #set_drop
+        stx   image_set,u
+        lda   #2
+        sta   priority,u
+        ldd   #148*256+24
+        std   xy_pixel,u
+        jsr   DisplaySprite
+        jsr   BuildSprites
+        ldu   #obj1
+        lda   render_flags,u
+        lbpl  t25
+        jsr   bench.vramsum
+        std   S.t24
+        lbeq  t25
+        ldd   #24-28
+        addd  bench.drp_y1off
+        tfr   b,a
+        ldb   #12
+        jsr   bench.rowextent
+        tsta
+        lbne  t25
+        lda   #1
+        sta   R.t24
+
+; ---------------------------------------------------------------------------
+; t25 — t18's borrow with the origin on line 0 (y -28) : line -1, each row
+; drawn one line up
+; ---------------------------------------------------------------------------
+t25
+        jsr   bench.reset
+        ldd   #48
+        std   glb_camera_x_offset
+        ldd   #28
+        std   glb_camera_y_offset
+        ldd   #500
+        std   glb_camera_x_pos
+        ldd   #0
+        std   glb_camera_y_pos
+        ldu   #obj1
+        lda   #1
+        sta   id,u
+        ldx   #set_drop
+        stx   image_set,u
+        lda   #2
+        sta   priority,u
+        lda   #render_playfieldcoord_mask
+        sta   render_flags,u
+        ldd   #440
+        std   x_pos,u
+        ldd   #-28
+        std   y_pos,u
+        jsr   DisplaySprite
+        jsr   BuildSprites
+        ldu   #obj1
+        lda   render_flags,u
+        lbpl  t25end
+        jsr   bench.vramsum
+        std   S.t25
+        lbeq  t25end
+        ldd   bench.drp_y1off
+        decb
+        tfr   b,a
+        ldb   #12
+        jsr   bench.rowextent
+        tsta
+        lbne  t25end
+        lda   #1
+        sta   R.t25
+t25end
+        ldd   #0
+        std   glb_camera_x_offset
+        std   glb_camera_y_offset
+        std   glb_camera_x_pos
 
 benchdone
         lda   #$0D

@@ -30,6 +30,7 @@ bench.hit                    equ $9B0C ; byte - the scanned line held a pixel
 bench.outp                   equ $9B0D ; word - anchor sweep result write pointer
 bench.hdrp                   equ $9B0F ; word - anchor sweep header write pointer
 bench.count                  equ $9B11 ; byte - probes left
+bench.drp_y1off              equ $9B12 ; word - drop subset y1 offset, sign extended
 
 * the background cell the bdraw probes save into (grows DOWN from the top)
 bench.bgcell.top             equ $9A00
