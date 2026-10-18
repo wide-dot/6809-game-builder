@@ -11,7 +11,11 @@ The example describes its bench in bench.json (docs/lang/en/benches.md) :
      "blocks": {"sweep": ["9D00", 256]}, "until": [["9DFE", "CB"]],
      "frames": 2000}
 
-and writes its witnesses in RAM : +0 $CA once the game mode runs, +1 N its
+"disk" may be a list : the same tests on each disk (an example's targets,
+one per set of options), each line of the reference prefixed with its disk's
+name.
+
+The bench writes its witnesses in RAM : +0 $CA once the game mode runs, +1 N its
 number of tests, +2 $0D once the sequence completed, +3.. one byte per test
 ($01 : pass), then one word per test (a value the test recorded, a VRAM
 checksum ; 0 if none). The named blocks are read whole, once every "until"
@@ -59,16 +63,22 @@ def main(argv):
     with open(os.path.join(ex, 'bench.json'), encoding='utf-8') as f:
         desc = json.load(f)
     ref_path = os.path.join(ex, 'bench.ref')
-    t = Toje()
-    t.boot_floppy(os.path.join(ex, desc.get('disk', 'dist/to8.fd')))
-    lines = witnesses(t, desc)
-    if lines is None:
-        print('BENCH %s NO VERDICT : the sequence never completed' % ex)
-        t.dump()
+    disks = desc.get('disk', 'dist/to8.fd')
+    disks = disks if isinstance(disks, list) else [disks]
+    lines, failed = [], []
+    for disk in disks:
+        t = Toje()
+        t.boot_floppy(os.path.join(ex, disk))
+        some = witnesses(t, desc)
+        if some is None:
+            print('BENCH %s NO VERDICT : the sequence never completed on %s' % (ex, disk))
+            t.dump()
+            t.close()
+            sys.exit(2)
         t.close()
-        sys.exit(2)
-    t.close()
-    failed = [l.split()[0] for l in lines if l.startswith('t') and l.split()[1] != '01']
+        name = os.path.splitext(os.path.basename(disk))[0] + ' ' if len(disks) > 1 else ''
+        failed += [name + l.split()[0] for l in some if l.startswith('t') and l.split()[1] != '01']
+        lines += [name + l for l in some]
     if '--update' in argv:
         with open(ref_path, 'w', encoding='utf-8') as f:
             f.write('\n'.join(lines) + '\n')
@@ -83,7 +93,8 @@ def main(argv):
         print('BENCH %s FAIL : %s%s' % (ex, ' '.join(failed) or 'all tests pass',
                                         ', %d line(s) off the reference' % len(moved) if moved else ''))
         sys.exit(1)
-    print('BENCH %s PASS : %d/%d, identical to the reference' % (ex, desc['tests'], desc['tests']))
+    print('BENCH %s PASS : %d/%d%s, identical to the reference'
+          % (ex, desc['tests'], desc['tests'], ' on %d disks' % len(disks) if len(disks) > 1 else ''))
     sys.exit(0)
 
 

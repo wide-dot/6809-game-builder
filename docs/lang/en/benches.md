@@ -36,6 +36,10 @@ Next to the example's `to8.config.xml` :
 }
 ```
 
+`disk` may be a list : an example's targets (one per set of options) run
+the same tests, each line of `bench.ref` prefixed with its disk's name
+(`examples/tilemap`).
+
 `tests` is checked against N in RAM : a bench that did not run all its tests
 fails. `blocks` are read whole once every `until` byte holds its value ;
 `frames` bounds the wait.
