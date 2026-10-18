@@ -1,6 +1,8 @@
 ; ---------------------------------------------------------------------------
 ; DataType Offsets for tile layer
 ; ---------------------------------------------------------------------------
+ IFNDEF MAP_16BITS_EQU
+MAP_16BITS_EQU equ 1
 
 submap_camera_x_min equ   0  ; w - camera position limit
 submap_camera_y_min equ   2  ; w - camera position limit
@@ -13,3 +15,5 @@ layer_chunk0        equ   12 ; w->[w] index to chunk definition (subset of 8x8 t
 layer_chunk1        equ   14 ; w->[w] index to chunk definition (subset of 8x8 tiles, 2 bytes index to tile) chunk id 128-255
 layer_tiles         equ   16 ; w->[bw] index to tile index (page and adress for each tiles, 3 bytes index)
 layer_mul_ref       equ   18 ; [w] - table of precalculated values for y position in map (a row's bytes : the width, twice with word cells)
+
+ ENDC

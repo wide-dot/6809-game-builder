@@ -1,724 +1,637 @@
 * ---------------------------------------------------------------------------
+* TilemapBuffer
+* -------------
+* A tile map drawn through a buffer of the tiles in view : 16 rows of 32
+* cells, rings both ways, a cell [flags][page][routine address] (page 0 :
+* empty). The map is a layout of chunks (64 x 128 px, 8 x 8 tiles of 8 x 16
+* px), a chunk a table of 16 bit tile entries (flags, tile index), a tile
+* index of [page][routine address] records (map-16bits.equ).
 *
+* InitTileBuffer              the next ComputeTileBuffer feeds the whole view
+* ComputeTileBuffer           feeds the rows and columns the camera uncovered
+* FeedTileBuffer              feeds TilemapBuffer.width x .height tiles from
+*                             TilemapBuffer.x, .y
+* TilemapBuffer.SetCells      a layout of byte or word cells (see below)
+* DrawBufferedTile            draws the view's low priority cells, queues the
+*                             high priority ones
+* DrawHighPriorityBufferedTile draws the queue
+*
+* The game declares the buffer, TMB_TILE_BUFFER (16*128 bytes, 2048 aligned),
+* and the high priority queue, TMB_HPRIO_TILES (tmb_hprio_size bytes), both
+* cleared before InitTileBuffer.
+* Options : TilemapBuffer.OPAQUE (bit 10 of an entry, a tile hiding the
+* background, kept in the flags), TilemapBuffer.PLANES_CURSOR (the tile
+* routines take plane 1 in Y and leave it on the next cell),
+* TilemapBuffer.SKIP_ROWS (DBT_skiprows : the view's last rows left to the
+* game, which goes on from DBT_row, DBT_rowy and DBT_hiptr).
+* V2-DEVIATION : the buffer and the queue at the game's fixed addresses
+* (#tile_buffer/256 does not relocate) ; a camera move past a view feeds the
+* new view (v1 fed from the old one) ; DrawBufferedTile's loop rewritten (X on
+* the buffer, the queue pushed on S, the ring cut once a row) ; the options.
 * ---------------------------------------------------------------------------
 
         INCLUDE "./engine/graphics/tilemap/data-types/map-16bits.equ"
-        ;SETDP   dp/256 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm
-                         ; obj target ; migration/setdp-obj-target.md)
 
-; data structure for current loaded map
-; -------------------------------------
-glb_map_pge             fcb   0
+ IFNDEF TMB_TILE_BUFFER
+        ERROR "TilemapBuffer : the game declares TMB_TILE_BUFFER (16*128 bytes, 2048 aligned)"
+ ENDC
+ IFNDEF TMB_HPRIO_TILES
+        ERROR "TilemapBuffer : the game declares TMB_HPRIO_TILES (tmb_hprio_size bytes)"
+ ENDC
+tile_buffer     equ TMB_TILE_BUFFER
+tmb_hprio_tiles equ TMB_HPRIO_TILES
+
+TilemapBuffer.VIEW_COLS equ 18         ; the tiles a view spans
+TilemapBuffer.VIEW_ROWS equ 11
+TilemapBuffer.VIEW_W    equ TilemapBuffer.VIEW_COLS*8
+TilemapBuffer.VIEW_H    equ TilemapBuffer.VIEW_ROWS*16
+
+* the queue : 5 bytes a view cell (PSHS b,x,y) and the end's entry, then
+* the room an IRQ (12 bytes) and a call (2) push under S ; it grows down
+tmb_hprio_size  equ (TilemapBuffer.VIEW_COLS*TilemapBuffer.VIEW_ROWS+1)*5+12+2
+tmb_hprio_top   equ tmb_hprio_tiles+tmb_hprio_size
+
+; the map
+glb_map_pge             fcb   0        ; the map descriptor (map-16bits.equ)
 glb_map_adr             fdb   0
-glb_map_chunk_pge       fcb   0 ; map data to chunk tiles (8x8 tiles group)
-glb_map_chunk_adr       fdb   0 ; map data to chunk tiles (8x8 tiles group)
-glb_map_defchunk0_pge   fcb   0 ; chunk data to tiles (8x16 px)
-glb_map_defchunk0_adr   fdb   0 ; chunk data to tiles (8x16 px)
-glb_map_defchunk1_pge   fcb   0 ; chunk data to tiles (8x16 px)
-glb_map_defchunk1_adr   fdb   0 ; chunk data to tiles (8x16 px)
-glb_map_tiles_pge       fcb   0 ; tile index
-glb_map_tiles_adr       fdb   0 ; tile index
-glb_map_stride          fdb   0 ; a layout row's bytes : the width, twice with word cells
-glb_map_bank_tbl        fill  0,4*3 ; word cells : each bank's [page][address], 4 at most
+glb_map_chunk_pge       fcb   0        ; the layout
+glb_map_chunk_adr       fdb   0
+glb_map_defchunk0_pge   fcb   0        ; chunks 0-127
+glb_map_defchunk0_adr   fdb   0
+glb_map_defchunk1_pge   fcb   0        ; chunks 128-255
+glb_map_defchunk1_adr   fdb   0
+glb_map_tiles_pge       fcb   0        ; the tile index
+glb_map_tiles_adr       fdb   0
+glb_map_stride          fdb   0        ; a layout row's bytes : the width, twice with word cells
+glb_map_bank_tbl        fill  0,4*3    ; word cells : each bank's [page][address], 4 at most
 
-; tmp variables
-h_tl                  equ   dp_engine    ; nb of full sized (middle) horizontal chunks
-h_tl_bck              equ   dp_engine+1
-v_tl                  equ   dp_engine+2  ; nb of full sized (middle) vertical chunks
-c_h_tl                equ   dp_engine+3  ; variable that stores current left, middle or right width of chunks
-l_h_tl                equ   dp_engine+4
-r_h_tl                equ   dp_engine+5
-r_h_tl_bck            equ   dp_engine+6
-c_v_tl                equ   dp_engine+7  ; variable that stores current up, middle or bottom height of chunks
-u_v_tl                equ   dp_engine+8
-b_v_tl                equ   dp_engine+9
-c_h_tl_bck            equ   dp_engine+10 ; backup value of horizontal width of chunks
-c_v_tl_bck            equ   dp_engine+11 ; backup value of vertical height of chunks
-cur_c                 equ   dp_engine+12 ; current chunk id
-x_off                 equ   dp_engine+13 ; x start position in top left chunk
-y_off                 equ   dp_engine+15 ; y start position in top left chunk
-b_loc                 equ   dp_engine+17 ; location in buffer
-tmb_x                 equ   dp_engine+19
-tmb_y                 equ   dp_engine+21
-DBT_lcpt              equ   dp_engine+23
-DBT_ccpt              equ   dp_engine+24
-DBT_left              equ   dp_engine+25 ; cells of a row after the ring's end
-DBT_ncol              equ   dp_engine+26 ; cells of a row
+; the feed's variables
+TilemapBuffer.hMid      equ dp_engine     ; middle chunks left in the row
+TilemapBuffer.hMids     equ dp_engine+1   ; middle chunks a row
+TilemapBuffer.vMid      equ dp_engine+2   ; middle chunk rows left
+TilemapBuffer.cols      equ dp_engine+3   ; this chunk's tile columns
+TilemapBuffer.leftCols  equ dp_engine+4   ; the left chunk's
+TilemapBuffer.rightCols equ dp_engine+5   ; the right chunk's
+TilemapBuffer.rightSave equ dp_engine+6
+TilemapBuffer.rows      equ dp_engine+7   ; this chunk's tile rows left
+TilemapBuffer.topRows   equ dp_engine+8   ; the top chunk's
+TilemapBuffer.bottomRows equ dp_engine+9  ; the bottom chunk's
+TilemapBuffer.colsSave  equ dp_engine+10
+TilemapBuffer.chunkRows equ dp_engine+11  ; this chunk row's tile rows
+TilemapBuffer.xOff      equ dp_engine+13  ; word : the first tile's column in its chunk, * 2
+TilemapBuffer.yOff      equ dp_engine+15  ; word : its row, * 16
+TilemapBuffer.cell      equ dp_engine+17  ; word : the buffer cell fed
+TilemapBuffer.x         equ dp_engine+19  ; word : FeedTileBuffer's position
+TilemapBuffer.y         equ dp_engine+21  ; word
+; the draw's
+DBT_lcpt                equ dp_engine+23  ; rows left
+DBT_ccpt                equ dp_engine+24  ; cells left before the ring's end
+DBT_left                equ dp_engine+25  ; cells of a row after the ring's end
+DBT_ncol                equ dp_engine+26  ; cells a row
 
-; persistant variables
-tmb_old_camera_x      fdb   0 ; last camera position (x axis)
-tmb_old_camera_y      fdb   0 ; last camera position (y axis)
-
-tmb_vp_h_tiles        equ   18 ; viewport tiles on x axis
-tmb_vp_v_tiles        equ   11 ; viewport tiles on y axis
-tmb_vp_h_px           equ   tmb_vp_h_tiles*8
-tmb_vp_v_px           equ   tmb_vp_v_tiles*16
+TilemapBuffer.oldX      fdb   0        ; the camera the buffer was fed for
+TilemapBuffer.oldY      fdb   0
 
 InitTileBuffer
         ldd   <glb_camera_x_pos
-        addd  #tmb_vp_h_px
-        std   tmb_old_camera_x
+        addd  #TilemapBuffer.VIEW_W
+        std   TilemapBuffer.oldX
         ldd   <glb_camera_y_pos
-        addd  #tmb_vp_v_px
-        std   tmb_old_camera_y
+        addd  #TilemapBuffer.VIEW_H
+        std   TilemapBuffer.oldY
         rts
 
 ComputeTileBuffer
-
-        ; check if a map was registred
-        ; ---------------------------------------------------------------------
-
         lda   glb_map_pge
-        bne   @a
-        rts
-@a
-
-        ; compute tiles that needs to be added to buffer
-        ; ---------------------------------------------------------------------
-
-        ; compute y location
-        ldu   <glb_camera_y_pos
-        ldd   tmb_old_camera_y
+        bne   >
+        rts                            ; no map
+!       ldu   <glb_camera_y_pos        ; the rows
+        ldd   TilemapBuffer.oldY
         subd  <glb_camera_y_pos
-        beq   @next
-        bpl   @a
-        leau  tmb_vp_v_px,u
-        leau  d,u
-@a      stu   <tmb_y
-        ; compute height in tiles
+        beq   @x
+        bpl   @y                       ; up : from the camera down
+        cmpd  #-TilemapBuffer.VIEW_H
+        bge   >
+        ldd   #-TilemapBuffer.VIEW_H   ; past a view : the whole view
+!       leau  TilemapBuffer.VIEW_H,u
+        leau  d,u                      ; down : from the old view's end
+@y      stu   <TilemapBuffer.y
         ldd   <glb_camera_y_pos
         _asrd
         _asrd
         _asrd
         _asrd
-        std   @dyn
-        ldd   tmb_old_camera_y
+        std   @ty
+        ldd   TilemapBuffer.oldY
         _asrd
         _asrd
         _asrd
         _asrd
-        subd   #0
-@dyn    equ   *-2
-        beq   @next
-        bpl   @b
+        subd  #0
+@ty     equ   *-2                      ; the tile rows moved
+        beq   @x
+        bpl   >
         _negd
-@b      cmpd  #tmb_vp_v_tiles
-        ble   @c
-        ldb   #tmb_vp_v_tiles
-@c      stb   glb_tmb_height
+!       cmpd  #TilemapBuffer.VIEW_ROWS
+        ble   >
+        ldb   #TilemapBuffer.VIEW_ROWS
+!       stb   TilemapBuffer.height
         ldd   <glb_camera_x_pos
-        std   <tmb_x
-        lda   #tmb_vp_h_tiles
-        sta   glb_tmb_width
+        std   <TilemapBuffer.x
+        lda   #TilemapBuffer.VIEW_COLS
+        sta   TilemapBuffer.width
         jsr   FeedTileBuffer
-@next
-
-        ; compute x location
-        ldu   <glb_camera_x_pos
-        ldd   tmb_old_camera_x
+@x      ldu   <glb_camera_x_pos        ; the columns
+        ldd   TilemapBuffer.oldX
         subd  <glb_camera_x_pos
         beq   @exit
-        bpl   @a
-        leau  tmb_vp_h_px,u
-        leau  d,u
-@a      stu   <tmb_x
-        ; compute width in tiles
+        bpl   @xx                      ; left : from the camera right
+        cmpd  #-TilemapBuffer.VIEW_W
+        bge   >
+        ldd   #-TilemapBuffer.VIEW_W   ; past a view : the whole view
+!       leau  TilemapBuffer.VIEW_W,u
+        leau  d,u                      ; right : from the old view's end
+@xx     stu   <TilemapBuffer.x
         ldd   <glb_camera_x_pos
         _asrd
         _asrd
         _asrd
-        std   @dyn
-        ldd   tmb_old_camera_x
+        std   @tx
+        ldd   TilemapBuffer.oldX
         _asrd
         _asrd
         _asrd
-        subd   #0
-@dyn    equ   *-2
+        subd  #0
+@tx     equ   *-2                      ; the tile columns moved
         beq   @exit
-        bpl   @b
+        bpl   >
         _negd
-@b      cmpd  #tmb_vp_h_tiles
-        ble   @c
-        ldb   #tmb_vp_h_tiles
-@c      stb   glb_tmb_width
+!       cmpd  #TilemapBuffer.VIEW_COLS
+        ble   >
+        ldb   #TilemapBuffer.VIEW_COLS
+!       stb   TilemapBuffer.width
         ldd   <glb_camera_y_pos
-        std   <tmb_y
-        lda   #tmb_vp_v_tiles
-        sta   glb_tmb_height
+        std   <TilemapBuffer.y
+        lda   #TilemapBuffer.VIEW_ROWS
+        sta   TilemapBuffer.height
         jsr   FeedTileBuffer
-@exit
-        ldd   <glb_camera_x_pos
-        std   tmb_old_camera_x
+@exit   ldd   <glb_camera_x_pos
+        std   TilemapBuffer.oldX
         ldd   <glb_camera_y_pos
-        std   tmb_old_camera_y
+        std   TilemapBuffer.oldY
         rts
 
-; ****************************************************************************************************************************
-; * FeedTileBuffer
-; * Feed the tile buffer, based on camera x and y and a number of tiles in width and height
-; *
-; * tmb_x      (0-32767)
-; * tmb_y      (0-32767)
-; * glb_tmb_width  (1-20)
-; * glb_tmb_height (1-13)
-; *
-; ****************************************************************************************************************************
-
 FeedTileBuffer
-
-        ; mount the map
-        ; ---------------------------------------------------------------------
-
         lda   glb_map_pge
-        _SetCartPageA
+        _SetCartPageA                  ; the map descriptor
         ldu   glb_map_adr
-
-        anda  #0
-        sta   <x_off                         ; init MSB to 0
-        sta   <y_off                         ; init MSB to 0
-
-        ; compute position in cycling buffer
-        ; ---------------------------------------------------------------------
-
-; OPTIM SAM
-        ldb   <tmb_y+1                                 ; each 16px steps in y add $80
+        clra
+        sta   <TilemapBuffer.xOff
+        sta   <TilemapBuffer.yOff
+        ldb   <TilemapBuffer.y+1       ; the buffer cell : 16 px down a row ($80)
         lda   #%00010000
         mul
-        ldb   <tmb_x+1                                 ; each 8px steps in x add $04
+        ldb   <TilemapBuffer.x+1       ; 8 px right a cell (4)
         andb  #%11111000
         _lsrd
-
         adda  #tile_buffer/256
-        std   <b_loc
-
-        ; transform a camera position into an index to map (64x128px chunks)
-        ; ---------------------------------------------------------------------
-        ldd   <tmb_x
+        std   <TilemapBuffer.cell
+        ldd   <TilemapBuffer.x         ; the layout cell
         _lsrd
         _lsrd
         _lsrd
         _lsrd
         _lsrd
-TMB_xcell                                             ; (dynamic, TilemapBuffer.SetCells) lsra/rorb : a byte a cell,
-        _lsrd                                         ; andb #$FE : a word (the column * 2)
-        std   @dyn1
-        ldd   <tmb_y
+TilemapBuffer.xCell                    ; (dynamic, TilemapBuffer.SetCells) lsra/rorb : a byte a cell,
+        _lsrd                          ; andb #$FE : a word (the column * 2)
+        std   @col
+        ldd   <TilemapBuffer.y
         _lsrd
         _lsrd
         _lsrd
         _lsrd
         _lsrd
         _lsrd
-        andb  #%11111110                              ; faster than _lsrd (last shift for 128px map) and lsld (2 bytes index in mul ref)
+        andb  #%11111110               ; the chunk row * 2
         leax  layer_mul_ref,u
-        ldd   d,x                                     ; use precalculated values to get y in map (16 bits mul)
-        addd  #0                                      ; (dynamic) add x position to index
-@dyn1   equ   *-2
-        addd  glb_map_chunk_adr                       ; (dynamic) add map data address to index
+        ldd   d,x                      ; its offset in the layout
+        addd  #0
+@col    equ   *-2
+        addd  glb_map_chunk_adr
         tfr   d,x
-
-        ; compute tile offset in chunks
-        ; ---------------------------------------------------------------------
-
-        lda   <tmb_x+1
+        lda   <TilemapBuffer.x+1       ; the first chunk's columns
         anda  #%00111000
         asra
         asra
-        sta   <x_off+1                                 ; horizontal offset to first tile in top left chunk
+        sta   <TilemapBuffer.xOff+1
         asra
-        suba  #8                                      ; chunk hold 8 tiles in a row
+        suba  #8
         nega
         cmpa  #0
-glb_tmb_width equ *-1                                 ; (dynamic) nb of tile in screen width
-        blt   @a                                      ; branch if requested tiles in width are covered by more chunks than the first one
-        lda   glb_tmb_width                           ; if not cap to the requested width
-@a      sta   <l_h_tl                                  ; save nb of tiles in left chunks
-        lda   glb_tmb_width
-        suba  <l_h_tl
+TilemapBuffer.width equ *-1            ; (dynamic) the tiles to feed across
+        blt   >
+        lda   TilemapBuffer.width      ; capped to the width
+!       sta   <TilemapBuffer.leftCols
+        lda   TilemapBuffer.width
+        suba  <TilemapBuffer.leftCols
         tfr   a,b
         asrb
         asrb
         asrb
-        stb   <h_tl_bck                                ; nb of full sized (middle) horizontal chunks
-        anda  #%00000111                              ; skip middle chunks that are 8 tiles wide
-        sta   <r_h_tl                                  ; save nb of horizontal tiles in right chunks
-        sta   <r_h_tl_bck
-
-        lda   <tmb_y+1
-        anda  #%01110000                              ; get tile position in chunk
-        sta   <y_off+1                                 ; vertical offset to first tile in top left chunk
-        asra
-        asra
-        asra
-        asra
-        suba  #8                                      ; chunk hold 8 tiles in a col
-        nega
-        cmpa  #0
-glb_tmb_height equ *-1                                ; (dynamic) nb of tile in screen width
-        blt   @a                                      ; branch if requested tiles in width are covered by the first chunk
-        lda   glb_tmb_height
-@a      sta   <u_v_tl                                  ; save nb of vertical tiles in top chunks
-        lda   glb_tmb_height                          ; (dynamic) nb of tile in screen height
-        suba  <u_v_tl
-        tfr   a,b
-        asrb
-        asrb
-        asrb
-        stb   <v_tl                                    ; nb of full sized (middle) vertical chunks
-        anda  #%00000111                              ; skip middle chunks that are 8 tiles high
-        sta   <b_v_tl                                  ; save nb of vertical tiles in bottom chunks
-
-        ; load chunks
-        ; --------------------
-        lda   glb_map_chunk_pge
-        _SetCartPageA
-
-        ldb   <u_v_tl                   ; first line begin with upper vertical chunk height
-        stb   <c_v_tl_bck
-
-        ldd   <y_off                    ; offset in top left chunk is horizontal and vertical
-        std   c_y_off
-        addd  <x_off
-        std   chunk_offset
-@vloop
-        stx   @start_pos_bck           ; position in chunk map
-        stx   start_pos
-        ldb   <h_tl_bck                 ; restore nb of middle chunks (8 tiles width) on x axis for one row
-        stb   <h_tl
-        ldd   <b_loc                    ; load location in cycling buffer
-        andb  #%10000000               ; compute line start
-        std   cl_pos_bck
-        ldb   <l_h_tl                   ; nb of tiles on left chunk
-        stb   <c_h_tl                   ; store in current nb of tiles
-        lda   <c_v_tl_bck               ; compute location for next row
-        ldb   #128                     ; ...
-        mul                            ; ...
-        addd  <b_loc                    ; ...
+        stb   <TilemapBuffer.hMids     ; the middle chunks, 8 columns each
         anda  #%00000111
-        adda  #tile_buffer/256 ; add base address
-        std   @l1_bck                  ; save location for next row
-@hloop
-        jsr   LoadChunk
+        sta   <TilemapBuffer.rightCols ; the right chunk's
+        sta   <TilemapBuffer.rightSave
+        lda   <TilemapBuffer.y+1       ; the first chunk's rows
+        anda  #%01110000
+        sta   <TilemapBuffer.yOff+1
+        asra
+        asra
+        asra
+        asra
+        suba  #8
+        nega
+        cmpa  #0
+TilemapBuffer.height equ *-1           ; (dynamic) the tiles to feed down
+        blt   >
+        lda   TilemapBuffer.height
+!       sta   <TilemapBuffer.topRows
+        lda   TilemapBuffer.height
+        suba  <TilemapBuffer.topRows
+        tfr   a,b
+        asrb
+        asrb
+        asrb
+        stb   <TilemapBuffer.vMid      ; the middle chunk rows
+        anda  #%00000111
+        sta   <TilemapBuffer.bottomRows ; the bottom chunk's
+        lda   glb_map_chunk_pge
+        _SetCartPageA                  ; the layout
+        ldb   <TilemapBuffer.topRows
+        stb   <TilemapBuffer.chunkRows
+        ldd   <TilemapBuffer.yOff      ; the first chunk : from its first tile
+        std   @chunkY
+        addd  <TilemapBuffer.xOff
+        std   TilemapBuffer.chunkOffset
+@vloop  stx   @layout
+        stx   TilemapBuffer.layoutCell
+        ldb   <TilemapBuffer.hMids
+        stb   <TilemapBuffer.hMid
+        ldd   <TilemapBuffer.cell
+        andb  #%10000000
+        std   @rowStart                ; the buffer row
+        ldb   <TilemapBuffer.leftCols
+        stb   <TilemapBuffer.cols
+        lda   <TilemapBuffer.chunkRows ; the next chunk row's buffer cell
+        ldb   #128
+        mul
+        addd  <TilemapBuffer.cell
+        anda  #%00000111
+        adda  #tile_buffer/256
+        std   @nextRow
+@hloop  jsr   LoadChunk
         ldd   #0
-c_y_off equ   *-2
-        std   chunk_offset
-        ldd   <b_loc                    ; compute location for next col
+@chunkY equ   *-2                      ; the next chunks : from their first column
+        std   TilemapBuffer.chunkOffset
+        ldd   <TilemapBuffer.cell      ; the next chunk's buffer cell
         addd  #4
-        anda  #%00000000
-        andb  #%01111100 ; cycle thru this line (0-127) by 4 bytes
+        clra
+        andb  #%01111100               ; the row's ring
         addd  #0
-cl_pos_bck equ *-2
-        std   <b_loc                    ; set location for next col
-        lda   <h_tl                     ; check number of middle chunks
-        beq   @rc
-        ldb   #8                       ; middle chunks are 8 tiles width
-        stb   <c_h_tl
+@rowStart equ *-2
+        std   <TilemapBuffer.cell
+        lda   <TilemapBuffer.hMid
+        beq   @right
+        ldb   #8                       ; a middle chunk
+        stb   <TilemapBuffer.cols
         deca
-        sta   <h_tl
+        sta   <TilemapBuffer.hMid
         bra   @hloop
-@rc     ldb   <r_h_tl                   ; check right chunk
+@right  ldb   <TilemapBuffer.rightCols
         beq   @hexit
-        stb   <c_h_tl
-        stb   <r_h_tl_bck
-        clr   <r_h_tl
+        stb   <TilemapBuffer.cols
+        stb   <TilemapBuffer.rightSave
+        clr   <TilemapBuffer.rightCols
         bra   @hloop
-@hexit  lda   <r_h_tl_bck
-        sta   <r_h_tl
+@hexit  lda   <TilemapBuffer.rightSave
+        sta   <TilemapBuffer.rightCols
         ldd   #0
-@l1_bck equ   *-2
-        std   <b_loc                    ; set location for next row
+@nextRow equ  *-2
+        std   <TilemapBuffer.cell
         ldx   #0
-@start_pos_bck equ *-2
-        ldd   glb_map_stride           ; the next row of the layout
+@layout equ   *-2
+        ldd   glb_map_stride           ; the layout's next row
         leax  d,x
-        ldb   <v_tl                     ; are we in middle or bottom chunk ?
-        beq   @a
+        ldb   <TilemapBuffer.vMid
+        beq   @bottom
         bmi   @end
-        lda   #8                       ; middle
-        sta   <c_v_tl_bck
-        bra   @b
-@a      lda   <b_v_tl                   ; bottom
+        lda   #8                       ; a middle chunk row
+        sta   <TilemapBuffer.chunkRows
+        bra   >
+@bottom lda   <TilemapBuffer.bottomRows
         beq   @end
-        sta   <c_v_tl_bck
-@b      decb
-        stb   <v_tl
+        sta   <TilemapBuffer.chunkRows
+!       decb
+        stb   <TilemapBuffer.vMid
         ldd   #0
-        std   c_y_off
-        ldd   <x_off
-        std   chunk_offset             ; offset in next row of chunk is only horizontal
+        std   @chunkY
+        ldd   <TilemapBuffer.xOff
+        std   TilemapBuffer.chunkOffset ; the next chunk row : from its first row
         jmp   @vloop
 @end    rts
 
 * ---------------------------------------------------------------------------
-* TilemapBuffer.SetCells - the map's layout cells (16/10/2026), at an act's
-* load : A the chunk banks of 128, B the layout's width (chunks a row), X
-* the first bank's [page][address] record, the others following it.
-* Two banks : a byte a cell (ids 0-255, the banks glb_map_defchunk0/1, the
-* caller's). More, up to 4 : a big endian word a cell, the bank id >> 7 in
-* glb_map_bank_tbl, copied here. The cell's read and the column's last
-* shift are patched once : the loops pay nothing for it.
+* TilemapBuffer.SetCells - the layout's cells, at a map's load : A the chunk
+* banks of 128, B the layout's width (chunks a row), X the first bank's
+* [page][address] record, the others following it. Two banks : a byte a cell
+* (glb_map_defchunk0/1, the caller's). More, up to 4 : a big endian word a
+* cell, its bank id >> 7, the records copied to glb_map_bank_tbl. The cell's
+* read and the column's last shift are patched : the loops pay nothing.
 * ---------------------------------------------------------------------------
 TilemapBuffer.SetCells
         pshs  a
         clra
-        std   glb_map_stride                          ; a byte a cell : the width
+        std   glb_map_stride           ; a byte a cell : the width
         puls  a
         cmpa  #2
         bhi   @word
-        ldd   #$A680                                  ; lda ,x+
-        std   LC_cell
-        ldd   #$4456                                  ; lsra / rorb
-        std   TMB_xcell
+        ldd   #$A680                   ; lda ,x+
+        std   LoadChunk.cell
+        ldd   #$4456                   ; lsra / rorb
+        std   TilemapBuffer.xCell
         rts
-@word   asl   glb_map_stride+1                        ; a word a cell : twice the width
+@word   asl   glb_map_stride+1         ; a word a cell : twice the width
         rol   glb_map_stride
         ldu   #glb_map_bank_tbl
         ldb   #3
-        mul                                           ; the records' bytes
-@copy   lda   ,x+
+        mul                            ; the records' bytes
+!       lda   ,x+
         sta   ,u+
         decb
-        bne   @copy
-        ldd   #$2000+((LC_word-LC_cell-2)&$FF)        ; bra LC_word
-        std   LC_cell
-        ldd   #$C4FE                                  ; andb #$FE
-        std   TMB_xcell
+        bne   <
+        ldd   #$2000+((LoadChunk.word-LoadChunk.cell-2)&$FF) ; bra LoadChunk.word
+        std   LoadChunk.cell
+        ldd   #$C4FE                   ; andb #$FE
+        std   TilemapBuffer.xCell
         rts
 
-; a word cell (TilemapBuffer.SetCells, 16/10/2026) : the chunk's bank its id
-; >> 7, in glb_map_bank_tbl ; LoadChunk's cell read patched to come here
-LC_word ldd   ,x++                                    ; the chunk id
-        lslb                                          ; B : (id & 127) * 2
-        rola                                          ; A : its bank
+LoadChunk.word                         ; a word cell : the chunk's bank its id >> 7
+        ldd   ,x++
+        lslb                           ; B : (id & 127) * 2
+        rola                           ; A : its bank
         pshs  b
         ldb   #3
         mul
         ldu   #glb_map_bank_tbl
         leau  d,u
-        ldb   ,u                                      ; the bank's page
-        ldu   1,u                                     ; and address
+        ldb   ,u                       ; the bank's page
+        ldu   1,u                      ; and address
         puls  a
-        lsra                                          ; A : id & 127
-        bra   LC_bank
+        lsra                           ; A : id & 127
+        bra   LoadChunk.bank
 
+* ---------------------------------------------------------------------------
+* LoadChunk - feeds TilemapBuffer.cols x .chunkRows tiles of the chunk at the
+* layout cell TilemapBuffer.layoutCell, from TilemapBuffer.chunkOffset in it,
+* to the buffer from TilemapBuffer.cell
+* ---------------------------------------------------------------------------
 LoadChunk
-        ldd   <b_loc
+        ldd   <TilemapBuffer.cell
         andb  #%10000000
-        std   cl_pos                                  ; save line start for cycling buffer
-        ldb   <c_h_tl                                  ; preprocess line return
-        lslb                                          ; buffer : 4 bytes per tile in width
+        std   LoadChunk.lineStart      ; the buffer row
+        ldb   <TilemapBuffer.cols      ; from a row's last cell to the next row's first
+        lslb
         lslb
         lda   #%11111111
         negb
-        addd  #128+4                                  ; one line in buffer and one tile width
-        std   r_stp_1
-
+        addd  #128+4
+        std   LoadChunk.rowStep
         ldx   #0
-start_pos equ *-2
-LC_cell lda   ,x+                                     ; (dynamic) bra LC_word : a word cell
-        bpl   @a
+TilemapBuffer.layoutCell equ *-2
+LoadChunk.cell
+        lda   ,x+                      ; (dynamic) bra LoadChunk.word : a word cell
+        bpl   >
         ldu   glb_map_defchunk1_adr
         anda  #%01111111
         ldb   glb_map_defchunk1_pge
-        bra   LC_bank
-@a      ldu   glb_map_defchunk0_adr
+        bra   LoadChunk.bank
+!       ldu   glb_map_defchunk0_adr
         ldb   glb_map_defchunk0_pge
- IFGT LC_cell+2-LC_word-128
-        ERROR "LC_word out of the patched bra's reach"
+ IFGT LoadChunk.cell+2-LoadChunk.word-128
+        ERROR "LoadChunk.word out of the patched bra's reach"
  ENDC
-LC_bank stb   chk_idx_pge
-        _SetCartPageB                                 ; set chunk definition page
+LoadChunk.bank
+        stb   chk_idx_pge
+        _SetCartPageB                  ; the chunk's page
         ldb   #0
-        _asrd
-        addd  #0                                      ; (dynamic) ajust position of first tile in chunk
-chunk_offset  equ   *-2
+        _asrd                          ; the chunk : id * 128
+        addd  #0
+TilemapBuffer.chunkOffset equ *-2      ; (dynamic) its first tile
         leau  d,u
-
-        stx   start_pos
-        stu   start_x                                 ; start position in chunk
-
-DrawChunk
-        lda   <c_h_tl
+        stx   TilemapBuffer.layoutCell
+        stu   LoadChunk.row
+        lda   <TilemapBuffer.cols
  IFDEF T2
-        lbeq  EndOfChunk
+        lbeq  LoadChunk.end
  ELSE
-        beq   EndOfChunk
+        beq   LoadChunk.end
  ENDC
-        sta   <c_h_tl_bck
-        lda   <c_v_tl_bck
+        sta   <TilemapBuffer.colsSave
+        lda   <TilemapBuffer.chunkRows
  IFDEF T2
-        lbeq  EndOfChunk
+        lbeq  LoadChunk.end
  ELSE
-        beq   EndOfChunk
+        beq   LoadChunk.end
  ENDC
-        sta   <c_v_tl
-
-DrawTile
-        ldy   <b_loc
-        ldd   ,u++                                    ; load tile index in d (16 bits)
-        bne   @a
-        ldd   #0
-        std   ,y
-        jmp   NextCol
-@a      stu   @dyn2
-        sta   @dyn0
+        sta   <TilemapBuffer.rows
+LoadChunk.tile
+        ldy   <TilemapBuffer.cell
+        ldd   ,u++                     ; the tile entry
+        bne   >
+        std   ,y                       ; 0 : an empty cell
+        bra   LoadChunk.next
+!       stu   @entry
+        sta   @high
  IFDEF TilemapBuffer.OPAQUE
-        ; V2-DEVIATION (06/10/2026) : bit 10 of a chunk entry marks a tile
-        ; that covers its whole cell (sonic-2's tools/ehz_opaque.py) ; it is
-        ; kept in the flags byte (bit 2) for a background routine that skips
-        ; the rows such tiles cover. The tile index is then bits 0-9.
-        anda  #%11111100                              ; save priority, solidity and opacity on first byte
+        anda  #%11111100               ; the flags : priority, solidity, opacity
  ELSE
-        anda  #%11111000                              ; save priority and solidity on first byte
+        anda  #%11111000               ; the flags : priority, solidity
  ENDC
         sta   ,y
         lda   #0
-@dyn0   equ   *-1
+@high   equ   *-1
  IFDEF TilemapBuffer.OPAQUE
-        anda  #%00000011                              ; remove priority, solidity and opacity to get tile index
+        anda  #%00000011               ; the tile index
  ELSE
-        anda  #%00000111                              ; remove priority and solidity to get tile index
+        anda  #%00000111
  ENDC
-        std   @dyn1                                   ; multiply tile index by 3 to load tile page and addr
+        std   @index
         _lsld
-        addd  #0                                      ; (dynamic)
-@dyn1   equ   *-2
+        addd  #0
+@index  equ   *-2                      ; * 3 : its record
         ldu   glb_map_tiles_adr
         leau  d,u
         lda   glb_map_tiles_pge
-        _SetCartPageA                                 ; set tile index page
-        pulu  a,x                                     ; a: tile routine page, x: tile routine address
+        _SetCartPageA
+        pulu  a,x                      ; the routine's page and address
         sta   1,y
         stx   2,y
         lda   #0
-chk_idx_pge equ *-1
-        _SetCartPageA                                 ; restore chunk definition page
-        ldu   #0
-@dyn2   equ *-2
-
-NextCol
-        dec   <c_h_tl                                  ; check remaining tiles in this row
-        beq   EndOfRow
-
-        ; Move tile position on screen to next column
-        ; -------------------------------------------
-        ldd   #4                                    ; nb of linear memory bytes between two tiles in a column
-        addd  <b_loc
-        anda  #%00000000
-        andb  #%01111100 ; cycle thru this line (0-127) by 4 bytes
-        addd  #0
-cl_pos  equ   *-2
-        std   <b_loc
- IFDEF T2
-        jmp   DrawTile
- ELSE
-        bra   DrawTile
- ENDC
-
-        ; Check end of line of current Chunk
-        ; ----------------------------------
-EndOfRow                                              ; end of line on right chunk, do we need to go to bottom chunk or exit ?
-        dec   <c_v_tl
-        bne   DrawNextRow
-
-        ; End of DrawChunk, restore map of chunks page
-        ; ------------------------------------------------------------------
-EndOfChunk
-        lda   glb_map_chunk_pge
+chk_idx_pge equ *-1                    ; (dynamic) the chunk's page
         _SetCartPageA
+        ldu   #0
+@entry  equ   *-2
+LoadChunk.next
+        dec   <TilemapBuffer.cols
+        beq   LoadChunk.rowEnd
+        ldd   #4                       ; the next cell, in the row's ring
+        addd  <TilemapBuffer.cell
+        clra
+        andb  #%01111100
+        addd  #0
+LoadChunk.lineStart equ *-2
+        std   <TilemapBuffer.cell
+ IFDEF T2
+        jmp   LoadChunk.tile
+ ELSE
+        bra   LoadChunk.tile
+ ENDC
+LoadChunk.rowEnd
+        dec   <TilemapBuffer.rows
+        bne   LoadChunk.nextRow
+LoadChunk.end
+        lda   glb_map_chunk_pge
+        _SetCartPageA                  ; the layout back
         rts
-
-DrawNextRow
-        lda   <c_h_tl_bck
-        sta   <c_h_tl
-
-        ldu   #0                                      ; (dynamic)
-start_x equ   *-2
-        leau  16,u                                    ; a chunk is made of 8 tiles in width
-        stu   start_x
-        ; Move tile position on screen to next row
-        ; -----------------------------------------
-        ldd   #0                                      ; (dynamic) nb of linear memory bytes to go from the last tile of a row to the first tile of the next row
-r_stp_1 equ   *-2
-        addd  <b_loc
+LoadChunk.nextRow
+        lda   <TilemapBuffer.colsSave
+        sta   <TilemapBuffer.cols
+        ldu   #0
+LoadChunk.row equ *-2                  ; (dynamic) the chunk row's first tile
+        leau  16,u                     ; 8 entries a chunk row
+        stu   LoadChunk.row
+        ldd   #0
+LoadChunk.rowStep equ *-2              ; (dynamic)
+        addd  <TilemapBuffer.cell
         anda  #%00000111
-        adda  #tile_buffer/256 ; add base address
-        std   <b_loc
+        adda  #tile_buffer/256
+        std   <TilemapBuffer.cell
         andb  #%10000000
-        std   cl_pos                                  ; save start of line for cycling buffer
-        jmp   DrawTile
+        std   LoadChunk.lineStart
+        jmp   LoadChunk.tile
 
-cpt_x fcb 0
-
-; ****************************************************************************************************************************
-; *
-; *
-; *
-; *
-; *
-; *
-; *
-; *
-; *
-; *
-; *
-; ****************************************************************************************************************************
-
-; 29ms on avg
+* ---------------------------------------------------------------------------
+* DrawBufferedTile - the view's cells : the low priority ones drawn, the high
+* priority ones pushed on a queue on S (PSHS page, cell, screen address ;
+* the end an entry of page 0, pushed first), popped by
+* DrawHighPriorityBufferedTile. An IRQ or a call pushes below S, free there.
+* Nothing drawn when the camera did not move for this buffer.
+* ---------------------------------------------------------------------------
 DrawBufferedTile
-; V2-DEVIATION (06/10/2026) : the loop rewritten for speed (sonic-2 measures
-; it with tools/ehz_perf.py). X walks the tile buffer, so U no longer goes
-; through a save and a restore around each call (the tile routines use D and
-; U only) ; LDD sets Z for an empty cell (a zero word) and N for the high
-; priority bit, the page is written only for a cell drawn now ; each row is
-; cut where the 32 cell ring comes back to its start, once per frame, instead
-; of a compare per cell ; the last cell of a row is no longer a case apart
-; (it did not queue a high priority tile). The high priority queue lives on
-; S : PSHS of the page, the cell and the screen address (13 cycles a tile
-; against 51), popped with PULS by DrawHighPriorityBufferedTile. An IRQ or a
-; call pushes below S, where the queue is free (filling) or consumed
-; (popping) ; the queue's end is an entry of page 0, pushed first.
-
         lda   <glb_camera_move
-        bne   @a
-        ; nothing drawn : an empty queue for the high priority pass
-        clr   tmb_hprio_top-5
+        bne   >
+        clr   tmb_hprio_top-5          ; an empty queue
         ldd   #tmb_hprio_top-5
         std   DBT_hiptr
         rts
-@a
-
-        ; disable page backup (page swap macros)
-        ; mandatory if using T2 and direct access to E7E6
-        anda  #0
-        sta   <glb_Page
-
-        ; compute number of tiles to render
-        ; saves one tile row or col when camera pos is a multiple of tile size
-        ; ---------------------------------------------------------------------
-        ldb   #tmb_vp_h_tiles               ; nb of tile in screen width
+!       clr   <glb_Page                ; no page backup by the page macros
+        ldb   #TilemapBuffer.VIEW_COLS ; a column less on a tile boundary
         lda   <glb_camera_x_pos+1
         anda  #%00000111
-        bne   @skip
+        bne   >
         decb
-@skip   stb   <DBT_ncol
-
-        ldb   #tmb_vp_v_tiles               ; nb of tile in screen height
+!       stb   <DBT_ncol
+        ldb   #TilemapBuffer.VIEW_ROWS ; a row less on a tile boundary
         lda   <glb_camera_y_pos+1
         anda  #%00001111
-        bne   @skip
+        bne   >
         decb
-@skip
+!
  IFDEF TilemapBuffer.SKIP_ROWS
-        ; V2-DEVIATION (11/10/2026) : the view's last rows the game handles
-        ; itself (DBT_skiprows, fewer than the rows : a plane drawn over them
-        ; hides their low priority tiles ; it queues their high priority ones,
-        ; from DBT_row, DBT_rowy and DBT_hiptr as this loop leaves them)
-        subb  DBT_skiprows
+        subb  DBT_skiprows             ; the last rows left to the game
  ENDC
         stb   <DBT_lcpt
-
-        ; compute top left tile position on screen
-        ; position is rounder to 2 px horizontally beacuse of 2px per byte
-        ; and vertically beacuse of interlacing
-        ; ---------------------------------------------------------------------
-        lda   <glb_camera_x_pos+1
-        anda  #%00000110                    ; mask for 8px tile in width
+        lda   <glb_camera_x_pos+1      ; the first cell's screen address : 2 px
+        anda  #%00000110               ; a byte, two lines a step (interlacing)
         nega
-        adda  #12                           ; on screen position of camera
-
+        adda  #12
         ldb   <glb_camera_y_pos+1
-        andb  #%00001110                    ; mask for 16px tile in height
+        andb  #%00001110
         negb
-        addb  #20                           ; on screen position of camera
-
-        lsra                                ; x=x/2, sprites moves by 2 pixels on x axis
-        lsra                                ; x=x/2, RAMA RAMB interlace
-        bcs   @RAM2First                    ; Branch if write must begin in RAM2 first
-@RAM1First
-        sta   @dyn1
-        lda   #40                           ; 40 bytes per line in RAMA or RAMB
+        addb  #20
+        lsra                           ; 2 px a byte
+        lsra                           ; RAMA, RAMB
+        bcs   @ram2
+        sta   @ram1x
+        lda   #40
         mul
-        addd  #$C000                        ; (dynamic)
-@dyn1   equ   *-1
-        addd  #441 ; tileset should be declared with TILE8x16 center parameter in properties
+        addd  #$C000
+@ram1x  equ   *-1
+        addd  #441                     ; the tiles' centre (TILE8x16)
         std   <glb_screen_location_2
         suba  #$20
         std   <glb_screen_location_1
-        bra   @end
-@RAM2First
-        sta   @dyn2
-        lda   #40                           ; 40 bytes per line in RAMA or RAMB
+        bra   >
+@ram2   sta   @ram2x
+        lda   #40
         mul
-        addd  #$A000                        ; (dynamic)
-@dyn2   equ   *-1
-        addd  #441 ; tileset should be declared with TILE8x16 center parameter in properties
+        addd  #$A000
+@ram2x  equ   *-1
+        addd  #441
         std   <glb_screen_location_2
         addd  #$2001
         std   <glb_screen_location_1
-@end    std   DBT_rowy
-
+!       std   DBT_rowy
         ldd   <glb_screen_location_2
         subd  <glb_screen_location_1
         std   DBT_delta
         std   DBT_delta2
-
-        ; compute position in cycling buffer
-        ; ---------------------------------------------------------------------
-        ldb   <glb_camera_y_pos+1                     ; each 16px steps in y add $80
+        ldb   <glb_camera_y_pos+1      ; the first cell in the buffer
         lda   #%00010000
         mul
-        ldb   <glb_camera_x_pos+1                     ; each 8px steps in x add $04
+        ldb   <glb_camera_x_pos+1
         andb  #%11111000
         _lsrd
         addd  #tile_buffer
         std   DBT_row
-
-        ; a buffer row is a ring of 32 cells : from the first column, the row
-        ; reaches the ring's end at most once, at the same column for all
-        andb  #%01111111
+        andb  #%01111111               ; a row reaches its ring's end at most once,
+        lsrb                           ; at the same column for all
         lsrb
-        lsrb                                          ; first column
         negb
-        addb  #32                                     ; cells up to the ring's end
+        addb  #32
         cmpb  <DBT_ncol
-        blo   @a
+        blo   >
         ldb   <DBT_ncol
-@a      stb   DBT_run1
+!       stb   DBT_run1                 ; the cells up to it
         negb
         addb  <DBT_ncol
-        stb   DBT_run2                                ; cells after it (0 : none)
-
+        stb   DBT_run2                 ; and after it
         sts   DBT_sys
         lds   #tmb_hprio_top
-        clrb                                          ; the queue's end : page 0
+        clrb                           ; the queue's end : page 0
         pshs  b,x,y
-
 DBT_lloop
-        ldx   #0                                      ; the row's first cell
-DBT_row equ   *-2
-        ldy   #0                                      ; and screen address
-DBT_rowy equ  *-2
+        ldx   #0
+DBT_row equ   *-2                      ; the row's first cell
+        ldy   #0
+DBT_rowy equ  *-2                      ; and screen address
         lda   #0
 DBT_run1 equ  *-1
         sta   <DBT_ccpt
         lda   #0
 DBT_run2 equ  *-1
         sta   <DBT_left
-
 DBT_cloop
-        ldd   ,x                                      ; a : flags, b : page (0 : empty)
+        ldd   ,x                       ; A the flags, B the page (0 : empty)
  IFDEF TilemapBuffer.OPAQUE
-        beq   DBT_next                                ; empty : the background routine reads the opacity bit
+        beq   DBT_next                 ; the background routine reads the opacity bit
  ELSE
         beq   DBT_empty
  ENDC
-        bmi   DBT_high                                ; a's bit 7 : high priority
+        bmi   DBT_high                 ; bit 7 : high priority
         stb   $E7E6
  IFDEF TilemapBuffer.PLANES_CURSOR
-        ; V2-DEVIATION (06/10/2026) : the routine (gfxcomp planes="cursor") draws
-        ; plane 1 through Y and leaves Y on the next cell
-        leau  $1234,y                                 ; plane 2
+        leau  $1234,y                  ; plane 2 ; plane 1 in Y, moved on by the routine
 DBT_delta equ *-2
         jsr   [2,x]
         leax  4,x
@@ -726,8 +639,8 @@ DBT_delta equ *-2
         bne   DBT_cloop
         bra   DBT_rowend
  ELSE
-        sty   <glb_screen_location_1                  ; plane 1, read by the routine
-        leau  $1234,y                                 ; plane 2
+        sty   <glb_screen_location_1   ; plane 1
+        leau  $1234,y                  ; plane 2
 DBT_delta equ *-2
         jsr   [2,x]
  ENDC
@@ -737,16 +650,16 @@ DBT_next
         dec   <DBT_ccpt
         bne   DBT_cloop
 DBT_rowend
-        lda   <DBT_left                               ; the row goes on from the ring's start
-        beq   @row
+        lda   <DBT_left                ; the row goes on from its ring's start
+        beq   >
         sta   <DBT_ccpt
         clr   <DBT_left
         leax  -128,x
         bra   DBT_cloop
-@row    ldd   DBT_rowy                                ; next row : 16 lines down
+!       ldd   DBT_rowy                 ; the next row : 16 lines down
         addd  #40*16
         std   DBT_rowy
-        ldd   DBT_row                                 ; and the buffer's next row
+        ldd   DBT_row
         addd  #128
         anda  #%00000111
         adda  #tile_buffer/256
@@ -759,32 +672,23 @@ DBT_sys equ   *-2
         rts
 
 DBT_high
-        pshs  b,x,y                                   ; page, cell, screen address
+        pshs  b,x,y                    ; page, cell, screen address
         bra   DBT_next
 
  IFDEF TilemapBuffer.SKIP_ROWS
-DBT_skiprows fcb 0                                    ; set by the game each frame
+DBT_skiprows fcb 0                     ; the game's, each frame
  ENDC
 
  IFNDEF TilemapBuffer.OPAQUE
 DBT_empty
-        inc   <glb_alphaTiles                         ; the background shows : redraw it
+        inc   <glb_alphaTiles          ; the background shows
         bra   DBT_next
  ENDC
 
-; ****************************************************************************************************************************
-; *
-; * DrawHighPriorityBufferedTile : the queue DrawBufferedTile pushed on S, popped
-; *
-; ****************************************************************************************************************************
-
 DrawHighPriorityBufferedTile
-        ; disable page backup (page swap macros)
-        ; mandatory if using T2 and direct access to E7E6
-        anda  #0
-        sta   <glb_Page
+        clr   <glb_Page                ; no page backup by the page macros
         sts   @sys
-        lds   #tmb_hprio_tiles                        ; zeroed by the game : an empty queue
+        lds   #tmb_hprio_tiles         ; (dynamic) the queue's last entry
 DBT_hiptr equ *-2
         bra   @entry
 @loop
@@ -800,35 +704,3 @@ DBT_delta2 equ *-2
         lds   #0
 @sys    equ   *-2
         rts
-
- IFDEF TMB_TILE_BUFFER
-; V2-DEVIATION: the code takes the buffer's address by its high byte
-; (#tile_buffer/256), which a relocatable unit cannot give : a division of a
-; relocated label is not a relocation (migration/relocatable-alignment.md). A
-; v2 game declares the buffer at a fixed 2048 aligned address, reserved in its
-; layout, and clears it before InitTileBuffer : v1's fill was loaded zeros.
-tile_buffer equ TMB_TILE_BUFFER
- ELSE
-        align 2048
-tile_buffer
-        fill  0,16*128
- ENDC
-
- IFDEF TMB_HPRIO_TILES
-; V2-DEVIATION: the game may keep the queue out of its unit too, at a fixed
-; address it reserves and clears (the zeros v1's fill loaded) ; its size the
-; queue's bound (13/10/2026) : a 5 byte entry (PSHS b,x,y) a view cell, every
-; one high priority at worst, the end marker's entry pushed first, and under
-; S an IRQ's 12 bytes over a call's 2 (the IRQ switches S at once : its
-; hardware push alone lands here)
-tmb_hprio_tiles equ TMB_HPRIO_TILES
-tmb_hprio_size  equ (tmb_vp_h_tiles*tmb_vp_v_tiles+1)*5+12+2
- ELSE
-tmb_hprio_tiles
-        fill  0,tmb_vp_h_tiles*tmb_vp_v_tiles*7 ; in case all tiles are in high priority ... that's crazy ... you can lower that if you know what you are doing
-        fcb   0 ; end marker
-tmb_hprio_size  equ tmb_vp_h_tiles*tmb_vp_v_tiles*7
- ENDC
-; the queue grows down from its top, 5 bytes a tile : 990 at most, the
-; room below for an IRQ (12 bytes) and a call (2) is ample
-tmb_hprio_top equ tmb_hprio_tiles+tmb_hprio_size

@@ -373,6 +373,22 @@ word per cell — priority (bit 15), solidity (11-14), the opaque bit (10,
 define `TilemapBuffer.OPAQUE`), the tile index — and a page/address index
 of compiled tiles.
 
+The tiles in view live in a buffer of 16 rows of 32 cells, rings both ways,
+a cell `[flags][page][routine]` (page 0 : empty). The game declares it,
+`TMB_TILE_BUFFER` (2048 bytes, 2048 aligned : the code takes its address by
+its high byte, which a relocatable unit cannot give), and the high priority
+queue, `TMB_HPRIO_TILES` (`tmb_hprio_size` bytes), both cleared before
+`InitTileBuffer` ; the assembly stops on either missing. `InitTileBuffer`
+makes the next `ComputeTileBuffer` feed the whole view ; after it,
+`ComputeTileBuffer` feeds the rows and columns the camera uncovered since
+the last call, the whole view for a move past a view (a jump, a restart).
+`DrawBufferedTile` draws the view's low priority cells and pushes the high
+priority ones on the queue, `DrawHighPriorityBufferedTile` draws them after
+the sprites ; neither draws when the camera did not move for this buffer.
+`examples/tilemap` is the bench : the view checked cell by cell against the
+map after full feeds, moves, the rings, jumps and word cells, then drawn,
+on two targets (the defaults ; `OPAQUE`, `PLANES_CURSOR`, `SKIP_ROWS`).
+
 `TilemapBuffer.SKIP_ROWS` (opt-in) lets a game take over the view's last
 rows for a frame : it writes `DBT_skiprows` (fewer than the view's rows)
 before `DrawBufferedTile`, which then draws the rows above alone. The game
