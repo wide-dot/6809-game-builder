@@ -29,6 +29,7 @@ class Lcg:
     """A fixed sequence : the map must not change between runs."""
 
     def __init__(self, seed):
+        """Start the sequence at seed."""
         self.s = seed
 
     def next(self, n):
@@ -46,6 +47,7 @@ def entry(r):
 
 
 def rows(items, per, op):
+    """Lines of op, per items each."""
     return ['        %s   %s' % (op, ','.join(items[k:k + per])) for k in range(0, len(items), per)]
 
 
@@ -79,7 +81,7 @@ def generate():
     out += ['map.words.layout'] + rows(['%d' % i for i in ids_w], W, 'fdb') + ['']
     for b in range(3):
         out.append('map.chunks%d' % b)
-        for c in range(CHUNKS):
+        for _ in range(CHUNKS):
             out += rows([entry(r) for _ in range(64)], 8, 'fdb')
         out.append('')
     return '\n'.join(out)
