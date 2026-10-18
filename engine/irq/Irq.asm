@@ -1,36 +1,18 @@
-
 * ---------------------------------------------------------------------------
 * IRQ Manager
 * ---------------------------------------------------------------------------
 *
-* IrqSet50Hz
-* -----------------------------------
-* input REG : [none]
-* reset REG : [d]
-*
-* IrqOn
-* -----------------------------------
-* reset REG : [a]
-*
-* IrqOff
-* -----------------------------------
-* reset REG : [a]
-*
-* IrqSync
-* -----------------------------------
-* This routine sync irq timer with a desired screen line refresh
-* The timer (irq duration) is an input parameter (usually Irq_one_frame)
-* input REG : [a] screen line (0-255)
-*             [x] timer value
-* reset REG : [d]
-* feature request - implement a screen line range of 0-311
-*
-* IrqManager (irq call)
-* -----------------------------------
-* This routine run all requested engine code before and after the user irq
-* routine (in Irq_user_routine)
-* input REG : [dp] $E7 (set by the monitor)
-* reset REG : [none]
+* IrqInit             the monitor's timer vector on IrqManager
+* IrqSet50Hz          the timer on every frame, the IRQ on ; trashes d
+* IrqOn / IrqOff      the timer's IRQ on / off ; trashes a
+* IrqPause            the IRQ off if it was on, remembered for IrqUnpause,
+* IrqUnpause          which puts it back on ; every register kept
+* IrqSync             the timer synced on a screen line : A the line (0-255),
+*                     X the period (usually Irq_one_frame) ; trashes d, y
+*                     (feature request : lines 0-311)
+* IrqManager          the IRQ : counts the frame, runs Irq_user_routine with
+*                     the caller's page kept ; DP $E7 (the monitor's), its
+*                     own stack (Irq_sys_stack)
 *
 * IRQ_SPLIT (define, opt-in) : a second interrupt a frame, at a line of the
 * display, for a palette change there (a game's water surface). The VBL's
@@ -44,23 +26,16 @@
 * first). Cost when no split : the scheduling, ~60 cycles a frame ; one more
 * interrupt a frame when split.
 *
-* Special mode (glb_Page==0) is when page switching does not need to test
-* if RAM or ROM is in use. In this case RAM is always expected as page type.
-* This allows the use of <$E6 register without calling engine macro for
-* page switch, thus it reduces the cycles cost. Used in tile rendering.
+* glb_Page at 0 is the tile loop's mode : the page register is used as is,
+* RAM always (no ROM to tell apart), and glb_Page is put back to 0.
 *
-* Example of user routines (may be grouped in a subroutine) :
-* - PalUpdateNow
-* - PalCycling
-* - PalRaster_1c
-* - MusicFrame
-* - PSGFrame
-* - IrqObjSmps
-* - IrqTimer
-*
+* User routines (may be grouped in a subroutine) : PalUpdateNow, PalCycling,
+* PalRaster_1c, MusicFrame, PSGFrame, IrqObjSmps, IrqSecond.
+* Irq_one_frame and Irq_one_line are constants of engine/constants.asm
+* (migration/equates-link-boundary.md).
 * ---------------------------------------------------------------------------
 
-Irq_user_routine fdb 0                 ; user irq routine called by IrqManager
+Irq_user_routine fdb 0                 ; the user routine IrqManager calls
  IFDEF IRQ_SPLIT
 Irq_split_routine fdb 0                ; the split's routine (DP $E7, the system stack)
 Irq_split_line    fcb $FF              ; the next frames' split : a line of the display, $FF none
@@ -68,62 +43,51 @@ Irq_split_cur     fdb 0                ; this frame's : cycles from the VBL's in
 Irq_split_next    fcb 0                ; the next interrupt is the split
 Irq_sync_line     fdb 0                ; the line IrqSync set the VBL's interrupt on
  ENDC
-; V2-DEVIATION: Irq_one_frame et Irq_one_line sont definis dans
-; engine/constants.asm. Ce sont des CONSTANTES ABSOLUES, pas des adresses : une
-; unite paginee qui arme l'IRQ doit les voir a l'assemblage. Les faire passer
-; par la frontiere de lien les fait rebaser ($4DFF -> $AEFF, soit une periode
-; d'IRQ 2,24 fois trop longue).
-; Cas de migration : docs/lang/en/migration/equates-link-boundary.md
-       
+
 IrqInit
         ldd   #IrqManager
         std   TIMERPT
-	rts
+        rts
 
 IrqSet50Hz
         ldb   #$42
         stb   MC6846.TCR               ; timer precision x8
         ldd   #Irq_one_frame           ; on every frame
         std   MC6846.TMSB
-        jsr   IrqOn   
-        rts
-       
-IrqOn         
-        lda   $6019                           
+IrqOn
+        lda   $6019
         ora   #$20
-        sta   $6019                    ; STATUS register
-        andcc #$EF                     ; tell 6809 to activate irq
+        sta   $6019                    ; STATUS : the timer's IRQ
+        andcc #$EF                     ; the 6809's IRQ on
         rts
-        
-IrqOff 
-        lda   $6019                           
+
+IrqOff
+        lda   $6019
         anda  #$DF
-        sta   $6019                    ; STATUS register
-        orcc  #$10                     ; tell 6809 to inactivate irq
+        sta   $6019
+        orcc  #$10
         rts
 
 IrqPause
         pshs  a
         lda   $6019
         anda  #$20
-        bne   @irqoff
-        lda   #0
-        sta   @irqst
-        bra   >
-@irqoff lda   #1
-        sta   @irqst
+        sta   IrqPause.state           ; on : to put back
+        beq   >
         jsr   IrqOff
 !       puls  a,pc
+
 IrqUnpause
         pshs  a
-        lda   #0
-@irqst  equ   *-1
+        tst   IrqPause.state
         beq   >
+        clr   IrqPause.state
         jsr   IrqOn
-!       clr   @irqst
-        puls  a,pc
+!       puls  a,pc
 
-IrqSync 
+IrqPause.state fcb 0
+
+IrqSync
  IFDEF IRQ_SPLIT
         sta   Irq_sync_line+1          ; the VBL's line, the splits are counted from it
         clr   Irq_sync_line
@@ -133,30 +97,47 @@ IrqSync
  ENDC
         ldb   #$42
         stb   MC6846.TCR
-        
-        ldb   #8                       ; ligne * 64 (cycles per line) / 8 (nb tempo loop cycles)
+        ldb   #8                       ; the line * 64 cycles / 8, the wait loop's
         mul
         tfr   d,y
-        leay  -32,y                    ; manual adjustment
-!
-        tst   $E7E7                    ;
-        bmi   <                        ; while spot is in a visible screen line        
-!       tst   $E7E7                    ;
-        bpl   <                        ; while spot is not in a visible screen line
-!       leay  -1,y                     ;
-        bne   <                        ; wait until desired line
-       
-        stx   MC6846.TMSB              ; spot is at the end of desired line
+        leay  -32,y                    ; adjusted by hand
+!       tst   $E7E7
+        bmi   <                        ; while the beam is in a visible line
+!       tst   $E7E7
+        bpl   <                        ; while it is not
+!       leay  -1,y
+        bne   <                        ; up to the line
+        stx   MC6846.TMSB              ; the beam at the line's end
  IFDEF IRQ_SPLIT
         ldb   #$52                     ; TCR4 : a latch write no longer restarts the counter
         stb   MC6846.TCR               ; (IrqManager writes it one interrupt ahead)
  ENDC
-        rts  
+        rts
 
-        ;setdp $E7 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm obj target ; runtime DP is untouched, implicit-direct operands assemble extended)
+ IFDEF OverlayMode
+* the half page $4000-$5FFF the main thread had, read and put back exactly
+* (never toggled : migration/relative-toggles-on-shared-registers.md) ;
+* half 0, the objects, for the user routine
+_irq.half.save MACRO
+        lda   map.HALFPAGE
+        anda  #%00000001
+        sta   \1
+        lda   map.HALFPAGE
+        anda  #%11111110
+        sta   map.HALFPAGE
+ ENDM
+_irq.half.restore MACRO
+        lda   map.HALFPAGE             ; read again : bits 1-7 are live I/O
+        anda  #%11111110
+        ora   #0
+\1      equ   *-1                      ; (dynamic) the half
+        sta   map.HALFPAGE
+ ENDM
+ ENDC
+
 IrqManager
-        sts   @stack                   ; backup system stack
-        lds   #Irq_sys_stack           ; set tmp system stack for IRQ 
+        sts   @stack
+        lds   #Irq_sys_stack
  IFDEF IRQ_SPLIT
         tst   Irq_split_next           ; the split's interrupt : its routine alone
         beq   @vbl
@@ -177,68 +158,36 @@ IrqManager
         inc   gfxlock.frame.count+1
         bne   >
         inc   gfxlock.frame.count
-!
-        tst   glb_Page                 ; test special mode (glb_Page==0)
-        beq   @smode                   ; branch if rendering tiles - force RAM use instead of testing ROM or RAM
+!       tst   glb_Page
+        beq   @smode                   ; the tile loop's mode
         _GetCartPageB
-        stb   @page                    ; backup data page normally
+        stb   @page
  IFDEF OverlayMode
-        ; OVERLAY : la demi-page $4000-$5FFF n'est pas forcement sur l'OST (0)
-        ; quand l'IRQ tombe — le mainline peut etre EN TRAIN de tourner sur la
-        ; 1 (ex. pscroll.half.on, le temps d'un jsr). Irq_user_routine
-        ; (PalUpdateNow, le son) a besoin de l'OST : on n'a pas a SAVOIR
-        ; quelle moitie etait montee, on la LIT et on la remet EXACTEMENT —
-        ; meme principe que _GetCartPageB/_SetCartPageA juste au-dessus,
-        ; jamais un toggle relatif (voir docs/lang/en/migration/
-        ; relative-toggles-on-shared-registers.md : un E7C3 stale corrompt un
-        ; toggle, pas un backup/restore absolu).
-        lda   map.HALFPAGE
-        anda  #%00000001
-        sta   @half                    ; 0 ou 1 : la demi-page EXACTE en cours
-        lda   map.HALFPAGE
-        anda  #%11111110
-        sta   map.HALFPAGE                ; demi-page 0 : l'OST, pour la duree de l'IRQ
+        _irq.half.save IrqManager.half
  ENDC
         jsr   [Irq_user_routine]
  IFDEF OverlayMode
-        lda   map.HALFPAGE                ; RELU, pas rejoue : les bits 1-7 sont
-        anda  #%11111110                ; de l'I/O vivante (timer, clavier,
-        ora   #0                        ; (dynamic) disque)
-@half   equ   *-1
-        sta   map.HALFPAGE
+        _irq.half.restore IrqManager.half
  ENDC
-        lda   #0                       ; (dynamic)
-@page   equ   *-1
-        _SetCartPageA                  ; restore data page
-@end    lds   #0                       ; (dynamic) restore system stack
-@stack  equ   *-2
-        jmp   $E830                    ; return to caller
-@smode
-        ldb   <$E6
-        stb   @page2                   ; backup data page
+        lda   #0
+@page   equ   *-1                      ; (dynamic) the caller's page
+        _SetCartPageA
+@end    lds   #0
+@stack  equ   *-2                      ; (dynamic) the caller's stack
+        jmp   $E830                    ; the monitor's IRQ return
+@smode  ldb   <$E6
+        stb   @page2
  IFDEF OverlayMode
-        lda   map.HALFPAGE
-        anda  #%00000001
-        sta   @half2
-        lda   map.HALFPAGE
-        anda  #%11111110
-        sta   map.HALFPAGE
+        _irq.half.save IrqManager.half2
  ENDC
         jsr   [Irq_user_routine]
  IFDEF OverlayMode
-        pshs  a                        ; @smode reutilise A pour glb_Page :
-        lda   map.HALFPAGE                ; ne pas lui voler avant d'avoir lu
-        anda  #%11111110
-        ora   #0                        ; (dynamic)
-@half2  equ   *-1
-        sta   map.HALFPAGE
-        puls  a
+        _irq.half.restore IrqManager.half2
  ENDC
-        anda  #0
-        sta   glb_Page                 ; restore special page mode
-        lda   #0                       ; (dynamic)
-@page2  equ   *-1
-        sta   <$E6                     ; restore data page
+        clr   glb_Page                 ; the tile loop's mode back
+        lda   #0
+@page2  equ   *-1                      ; (dynamic)
+        sta   <$E6
         bra   @end
 
  IFDEF IRQ_SPLIT
@@ -276,10 +225,7 @@ IrqSplit_Schedule
         rts
  ENDC
 
-; This space allow the use of system stack inside IRQ calls
-; otherwise the writes in sys stack will erase data when S is in use
-; (outside of IRQ) for another task than sys stack, ex: stack blast copy 
+; the IRQ's own stack : the main thread may use S for something else than a
+; stack (a stack blast copy) when the IRQ comes
         fill  0,32
 Irq_sys_stack
-
-        ;setdp dp/256 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm obj target ; runtime DP is untouched, implicit-direct operands assemble extended)

@@ -148,6 +148,9 @@ la description de la PR en garde la trace.
   `examples/tilemap` (banc de TilemapBuffer, 13/13 sur deux cibles — les
   options de sonic-2 sur la seconde : la vue vérifiée cellule par cellule
   contre la carte, puis dessinée, depuis le 18/10/2026),
+  `examples/irq` (banc IRQ 50 Hz, WaitVBL, palette, Mul9x16, CalcSine,
+  RandomNumber, ClearDataMem, GetImgIdA : 14/14 sous toje, l'IRQ active,
+  depuis le 18/10/2026),
   `examples/tlsf-ut` (tests unitaires TLSF sur machine),
   `examples/bm4s` (le 320x200 4 couleurs `$41` : `videomode="bm4s"` de
   gfxcomp, `_gfxmode.setBM4S`, banc `ci/toje-bench/bm4s_ut.py`),

@@ -1,26 +1,22 @@
 * ---------------------------------------------------------------------------
 * IrqSecond
-* ---------------
-* IRQ Subroutine to count elapsed seconds
+* ---------
+* An IRQ user routine counting the time : glb_timer_frame the frames (0-49),
+* glb_timer the minutes then the seconds (0-59)
 * ---------------------------------------------------------------------------
 
-        ;setdp $E7 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm
-                  ; obj target) ; no direct operand below
-                  ; (migration/setdp-obj-target.md)
 IrqSecond
         lda   glb_timer_frame
         inca
         cmpa  #50
-        bne   @skip
-        ldd   glb_timer
-        incb
-        cmpb  #60
         bne   >
-        ldb   #0
-        inca
-!       std   glb_timer
-        lda   #0
-@skip   sta   glb_timer_frame
-	rts
-
-        ;setdp dp/256 ; V2-DEVIATION: setdp neutralized (see above)
+        ldd   glb_timer
+        incb                           ; a second
+        cmpb  #60
+        bne   @store
+        clrb
+        inca                           ; a minute
+@store  std   glb_timer
+        clra
+!       sta   glb_timer_frame
+        rts

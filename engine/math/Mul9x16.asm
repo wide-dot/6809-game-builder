@@ -1,33 +1,16 @@
-; Multiply signed 9 bit (multiplier) by signed 16 bit (multiplicand)
-; ------------------------------------------------------------------
-; result = (product/256)
-;
-; input :
-; d = signed 9 bit
-; x = signed 16 bit
-;
-; output :
-; d = signed 16 bit
-;
-; (a)    01 }
-; (@m)   00 } multiplier (9 bit)
-; (@m_h) 20 } 
-; (@m_l) 00 } multiplicand (16 bit)
-;
-; Result:
-; (a)  20 }
-; (b)  00 } 2000 is product/256
+; ---------------------------------------------------------------------------
+; Mul9x16 - a signed 9 bit multiplier (D, -256 to 256) times a signed 16 bit
+; multiplicand (X) -> D : the product / 256 (signed 16 bit)
+; e.g. D = $0100, X = $2000 -> D = $2000
+; trashes : x ; dp_engine+0 to +5
+; ---------------------------------------------------------------------------
 
-        ;SETDP   dp/256 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm
-                         ; obj target ; migration/setdp-obj-target.md)
-
-@m      equ dp_engine
-@m_h    equ dp_engine+1
+@m      equ dp_engine                  ; the multiplier's magnitude
+@m_h    equ dp_engine+1                ; the multiplicand's magnitude
 @m_l    equ dp_engine+2
-@r_h    equ dp_engine+3
+@r_h    equ dp_engine+3                ; the low partial product
 @r_l    equ dp_engine+4
-@r      equ dp_engine+5
-;
+@r      equ dp_engine+5                ; its low byte : the fraction
 Mul9x16
         tsta
         beq   @pos  ; $0000 <= d <= $00FF

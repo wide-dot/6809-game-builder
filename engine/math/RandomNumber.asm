@@ -1,6 +1,6 @@
 ; ---------------------------------------------------------------------------
-; Subroutine to generate a pseudo-random number in d
-; By Samuel Devulder
+; RandomNumber - the next pseudo-random number in D (a 16 bit xorshift, by
+; Samuel Devulder) ; InitRNG seeds it from the timer
 ; ---------------------------------------------------------------------------
 
 InitRNG
@@ -14,11 +14,11 @@ RNG_seed equ *-2
         lsra              
         rorb              
         eorb  RNG_seed
-        stb   @a
+        stb   @x
         rorb              
         eorb  RNG_seed+1
         tfr   b,a         
         eora  #0          
-@a      equ   *-1
+@x      equ   *-1                ; (dynamic)
         std   RNG_seed
         rts

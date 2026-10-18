@@ -1,27 +1,24 @@
 * ---------------------------------------------------------------------------
 * PalRaster_1c
 * ------------
-* Change a single palette color at the end of each screen line
-* until all values of the source table are read
+* Changes one palette colour at the end of each screen line, until the
+* table is read : 3 bytes a line, the colour's index then its value
+* ($0BGR). An IRQ user routine (DP $E7) ; the timing is cycle exact.
 * ---------------------------------------------------------------------------
 
-PalRas_page   fdb $00   ; raster data page
-PalRas_start  fdb $0000 ; raster data start address (data is $0bgr b=blue g=green r=red)
-PalRas_end    fdb $0000 ; raster data end address                           
+PalRas_page   fcb   $00                ; the table's page
+PalRas_start  fdb   $0000              ; the table
+PalRas_end    fdb   $0000              ; its end
 
-        ;setdp $E7 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm
-                  ; obj target) ; every direct operand below is an explicit <,
-                  ; still assembled direct (migration/setdp-obj-target.md)
-
-PalRaster_1c 
+PalRaster_1c
         lda   PalRas_page
-         _SetCartPageA                 ; load Raster data page
+        _SetCartPageA
         ldx   PalRas_start
 
-        lda   #32        
+        lda   #32
 !       bita  <$E7
         beq   <                        ; while spot is not in a visible screen col
-!       bita  <$E7 
+!       bita  <$E7
         bne   <                        ; while spot is in a visible screen col
         mul                            ; tempo
         mul                            ; tempo
@@ -30,15 +27,13 @@ PalRaster_1c
         tfr   a,b                      ; tempo
         tfr   a,b                      ; tempo
         ldd   1,x
-        std   >*+8
-        lda   ,x        
-        sta   <$DB
+        std   >*+8                     ; into the ldd #0 below
+        lda   ,x
+        sta   <$DB                     ; the colour's index
         ldd   #0
-        stb   <$DA 
+        stb   <$DA
         sta   <$DA
         leax  3,x
         cmpx  PalRas_end
         bne   <
         rts
-
-        ;setdp dp/256 ; V2-DEVIATION: setdp neutralized (see above)
