@@ -22,12 +22,11 @@
 ; borrow/wrap conversion with non zero camera offsets), the three mirror
 ; subsets, the xloop flag, and a negative screen line — an origin above the
 ; first line, its image under it — in playfield and screen coordinates and
-; at line 0 one line up (t23..t25). The multisprite path is out of scope :
-; R-Type does not use it and it is kept strictly 1:1 with v1.
+; at line 0 one line up (t23..t25), and the multisprite path (t26..t30).
 ;
 ; Results at $9C00, loader-ut convention :
 ;   +$00 : $CA once the game mode runs
-;   +$01..+$19 : $01 per passing test (t01..t25)
+;   +$01..+$1E : $01 per passing test (t01..t30)
 ;   +$1F : $0D once the sequence completed
 ;   +$20.. : one word per test, the VRAM checksum it recorded (0 if none)
 ;*******************************************************************************
@@ -96,6 +95,11 @@ R.t22   equ res.base+21   ; xloop skips the horizontal bounds
 R.t23   equ res.base+22   ; negative screen line, playfield coordinates
 R.t24   equ res.base+23   ; negative screen line, screen coordinates
 R.t25   equ res.base+24   ; line 0, one line up : line -1
+R.t26   equ res.base+25   ; multisprite : two children, the single path's picture
+R.t27   equ res.base+26   ; multisprite : a child rejected by each bound
+R.t28   equ res.base+27   ; multisprite : a child without an image skipped
+R.t29   equ res.base+28   ; multisprite : negative screen line
+R.t30   equ res.base+29   ; multisprite : line 0, one line up
 
 ; checksum slots, same rank ; the plain mirror reference uses a spare slot
 S.t03   equ res.sums+2*2
@@ -117,10 +121,19 @@ S.t19   equ res.sums+2*18
 S.t20   equ res.sums+2*19
 S.t21   equ res.sums+2*20
 S.t22   equ res.sums+2*21
-S.plain equ res.sums+2*22 ; unmirrored glyph at the mirror tests' position
-S.t23   equ res.sums+2*23
-S.t24   equ res.sums+2*24
-S.t25   equ res.sums+2*25
+S.t23   equ res.sums+2*22
+S.t24   equ res.sums+2*23
+S.t25   equ res.sums+2*24
+S.t26   equ res.sums+2*25
+S.t27   equ res.sums+2*26
+S.t28   equ res.sums+2*27
+S.t29   equ res.sums+2*28
+S.t30   equ res.sums+2*29
+S.plain equ res.sums+2*40 ; unmirrored glyph at the mirror tests' position
+S.ref26 equ res.sums+2*41 ; t26's two glyphs drawn by the single path
+
+; a multisprite object's children : x, y, imageset (sub2_x_pos onward)
+CHILD   equ obj1+sub2_x_pos
 
         ; the scene loads this file at the game mode region address and jumps
         ; to its first byte : main has to be the first thing emitted, so every
@@ -811,6 +824,205 @@ t25end
         std   glb_camera_y_offset
         std   glb_camera_x_pos
 
+; ---------------------------------------------------------------------------
+; t26 — multisprite : two glyph children at (60,100) and (100,100), camera at
+; 0/0 ; both drawn, and the picture is the one two single playfield sprites
+; draw at the same places
+; ---------------------------------------------------------------------------
+t26
+        jsr   bench.reset
+        ldd   #0
+        std   glb_camera_y_pos
+        ldx   #set_glyph
+        ldd   #60
+        std   CHILD
+        ldd   #100
+        std   CHILD+2
+        stx   CHILD+4
+        std   CHILD+6
+        std   CHILD+8
+        stx   CHILD+10
+        ldb   #2
+        jsr   bench.multi
+        jsr   BuildSprites
+        ldu   #obj1
+        lda   render_flags,u
+        lbpl  t27
+        jsr   bench.vramsum
+        std   S.t26
+        lbeq  t27
+        ldd   #100
+        addd  bench.gly_y1off
+        tfr   b,a
+        ldb   #24
+        jsr   bench.rowextent
+        tsta
+        lbne  t27
+        jsr   bench.reset
+        ldd   #100
+        std   bench.ty
+        ldy   #set_glyph
+        ldx   #obj1
+        ldd   #60
+        jsr   bench.single
+        ldy   #set_glyph           ; DisplaySprite does not keep Y
+        ldx   #obj2
+        ldd   #100
+        jsr   bench.single
+        jsr   BuildSprites
+        jsr   bench.vramsum
+        std   S.ref26
+        cmpd  S.t26
+        lbne  t27
+        lda   #1
+        sta   R.t26
+
+; ---------------------------------------------------------------------------
+; t27 — multisprite : four children, each out by one bound (left, right, top,
+; bottom) : the object is walked (hide set), nothing is drawn
+; ---------------------------------------------------------------------------
+t27
+        jsr   bench.reset
+        ldx   #set_glyph
+        ldd   #0
+        std   CHILD
+        ldd   #100
+        std   CHILD+2
+        stx   CHILD+4
+        ldd   #156
+        std   CHILD+6
+        ldd   #100
+        std   CHILD+8
+        stx   CHILD+10
+        ldd   #60
+        std   CHILD+12
+        ldd   #4
+        std   CHILD+14
+        stx   CHILD+16
+        ldd   #60
+        std   CHILD+18
+        ldd   #196
+        std   CHILD+20
+        stx   CHILD+22
+        ldb   #4
+        jsr   bench.multi
+        jsr   BuildSprites
+        ldu   #obj1
+        lda   render_flags,u
+        lbpl  t28
+        jsr   bench.vramsum
+        std   S.t27
+        lbne  t28
+        lda   #1
+        sta   R.t27
+
+; ---------------------------------------------------------------------------
+; t28 — multisprite : a child without an image between two glyphs : skipped,
+; the two others drawn, t26's picture
+; ---------------------------------------------------------------------------
+t28
+        jsr   bench.reset
+        ldx   #set_glyph
+        ldd   #60
+        std   CHILD
+        ldd   #100
+        std   CHILD+2
+        stx   CHILD+4
+        ldd   #80
+        std   CHILD+6
+        ldd   #100
+        std   CHILD+8
+        ldd   #0
+        std   CHILD+10
+        ldd   #100
+        std   CHILD+12
+        std   CHILD+14
+        stx   CHILD+16
+        ldb   #3
+        jsr   bench.multi
+        jsr   BuildSprites
+        ldu   #obj1
+        lda   render_flags,u
+        lbpl  t29
+        jsr   bench.vramsum
+        std   S.t28
+        lbeq  t29
+        cmpd  S.ref26
+        lbne  t29
+        lda   #1
+        sta   R.t28
+
+; ---------------------------------------------------------------------------
+; t29 — multisprite, a negative screen line : t23's drop as a child
+; ---------------------------------------------------------------------------
+t29
+        jsr   bench.reset
+        ldd   #100
+        std   CHILD
+        ldd   #-4
+        std   CHILD+2
+        ldx   #set_drop
+        stx   CHILD+4
+        ldb   #1
+        jsr   bench.multi
+        jsr   BuildSprites
+        ldu   #obj1
+        lda   render_flags,u
+        lbpl  t30
+        jsr   bench.vramsum
+        std   S.t29
+        lbeq  t30
+        ldd   #-4
+        addd  bench.drp_y1off
+        tfr   b,a
+        ldb   #12
+        jsr   bench.rowextent
+        tsta
+        lbne  t30
+        lda   #1
+        sta   R.t29
+
+; ---------------------------------------------------------------------------
+; t30 — multisprite, line 0 one line up : t25's drop as a child
+; ---------------------------------------------------------------------------
+t30
+        jsr   bench.reset
+        ldd   #48
+        std   glb_camera_x_offset
+        ldd   #28
+        std   glb_camera_y_offset
+        ldd   #500
+        std   glb_camera_x_pos
+        ldd   #440
+        std   CHILD
+        ldd   #-28
+        std   CHILD+2
+        ldx   #set_drop
+        stx   CHILD+4
+        ldb   #1
+        jsr   bench.multi
+        jsr   BuildSprites
+        ldu   #obj1
+        lda   render_flags,u
+        lbpl  t30end
+        jsr   bench.vramsum
+        std   S.t30
+        lbeq  t30end
+        ldd   bench.drp_y1off
+        decb
+        tfr   b,a
+        ldb   #12
+        jsr   bench.rowextent
+        tsta
+        lbne  t30end
+        lda   #1
+        sta   R.t30
+t30end
+        ldd   #0
+        std   glb_camera_x_offset
+        std   glb_camera_y_offset
+        std   glb_camera_x_pos
+
 benchdone
         lda   #$0D
         sta   res.done
@@ -1016,6 +1228,33 @@ bench.glyph1
         stx   image_set,u
         lda   #2
         sta   priority,u
+        jmp   DisplaySprite
+
+; obj1 as a multisprite object of B children (filled at CHILD), priority 2
+bench.multi
+        ldu   #obj1
+        stb   mainspr_childsprites,u
+        lda   #1
+        sta   id,u
+        lda   #render_subobjects_mask|render_playfieldcoord_mask
+        sta   render_flags,u
+        lda   #2
+        jmp   DisplaySprite_priority
+
+; object X as a single playfield sprite of imageset Y at (D, bench.ty),
+; priority 2
+bench.single
+        std   x_pos,x
+        ldd   bench.ty
+        std   y_pos,x
+        sty   image_set,x
+        lda   #1
+        sta   id,x
+        lda   #2
+        sta   priority,x
+        lda   #render_playfieldcoord_mask
+        sta   render_flags,x
+        tfr   x,u
         jmp   DisplaySprite
 
 ; reset between tests : both bench objects, the priority structure, and the

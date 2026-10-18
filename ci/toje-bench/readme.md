@@ -21,6 +21,10 @@ capture d'écran).
 cd examples/loader-ut
 python3 ../../ci/toje-bench/loader_ut.py dist/to8.fd dist/to8-disk1.fd
 
+python3 ci/toje-bench/bench.py examples/overlay   # un banc décrit par bench.json,
+ci/run-benches.sh                                 # contre sa référence bench.ref ;
+                                                  # tous les bancs (docs/lang/en/benches.md)
+
 cd examples/bm4s           # 320x200 4 couleurs ($41) : témoins + écran
 python3 ../../ci/toje-bench/bm4s_ut.py dist/to8.fd   # comparé aux sources 320 px
 ```
