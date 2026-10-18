@@ -1,4 +1,0 @@
-pow-flying  : no animation
-pow-landing : speed 8frames
-pow-takeoff : speed 8frames
-pow-walking : speed 8frames

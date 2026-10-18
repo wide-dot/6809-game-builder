@@ -20,7 +20,7 @@ set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT=${1:?usage: build-corpus.sh <output file>}
 : > "$OUT"; : > "$OUT.log"
-CONFIGS=$(cd "$ROOT" && find examples games -name "*.config.xml" -not -path "*/parked/*" | sort)
+CONFIGS=$(cd "$ROOT" && find examples -name "*.config.xml" -not -path "*/parked/*" | sort)
 FAIL=0
 for cfg in $CONFIGS; do
   dir=$ROOT/$(dirname "$cfg"); file=$(basename "$cfg")
@@ -29,7 +29,7 @@ for cfg in $CONFIGS; do
   # gen ET dist : une mesure gardee d'un run precedent (taille d'un fichier,
   # placement d'une arene) masque ce que le build dirait a froid. Un
   # chevauchement reel entre la collision du stage 3 et trois fichiers communs
-  # de r-type s'est cache derriere un gen/ rance jusqu'au 01/09/2026 : le
+  # de r-type (le jeu vivait ici jusqu'au 18/10/2026) s'est cache derriere un gen/ rance jusqu'au 01/09/2026 : le
   # controle de composition ne le voyait pas, parce qu'il ne voyait pas la
   # vraie taille. Une comparaison d'empreintes ne vaut que sur un build a froid.
   rm -rf dist gen

@@ -36,6 +36,6 @@ fi
 
 echo ""
 echo "clone pret : $DEST (branche $(git -C "$DEST" branch --show-current))"
-echo "build d'un jeu :"
-echo "  cd $DEST/games/r-type"
+echo "build d'un exemple :"
+echo "  cd $DEST/examples/sound"
 echo "  java -Dbasedir=$DEST -cp '../../repo/*' com.widedot.m6809.gamebuilder.MainCommand -f to8.config.xml"

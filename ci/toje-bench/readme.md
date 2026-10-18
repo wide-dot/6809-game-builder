@@ -1,6 +1,6 @@
 # toje-bench — rejouer les bancs machine sans écran
 
-Les bancs du dépôt (loader-ut, banc d'échange r-type) écrivent leurs
+Les bancs du dépôt (loader-ut, les exemples) écrivent leurs
 résultats en RAM précisément pour être lus par un outil. Ces scripts les
 rejouent **headless** en pilotant l'émulateur toje par son serveur MCP
 stdio (module `teo-mcp` du dépôt [wide-dot/toje]) : boot disquette (la
@@ -21,117 +21,13 @@ capture d'écran).
 cd examples/loader-ut
 python3 ../../ci/toje-bench/loader_ut.py dist/to8.fd dist/to8-disk1.fd
 
-cd games/r-type
-python3 ../../ci/toje-bench/rtype_bench.py dist/to8.fd
-
 cd examples/bm4s           # 320x200 4 couleurs ($41) : témoins + écran
 python3 ../../ci/toje-bench/bm4s_ut.py dist/to8.fd   # comparé aux sources 320 px
 ```
 
 Codes de sortie : 0 = pass, 1 = fail/blocage, 2 = pas de verdict.
-L'émulation tient ~250 trames/s : loader-ut se joue en ~1 min, le banc
-r-type complet (vitesse de scroll réelle, ~25 000 trames) en ~2 min.
-
-## Alignement collision / décor — `collision_overlay.py`
-
-Répond à une question et une seule : **ce que le jeu teste tombe-t-il sur ce
-que le joueur voit ?** Un décalage entre carte de collision et décor dessiné
-est invisible en lecture de code, et saute aux yeux ici.
-
-```bash
-cd games/r-type
-python3 ../../ci/toje-bench/collision_overlay.py dist/to8.fd overlay.png \
-    --stage 3 --until-camera 430 [--fire]
-```
-
-Le script amène le jeu au point voulu par le cheat du title, fige **capture
-et variables du lookup dans le même arrêt machine**, puis projette les plans
-en rejouant l'arithmétique exacte de `terrainCollision.loadMap` — chemin
-standard (indexé scroll principal) ou chemin attaché (`bgLayer`, repère de la
-couche), selon ce que la RAM dit au moment de la capture.
-
-**Le vert (foreground) est la calibration** : s'il tombe pile sur le sol
-dessiné, la projection est juste — et alors tout écart du rouge (background)
-est un vrai défaut, mesurable au pixel. Sans ce témoin, une projection fausse
-accuserait le jeu à tort.
-
-Les adresses ne sont **jamais codées en dur** : les offsets d'une unité
-bougent à chaque repack de l'arène. Le script réassemble l'unité résidente
-avec les `<define>` du config et lit son dump de symboles ; l'adresse de base
-vient du config (`common.engine` est à page/adresse fixes).
-
-Trouvé avec, le 26/08/2026 : la silhouette de collision du battleship
-(stage 3) dérivait du vaisseau dessiné — 64 px à son arrivée, 252 px plus
-loin — le plan background étant indexé sur la caméra principale alors que le
-vaisseau est dessiné par une couche mscroll qui a la sienne.
-
-## Motif des gommes (stage 4) — `gum_pattern.py`
-
-Compare le **motif** des gommes entre deux sources : une capture (arcade ou
-TO8) et/ou la carte du jeu. Sert à répondre à « notre tracé est-il celui de
-la borne ? » autrement qu'à l'œil.
-
-```bash
-# le motif de la borne, depuis une capture (perles à cœur ambre)
-python3 ci/toje-bench/gum_pattern.py extract arcade.png --out arcade.txt --core
-
-# le nôtre, depuis un dump RAM de pscroll.gum.map ($92DB, 48 o x 30)
-python3 ci/toje-bench/gum_pattern.py frommap gum.bin --out nous.txt
-
-python3 ci/toje-bench/gum_pattern.py compare arcade.txt nous.txt
-```
-
-Comparer des **motifs** et non des pixels est ce qui rend l'exercice possible :
-une tuile de gomme arcade (8 × 8 px) vaut **exactement** une cellule v2
-(3 × 6 px) — la coïncidence d'échelle sur laquelle tout le stage 4 est
-construit. Les deux mondes ont donc la même grille logique, et ce qui reste
-après alignement est un vrai écart de tracé, pas une différence de résolution.
-
-L'extraction ne suppose ni l'échelle ni le cadrage : le pas de grille et la
-phase viennent d'une autocorrélation des projections, avec un plancher à 8 px
-(sous ce seuil on accroche les harmoniques du doublement de pixels TO8).
-`--pitch W H` force le pas si la détection se trompe ; `--core` ne garde que
-le cœur ambre de la perle arcade, qui ne se confond pas avec le décor
-organique vert du stage — sans lui, le décor pollue le relevé.
-
-`compare` balaie **toute** la différence de largeur : une capture ne montre
-qu'une fenêtre du niveau quand un dump de la carte couvre les 384 colonnes,
-il faut retrouver où la fenêtre se pose.
-
-## Tracé des cytrons, simulé depuis la borne — `cytron_sim.py`
-
-Rejoue la logique de `run_cytron` (arcade `0x40:69B4`) sur les **données
-exportées de la borne**, dans un écran virtuel de 384 × 256 px arcade, tuiles
-de 8 px — à l'échelle 1:1 de la borne, sans rien emprunter au portage.
-
-```bash
-python3 ci/toje-bench/cytron_sim.py --wave 0 1 --frames 600 \
-    --out sim.png --txt sim.txt
-```
-
-Le but est d'obtenir une **référence indépendante** : si le tracé simulé est
-celui d'une vidéo d'arcade, la référence est bonne, et tout écart du jeu est
-alors imputable au portage — pas aux données. C'est ce qui manquait pour
-trancher entre « nos données sont fausses » et « notre runtime est faux ».
-
-Ce que la borne fait, par trame, et que le simulateur reproduit :
-1. `move_by_script` consomme *n* commandes du script bit-packé ;
-2. `pos_x += scroll_amount` — le cytron est **ancré au décor** ;
-3. la repousse : `(dx,dy)` lu dans la table indexée par la **pose** (un cercle
-   de rayon 12 px sur 16 directions), ajouté à la position, et **une** cellule
-   écrite si elle lit `TILE_EMPTY`.
-
-Format du script (un octet = une commande, poids forts en tête) : `bit7` change
-la pose et **ne compte pas** dans le quota de la trame ; `bit6/bit5` déplacent
-en x, `bit4/bit3` en y, `bit2` termine le segment. Une liste de segments
-s'achève sur 0 ; un mot `0xF0xx` change la cadence.
-
-Piège du format de données : `script.asm` est un export brut où **chaque ligne
-porte son propre label** `ref_1XXXX` — les listes ne sont pas des tableaux
-d'assembleur mais des suites d'adresses consécutives. Le script reconstruit donc
-une image mémoire adressable et la parcourt comme la borne. De même, les
-équates de `index.equ` sont des **offsets en octets** dans la LUT, pas des
-index : une entrée fait deux octets.
+L'émulation tient ~250 trames/s : loader-ut se joue en ~1 min. Les bancs
+des jeux (R-Type : `rtype_bench.py`) vivent dans le dépôt de chaque jeu.
 
 ## Relevé de cadence — `fps_curve.py` + `fps_plot.py`
 
@@ -140,7 +36,7 @@ Servent à comparer deux modes de rendu sur le même niveau (chantier overlay,
 08/2026).
 
 ```bash
-cd games/r-type
+cd <le jeu>           # depuis le dépot d'un jeu : 6809-game-builder/ci/toje-bench/
 python3 ../../ci/toje-bench/fps_curve.py dist/to8.fd releve.csv
 python3 ../../ci/toje-bench/fps_plot.py courbes.svg \
     reference.csv="sauvegarde de fond" overlay.csv="overlay"
@@ -190,56 +86,8 @@ python3 ../../ci/toje-bench/fps_curve.py dist/to8.fd releve.csv --stage 4 --chea
 
 ### Références mesurées
 
-Elles vivent dans `ci/toje-bench/refs/`, CSV brut **et** SVG tracé, pour que
-la comparaison d'après ne dépende pas d'un relevé à refaire.
-
-| relevé | périmètre | moy. | creux |
-|---|---|---|---|
-| stage 1, 19/08/2026 @ 886fda9c | relevé entier | 12,0 | 3,9 (caméra 552) |
-| [stage 4, 24/08/2026](refs/fps-stage4-2026-08-24.csv) @ dfcc4357 | traversée | 5,2 | 1,0 (caméra 711) |
-| [stage 4, 24/08/2026](refs/fps-stage4-2026-08-24-opt.csv) @ bf51cc40 — **la référence** | **traversée** | **8,2** | **5,9** |
-
-Le second relevé est le même stage après deux chantiers : `pscroll.grow` qui
-ne divise plus par soustractions (`b33065da`) et la couche de gommes devenue
-le plan arrière de la collision (`bf51cc40`). **+58 % de moyenne, creux ×6, et
-la pente a disparu** — la cadence ne dépend plus de la position dans le
-niveau. Le double test de collision que le stage 4 paie désormais partout ne
-se voit pas : traversée identique à la trame près (5 327), profil à 0,3 img/s
-près sur toutes les tranches.
-
-Le chiffre du stage 1 est un relevé entier, queues comprises : il n'est **pas**
-comparable tel quel à celui du stage 4, qui est une traversée. À rejouer avec
-`--saturated` le jour où on voudra les mettre côte à côte (mais sans
-`--traversal` : ce stage a un boss).
-
-Ce que change le périmètre sur le même relevé de stage 4 — assez pour qu'on
-dise toujours de laquelle on parle :
-
-| périmètre | trames | moy. |
-|---|---|---|
-| relevé entier, jusqu'au stage 5 | 8 699 | 8,7 |
-| jouable (queues muette et saturée retirées) | 8 158 | 6,0 |
-| **traversée** (`--traversal`) — la référence | 7 418 | **5,2** |
-
-(chiffres du relevé @ dfcc4357 ; les trois se décalent ensemble sur le suivant)
-
-```bash
-python3 ../../ci/toje-bench/fps_plot.py refs/fps-stage4-2026-08-24.svg \
-    refs/fps-stage4-2026-08-24.csv="stage 4 — traversee, reference 24/08/2026" \
-    --traversal --title "Cadence de rendu — R-Type stage 4, traversee"
-```
-
-Profil de la traversée par tranche de caméra (moyenne glissante 1 s) :
-
-```
-cam        0   100   200   300   400   500   600   700   800   900
-dfcc4357 7,8   5,9   5,6   5,3   4,9   3,8   3,6   4,0   8,9   5,4
-bf51cc40 9,0   7,0   7,7   8,2   8,3   7,7   7,1   8,7   8,7   9,6
-```
-
-La pente du premier relevé — de 7,8 à 3,6 au fil du niveau — était la division
-par soustractions de `pscroll.grow`, dont le nombre de tours croissait avec la
-coordonnée de carte. Le second est plat entre 7 et 9.
+Celles de R-Type (stages 1 et 4) sont parties avec le jeu le 18/10/2026 :
+`wide-dot/r-type`, `tools/bench/readme.md` et `tools/bench/refs/`.
 
 ## RÉSOLU : examples/sound TO8 — la passerelle irq.off, pas f7d4474 (2026-08-10)
 

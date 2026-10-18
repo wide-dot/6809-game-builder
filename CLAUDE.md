@@ -13,13 +13,13 @@ ne l'est pas encore** — voir l'état des lieux ci-dessous.
 Machines cibles : TO8 (principal) et MO6 (déjà largement supporté). Candidats futurs :
 MO5, Tandy CoCo 3.
 
-**Depuis le 22/08/2026, `games/r-type` EST l'ex `games/r-type-overlay`**
-(renommé au même chemin — la CI ne change pas). L'ancienne version, le banc
-d'échange des stages 1-2, est supprimée ; l'historique git la garde. Il n'y a
-plus qu'UNE version du jeu à maintenir (décision auteur). Les mentions de
-`games/r-type` dans les sections historiques plus bas décrivent l'ancien
-projet ; la lane toje-bench « banc r-type » (déjà rouge) s'exerce désormais
-contre la nouvelle version, à re-baser le jour où elle recompte.
+**Depuis le 18/10/2026, le jeu R-Type n'est plus dans ce dépôt** : il vit
+dans `wide-dot/r-type` (privé — il porte des données tirées de la borne),
+ce moteur y entre en sous-module, comme pour Sonic 2 et Ms. Pac-Man. Les
+sections historiques plus bas citent encore `games/r-type` : c'était son
+chemin ici, c'est la racine de son dépôt aujourd'hui. Une capacité du moteur
+se développe et se valide ici, sur les exemples ; chaque jeu monte ensuite
+son sous-module.
 
 ## Organisation des sessions (22/08/2026)
 
@@ -148,7 +148,8 @@ la description de la PR en garde la trace.
   `examples/mplus` (bancs de test carte son MPLUS : DAC, MIDI 6850, MEA8000, SN76489, YM2413).
 - **État de validation au 13/08/2026** : le corpus compte **15 configs et
   63 images** (11 exemples dont collection/stacked-overflow/hscroll/
-  tilescroll/objects/sprites, plus `games/r-type`), construits et empreintés
+  tilescroll/objects/sprites, plus `games/r-type` — sorti du moteur le
+  18/10/2026 : le corpus ne compte plus que les exemples), construits et empreintés
   en une commande par `ci/build-corpus.sh <out.hashes>` — c'est le banc
   d'identité de toutes les campagnes. Exécution rejouée **sans écran** par la
   lane toje (`ci/toje-bench/` : loader-ut 17/17 + piège T18 avec échanges de
@@ -569,182 +570,14 @@ vérifié en mémoire (totalSlots=32, cohabitation de [disk 0][file 0] et
    file id reste un simple index, au prix d'un `subd` (~7 cycles). Un fichier est
    désormais identifié par son id seul, sans ambiguïté entre disquettes.
 
-## Reste à faire pour un R-Type minimal (niveau 1 + boss, parité v1)
+## R-Type : le jeu de référence du moteur (jusqu'au 18/10/2026)
 
-Ce que le niveau 1 de R-Type v1 consomme réellement (source de vérité :
-`thomson-to8-game-engine/game-projects/r-type/game-mode/01/main.asm`) :
-gfxlock + frame-drop plafonné, IRQ 50 Hz, palette lean, bank switching, scroll
-horizontal 1 px sur tiles compilées, sprites compilés mode background-erase étendu,
-AnimateSpriteSync + moveByScript, RunObjects + Obj_Run + ObjectMoveSync + ObjectDp,
-ObjectWave, collisions AABB + terrain, joypad/kbd bufferisé sous IRQ, RNG, musique YMM,
-SFX YM2413 sous IRQ, LoadGameMode, et ~149 objets de jeu côté projet.
-
-Ordre de migration suggéré (dépendances croissantes) :
-
-1. ~~**Sprites compilés runtime**~~ **FAIT (01/08/2026)** — `DrawSprites`/`EraseSprites`/
-   `CheckSpritesRefresh`/`BgBufferAlloc` importés 1:1, branchés sur `gfxcomp` via
-   l'élément `<gfxcomp>` et l'index imageset, validés par `examples/sprites` sous toje.
-   Le chemin des **images compressées** est fermé le même jour : wrapper v1
-   `engine/graphics/codec/zx0_mega.asm` importé, décompresseur rendu indépendant de son
-   adresse de chargement, damier pleine largeur vérifié à l'écran. Contrainte découverte
-   et documentée : une image `rle`/`zx0` perd la transparence et écrase les lignes
-   entières qu'elle traverse — c'est un format de fond, pas de sprite.
-   Reste au portage R-Type : variantes miroir/décalage à l'échelle, palette, et le banc
-   runtime-vs-runtime « plein » (même scène des deux côtés, VRAM comparée).
-2. ~~**Object manager**~~ **FAIT (01/08/2026)** — `Obj_Run`(+macros), `ObjectDp`,
-   `ObjectMoveSync` et `RunPgSubRoutine` importés 1:1 à côté de `RunObjects` déjà en
-   place ; banc `examples/objects` (12 contrôles) validé sous toje, dont le montage de
-   page par objet, l'auto-suppression et l'enfantement en cours de parcours. Doc :
-   [`objects.md`](docs/lang/en/objects.md). Reste le **pipeline builder** (point 7),
-   qui est ce qui fait qu'un game mode écrit encore ses index à la main.
-3. ~~**Animation**~~ **FAIT (01/08/2026)** — `AnimateSpriteSync` et `moveByScript`
-   importés et exercés (banc `objects` 15/15). Deux sémantiques relevées, toutes
-   deux contre-intuitives : l'appel qui *charge* une animation consommait son
-   frame-drop sur place (v1 : D + reste − n), et le rechargement prenait le
-   frame-drop deux fois (D + c′ − n) — corrigés le 05/10/2026 : D + 1 + c′
-   borné à 0, chargement à D, les deux variantes égales à une trame (T19,
-   [`frame-drop-timer-carry.md`](docs/lang/en/migration/frame-drop-timer-carry.md),
-   r-type voit ses animations ralentir d'autant) ; et l'octet
-   de fin de segment d'un script coûte sa propre trame, il ne fait pas partie des
-   commandes de déplacement. Doc : [`objects.md`](docs/lang/en/objects.md).
-   `ObjectMoveAndFallSync` (05/10/2026) : la chute exacte sur k trames
-   (`g*k(k-1)/2` que `ObjectMoveSync` + gravité par trame manquait, T20).
-4. ~~**Scroll horizontal + tilemap**~~ **FAIT (01/08/2026)** — `scroll-map-buffered-even`
-   importé 1:1 et validé par `examples/tilescroll` sous toje (défilement mesuré à la
-   vitesse de R-Type, tuiles compilées par `gfxcomp`, deux cartes paire/impaire).
-   Découverte au passage, à retenir pour le point 7 : une carte dont chaque tuile est
-   un pointeur résolu au chargement produit **plusieurs kilo-octets de link data**
-   (5,3 Ko pour 24x8 tuiles), ce qui a obligé à donner une piste entière à la section
-   LINK et à tripler le pool mémoire. La v1 ne payait pas ça — ses cartes étaient
-   générées après placement, valeurs en dur. C'est un argument fort pour que le
-   pipeline builder fasse de même.
-
-   Reste : `scroll-map-buffered-odd` (variante non portée) et la migration des maps.
-
-   ~~Ancien texte~~ : porter `scroll-map-buffered-even/odd`. Il n'y a
-   pas d'alternative à arbitrer — `hscroll` ne fait pas ce travail. C'est une bande de
-   160 px qui **boucle sur elle-même**, compilée en tampon de code de taille fixe, sans
-   notion de tuile et incapable de représenter une carte plus longue qu'elle (celle du
-   niveau 1 fait 1584 px). Les deux coexistent : `hscroll` pour un fond qui se répète
-   (parallaxe, montagnes, ciel), le scroll tilemap pour le terrain jouable.
-5. ~~**Collisions**~~ **FAIT (02/08/2026)** — AABB (`collision-list`/`collision-do`,
-   matrice de potentiel, chirurgie de liste) exercé dans `examples/objects` T16 ;
-   terrain (`terrainCollision` monté, forme r-type : lvlMapWidth + impl + maps +
-   bitmap) exercé dans `examples/tilescroll` (hit/miss/disabled/impact.x=80 dérivés
-   à la main). Couplage résident↔monté rendu explicite : 8 EXTERNAL/EXPORT là où
-   v1 le cachait derrière `undefextern`. Boss-follow non exercé (offsets à 0).
-6. ~~**ObjectWave + caméra/AutoScroll**~~ **FAIT (02/08/2026)** — vague T17
-   (horloge de jeu, retard porté par `wave_frame_drop`, marqueur de fin) ;
-   AutoScroll + CheckCameraMove T18 (pas 8.8 à reste porté, arrêt à la borne,
-   drapeau de redraw une fois par tampon). `examples/objects` passe à 18/18 (20/20 le 05/10/2026).
-7. **Pipeline builder « jeu »** — conception EN COURS (02/08/2026). Objectif acté
-   avec l'auteur : le commun (moteur résident, joueur/armes/HUD, état persistant)
-   chargé une fois, chaque stage ne charge que son main + map + wave + ennemis.
-   Frontière **mesurée** sur le niveau 1 (script, pas jugement) : 4 voies —
-   compile-time (15 macros + ~23 équates partagées), stage→moteur (41 labels
-   d'API), **moteur→stage = 5 tables seulement** (`Obj_Index_Page/Address`,
-   `Img_Page_Index`, `Ani_Page_Index`, `Ani_Asd_Index` — le re-link global les
-   repointe à chaque échange, mécanisme déjà validé), et 13 équates figées à
-   l'assemblage (géométrie du pool à fixer pour le jeu ; `map_width` s'échappe
-   par la variable `scroll_max`). Verrou builder FAIT (02/08) :
-   unicité des exports par ensemble co-chargeable (même destination exacte =
-   alternatives, noms partageables) + `interface="true"` sur `<region>` (même
-   liste d'exports émise post-élagage, pas d'autre destination) — opt-in,
-   les patterns existants inchangés, 12 configs byte-identiques. Critère
-   d'acceptation : banc à deux stages synthétiques (échange, re-link, état
-   persistant, checkpoint sans disque). Les mains v1 02..08 sont des copies
-   figées du 1, mais les DONNÉES par-stage existent en vrai : tilemaps 02..08,
-   waves 01..08, collisions 1..3+ — les générateurs se conçoivent contre elles,
-   seule la découpe du résident est à l'aveugle. Ancrage décidé : **stages 1 et 2 réels**. Chaîne v1 retracée : in.png →
-   `leanscroll` (déjà un module v2 !) → tileset normal + pré-décalé + map
-   16 bits colonne-major → tuiles compilées par l'encodeur sprites (nommage
-   `_ND0` = gfxcomp) → buffer `[page][adresse]` (le générateur à écrire) ;
-   wave = asm importable tel quel ; terrain = PNG→bin (classe v1 petite).
-   Générateurs FAITS (02/08) : `grid` sur `<image>` gfxcomp (tranchage de
-   strip, exports générés) + élément `<tilemap>` (.bin leanscroll → table
-   .static, id 0 = 3 octets nuls, EXTERNALs auto-déclarés) —
-   `examples/tilescroll` converti à cette chaîne et revalidé sous toje ;
-   forme des données réelles confirmée (niv 1 : 132×15/245 tuiles, niv 2 :
-   96×15/191, 60-75 % de vides). Doc : `tilemaps.md`.
-   Banc d'échange stage1↔stage2 **CONSTRUIT** (02/08, commit ea32183) dans
-   `games/r-type/` : moteur résident + deux stages réels (cartes des niveaux
-   1-2 par leanscroll → `<gfxcomp grid>` → `<tilemap>`, waves de l'arcade,
-   index d'objets générés depuis les ObjID que ces waves citent), interface
-   en UN fichier (`api.asm`, EXPORT ou EXTERNAL selon `ENGINE_RESIDENT` —
-   dérive impossible entre les deux côtés). **VALIDÉ 5/5 sous toje** (02/08) :
-   scénario complet stage1 → stage2 → stage1 joué de bout en bout — t1 le
-   stage 1 tourne sur sa vraie wave (9 objets peuplés), t2 le stage 2 tourne
-   sur SES données (son bouchon, atteint par son propre index : c'est la
-   preuve du re-link), t3 l'état persistant traverse l'échange, t4 le retour
-   au stage 1 fonctionne (échange réversible), t5 le checkpoint sans disque
-   recale la wave à l'identique. L'art réel du niveau 1 s'affiche.
-   Deux découvertes du banc :
-   l'horloge de niveau survit désormais à l'échange (le moteur est résident,
-   la v1 le rechargeait et la remettait à zéro gratuitement), et la page DATA
-   du loader doit être montée avant de l'appeler (le stage vient d'y effacer
-   ses tampons d'écran). Limite assumée et mesurée : une tranche de 24
-   colonnes par niveau, faute de placement multi-pages des tuiles (le
-   bin-packing du pipeline v1 n'est pas porté) — un niveau entier pèse 245 et
-   304 tuiles compilées, très au-delà d'une page de 16 Ko. **Conception du
-   multi-pages écrite** (02/08) :
-   [`analyse-multipage-2026-08.md`](docs/lang/fr/analyse-multipage-2026-08.md)
-   — région à plusieurs pages (`<region pages="4">`) + élément `<pageset>` qui
-   compile objet par objet, range en premier ajustement et émet un direntry
-   par page ; le placement d'un symbole devient celui de son objet, pas de son
-   direntry, et `.static` est inchangé. L'auteur déclare un budget de pages,
-   jamais l'affectation d'un élément à une page. **Étapes 1-2 FAITES**
-   (commit c8f076d) : `<region pages="N">` et `StaticLink.pageOf(symbole)`,
-   `<tilemap>` perd son attribut `file` et écrit un littéral de page par
-   entrée. **La capacité multi-pages est acquise** (commit suivant) via
-   `range="a-b"` sur `<image grid=…>` : un tileset trop gros se déclare en
-   plusieurs direntries, chacun dans sa région. Prouvé sur machine — tileset
-   pair du stage 1 coupé sur les pages $06 et $09, même carte portant deux
-   pages, art intact, banc d'échange 5/5. **`<pageset>` FAIT** aussi : l'auteur déclare
-   un budget de pages et un contenu, le builder mesure, range en premier
-   ajustement et émet un direntry par page remplie (depuis le 09/08 le
-   répertoire mesure et range à la réservation des ids : le nombre de
-   membres est le résultat du rangement, plus le budget). Vérifié sur
-   l'ouverture du niveau 2 — celle qui échouait à 18 396 > 16 384 : 92+9
-   tuiles sur $06/$07 et 76+40 sur $08/$09, page pleine à 16 347/16 384,
-   banc 5/5. **Le niveau 1 ENTIER tourne** (02/08) : 132
-   colonnes, 244 + 303 tuiles rangées par pageset sur 3 et 5 pages, tables de
-   carte (11 880 o) dans leur propre page paginée — le scroll portait déjà une
-   page par plan. Caméra traversant les 1440 px (borne atteinte), art du
-   milieu de niveau juste, banc 5/5. **Le niveau 2 est entier aussi** :
-   96 colonnes, 190 tuiles paires sur 3 pages et 229 impaires sur 4.
-   **Comblement de queue** (décision auteur) : `<block>` dans un `<pageset>` —
-   indivisible, déclaré après le contenu réparti, il tombe dans ce qui reste,
-   et `gensymbols` écrit sa page en équate. Les waves des deux stages y logent
-   (pages 13 et 12). Défaut trouvé par là : un membre non rempli était un
-   fichier VIDE, donc exempté de l'éviction par destination — le membre du set
-   précédent survivait avec ses exports, adresse d'un set et page de l'autre ;
-   un octet de remplissage corrige. Deux trouvailles : une unité de mesure ne peut pas dépasser 64 Ko
-   (offsets LWOBJ16 sur 16 bits — le plan impair assemble à 65 533 o), d'où une
-   mesure par lots ; et deux pagesets d'une même région sont exclusifs *en tant
-   qu'ensembles*, pas par destination (une tuile donnée ne tombe pas sur la même
-   page dans les deux), d'où `StaticLink.declareExclusive`.
-   Analyse complète :
-   [`analyse-frontiere-stage-2026-08.md`](docs/lang/fr/analyse-frontiere-stage-2026-08.md).
-   Le projet vit dans **`games/r-type/`** (décision auteur, 02/08) avec une
-   arborescence RÉORGANISÉE qui reflète la frontière de chargement :
-   `src/common/` (résident : player, weapons, pickups, hud, fx, flow, state,
-   lib), `src/enemies/` (bibliothèque, un ennemi = un dossier avec SES tirs),
-   `src/stages/NN/` (main+stage+wave+map+terrain+musique ; 02..08 données
-   seules), `src/title/`. Traçabilité : `games/r-type/v1-map.csv` (quel
-   fichier v1 est devenu quel fichier v2 ; la promesse d'identité octet pour
-   octet est ABANDONNÉE depuis le 17/08/2026 — la campagne palette a réécrit
-   une centaine de PNG, et la migration v1 est close) ; non repris : .properties, .t2.asm,
-   mains 02..08, bancs v1, intermédiaires leanscroll. Sorties leanscroll
-   committées + invocations dans tools/ (décision auteur). Détail :
-   `games/r-type/readme.md`.
-8. **Portage du projet R-Type lui-même** : game-modes 00 (title) + loading + 01,
-   les ~60 objets du niveau 1, assets arcade, musiques YMM, SFX.
-9. Garder l'API de compensation de frame-drop (`gfxlock.frameDrop.max`,
-   `frame.gameCount`) **identique à la v1** : tout le timing gameplay (waves, boss,
-   end-stage, timestamps calés sur l'arcade) en dépend.
-
-Non requis pour R-Type minimal : MUCOM88/YM2608, MPLUS, MEA8000, SMPS/PCM/DAC,
-fonts engine, Exomizer (ZX0 suffit), parallaxe tilemap (le starfield est un objet projet).
+Le portage de R-Type a servi de banc à toute la migration v1 → v2 : sprites,
+objets, animation, scroll, collisions, waves, pipeline « jeu » (pagesets,
+tilemaps, frontière résident/stage), puis le jeu entier. Le jeu vit
+désormais dans son dépôt privé `wide-dot/r-type` ; le récit détaillé de
+cette section (« Reste à faire pour un R-Type minimal ») y est conservé,
+`doc/journal-claude-moteur.md`.
 
 ## Le loader relit ses secteurs partagés : corrigé (07/09/2026)
 
@@ -760,7 +593,7 @@ plein) ; `loader.dir.load` invalide la clé. Amorçage → title : 37,7 s →
 entrelacement, budget par créneau, où passe le temps, et le hook de barre
 de chargement à venir — est dans
 [`etude-chargement-2026-09.md`](docs/lang/fr/etude-chargement-2026-09.md),
-avec ses sondes dans `games/r-type/tools/loading/`.
+avec ses sondes dans `tools/loading/` du dépôt `wide-dot/r-type`.
 
 ## DKCONT coupe le moteur à chaque appel ; l'inertie de toje (07/09/2026)
 
@@ -1033,239 +866,12 @@ de place. Pas de réglage (décision auteur, 16/10) : r-type sort identique
 qui peut partager des octets), la passe de découverte aussi. Code :
 `ArenaPacker.packFiles`, tests `ArenaPackerFileTest`, manuel `scenes.md`.
 
-## Fidélité arcade : le banc trace contre trace (16/10/2026)
+## Fidélité arcade de R-Type
 
-Un boss se valide désormais en rejouant le combat de la borne octet pour
-octet. MAME enregistre la famille du boss à chaque trame depuis l'état
-d'entrée du stage, vaisseau épinglé (`pilot/tools/trace_actors.lua` du
-fork) ; `games/r-type/tools/fidelity/fidelity.py` décode cette trace en
-référence commitée (`tools/fidelity/ref/`), rejoue le port sous toje en lui
-injectant l'horloge globale et la graine de `random_ax` de la borne, et
-compare champ par champ à horloge égale. Possible parce que pendant un
-combat tous les tirages viennent du boss et que la borne réensemence son
-générateur à chaque multiple de 512 trames. Conditions côté port : calcul en
-REPÈRE ARCADE (seul le dessin convertit), une trame arcade à la fois dans
-l'ordre de la liste, une copie privée du générateur, des crochets nommés.
-Premier port : **Bellmite** (boss du stage 5, `src/enemies/bellmite/`),
-IDENTIQUE à la borne sur le combat complet (598 rendus, 212 002 valeurs) et
-sur une mise à mort injectée (168 rendus). 37 satellites et non 12 (la plate
-Ghidra se trompait, la trace l'a dit). Méthode :
-`games/r-type/doc/fidelite-arcade.md`. Piège de banc relevé au passage :
-détourner le PC après un `run_frames` peut tomber DANS le gestionnaire d'IRQ
-— le fil principal continue alors sur `Irq_sys_stack` et l'IRQ suivante
-écrase ses cadres ; reposer S, DP et CC avant tout saut (`goto_stage.py`
-corrigé, ses décalages en dur aussi).
-
-**Le Compiler (stage 4) réécrit 1:1 le même jour**, IDENTIQUE à la borne
-sur le combat sans tir jusqu'à la fin de ses scripts (1 684 rendus, 87 478
-valeurs) et sur la destruction des trois pièces (328 rendus, cascades
-comprises) ; le stage 4 passe toujours la main au 5. Son flux aléatoire est
-partagé avec le champ d'étoiles (`star_ctor`) : la trace porte les appelants
-de `random_ax` (`PILOT_RNGLOG`), la référence la valeur reçue par chacun, et
-le banc l'écrit dans D au crochet `compiler.Drawn` (une IRQ prise sur ce
-crochet y revient : doublon détecté par l'état du générateur). Les morts de
-lasers roulants sur les chaînes de gommes — que la borne garde à l'écran et
-que le TO8 ne dessine ni ne sonde pendant le combat — sont une entrée du
-banc (26). La spécification est un modèle Python
-(`tools/fidelity/models/compiler_model.py`) vérifié contre la trace avant
-toute ligne de 6809. Les quatre globales de l'ancien Compiler sont rendues
-(+157, +159, +160 libres) ; `globals.cplVariant` partageait l'octet +161
-avec `globals.tilesBehind`.
-
-**L'essaim de Dops (boss du stage 6) porté 1:1 le même jour**
-(`src/enemies/dop/`, wave 34 arcade à `$14F8`) : un gestionnaire lâche seize
-Dops, un toutes les 100 trames, et finit le stage à la trame 0x800. Le Dop
-ne tire rien au hasard ; il tourne sur sonde de tuiles. La trace MAME porte
-un vidage de la RAM de tuiles (`PILOT_TILEDUMP`) et le modèle Python
-(`tools/fidelity/models/dopswarm_model.py`) prouve que la carte de collision
-du TO8 rend les mêmes réponses dans l'arène ; le port sonde cette carte en
-coordonnées arcade (tranche assemblée par `INCLUDEBIN` à offset). IDENTIQUE
-au premier passage sous toje : combat complet (421 rendus) et mise à mort
-(448 rendus) ; le stage 6 passe au 7. Le clignotement de coup est une image
-par sens (16 poses ne tiennent pas dans la page).
-
-**Les Dops ordinaires et le Newt du stage 6 (17/10/2026)**
-(`src/enemies/dop/dops.asm`, `src/enemies/newt/`, unité `stage6.cast`) :
-45 + 23 lignes de wave, TRAJETS PRÉCALCULÉS. Ni l'un ni l'autre ne tire au
-hasard, la carte est fixe et la caméra vaut min(g/2, 2684), donc tout le
-trajet découle de la naissance. `tools/gen_stage6_paths.py` rejoue
-`run_dop`/`run_newt` hors ligne et n'écrit que les virages, les sorties et
-les gigues d'un Newt coincé (`src/stages/06/paths.asm`, 806 entrées,
-2,8 Ko, auto-vérifié). Le runtime fait un pas et une comparaison par trame,
-sans sonde. Fenêtre g 1500-2000 : 5,88 img/s en sondant, 6,69 avec un cache
-de sondes, **8,63 précalculé = la cadence du stage sans eux**. La fraction
-de y qu'un Newt hérite de l'occupant précédent de son enregistrement (que
-le runtime ne peut pas connaître) vient de la partie de référence. Sous
-toje, IDENTIQUES à la borne : Dops 118 rendus, Newts 136, 0 écart. Méthode
-et critères : `games/r-type/doc/fidelite-arcade.md`, « Quand le trajet ne
-dépend que de la naissance ».
-
-**Décor devant ou derrière les sprites, cellule par cellule (17/10/2026)**.
-La priorité arcade relevée sur la ROM (bits 6-7 de l'attribut de chaque
-cellule) : stages 1 à 5 tout devant (ce que le port faisait), stage 6 TOUT
-derrière, stages 7 et 8 mélangés (au 7, murs bleus derrière et machinerie
-devant ; au 8, dont le décor est le plan ARRIÈRE arcade, seulement le mur du
-fond de la salle du noyau derrière). Stage 6 : `stage.TILES_BEHIND` lève
-`globals.tilesBehind` à l'entrée, coût nul. Stages 7-8 : `<tilecols
-behind=masque>` (masque par `tools/gen_tile_priority.py`) sort les cellules
-« derrière » dans une seconde table de même forme, que
-`stage.frame.tilesBack` (`stage.TILES_PRIO`) donne à `DrawTilesCols` avant
-les sprites. Le moteur résident n'est pas touché ; coût estimé à ~350 cycles
-par trame. Seul écart : 10 et 12 tuiles du plan impair, des raccords d'un
-pixel, rangées à la majorité. Détail : `games/r-type/doc/etude-priorite-
-tilemap-2026-09.md` §8 ; manuel `tilemaps.md`.
-
-**Bronco (boss du stage 7) porté 1:1 le même jour** (`src/enemies/bronco/`,
-wave `$11A0`) : gestionnaire minuté, cinq lampes, débris lâchés au hasard,
-poursuivants, attaquant principal et ses sous-enfants scriptés
-(`move_by_script` lu sur des plages brutes de la ROM). Modèle Python
-identique sur tout le combat, puis port IDENTIQUE sous toje : combat complet
-(790 rendus, 658 tirages rejoués — le flux est partagé avec la wave) et mise
-à mort de l'attaquant (399 rendus) ; le stage 7 passe au 8. Images en
-CELLULES arcade (une cellule partagée compilée une fois) sur trois pages de
-`stage7.foes`, dessinées par une boucle résidente du main du stage
-(`bronco.DrawAll`, créneaux et boîtes résidents) ; le petit débris EST le bug
-(`lib.bug` repris), pursuer et geld reconvertis sur la palette du stage.
-Trace : une trame de jeu sur deux trames vidéo (ralentissement) se fusionne
-désormais (dernière capture, tous les appelants).
-
-**Le Bydo core (boss du stage 8) porté 1:1 le même jour** (`src/enemies/bydo/`,
-wave `$0040`) : une horloge qui déroule une chronologie (1000:6416 : quatre
-Win scriptés puis libérés, la bouche et ses tentacules, les poses de la tête,
-l'arrêt du défilement) et meurt au délai 0x2000 ou après 0x500 trames de
-Force dans la bouche ; phases de mort et cascade d'explosions (seuls tirages,
-rejoués). Modèle Python identique, puis port IDENTIQUE sous toje sur le
-combat complet jusqu'à la sortie du noyau (1 779 rendus, 440 tirages). La
-tête et les tentacules sont des PATCHS DU PLAN DE FOND arcade (recettes de
-tuiles à bit de priorité) : extraits par le moteur `tile_block` du catalog,
-convertis opaques (`arcade_to_sprites.py --opaque`), dessinés après les
-tuiles par un crochet opt-in de `stage-main.asm` (`stage.FRONT` /
-`stage.frameFront`, stage 8 seul) à leur place sur la carte. Deux pages de
-`stage8.foes` ; les trois poses du Win et leur variante décalée d'un pixel
-(17/10/2026, choisie sur la parité comme `BuildSprites`) dans `stage8.win`,
-arène `stage8.gfx` ; `PILOT_BGDUMP` vide la RAM du plan de fond de la borne.
-**Et la fin du jeu derrière lui** (`src/stages/08/ending/`) : à la mort,
-l'épave de la salle est un `tilemap.stamp` (`<tilepatch>` sur les colonnes
-55-59 de la carte : la colonne 55 et le premier pixel de la 60 portent les
-coutures du plan impair, décalé d'un pixel — sans elles un trait noir suit
-l'épave au défilement) ; le défilement repart sur une queue vide de la carte
-(120 px) sous le fondu palette du décor que lance le noyau ; l'objet commun
-de fin a une voie `FADE_ENDING` (voie palette sans attente de caméra,
-`globals.endFade`, puis `STATUS_ENDING`, sans relevé) ; musiques de boss
-(0x19) et de fin (« Like a Hero », 0x1A, `PILOT_SNDLOG`) ; le stage 8
-joue alors la séquence de la borne — étoiles (variant 3), flotte de 18 R-9,
-générique écrit avec la police du HUD (`stage.ENDING` coupe bandeau et
-masque), « ENJOY THE BONUS GAME AGAIN » — puis repart au stage 1, score
-gardé. Directeur et flotte IDENTIQUES à la borne sous toje (753 rendus) ;
-enchaînement complet vérifié (stage 8 → stage 1, trame 13 300). L'horloge
-de wave arcade suit le défilement : les créations de la fin sont des trames
-fixes après la mort du noyau. `PILOT_PEEK` trace des globales de la borne.
-
-**Le Mikun porté (17/10/2026)** (`src/enemies/mikun/`, direntries
-`stage8.mikun` + `stage8.mikun.img` — 21,6 Ko avec les variantes décalées
-d'un pixel, qui ne coûtent aucun cycle — dans l'arène `stage8.gfx`, où les
-tuiles du stage 8 laissent la place ; `stage8.foes` ne tenait plus) : les
-32 lignes de wave du stage 8 créent chacune un émetteur invisible, ancré au
-décor (0x2ED4 = 0x2ED0 au stage 8, mesuré sous MAME), qui lance un Mikun
-vers le joueur toutes les 48 à 320 trames. Le compte initial est
-`random_ax` ET (période − 1) : un masque, pas un modulo, et un compte nul ne
-lance jamais. L'émetteur est le seul à tirer pendant le stage (trace MAME) :
-une copie privée de `random_ax`, réensemencée aux multiples de 512 du
-compteur global (phase de l'état d'entrée, 7834), rend les 104 naissances
-du stage aux instants de la borne (1,6 trame d'écart moyen, granularité du
-rendu). Vitesse par difficulté, deux poses par direction (28 distinctes,
-catalog `mikun/frames`), tables par `tools/gen_mikun.py` (le pool 9010 est
-identique à celui que le wick avait recopié à la main). Cadence du stage
-−8 %, −17 % au plus chargé (14 émetteurs, ~10 Mikun) ; une pose coûte 559
-cycles en moyenne. Le stage 8 est entièrement porté, à l'exception des
-palettes cycliques (écart documenté).
-
-**Les panneaux de la ville du stage 7 : abandonnés (17/10/2026, décision
-auteur)**. Portés puis retirés le même jour : les débris que la borne écrit
-dans son plan avant sont visuels à 98 % (610 de leurs 625 cellules tombent
-sur du mur), et la cascade d'explosions sortait de l'écran (panneaux collés
-aux bords, notre moteur jette un sprite qui n'est pas entier). Restait une
-vraie zone mortelle de 64x64 (40:8D31, 32 trames, ~21 lignes dans le
-couloir) : abandonnée avec le reste. Leurs 30 lignes de wave restent,
-branchées sur l'objet vide (la file d'une ligne par trame les compte). La
-place va aux variantes décalées d'un pixel du Boldo et des lampes de Bronco
-(`stage7.bronco.lamps`, leur page à elles ; `bronco.DrawAll` prend ND1 sur
-x impair pour un créneau marqué 2). Le mode `<tilepatch columns>` qui
-portait les débris n'a pas été gardé.
-
-**Le Fast du stage 7 (17/10/2026)** (`src/enemies/fast/`, 6 lignes de
-wave) : dérive à 2 px/trame arcade, sonde le décor 0x20 px devant, s'arrête
-et s'évade en Y au sens tiré sur le bit 0 du compteur global, rebondit sur
-sonde de côté. Les trois évasions du début de stage tombent à la trame et
-dans le sens de la borne (bas, haut, bas), vérifiées sous toje contre la
-trace MAME (`probe_foreground_tile` rejouée en Lua). Il a fallu quatre
-corrections qui servent ailleurs : (1) la parité se prend trame rejouée par
-trame rejouée, pas sur le compteur du rendu ; (2) l'origine du compteur est
-`frame_time`, horloge en DEMI-trames de la borne dont l'entier avance aux
-trames impaires — une trame avant l'état d'entrée de référence (GC0 du
-stage 7 = 63830, pas 63831) ; (3) **la borne ne tire qu'une ligne de wave
-par trame** (tick_object_wave 40:1BA7) : `OBJECTWAVE_ONE_PER_FRAME`, option
-de l'engine posée par r-type, étale les lignes simultanées d'une trame dans
-l'ordre de la table (20 lignes du stage 7 bougent, panneaux compris ; quatre du boss du stage 1,
-de 1-2 trames, dans le bruit de rendu de ses pièces) — 26 octets du résident,
-qui n'avait plus que 24 libres : deux `ldd #0` et une boucle de
-`Collision_ClearLists` resserrés, marge 1 octet sous le lecteur YMM ; (4)
-`TERRAIN_LEFT_MARGIN` : les tables de colonne de terrainCollision commencent
-à l'écran 8, une sonde à l'écran 0-7 lisait la queue de `yOffset` (une
-colonne au loin) — huit entrées de plus par unité de collision lisent
-l'octet de carte précédent, comme la borne. Et l'abscisse de naissance
-recule de la caméra parcourue pendant le retard (`late × $30`), comme le
-Cytron.
-
-**Le Mid des stages 5 et 7 (17/10/2026)** (`src/enemies/mid/`, `lib.mid`
-de l'arène commune, 16 lignes de wave) : il file à −2 px/trame arcade ANCRÉ
-À L'ÉCRAN (tiré par la caméra, `x += caméra − caméra_old`), tourne sur huit
-poses en phase sur le compteur global, et lâche un laser horizontal (40:E6AB,
-−6 à −12 px/trame, période 48 à 8 trames selon la difficulté, liste
-« intouchable » : le contact tue, les armes passent). Le laser est le même
-objet né avec l'identifiant de son père et un sous-type marqué. Naissances
-et tirs IDENTIQUES à la borne à la trame sur les 14 Mid du stage 5 (trace
-MAME contre point d'arrêt toje), 3 377 octets, 8,3 img/s au plus chargé
-(sept Mid et leurs lasers). Le catalog de re.arcade.r-type déclarait une
-seule image de laser : quatre (paires de cellules, 0x184CE + 12·n).
-
-**Le Boldo du stage 7 (17/10/2026)** (`src/enemies/boldo/`, `stage7.boldo`,
-3 847 octets) : l'obstacle flottant, 200 PV, sans tir. Il naît À GAUCHE de
-l'écran (x 0x110, à moitié dehors), ancré au décor, et avance de 0,75
-px/trame tant que le décor 64 px devant lui est libre. Notre moteur de
-sprites ne rogne pas : comme la borne (quatre recettes de deux cellules), il
-se dessine en QUATRE TRANCHES de 12 px (`tools/gen_boldo_slices.py`), trois
-esclaves nées avec son identifiant ; il entre ainsi colonne par colonne.
-Les 200 PV : 125 dans la boîte, la réserve recharge (le réacteur du stage 3).
-Sa mort reprend la chaîne de la borne telle quelle — un curseur avancé de
-deux octets pour des paires de quatre : dix-sept petites explosions qui se
-chevauchent, plus la grosse grise et brune. Trajectoire comparée à MAME :
-même pente, écart constant de ~1 px TO8 (la fraction que la borne hérite de
-l'occupant précédent du slot).
-
-**Le reste de l'inventaire du stage 7 (17/10/2026)** : les deux
-`cyclingPalette` et le `palette_blackout_15_bg_cadence3` d'avant le boss
-n'agissent que sur la palette de tuiles 11, celle du SEUL plan de fond arcade
-(le mur vert de la ville) — que nous ne dessinons pas, fond noir par décision
-auteur : sans objet, noté dans la wave. L'ObjID 39 (40:F366) est une
-transition MUSICALE, pas un fondu : au premier appel de la partie 0x21 puis
-0x20, ensuite les pièces du stage (stage 7 : 0x15 à la trame 4800, 0x14 à
-5056, puis le boss 0x19 à 5281, mesuré sous MAME). L'arrangement ADNZ n'a
-qu'un morceau par stage : rien à jouer sans nouvelles pièces (stages 2, 4-7).
-La doc son appelle 0x1A « stop » (c'est « Like a Hero ») et 0x21 « fondu »
-(non observé ici : la trace partait d'un état où la porte était déjà levée).
-
-**Le second tour (16/10/2026)** : `globals.loop`, le compteur de tours de la
-borne (0x2F42 → second_loop), avancé par la fin du jeu et par le continue
-accepté ; `globals.difficulty` suit la formule de la borne, (tour ? 2 : 0) +
-(Force ≥ 2 ? 1 : 0), recalculée par `_difficulty.update` (mesuré sous MAME :
-0 au premier tour sans Force, 2 au second). Les ennemis qui figeaient la difficulté 0 la lisent
-(Shell, Cytron, Geld, Compiler, Bellmite) ; les formes de second tour sont
-portées (PV Zoid 70 et réacteur 250 — réserve au-delà des 126 d'une boîte —,
-noyau et Outslay plus rapides), les tourelles de proue réapparaissent, et la
-fin du second tour mène au game over, et le numéro de stage effectif prend +8
-(scores par stage, récapitulatif, « STAGE 9 CLEARED »). Règle de l'auteur :
-du 1:1 avec la borne tant que c'est techniquement possible. Détail : `games/r-type/doc/fidelite-arcade.md`.
+Section sortie le 18/10/2026 avec le jeu : `wide-dot/r-type`,
+`doc/journal-claude-moteur.md` (le banc trace contre trace, les boss, le
+second tour). Le savoir sur la borne va dans `wide-dot/re.arcade.r-type`,
+`referentiel/`.
 
 ## Dettes / pièges connus
 
