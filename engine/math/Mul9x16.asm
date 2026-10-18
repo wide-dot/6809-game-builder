@@ -43,41 +43,41 @@ Mul9x16
         tfr   x,d   ; *1
         rts
 @pos                
-        stb   @m    ; positive multiplier
-        stx   @m_h
+        stb   <@m    ; positive multiplier
+        stx   <@m_h
         bpl   @mul  ; positive result
-        ldd   @m_h  ; negative multiplicand
+        ldd   <@m_h  ; negative multiplicand
         nega
         negb
         sbca  #0
-        std   @m_h
-        ldb   @m
+        std   <@m_h
+        ldb   <@m
 @neg1   bsr   @mul
         coma        ; negative result
         comb
-        neg   @r
+        neg   <@r
         bne   >
         addd  #1
 !       rts
 @neg    
         negb        ; negative multiplier
-        stb   @m
-        stx   @m_h
+        stb   <@m
+        stx   <@m_h
         bpl   @neg1 ; positive multiplicand
-        ldd   @m_h  ; negative multiplicand and positive result
+        ldd   <@m_h  ; negative multiplicand and positive result
         nega
         negb
         sbca  #0
-        std   @m_h
-        ldb   @m
+        std   <@m_h
+        ldb   <@m
 @mul 
-        lda   @m_l  ; get lsb's of multiplicand
+        lda   <@m_l  ; get lsb's of multiplicand
         mul         ; multiply lsb's
-        std   @r_l  ; save partial product
-        lda   @m    ; get multiplier
-        ldb   @m_h  ; get msb's of multiplicand
+        std   <@r_l  ; save partial product
+        lda   <@m    ; get multiplier
+        ldb   <@m_h  ; get msb's of multiplicand
         mul         ; multiply msb's
-        addb  @r_l  ; add lsb's to msb's of previous partial product
+        addb  <@r_l  ; add lsb's to msb's of previous partial product
         adca  #0    ; add carry to msb's
         ;std   @r_h  ; save sum of partial products 
         rts

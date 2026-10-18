@@ -40,9 +40,16 @@ Comment the directive out, leave a `; V2-DEVIATION:` marker and record it in
                       ; implicit-direct operands assemble extended)
 ```
 
-Do not "fix" the resulting extended operands by hand — that is a renaming-phase
-optimisation, not a migration step, and hand edits break the 1:1 diff against
-v1.
+Do not "fix" the resulting extended operands by hand : the runtime `DP` is
+not written in the source, and a guess breaks the 1:1 diff against v1 for
+nothing. Since 2026-10-18 the engine's v1 files get their direct operands back
+from v1 itself : `ci/force-direct.py` reads v1's listings, finds each
+instruction v1 assembled direct without a `<`, and adds the `<` to the same
+line of the v2 copy when that line is still v1's text and every v1 listing
+agrees. The `DP` is v1's, line by line — `$9F` in the game loop, `$E7` in an
+IRQ handler — nothing is guessed. `--check` says whether an operand is left.
+v2-only files and the KEPT-V2 ones stay out of it ; their `DP` is v2's own
+contract (see [direct-page](../direct-page.md)).
 
 ## Proof
 
