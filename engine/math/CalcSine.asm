@@ -1,19 +1,16 @@
 ; ---------------------------------------------------------------------------
-; Subroutine to calculate sine and cosine of an angle
-; b = input byte = angle (360 degrees == 256)
-; d = output word = 255 * sine(angle)
-; x = output word = 255 * cosine(angle)
+; CalcSine - B an angle (256 a turn) -> D 255 * its sine, X 255 * its cosine
 ; ---------------------------------------------------------------------------
 
 CalcSine
         ldx   #Sine_Data
-        anda  #0
+        clra
         aslb
         rola
         leax  d,x
         ldd   ,x     ; sin
         leax  $80,x
-        ldx   ,x     ; cos
+        ldx   ,x     ; cos : a quarter turn on
         rts
 
 Sine_Data
