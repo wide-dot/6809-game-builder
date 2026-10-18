@@ -217,7 +217,6 @@ render_ymirror_mask           equ $02 ; (bit 1) DEPENDENCY should be bit 1 - tel
 
 render_playfieldcoord_mask    equ $08 ; (bit 3) tell display engine to use playfield (1) or screen (0) coordinates
 render_xloop_mask             equ $10 ; (bit 4) (in screen coordinate) tell display engine to hide sprite when x is out of screen (0) or to display (1)  
-render_no_range_ctrl_mask     equ $20 ; (bit 5) tell display engine to skip out of range controls (this may lead to memory corruption BEWARE)
 render_subobjects_mask        equ $40 ; (bit 6) tell display engine to render subobjects for this object
 render_hide_mask              equ $80 ; (bit 7) tell display engine to hide sprite (keep priority and mapping_frame)
  endc

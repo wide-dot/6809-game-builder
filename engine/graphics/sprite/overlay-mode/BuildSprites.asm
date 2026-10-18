@@ -1,662 +1,371 @@
 * ---------------------------------------------------------------------------
-* CheckSpritesRefresh
-* -------------------
-* Subroutine to determine if sprites are gonna be erased and/or drawn
-* Read Display Priority Structure (back to front)
-* priority: 0 - unregistred
-* priority: 1 - register non moving overlay sprite
-* priority; 2-8 - register moving sprite (2:front, ..., 8:back)  
+* BuildSprites
+* ------------
+* Draws the registered sprites over the screen, back to front : priority 8
+* down to 1 (2 : front, 1 : the front pass when BuildSprites.FRONT_PASS is
+* defined). A drawn sprite gets its hide flag : DisplaySprite clears it when
+* the object is displayed again. Nothing is saved nor erased (overlay mode).
 *
-********************************************************************************
-* x_pixel and y_pixel coordinate system
-* x coordinates:
-*    - off-screen left 00-2F (0-47)
-*    - on screen 30-CF (48-207)
-*    - off-screen right D0-FF (208-255)
+* A sprite is placed in playfield coordinates (x_pos, y_pos, against the
+* camera) or in screen coordinates (x_pixel 48-207, y_pixel 28-227) ; a
+* multisprite object (render_subobjects_mask) draws its children, each a
+* playfield position and an image set, under the object's flags.
 *
-* y coordinates:
-*    - off-screen top 00-1B (0-27)
-*    - on screen 1C-E3 (28-227)
-*    - off-screen bottom E4-FF (228-255)
-********************************************************************************
 * input REG : none
+* V2-DEVIATION (18/10/2026) : rewritten from v1's : one routine a step,
+* shared by the single and the multisprite paths (BuildSprites.pickRoutine, BuildSprites.drawPlayfield,
+* BuildSprites.drawAt) ; the dead no-range path and _mapping_frame are gone.
 * ---------------------------------------------------------------------------
 
-_image_center_parity     equ dp_engine    ; word - a byte with left zero pad byte
-_image_subset            equ dp_engine+2  ; word 
-_mapping_frame           equ dp_engine+4  ; word - ptr to page and routine address
-_page_draw_routine       equ dp_engine+6  ; byte - compilated sprite page
-_draw_routine            equ dp_engine+7  ; word - compilated sprite routine address
-_x1_pixel                equ dp_engine+9  ; word
-_y1_pixel                equ dp_engine+11 ; word
-_x_size                  equ dp_engine+13 ; word - a byte with left zero pad byte
-_y_size                  equ dp_engine+15 ; word - a byte with left zero pad byte
-_x_pos                   equ dp_engine+17 ; word
-_y_pos                   equ dp_engine+19 ; word
-_image_set               equ dp_engine+21 ; word
-_nbchild                 equ dp_engine+23 ; byte
-_render_flags            equ dp_engine+24 ; byte
-_ycorr                   equ dp_engine+25 ; byte - V2-DEVIATION : $28 (256 lines) if the screen line is negative, else 0
+BuildSprites.centerParity       equ dp_engine    ; word - a byte with left zero pad byte
+BuildSprites.subset             equ dp_engine+2  ; word
+BuildSprites.imagePage          equ dp_engine+4  ; byte - a multisprite object's image page
+BuildSprites.drawPage           equ dp_engine+6  ; byte - compilated sprite page
+BuildSprites.drawRoutine        equ dp_engine+7  ; word - compilated sprite routine address
+BuildSprites.x1                 equ dp_engine+9  ; word
+BuildSprites.y1                 equ dp_engine+11 ; word
+BuildSprites.xSize              equ dp_engine+13 ; word - a byte with left zero pad byte
+BuildSprites.ySize              equ dp_engine+15 ; word - a byte with left zero pad byte
+BuildSprites.x                  equ dp_engine+17 ; word
+BuildSprites.y                  equ dp_engine+19 ; word
+BuildSprites.children           equ dp_engine+23 ; byte
+BuildSprites.flags              equ dp_engine+24 ; byte
+BuildSprites.lineCorrection     equ dp_engine+25 ; byte - V2-DEVIATION : $28 (256 lines) if the screen line is negative, else 0
 
-; V2-DEVIATION: setdp neutralized, the obj target rejects it. Extended
-; addressing stays correct, and operands explicitly forced with < are unaffected.
-;       setdp dp/256
-; V2-DEVIATION (19/08/2026, passe de vitesse sur le chemin single-sprite —
-; le pendant overlay de la campagne v1 b548b310 sur CheckSpritesRefresh) :
-;   - les temporaires dp_engine et les variables glb_* sont adressees en
-;     DIRECT force (<) : le loader v2 pose DP=$9F avant le game mode
-;     (docs/lang/en/direct-page.md), -1 cycle et -1 octet par acces ;
-;   - draw_routine voyage dans Y jusqu'a l'appel (Y est libre sur tout le
-;     chemin single) : jsr ,y remplace le jsr [etendu indirect], et le
-;     store/reload de _draw_routine disparait ;
-;   - _mapping_frame n'a AUCUN lecteur en overlay (pas de rsv_ d'effacement) :
-;     son store, mort, sort du chemin single ;
-;   - le fetch de page d'imageset passe par abx ;
-;   - les bornes ecran se testent en referentiel DECALE : subb #bas puis une
-;     comparaison NON SIGNEE a la largeur remplace chaque paire haut/bas.
-; Le chemin multisprite : adressage DIRECT force aussi (18/10/2026, -47 octets).
+; V2-DEVIATION : setdp neutralized (obj target) ; every dp access is forced direct (<), DP $9F
 
 BuildSprites
-        anda  #0         ; init tmp variables
-        sta   <_x_size
-        sta   <_y_size
-        sta   <_image_center_parity
-
-        ; LES BORNES DE LA PASSE, une fois pour toutes — voir BS_xlo plus bas.
+        clra                                ; the sizes' high bytes
+        sta   <BuildSprites.xSize
+        sta   <BuildSprites.ySize
+        ldd   <glb_camera_x_pos             ; V2-DEVIATION (24/08/2026) : the pass's bounds, once
+        subd  <glb_camera_x_offset
+        subd  <glb_camera_x_offset
+        std   BuildSprites.xLow                        ; x + x1 below : out
         ldd   <glb_camera_x_pos
-        subd  <glb_camera_x_offset
-        subd  <glb_camera_x_offset
-        std   BS_xlo
-        ldd   <glb_camera_x_pos            ; les deux offsets s'annulent dans la
-        addd  #160                         ; borne haute : ils n'y sont pas
-        std   BS_xhi
+        addd  #160
+        std   BuildSprites.xHigh                        ; x + x1 + x_size from : out
         ldd   <glb_camera_y_pos
         subd  <glb_camera_y_offset
-        std   BS_ylo
+        std   BuildSprites.yLow                        ; y + y1 below : out ; y - BuildSprites.yLow : the screen line
         addd  #200
-        std   BS_yhi
-
+        std   BuildSprites.yHigh                        ; y + y1 + y_size from : out
  IFDEF BuildSprites.FRONT_PASS
-        ; V2-DEVIATION (07/10/2026, sonic-2) : priority 1 has a pass of its
-        ; own, run by the game after its high priority tiles
-        ; (BuildSprites.front set) : Sonic 2's screen texts (the results, GAME
-        ; OVER) carry the art's priority bit, the Mega Drive draws them over
-        ; the planes' high priority tiles. The first pass leaves them out.
-        ; Defined by the game alone : the default is unchanged.
-        tst   BuildSprites.front
+        tst   BuildSprites.front            ; V2-DEVIATION (07/10/2026) : priority 1 drawn by a pass of its own
         beq   @back
         ldu   Tbl_Priority_Last_Entry+2
-        beq   >
-        jmp   @process
-!       rts
+        lbne  @process
+        rts
 @back
  ENDC
-        ldu   Tbl_Priority_Last_Entry+16
-        beq   >
-        jsr   @process   
-!       ldu   Tbl_Priority_Last_Entry+14
-        beq   >
-        jsr   @process   
-!       ldu   Tbl_Priority_Last_Entry+12
-        beq   >
-        jsr   @process   
-!       ldu   Tbl_Priority_Last_Entry+10
-        beq   >
-        jsr   @process   
-!       ldu   Tbl_Priority_Last_Entry+8
-        beq   >
-        jsr   @process               
-!       ldu   Tbl_Priority_Last_Entry+6
-        beq   >
-        jsr   @process      
-!       ldu   Tbl_Priority_Last_Entry+4
-        beq   >
-        jsr   @process  
+        ldx   #Tbl_Priority_Last_Entry+16   ; back to front : priority 8 first
+@level  ldu   ,x
+        beq   @nextlevel
+        pshs  x
+        jsr   @process
+        puls  x
+@nextlevel
+        leax  -2,x
  IFDEF BuildSprites.FRONT_PASS
-!       rts                                ; priority 1 : the front pass
+        cmpx  #Tbl_Priority_Last_Entry+4    ; priority 2 last, 1 is the front pass's
  ELSE
-!       ldu   Tbl_Priority_Last_Entry+2
-        beq   >
-        jmp   @process
-!       rts
+        cmpx  #Tbl_Priority_Last_Entry+2    ; priority 1 last
  ENDC
-@nextobject1
-        ldu   rsv_priority_prev_obj,u
-        bne   @process   
+        bhs   @level
         rts
+;
+; the objects of a priority level, U its last one, walked to its first
 @process
         lda   render_flags,u
-        bita  #render_hide_mask             ; skip hidden sprites
-        bne   @nextobject1 
-        bita  #render_subobjects_mask       ; is this a child multisprite sprite object?
+        bita  #render_hide_mask             ; hidden : skipped
+        bne   @nextobject
+        bita  #render_subobjects_mask
         lbne  @multisprite
-        ; BUGFIX (2026-08-23) : image_set==0 means "no image" (see constants.asm).
-        ; DisplaySprite returns early in that case and therefore never unregisters
-        ; an object that was registered while it still had an image, so a stale
-        ; entry stays in the DPS. Without this guard the null pointer is
-        ; dereferenced against whatever sits at offset $0000 of the object image
-        ; page: harmless zeros on a RAM page (.fd/.sd), but the cartridge header
-        ; on a T2/ROM build, which sends the engine into an erased flash bank.
-        ldx   image_set,u
-        beq   @nextobject1
-        sta   <_render_flags
-;
-; ****************************************************
-; SingleSprite rendering
-; ----------------------
-; ****************************************************
-;
-        ; compute imageset
-        ; ----------------
-;
-;       load image index for this object       
-        ldx   #Img_Page_Index
-        ldb   id,u                          ; get object id
+        ldx   image_set,u                   ; no image : nothing to draw
+        beq   @nextobject
+        sta   <BuildSprites.flags
+        ldx   #Img_Page_Index               ; the image's page, then its set
+        ldb   id,u
         abx
-        lda   ,x                            ; retrieve page that store imagesets for this object id
+        lda   ,x
         _SetCartPageA
-        ldx   image_set,u                   ; get current imageset associated with this object
-;
-;       store image properties in dp
+        ldx   image_set,u
         ldd   image_x_size,x
-        sta   <_x_size+1
-        stb   <_y_size+1
+        sta   <BuildSprites.xSize+1
+        stb   <BuildSprites.ySize+1
         ldb   image_center_offset,x
         sex
-        std   <_image_center_parity         ; store image center parity
-;
-;       set the active image subset based on mirror flags
-        lda   <_render_flags
+        std   <BuildSprites.centerParity
+        lda   <BuildSprites.flags                ; the subset of its mirrors
         anda  #render_xmirror_mask|render_ymirror_mask
         ldb   a,x
-        beq   @nextobject1                  ; no defined subset images
-        leax  b,x                           ; read imageset index that match image mirror
-        stx   <_image_subset
-;
-        ; compute mapping frame
-        ; ---------------------
-        ; The image subset reference up to 4 version of an image
-        ; Draw/Erase, Draw routines and shifted version by 1 pixel of these two routines
-        ; The following code set the appropriate routine that will draw the image
-        ; First thing is to check if the image position is odd or even
-        ; and select the appropriate routine. If no routine is found, it will select the avaible routine.
-        ; -- only use the Draw routine here --
-;
-        lda   <_render_flags
-        anda  #render_playfieldcoord_mask
-        beq   @a                            ; branch if position is already expressed in screen coordinate
-        ldd   x_pos,u 
- IFDEF BuildSprites.EVEN_X
-        ; V2-DEVIATION (11/10/2026) : the playfield x floored to an even pixel,
-        ; as the game's camera is (even) : a sprite following the camera keeps
-        ; its place on screen. Without a shifted variant, an odd x - camera
-        ; was rounded by the image's centre parity, the other way than the
-        ; camera's : 1 pixel apart became 2 (Sonic 2's main character shaking
-        ; when the camera follows him, its steps even, his not).
-        andb  #$FE
- ENDC
-        std   <_x_pos
-        subd  <glb_camera_x_pos
-        bra   @b
-@a      ldb   x_pixel,u                     ; compute mapping_frame 
-@b      eorb  <_image_center_parity+1       ; case of odd image center switch shifted image with normal
-        andb  #1                            ; index of sub image is encoded in two bits: 00|B0, 01|D0, 10|B1, 11|D1         
-        aslb                                ; set bit1 for 1px shifted image  
-        orb   #1                            ; set bit0 for overlay sprite
-@c      lda   b,x
-        beq   @nodefinedframe
-        leax  a,x                           ; read image subset index
-        bra   >
-@nodefinedframe
-        eorb  #%00000010                    ; check if there is an alternate shifted image available
-        ; V2-DEVIATION (20/08/2026, bugfix — v1 l'a aussi, dormant) : deux
-        ; defauts du repli. (1) la direction se testait sur Z, qui ne vient
-        ; JAMAIS avec les variantes draw (bit0 toujours pose) : le repli
-        ; decale -> non-decale prenait inc au lieu de dec — tout sprite draw
-        ; sans variante decalee tombait 2 px a gauche aux positions impaires
-        ; (vu sur le PUSH FIRE du title, 64 px, contre sa version bdraw v1).
-        ; Le test porte sur le BIT de decalage. (2) l'ajustement etait un
-        ; inc/dec du seul octet bas d'un mot signe : le wrap ($FF -> $00)
-        ; laissait l'octet haut rassis (-1+1 donnait -256) — l'ajustement
-        ; se fait en mot. Diagnostique par le balayage d'ancrage
-        ; d'examples/overlay (encodeurs et en-tetes innocentes, dX=0).
-        ; Code partage avec le chemin multisprite : BSP_parityFallback.
-        jsr   BSP_parityFallback
-@e      lda   b,x
-        beq   @nextobject1                  ; no defined frame, nothing will be displayed
-        leax  a,x                           ; read image subset index
-!
-        lda   page_draw_routine,x           ; save compiled sprite routine
-        sta   <_page_draw_routine
-        ldy   draw_routine,x                ; Y porte la routine jusqu'a l'appel
-;
-        ; check out of range position 
-        ; ---------------------------       
-        clr   <_ycorr                       ; V2-DEVIATION : a line on the screen, see _ycorr
-        lda   <_render_flags
-        bita  #render_no_range_ctrl_mask
-        lbne  @computescreenaddress         ; skip out of range control if option is set
-        anda  #render_playfieldcoord_mask
-        lbeq  @screencoordinates            ; branch if position is already expressed in screen coordinate ; V2-DEVIATION: beq->lbeq (extended DP accesses grow the range)
-;
-        ; playfield coordinates
+        beq   @nextobject
+        leax  b,x
+        stx   <BuildSprites.subset
+        lda   <BuildSprites.flags
+        bita  #render_playfieldcoord_mask
+        beq   @screen
         ldd   y_pos,u
-        std   <_y_pos
-@processPlayfieldCoordinates
-        ldx   <_image_subset
-        ldb   image_subset_x1_offset,x
-        sex
-        std   <_x1_pixel
-        ldb   image_subset_y1_offset,x
-        sex
-        std   <_y1_pixel
-;
-        ; V2-DEVIATION (24/08/2026) : les bornes sont PRECALCULEES (BS_xlo..).
-        ; La v1 recombinait ici, par sprite, la camera et ses offsets — quatre
-        ; valeurs qui ne bougent pas de la passe.
-        ;
-        ; V2-DEVIATION (31/08/2026) : xloop en repere PLAYFIELD = des tests de
-        ; RECOUVREMENT. Le test strict exige le sprite ENTIER dans la fenetre :
-        ; une bande du dobkeratops entrant par la droite restait invisible
-        ; jusqu'au dernier pixel puis POPPAIT d'un bloc. Avec xloop, un sprite
-        ; qui CHEVAUCHE la fenetre passe — le dessin gere le debordement (wrap
-        ; de ligne, invisible sur le ciel noir de la salle). On ne SAUTE pas
-        ; les tests pour autant : un sprite entierement dehors reste elimine,
-        ; la conversion playfield->ecran tronque a l'octet et aliaserait les
-        ; lointains dans la fenetre.
-        lda   <_render_flags
-        bita  #render_xloop_mask
-        beq   @xStrict
-        ldd   <_x_pos
-        addd  <_x1_pixel
-        cmpd  BS_xhi
-        bge   @nextobject              ; bord gauche deja au-dela de la fenetre
-        addd  <_x_size
-        cmpd  BS_xlo
-        blt   @nextobject              ; bord droit avant la fenetre
-        bra   @yTests
-@xStrict
-        ldd   <_x_pos
-        addd  <_x1_pixel
-        cmpd  BS_xlo
-        blt   @nextobject
-;
-        addd  <_x_size
-        cmpd  BS_xhi
-        bge   @nextobject
-;
-@yTests ldd   <_y_pos
-        addd  <_y1_pixel
-        cmpd  BS_ylo
-        blt   @nextobject
-;
-        addd  <_y_size
-        cmpd  BS_yhi
-        bge   @nextobject
-;
-;       convert playfield position to screen position
-;       ---------------------------------------------
-        ldd   <_y_pos 
-        addd  <glb_camera_y_offset
-        subd  <glb_camera_y_pos        
-        anda  #$28                          ; V2-DEVIATION : a negative line, see _ycorr
-        sta   <_ycorr
- IFDEF BuildSprites.HALFLINE
-        andb  #$FE                          ; V2-DEVIATION : an even line, see below
+        std   <BuildSprites.y
+        ldd   x_pos,u
+ IFDEF BuildSprites.EVEN_X
+        andb  #$FE                          ; V2-DEVIATION (11/10/2026) : an even x, as the camera's
  ENDC
-        stb   @ypx
-        ldd   <_x_pos                       ; convert playfield position to screen position
-        addd  <glb_camera_x_offset
-        subd  <_image_center_parity
-        subd  <glb_camera_x_pos
-        bcc   >                             ; no carry, continue
-        subb  #$60                          ; skip x position (ignore 160-255 values )
-        lda   @ypx                          ; V2-DEVIATION : line 0, one line up : line -1
-        bne   @up
-        lda   #$28
-        sta   <_ycorr
-@up     dec   @ypx                          ; move y position one line up
-!       tfr   b,a
-        ldb   #0 ; d is loaded with xy_pixel
-@ypx    equ   *-1         
-        bra   @computescreenaddress
+        std   <BuildSprites.x
+        subd  <glb_camera_x_pos             ; its parity picks the shifted variant
+        jsr   BuildSprites.pickRoutine
+        beq   @nextobject
+        jsr   BuildSprites.drawPlayfield
+        bcs   @nextobject                   ; out of the screen
+@drawn  lda   <BuildSprites.flags
+        ora   #render_hide_mask             ; drawn : hidden until displayed again
+        sta   render_flags,u
 @nextobject
         ldu   rsv_priority_prev_obj,u
-        lbne  @process   
+        lbne  @process
         rts
-@screencoordinates
-        ; screen coordinates — bornes en referentiel DECALE (V2-DEVIATION) :
-        ; b-bas dans [0, haut-bas] se teste d'UNE comparaison non signee, et
-        ; le test de wrap reste valable, les deux operandes etant decales.
-        ldb   y_pixel,u                     ; check if sprite is fully in screen vertical range
-        ldx   <_image_subset
+;
+; screen coordinates : the bounds in a shifted referential, one unsigned
+; compare a pair (V2-DEVIATION 19/08/2026)
+@screen
+        ldb   x_pixel,u
+        jsr   BuildSprites.pickRoutine
+        beq   @nextobject
+        ldx   <BuildSprites.subset
+        ldb   y_pixel,u
         addb  image_subset_y1_offset,x
         subb  #screen_top
         cmpb  #screen_bottom-screen_top
         bhi   @nextobject
-        stb   <_y1_pixel+1
-        addb  <_y_size+1
+        stb   <BuildSprites.y1+1
+        addb  <BuildSprites.ySize+1
         cmpb  #screen_bottom-screen_top
         bhi   @nextobject
-        cmpb  <_y1_pixel+1                  ; check wrapping
+        cmpb  <BuildSprites.y1+1                  ; wrapped
         blo   @nextobject
-;               
-        lda   <_render_flags                ; check if sprite is fully in screen horizontal range
-        bita  #render_xloop_mask
+        lda   <BuildSprites.flags
+        bita  #render_xloop_mask            ; xloop : no horizontal bound
         bne   @setposition
-;
         ldb   x_pixel,u
-        addb  image_subset_x1_offset,x      ; X pointe toujours _image_subset
+        addb  image_subset_x1_offset,x
         subb  #screen_left
         cmpb  #screen_right-screen_left
         bhi   @nextobject
-        stb   <_x1_pixel+1
-        addb  <_x_size+1
+        stb   <BuildSprites.x1+1
+        addb  <BuildSprites.xSize+1
         cmpb  #screen_right-screen_left
         bhi   @nextobject
-        cmpb  <_x1_pixel+1                  ; check wrapping
-        blo   @nextobject 
+        cmpb  <BuildSprites.x1+1                  ; wrapped
+        blo   @nextobject
 @setposition
-        ldd   xy_pixel,u                    ; load x position (48-207) and y position (28-227) in one operation
+        clr   <BuildSprites.lineCorrection
+        ldd   xy_pixel,u
  IFDEF BuildSprites.HALFLINE
-        andb  #$FE                          ; V2-DEVIATION : an even line, see below
+        andb  #$FE                          ; V2-DEVIATION (06/10/2026) : an even line
  ENDC
-        suba  <_image_center_parity+1
-        suba  #48                           ; move x ref. to 0
-        bcc   >                             ; no carry, continue
-        suba  #$60                          ; x-loop, skip x_pixel (160-255)
-        decb                                ; get x position one line up
-!       subb  #28                           ; move y ref. to 0
-        bcc   @computescreenaddress         ; V2-DEVIATION : above line 28, a negative line
+        suba  <BuildSprites.centerParity+1
+        suba  #48                           ; x from 0
+        bcc   >
+        suba  #$60                          ; left of the screen : the end of the line above
+        decb
+!       subb  #28                           ; the line from 0
+        bcc   >
         pshs  a
-        lda   #$28
-        sta   <_ycorr
+        lda   #$28                          ; V2-DEVIATION : a negative line, 256 lines back
+        sta   <BuildSprites.lineCorrection
         puls  a
-@computescreenaddress
-        lsra                                ; x=x/2, sprites moves by 2 pixels on x axis
-        lsra                                ; x=x/2, RAMA RAMB enterlace  
-        bcs   @ram2                         ; Branch if write must begin in RAM2 first
-@ram1
-        sta   @lbyte1
-        lda   #40                           ; 40 bytes per line in RAMA or RAMB
-        mul
-        addd  #$C000                        ; (dynamic)
-@lbyte1 equ   *-1
-        suba  <_ycorr                       ; V2-DEVIATION : a negative line, 256 lines back
-        std   <glb_screen_location_2
-        suba  #$20
-        std   <glb_screen_location_1     
-        bra   >
-@ram2
-        sta   @lbyte2
-        lda   #40                           ; 40 bytes per line in RAMA or RAMB
-        mul
-        addd  #$A000                        ; (dynamic)
-@lbyte2 equ   *-1      
-        suba  <_ycorr                       ; V2-DEVIATION : a negative line, 256 lines back
-        std   <glb_screen_location_2
-        addd  #$2001
-        std   <glb_screen_location_1
-!
-        lda   <_page_draw_routine
-        _SetCartPageA        
-        stu   @u                 
-        ldu   <glb_screen_location_2
-        jsr   ,y                            ; draw compilated sprite on screen (Y pose par le fetch)
-        ldu   #0                 
-@u      equ   *-2
+!       jsr   BuildSprites.drawAt
+        bra   @drawn
 ;
-        lda   <_render_flags
-        ora   #render_hide_mask             ; set hide flag
-        sta   render_flags,u        
-@nextobject2
-        ldu   rsv_priority_prev_obj,u
-        lbne  @process   
-@rts    rts
-;
-; ****************************************************
-; MultiSprite rendering
-; ---------------------
-; ****************************************************
-;
+; a multisprite object : its children, under its flags, each with its own
+; unmirrored image ; the object is walked whatever its children do
 @multisprite
-        ora   #render_hide_mask             ; set hide flag
-        sta   render_flags,u  
+        ora   #render_hide_mask             ; walked : hidden until displayed again
+        sta   render_flags,u
+        sta   <BuildSprites.flags
         lda   mainspr_childsprites,u
-        sta   <_nbchild
-        ldb   id,u                          ; get object id
-        stb   @id
+        beq   @nextobject
+        sta   <BuildSprites.children
+        ldx   #Img_Page_Index
+        ldb   id,u
+        abx
+        lda   ,x
+        sta   <BuildSprites.imagePage
         leay  sub2_x_pos,u
-@computeimageset
-        ; compute imageset
-        ; ----------------
-        ldx   #Img_Page_Index               ; this code set the active image subset based on mirror flags
-        lda   128,x                         ; (dynamic) retrieve page that store imagesets for this object id
-@id     equ   *-1
-        _SetCartPageA        
-        ldx   4,y ; get child imageset
-        beq   @nextchild                    ; BUGFIX (2026-08-23) : no image for this child
-        stx   <_image_set
+@child  lda   <BuildSprites.imagePage                  ; again : the last draw changed the page
+        _SetCartPageA
+        ldx   4,y                           ; the child's image set (0 : none)
+        beq   @nextchild
+        ldd   image_x_size,x
+        sta   <BuildSprites.xSize+1
+        stb   <BuildSprites.ySize+1
         ldb   image_center_offset,x
         sex
-        std   <_image_center_parity          ; store image center parity
-        ldb   ,x                            ; ND_ image
-        leax  b,x                           ; read imageset index
-        stx   <_image_subset
+        std   <BuildSprites.centerParity
+        ldb   ,x                            ; the unmirrored subset
+        leax  b,x
+        stx   <BuildSprites.subset
         ldd   2,y
-        std   <_y_pos
+        std   <BuildSprites.y
         ldd   ,y
  IFDEF BuildSprites.EVEN_X
-        andb  #$FE                          ; V2-DEVIATION : even, as the single path's
+        andb  #$FE                          ; V2-DEVIATION (11/10/2026) : an even x, as the camera's
  ENDC
-        std   <_x_pos
-        jsr   @processMulti
-@nextchild
-        dec   <_nbchild
-        beq   @nextobject2
-        leay  next_subspr,y
-        bra   @computeimageset
-@processMulti
-
-        ; compute mapping frame
-        ; ---------------------
-        ; The image subset reference up to 4 version of an image
-        ; Draw/Erase, Draw routines and shifted version by 1 pixel of these two routines
-        ; The following code set the appropriate routine that will draw the image
-        ; First thing is to check if the image position is odd or even
-        ; and select the appropriate routine. If no routine is found, it will select the avaible routine.
-;
+        std   <BuildSprites.x
         subd  <glb_camera_x_pos
-        eorb  <_image_center_parity+1        ; case of odd image center switch shifted image with normal
-        andb  #1                            ; index of sub image is encoded in two bits: 00|B0, 01|D0, 10|B1, 11|D1         
-        aslb                                ; set bit1 for 1px shifted image  
-        orb   #1                            ; set bit0 for overlay sprite
-@c      lda   b,x
-        beq   @nodefinedframe
-        leax  a,x                           ; read image subset index
-        stx   <_mapping_frame
-        bra   >
-@rts    rts
-@nodefinedframe
-        eorb  #%00000010                    ; check if there is an alternate shifted image available
-        ; V2-DEVIATION (20/08/2026, bugfix) : le meme repli que le chemin
-        ; single — direction sur le bit de decalage et ajustement en MOT,
-        ; voir le commentaire du chemin single et BSP_parityFallback.
-        jsr   BSP_parityFallback
-@e      lda   b,x
-        beq   @rts                          ; no defined frame, nothing will be displayed
-        leax  a,x                           ; read image subset index
-        stx   <_mapping_frame
-!
-        lda   page_draw_routine,x           ; save compiled sprite routine
-        sta   <_page_draw_routine
+        jsr   BuildSprites.pickRoutine
+        beq   @nextchild
+        jsr   BuildSprites.drawPlayfield              ; Y and U kept
+@nextchild
+        leay  next_subspr,y
+        dec   <BuildSprites.children
+        bne   @child
+        lbra  @nextobject
+
+* ---------------------------------------------------------------------------
+* BuildSprites.pickRoutine - the draw routine of a variant
+* input  : X the image subset, B the position's low byte (x - camera, x_pixel)
+* output : BuildSprites.drawPage, BuildSprites.drawRoutine ; Z set when the subset has none
+* The parity picks the shifted variant ; missing, the other one, the centre a
+* pixel the other way (V2-DEVIATION 20/08/2026 : on the shift bit, as a word)
+* ---------------------------------------------------------------------------
+BuildSprites.pickRoutine
+        eorb  <BuildSprites.centerParity+1       ; an odd centre swaps the shifts
+        andb  #1
+        aslb                                ; bit 1 : shifted
+        orb   #1                            ; bit 0 : draw (overlay)
+        lda   b,x
+        bne   @found
+        eorb  #%00000010                    ; the other shift
+        pshs  b
+        bitb  #%00000010
+        beq   @less
+        ldd   <BuildSprites.centerParity         ; shifted : a pixel further
+        addd  #1
+        bra   @adjust
+@less   ldd   <BuildSprites.centerParity         ; unshifted : a pixel nearer
+        subd  #1
+@adjust std   <BuildSprites.centerParity
+        puls  b
+        lda   b,x
+        beq   @none
+@found  leax  a,x
+        lda   page_draw_routine,x
+        sta   <BuildSprites.drawPage
         ldd   draw_routine,x
-        std   <_draw_routine
-;
-        ldx   <_image_subset
+        std   <BuildSprites.drawRoutine
+        andcc #%11111011                    ; Z clear : found (a routine may be at $0000)
+@none   rts
+
+* ---------------------------------------------------------------------------
+* BuildSprites.drawPlayfield - draws a sprite placed in playfield coordinates
+* input  : BuildSprites.x, BuildSprites.y, BuildSprites.subset, BuildSprites.xSize, BuildSprites.ySize,
+*          BuildSprites.centerParity, BuildSprites.flags, the routine (BuildSprites.pickRoutine)
+* output : C set when the sprite is out of the screen ; Y and U kept
+* ---------------------------------------------------------------------------
+BuildSprites.drawPlayfield
+        ldx   <BuildSprites.subset
         ldb   image_subset_x1_offset,x
         sex
-        std   <_x1_pixel
+        std   <BuildSprites.x1
         ldb   image_subset_y1_offset,x
         sex
-        std   <_y1_pixel
-        ldx   <_image_set
-        ldd   image_x_size,x
-        sta   <_x_size+1
-        stb   <_y_size+1
-;
-        ldd   <_x_pos 
-        addd  <_x1_pixel
-        addd  <glb_camera_x_offset 
-        addd  <glb_camera_x_offset ; use border from other side of the screen 
-        cmpd  <glb_camera_x_pos
-        blt   @rts
-;
-        addd  <_x_size
-        subd  #160 ; screen width
-        subd  <glb_camera_x_offset ; use border from other side of the screen 
-        subd  <glb_camera_x_offset ; use border from other side of the screen 
-        cmpd  <glb_camera_x_pos
-        bge   @rts
-;
-        ldd   <_y_pos 
-        addd  <_y1_pixel
-        addd  <glb_camera_y_offset 
-        cmpd  <glb_camera_y_pos
-        blt   @rts
-;
-        addd  <_y_size
-        subd  #200 ; screen height
-        cmpd  <glb_camera_y_pos
-        bge   @rts
-;
-        ldd   <_y_pos 
-        addd  <glb_camera_y_offset
-        subd  <glb_camera_y_pos        
-        anda  #$28                          ; V2-DEVIATION : a negative line, see _ycorr
-        sta   <_ycorr
+        std   <BuildSprites.y1
+        lda   <BuildSprites.flags
+        bita  #render_xloop_mask
+        beq   @xStrict
+        ldd   <BuildSprites.x                       ; V2-DEVIATION (31/08/2026) : xloop, overlapping the window is enough
+        addd  <BuildSprites.x1
+        cmpd  BuildSprites.xHigh
+        bge   @out
+        addd  <BuildSprites.xSize
+        cmpd  BuildSprites.xLow
+        blt   @out
+        bra   @yTests
+@xStrict
+        ldd   <BuildSprites.x
+        addd  <BuildSprites.x1
+        cmpd  BuildSprites.xLow
+        blt   @out
+        addd  <BuildSprites.xSize
+        cmpd  BuildSprites.xHigh
+        bge   @out
+@yTests ldd   <BuildSprites.y
+        addd  <BuildSprites.y1
+        cmpd  BuildSprites.yLow
+        blt   @out
+        addd  <BuildSprites.ySize
+        cmpd  BuildSprites.yHigh
+        bge   @out
+        ldd   <BuildSprites.y                       ; the screen line
+        subd  BuildSprites.yLow
+        anda  #$28                          ; V2-DEVIATION : a negative line, 256 lines back
+        sta   <BuildSprites.lineCorrection
  IFDEF BuildSprites.HALFLINE
-        andb  #$FE                          ; V2-DEVIATION : an even line, see below
+        andb  #$FE                          ; V2-DEVIATION (06/10/2026) : an even line
  ENDC
         stb   @ypx
-        ldd   <_x_pos                        ; convert playfield position to screen position
+        ldd   <BuildSprites.x                       ; the screen x
         addd  <glb_camera_x_offset
-        subd  <_image_center_parity
+        subd  <BuildSprites.centerParity
         subd  <glb_camera_x_pos
-        bcc   >                             ; no carry, continue
-        subb  #$60                          ; skip x position (ignore 160-255 values )
-        lda   @ypx                          ; V2-DEVIATION : line 0, one line up : line -1
+        bcc   >
+        subb  #$60                          ; left of the screen : the end of the line above
+        lda   @ypx
         bne   @up
-        lda   #$28
-        sta   <_ycorr
-@up     dec   @ypx                          ; move y position one line up
+        lda   #$28                          ; V2-DEVIATION : line 0, one line up : line -1
+        sta   <BuildSprites.lineCorrection
+@up     dec   @ypx
 !       tfr   b,a
-        ldb   #0 ; d is loaded with xy_pixel
-@ypx    equ   *-1        
-        lsra                                ; x=x/2, sprites moves by 2 pixels on x axis
-        lsra                                ; x=x/2, RAMA RAMB enterlace  
-        bcs   @ram2                         ; Branch if write must begin in RAM2 first
-@ram1
+        ldb   #0
+@ypx    equ   *-1
+        jsr   BuildSprites.drawAt
+        andcc #$FE                          ; drawn
+        rts
+@out    orcc  #1                            ; out of the screen
+        rts
+
+* ---------------------------------------------------------------------------
+* BuildSprites.drawAt - draws the routine at a screen place
+* input  : A the screen x (0-159), B the screen line, BuildSprites.lineCorrection,
+*          BuildSprites.drawPage, BuildSprites.drawRoutine
+* output : Y and U kept
+* ---------------------------------------------------------------------------
+BuildSprites.drawAt
+        lsra
+        lsra                                ; x / 4 : RAMA and RAMB interleaved
+        bcs   @ram2                         ; the write begins in RAM2
         sta   @lbyte1
-        lda   #40                           ; 40 bytes per line in RAMA or RAMB
+        lda   #40                           ; 40 bytes a line
         mul
         addd  #$C000                        ; (dynamic)
 @lbyte1 equ   *-1
-        suba  <_ycorr                       ; V2-DEVIATION : a negative line, 256 lines back
+        suba  <BuildSprites.lineCorrection                       ; V2-DEVIATION : a negative line, 256 lines back
         std   <glb_screen_location_2
         suba  #$20
-        std   <glb_screen_location_1     
-        bra   >
-@ram2
-        sta   @lbyte2
-        lda   #40                           ; 40 bytes per line in RAMA or RAMB
+        std   <glb_screen_location_1
+        bra   @draw
+@ram2   sta   @lbyte2
+        lda   #40
         mul
         addd  #$A000                        ; (dynamic)
-@lbyte2 equ   *-1      
-        suba  <_ycorr                       ; V2-DEVIATION : a negative line, 256 lines back
+@lbyte2 equ   *-1
+        suba  <BuildSprites.lineCorrection                       ; V2-DEVIATION : a negative line, 256 lines back
         std   <glb_screen_location_2
         addd  #$2001
         std   <glb_screen_location_1
-!
-        lda   <_page_draw_routine
+@draw   lda   <BuildSprites.drawPage
         _SetCartPageA
-        pshs  u,y
+        pshs  y,u
         ldu   <glb_screen_location_2
-        jsr   [_draw_routine]               ; draw compilated sprite on screen
-        puls  u,y,pc
+        jsr   [BuildSprites.drawRoutine]
+        puls  y,u,pc
 
-; V2-DEVIATION (06/10/2026) : BuildSprites.HALFLINE, a game whose
-; background is drawn on every other line (the even screen lines) defines it
-; and compiles its sprites with gfxcomp's halfline option : the screen line
-; of every sprite is rounded down to an even one, so its kept rows land on
-; the background's lines and nothing is ever drawn on the lines between.
-; Undefined, nothing changes.
-; V2-DEVIATION (20/08/2026, bugfix) : l'ajustement de parite du repli de
-; frame manquante, partage par les deux chemins. B = l'index de variante
-; APRES le eorb #%10 : bit1 pose = on retombe sur la DECALEE (reculer d'un
-; pixel de plus), bit1 efface = sur la NON decalee (avancer d'un pixel).
-; En mot : l'inc/dec du seul octet bas wrappait ($FF -> $00 donnait -256).
-; ---------------------------------------------------------------------------
-; LES BORNES D'ECRAN — calculees UNE FOIS PAR PASSE (24/08/2026)
-; ---------------------------------------------------------------------------
-; Le test de hors-champ du chemin PLAYFIELD melangeait, a chaque sprite, la
-; position de l'objet et quatre valeurs qui ne bougent pas de la passe :
-;   glb_camera_x_pos / glb_camera_y_pos          fixes pendant tout BuildSprites
-;   glb_camera_x_offset / glb_camera_y_offset    ecrits par InitGlobals seul
-; Il les recombinait seize fois pour retrouver les memes quatre bornes.
-;
-;   rejet si  x_pos+x1           <  cam_x - 2*offx        -> BS_xlo
-;   rejet si  x_pos+x1+x_size    >= cam_x + 160           -> BS_xhi
-;   rejet si  y_pos+y1           <  cam_y - offy          -> BS_ylo
-;   rejet si  y_pos+y1+y_size    >= cam_y + 200 - offy    -> BS_yhi
-; Les offsets s'annulent dans BS_xhi : l'ancien code ajoutait 2*offx puis le
-; retranchait deux fois de plus.
-;
-; LES OFFSETS SE LISENT, ILS NE SE REPLIENT PAS. Premier jet du 24/08 : je les
-; avais mis en immediat (#screen_left, #screen_top) au motif qu'InitGlobals ne
-; pose que ca. Faux — ce store est sous ` ifdef DrawSprites`, le mode
-; background-erase. En OverlayMode il ne s'execute pas et les deux offsets
-; restent a ZERO, laisses par l'effacement de la page directe. Les bornes
-; etaient donc decalees de 96 px en x et 28 en y : le jeu ne quittait plus le
-; title. Le mode se choisit a la configuration, une constante d'assemblage ne
-; peut pas en decider.
-;
-; L'egalite est exacte, pas approchee : chaque borne est l'ancien membre de
-; droite moins ce que l'ancien membre de gauche ajoutait. Les deux cotes
-; restent tres loin du debordement signe (x_pos <= largeur de carte, ~1200 ;
-; la borne haute plafonne vers 1400), donc les branchements signes gardent
-; leur sens.
-;
-; Mesure : 110 cycles de test par sprite avant, 76 apres ; seize sprites au
-; tour releve, soit 544 cycles gagnes contre ~40 de precalcul.
-;
-; PORTEE : le chemin SINGLE seulement. Le chemin multisprite porte la meme
-; sequence en double et reste strictement 1:1 avec la v1 — zero passage sur
-; R-Type, et le prix d'un ecart non valide en jeu serait plus eleve que le
-; gain.
-;
-; Les quatre mots sont en adressage ETENDU, pas en page directe : dp_engine
-; n'a que cinq octets libres pour huit demandes, et descendre le bloc moteur
-; mangerait le budget de page directe du jeu. Une comparaison etendue coute un
-; cycle de plus qu'une directe — quatre par sprite, contre trente-quatre
-; gagnes.
-; ---------------------------------------------------------------------------
-BS_xlo  fdb   0
-BS_xhi  fdb   0
-BS_ylo  fdb   0
-BS_yhi  fdb   0
+; the pass's bounds, extended : dp_engine has no room left for them
+BuildSprites.xLow  fdb   0
+BuildSprites.xHigh  fdb   0
+BuildSprites.yLow  fdb   0
+BuildSprites.yHigh  fdb   0
  IFDEF BuildSprites.FRONT_PASS
 BuildSprites.front fcb 0                   ; set : the pass draws priority 1 alone
  ENDC
-
-BSP_parityFallback
-        pshs  b
-        bitb  #%00000010
-        beq   @d
-        ldd   <_image_center_parity
-        addd  #1                            ; ajust offset for alternate
-        bra   @e
-@d      ldd   <_image_center_parity
-        subd  #1
-@e      std   <_image_center_parity
-        puls  b,pc   
