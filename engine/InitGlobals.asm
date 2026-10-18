@@ -23,9 +23,9 @@ InitGlobals
 
  ifdef DrawSprites
         ldd   #screen_left
-        std   glb_camera_x_offset
+        std   <glb_camera_x_offset
         ldd   #screen_top
-        std   glb_camera_y_offset
+        std   <glb_camera_y_offset
  endc
 
         lda   #1
