@@ -39,4 +39,3 @@ t.xml
 
 # rebut macOS : le Finder en seme un par dossier visite
 .DS_Store
-/games/**/build/

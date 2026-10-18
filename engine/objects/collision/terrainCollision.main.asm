@@ -47,7 +47,7 @@ terrainCollision.bgColTmp   fcb 0   ; loadMap scratch (column carry during the b
 ; le moteur de scroll tient pour l'avant-plan — base et reste sous-tuile, sur
 ; les deux axes. Entretenus une fois par trame par le stage, inertes ailleurs
 ; (le chemin qui les lit n'est meme pas assemble). Doc :
-; games/r-type/doc/bship-collision-plan.md
+; doc/bship-collision-plan.md du jeu R-Type (wide-dot/r-type)
 terrainCollision.bgColBase  fcb 0   ; camera.x / 24 : base de colonne, en octets
 terrainCollision.bgSubX     fcb 0   ; camera.x mod 24 : le reste, en px (0..23)
 terrainCollision.bgRowBase  fdb 0   ; (camera.y / 6 + pad) * lvlMapWidth, signe

@@ -1,6 +1,0 @@
-* Les offsets d'OST de l'emitter-flash — porte de objects/foefire (v1).
-* L'objet lui-meme appartient a la chaine de tir, non portee ; le joueur, lui,
-* renseigne ces trois champs quand il cree le flash. Les offsets suffisent.
-emitterFlash.parent   equ ext_variables   ; 2 bytes
-emitterFlash.x_offset equ ext_variables+2 ; 2 bytes
-emitterFlash.delay    equ ext_variables+4 ; 1 bytes
