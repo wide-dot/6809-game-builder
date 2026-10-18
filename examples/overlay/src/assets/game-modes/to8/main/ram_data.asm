@@ -36,11 +36,20 @@ bench.ty                     equ $9B14 ; word - bench.single's y_pos
 * the background cell the bdraw probes save into (grows DOWN from the top)
 bench.bgcell.top             equ $9A00
 
-* results, loader-ut convention : magic, then one byte per test
+* results (docs/lang/en/benches.md) : magic, count, done, a byte then a word
+* per test
+TESTS                        equ 39
 res.magic                    equ $9C00 ; $CA once the game mode runs
-res.base                     equ $9C01 ; tests write $01 at res.base+n-1
-res.done                     equ $9C1F ; $0D once the sequence completed
-res.sums                     equ $9C20 ; one word per test : VRAM checksum
+res.count                    equ $9C01 ; TESTS
+res.done                     equ $9C02 ; $0D once the sequence completed
+res.base                     equ $9C03 ; tests write $01 at res.base+n-1
+res.sums                     equ res.base+TESTS ; one word per test : VRAM checksum
+
+* the dynamic pool's four objects, in the order LoadObject_u gives them
+O1                           equ Dynamic_Object_RAM
+O2                           equ Dynamic_Object_RAM+object_size
+O3                           equ Dynamic_Object_RAM+2*object_size
+O4                           equ Dynamic_Object_RAM+3*object_size
 
 * the anchor sweep : per probe (12x12..15x15, w-major) and per variant
 * (bdraw first, draw second), the measured VRAM bounding box — 4 bytes

@@ -7,17 +7,19 @@ all : `ci/run-benches.sh`.
 
 ## The witnesses
 
-Loader-ut's convention, at `$9C00` unless the bench says otherwise :
+At `$9C00` unless the bench says otherwise, N the bench's number of tests :
 
 | Offset | Content |
 |---|---|
-| `+$00` | `$CA` once the game mode runs |
-| `+$01` .. | `$01` per passing test, in rank order (`+$01` is t01) |
-| `+$1F` | `$0D` once the sequence completed |
-| `+$20` .. | one word per test, rank order : a value the test recorded (a VRAM checksum), 0 if none |
+| `+0` | `$CA` once the game mode runs |
+| `+1` | N |
+| `+2` | `$0D` once the sequence completed |
+| `+3` .. `+2+N` | one byte per test, rank order : `$01` pass |
+| then N words | one per test, rank order : a value the test recorded (a VRAM checksum), 0 if none |
 
-Thirty tests at most. A bench may write more after its sequence (a block of
-measures) : it names the block and the byte that says it is complete.
+The block takes 3 + 3N bytes. A bench may write more after its sequence (a
+block of measures) : it names the block and the byte that says it is
+complete.
 
 ## bench.json
 
@@ -27,15 +29,16 @@ Next to the example's `to8.config.xml` :
 {
   "disk": "dist/to8.fd",
   "witnesses": "9C00",
-  "tests": 30,
+  "tests": 39,
   "blocks": {"sweep": ["9D00", 256]},
   "until": [["9DFE", "CB"]],
   "frames": 2000
 }
 ```
 
-`blocks` are read whole once every `until` byte holds its value ; `frames`
-bounds the wait.
+`tests` is checked against N in RAM : a bench that did not run all its tests
+fails. `blocks` are read whole once every `until` byte holds its value ;
+`frames` bounds the wait.
 
 ## bench.ref
 

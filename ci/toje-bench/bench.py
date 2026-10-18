@@ -11,11 +11,11 @@ The example describes its bench in bench.json (docs/lang/en/benches.md) :
      "blocks": {"sweep": ["9D00", 256]}, "until": [["9DFE", "CB"]],
      "frames": 2000}
 
-and writes its witnesses in RAM, loader-ut's convention : +$00 $CA once the
-game mode runs, +$01.. $01 per passing test, +$1F $0D once the sequence
-completed, +$20.. one word per test (a checksum the test recorded). The
-named blocks are read whole, once every "until" byte holds its value (work
-the bench does after its sequence).
+and writes its witnesses in RAM : +0 $CA once the game mode runs, +1 N its
+number of tests, +2 $0D once the sequence completed, +3.. one byte per test
+($01 : pass), then one word per test (a value the test recorded, a VRAM
+checksum ; 0 if none). The named blocks are read whole, once every "until"
+byte holds its value (work the bench does after its sequence).
 
 The verdict : every test at $01, and the whole block (results, words,
 blocks) identical to bench.ref, the reference committed next to bench.json.
@@ -35,13 +35,16 @@ def witnesses(t, desc):
     tests = desc['tests']
     for _ in range(max(1, desc.get('frames', 2000) // 25)):
         t.call('run_frames', {'n': 25, 'timeout_ms': 20000})
-        b = t.read('$%04X' % base, 0x20 + 2 * tests)
-        if b[0] == 0xCA and b[0x1F] == 0x0D and all(
+        h = t.read('$%04X' % base, 3)
+        if h[0] == 0xCA and h[2] == 0x0D and all(
                 t.read('$' + addr, 1)[0] == int(value, 16) for addr, value in desc.get('until', [])):
             break
     else:
         return None
-    lines = ['t%02d %02X %04X' % (n, b[n], b[0x20 + 2 * (n - 1)] << 8 | b[0x21 + 2 * (n - 1)])
+    if h[1] != tests:
+        return ['count %d, bench.json says %d' % (h[1], tests)]
+    b = t.read('$%04X' % (base + 3), 3 * tests)
+    lines = ['t%02d %02X %04X' % (n, b[n - 1], b[tests + 2 * (n - 1)] << 8 | b[tests + 2 * n - 1])
              for n in range(1, tests + 1)]
     for name, (addr, length) in sorted(desc.get('blocks', {}).items()):
         data = t.read('$' + addr, length)
