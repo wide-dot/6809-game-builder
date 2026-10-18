@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Generate the tilemap bench's map : src/assets/map/map-data.asm.
+"""
+Generate the tilemap bench's map : src/assets/map/map-data.asm.
 
 Not artwork : a measuring pattern, the TilemapBuffer format (map-16bits.equ)
 filled from a fixed seed, so the bench reads it back cell by cell.
