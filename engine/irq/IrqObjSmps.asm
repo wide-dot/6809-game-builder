@@ -1,20 +1,12 @@
 * ---------------------------------------------------------------------------
 * IrqObjSmps
 * ----------
-* IRQ Subroutine to run smps driver as an object
+* An IRQ user routine (DP $E7) : the Smps object's music frame (SmpsObj's
+* routine 4), its page mounted. The driver's variables (Smps.*) are here,
+* resident, shared by the game and the driver.
 *
-* input REG : [none]
-* reset REG : [a,x]
-*
-* feature request - whith the new builder architecture, it will be possible
-* to make a direct call without the need of an address table
-* it should also be possible to store and execute objects in ROM instead
-* of RAM
-*
+* trashes : a, x
 * ---------------------------------------------------------------------------
-        ;setdp $E7 ; V2-DEVIATION: setdp neutralized (not permitted in lwasm
-                  ; obj target) ; the one direct operand below is an explicit <, still assembled direct
-                  ; (migration/setdp-obj-target.md)
 IrqObjSmps
         lda   Obj_Index_Page+ObjID_Smps
         sta   <$E6                                    ; mount Smps page in RAM
@@ -46,11 +38,9 @@ DACEnabled                     rmb   1
 SFXToPlay2                     rmb   1                ; V2-DEVIATION (06/10/2026) : s2's second SFX queue slot (PlaySound2, PlaySoundStereo)
  ENDSTRUCT
 
-; V2-DEVIATION: in the lwasm obj target `org` does not rewind a section : the
-; instance reserved its bytes, then the fill was appended after them, and
-; every later byte of the game mode moved away from its symbol. The instance
-; is an equate on the fill instead, its members spelled out from the struct's
-; field offsets (migration/org-does-not-rewind-a-section.md).
+; V2-DEVIATION : the instance an equate on the fill (`org` does not rewind a
+; section : migration/org-does-not-rewind-a-section.md), its members spelled
+; out from the struct's offsets.
 SmpsStructStart
 Smps          equ   SmpsStructStart
 Smps.SFXPriorityVal           equ   Smps+SmpsVar.SFXPriorityVal
@@ -75,5 +65,3 @@ Smps.60HzData                 equ   Smps+SmpsVar.60HzData
 Smps.SFXToPlay2               equ   Smps+SmpsVar.SFXToPlay2
         ;org   SmpsStructStart ; V2-DEVIATION: see above
         fill  0,sizeof{SmpsVar}
-
-        ;setdp dp/256 ; V2-DEVIATION: setdp neutralized (see above)

@@ -42,7 +42,6 @@ SMPS_SFX_TRK_CH              equ   0
 SMPS_SFX_TRK_DATA_PTR        equ   2 
 SMPS_SFX_TRK_TR_VOL_PTR      equ   4
 SMPS_SFX_TRK_HDR_LEN         equ   6
-e
 ******************************************************************************
 
 Track STRUCT
@@ -257,15 +256,10 @@ YM2413_DrumModeOn
 InitMusicPlayback
         jsr   FMSilenceAll
         jsr   PSGSilenceAll
-        ; V2-DEVIATION (06/10/2026) : the music tracks are cleared, as the
-        ; Z80 driver's zInitMusicPlayback does. v1 only set the fields the
-        ; new song's header gives : a song started over another one (the
-        ; invincibility's, the act's again after it or after a death) kept
-        ; the previous loop counters (F7 loops a number of times of its own
-        ; on each track : the tracks drift apart), its note fill, detune and
-        ; modulation, and the tracks it does not use went on playing the
-        ; previous song. The channel (VoiceControl) and its note control
-        ; (the drum mode's block and fnum on FM7-9) stay.
+        ; V2-DEVIATION (06/10/2026) : the music tracks cleared, as the Z80
+        ; driver's zInitMusicPlayback (v1 kept a previous song's loop counters,
+        ; note fill, modulation, and its tracks the new one does not use) ;
+        ; the channel and its note control (the drum mode's) kept
         pshs  x                        ; the song (PlayMusic)
         ldx   #tracksStart
 @track  ldu   VoiceControl,x           ; VoiceControl and NoteControl
@@ -386,8 +380,20 @@ BGMLoad
 BGMLoad_end
         puls  d,y,u,pc
 
+* the track Y from its header U, both moved on to the next
+InitTrackPSG
+        lda   SMPS_TRK_ENV_PTR,u
+        sta   VoiceIndex,y
+        bsr   InitTrack
+        leau  SMPS_TRK_PSG_HDR_LEN,u
+        bra   >
 InitTrackFM
-        lda   SongDelay        
+        bsr   InitTrack
+        leau  SMPS_TRK_FM_HDR_LEN,u
+!       leay  sizeof{Track},y
+        rts
+InitTrack
+        lda   SongDelay
         sta   TempoDivider,y
         ldd   #$8201
         sta   PlaybackControl,y
@@ -399,28 +405,7 @@ InitTrackFM
         std   DataPointer,y
         ldd   SMPS_TRK_TR_VOL_PTR,u
         std   TranspAndVolume,y
-        leau  SMPS_TRK_FM_HDR_LEN,u
-        leay  sizeof{Track},y
-        rts       
- 
-InitTrackPSG
-        lda   SongDelay        
-        sta   TempoDivider,y
-        ldd   #$8201
-        sta   PlaybackControl,y
-        stb   DurationTimeout,y
-        ldb   #GoSubStack
-        stb   StackPointer,y        
-        ldd   SMPS_TRK_DATA_PTR,u
-        addd  MusicData
-        std   DataPointer,y
-        ldd   SMPS_TRK_TR_VOL_PTR,u
-        std   TranspAndVolume,y
-        lda   SMPS_TRK_ENV_PTR,u
-        sta   VoiceIndex,y
-        leau  SMPS_TRK_PSG_HDR_LEN,u
-        leay  sizeof{Track},y
-        rts        
+        rts
         
 ******************************************************************************
 * MusicFrame - processes a music frame (VInt)
@@ -445,12 +430,10 @@ a@      equ   *
         
 MusicFrame
 
-        ; V2-DEVIATION (06/10/2026) : s2's sound queue. The game's two slots
-        ; (SFXToPlay : PlaySound's SFX0, SFXToPlay2 : PlaySound2's and
-        ; PlaySoundStereo's SFX1) are read and cleared every frame ; of the
-        ; two, the effect of higher priority plays, unless the effect playing
-        ; has a higher one (the Z80 driver's zCycleQueue, zSFXPriority).
-        ; v1 played the last request, whatever was playing.
+        ; V2-DEVIATION (06/10/2026) : the Z80 driver's queue (zCycleQueue,
+        ; zSFXPriority) : two requests a frame, SFXToPlay and SFXToPlay2, the
+        ; higher priority's played unless the effect playing has a higher one
+        ; (v1 played the last request)
         clra                           ; the effect chosen (0 : none)
         ldb   Smps.SFXPriorityVal
         stb   @prio
@@ -498,12 +481,10 @@ UpdateEverything
         lbra  UpdateSound
 
 UpdateMusic
-        ; V2-DEVIATION (06/10/2026) : the Z80 driver's TempoWait. The tracks
-        ; are updated every frame ; when the tempo does not overflow, every
-        ; duration is one longer first, so the notes do not move on but the
-        ; note fill, the modulation and the PSG volume envelopes run their
-        ; frame. v1 skipped the whole update instead : those ran at the
-        ; tempo's rate (EHZ's 9Eh : 62 % of their speed).
+        ; V2-DEVIATION (06/10/2026) : the Z80 driver's TempoWait : every
+        ; frame updated, the durations one longer when the tempo does not
+        ; overflow (v1 skipped the frame : note fill, modulation and the PSG
+        ; envelopes ran at the tempo's rate)
         lda   Smps.CurrentTempo        ; tempo value
         adda  Smps.TempoTimeout        ; Adds previous value to
         sta   Smps.TempoTimeout        ; Store this as new
@@ -555,59 +536,28 @@ UpdateSound
         _UpdateTrack SFXPSG3,PSGUpdateTrack
 @rts    rts
 
-* * ************************************************************************************
-* * 
-* TempoWait
-*         ; Tempo works as divisions of the 60Hz clock (there is a fix supplied for
-*         ; PAL that "kind of" keeps it on track.)  Every time the internal music clock
-*         ; overflows, it will update.  So a tempo of 80h will update every other
-*         ; frame, or 30 times a second.
-
-*         lda   Smps.CurrentTempo  ; tempo value
-*         adda  Smps.TempoTimeout  ; Adds previous value to
-*         sta   Smps.TempoTimeout  ; Store this as new
-*         bcc   @a
-*         rts                     ; If addition overflowed (answer greater than FFh), return
-* @a
-*         ; So if adding tempo value did NOT overflow, then we add 1 to all durations
-*         inc   SongDAC.DurationTimeout
-*         inc   SongFM1.DurationTimeout
-*         inc   SongFM2.DurationTimeout
-*         inc   SongFM3.DurationTimeout
-*         inc   SongFM4.DurationTimeout
-*         inc   SongFM5.DurationTimeout
-*         ;inc   SongFM6.DurationTimeout
-*         ;inc   SongFM7.DurationTimeout
-*         ;inc   SongFM8.DurationTimeout                
-*         ;inc   SongFM9.DurationTimeout                        
-*         ;inc   SongPSG4.DurationTimeout
-*         inc   SongPSG1.DurationTimeout
-*         inc   SongPSG2.DurationTimeout
-*         inc   SongPSG3.DurationTimeout
-*         rts
-
 ******************************************************************************
 * DACUpdateTrack
 * input Y (ptr to SONGDAC, is used by CoordFlag)
 * destroys A,B,X
 ******************************************************************************
 
-DACUpdateTrack        
+DACUpdateTrack
         dec   SongDAC.DurationTimeout
-        beq   @a
+        beq   DACNoteEnd
         rts
-@a
+DACNoteEnd
         ldd   #$0E20                   ; note has ended, so note off
         sta   <YM2413.A
         ldx   SongDAC.DataPointer
-        stb   <YM2413.D        
-                 
-@b      ldb   ,x+                      ; read DAC song data
+        stb   <YM2413.D
+DACReadData
+        ldb   ,x+                      ; read DAC song data
         cmpb  #$E0
-        blo   @a                       ; test for >= E0h, which is a coordination flag
+        blo   DACNote                  ; test for >= E0h, which is a coordination flag
         jsr   CoordFlag
-        bra   @b                       ; read all consecutive coordination flags 
-@a        
+        bra   DACReadData              ; read all consecutive coordination flags
+DACNote
         bpl   SetDuration              ; test for 80h not set, which is a note duration
         stb   SongDAC.NextData               ; This is a note; store it here
         ldb   ,x
@@ -626,17 +576,16 @@ DACAfterDur
         stx   SongDAC.DataPointer
         ldb   SongDAC.NextData
         cmpb  #$80
-        bne   @a
+        bne   >
         rts                            ; if a rest, quit
-@a
-        ldx   #@data            
-        subb  #$81                     ; transform note into an index...      
+!       ldx   #DACDrums
+        subb  #$81                     ; transform note into an index...
         lda   #$0E
         sta   <YM2413.A
         ldb   b,x
-        stb   <YM2413.D      
+        stb   <YM2413.D
         rts
-@data
+DACDrums
         fcb   $30 ; $81 - Kick  (BD+TOM) 34
         fcb   $28 ; $82 - Snare (SNARE noise+TOM) 2C
         fcb   $21 ; $83 - Clap 21
@@ -747,14 +696,12 @@ FinishTrackUpdate
         stx   DataPointer,y            ; Stores to the track pointer memory
         lda   PlaybackControl,y
         bita  #$10                     ; Is bit 4 (10h) "do not attack next note" set on playback?
-        beq   @a                       
-        bra   FMPrepareNote            ; If so, quit
-@a      ldb   NoteFillMaster,y
+        bne   FMPrepareNote            ; If so, quit
+        ldb   NoteFillMaster,y
         stb   NoteFillTimeout,y        ; Reset 0Fh "note fill" value to master
         bita  #$08                     ; Is bit 3 (08h) modulation turned on?
-        bne   @b
-        bra   FMPrepareNote            ; if not, quit
-@b      ldx   ModulationPtr,y
+        beq   FMPrepareNote            ; if not, quit
+        ldx   ModulationPtr,y
         jsr   SetModulation            ; reload modulation settings for the new note
         
 FMPrepareNote
@@ -783,36 +730,44 @@ FMUpdateFreqAndNoteOn
         stb   NoteControl,y
         stb   <YM2413.D   
         
-DoModulation  
+DoModulation
+        jsr   Modulation
+        bcs   FMUpdateFreq
+        rts
+
+* Modulation - a step of the track Y's modulation : C set when its
+* frequency moved
+Modulation
         lda   PlaybackControl,y
         bita  #$02                     ; Is bit 1 (02h) "track is at rest" set on playback?
-        beq   @a
-        rts                            ; If so, quit        
-@a      bita  #$08                     ; Is bit 3 (08h) "modulation on" set on playback?
-        bne   @b
-        rts                            ; If not, quit        
-@b      lda   ModulationWait,y         ; 'ww' period of time before modulation starts
+        bne   @no                      ; If so, quit
+        bita  #$08                     ; Is bit 3 (08h) "modulation on" set on playback?
+        beq   @no                      ; If not, quit
+        lda   ModulationWait,y         ; 'ww' period of time before modulation starts
         beq   @c                       ; if zero, go to it!
         dec   ModulationWait,y         ; Otherwise, decrement timer
-        rts                            ; return if decremented
+        bra   @no
 @c      dec   ModulationSpeed,y        ; Decrement modulation speed counter
-        beq   @d
-        rts                            ; Return if not yet zero
-@d      ldx   ModulationPtr,y
+        bne   @no                      ; Return if not yet zero
+        ldx   ModulationPtr,y
         lda   1,x
         sta   ModulationSpeed,y
         lda   ModulationSteps,y
         bne   @e
         lda   3,x
-        sta   ModulationSteps,y     
+        sta   ModulationSteps,y
         neg   ModulationDelta,y
-        rts                
+        bra   @no
 @e      dec   ModulationSteps,y
         ldb   ModulationDelta,y
         sex
         addd  ModulationVal,y
-        std   ModulationVal,y        
-              
+        std   ModulationVal,y
+        orcc  #%00000001               ; C : the frequency moved
+        rts
+@no     andcc #%11111110
+        rts
+
 FMUpdateFreq
         lda   PlaybackControl,y
         bita  #$04                     ; Is bit 2 (04h) Is SFX overriding this track?
@@ -944,15 +899,13 @@ PSGFinishTrackUpdate
         stx   DataPointer,y            ; Stores to the track pointer memory
         lda   PlaybackControl,y
         bita  #$10                     ; Is bit 4 (10h) "do not attack next note" set on playback?
-        beq   @a                       
-        bra   PSGDoNoteOn              ; If so, quit
-@a      ldb   NoteFillMaster,y
+        bne   PSGDoNoteOn              ; If so, quit
+        ldb   NoteFillMaster,y
         stb   NoteFillTimeout,y        ; Reset 0Fh "note fill" value to master
         clr   VolFlutter,y             ; Reset PSG flutter byte
         bita  #$08                     ; Is bit 3 (08h) modulation turned on?
-        bne   @b
-        bra   PSGDoNoteOn              ; if not, quit
-@b      ldx   ModulationPtr,y
+        beq   PSGDoNoteOn              ; if not, quit
+        ldx   ModulationPtr,y
         jsr   SetModulation            ; reload modulation settings for the new note
         
 PSGDoNoteOn
@@ -965,22 +918,7 @@ PSGUpdateFreq
         ldb   Detune,y
         sex
         addd  NextData,y               ; Apply detune but don't update stored frequency
-        std   @dyn+1
-        andb  #$0F                     ; Keep only lower four bits (first PSG reg write only applies d0-d3 of freq)
-        lda   VoiceControl,y
-        cmpa  #$E0
-        bne   @a
-        addb  #$C0
-        bra   @b
-@a      addb  VoiceControl,y           ; Get "voice control" byte...
-@b      stb   <SN76489.D
-@dyn    ldd   #0
-        _lsrd
-        _lsrd
-        _lsrd
-        _lsrd              
-        andb  #$3F                     ; V2-DEVIATION (06/10/2026) : d4-d9 only, as the Z80 driver : a byte with bit 7 set is a latch to another register
-        stb   <SN76489.D
+        jsr   PSGWriteFreq
         bra   PSGDoVolFX
         
 PSGUpdateVolFX
@@ -1035,36 +973,11 @@ DynVol  ldb   #0                       ; (dynamic) volume
         lda   NoteFillTimeout,y        
         bne   DynVol                   ; If it's not zero, then just process normally
         
-PSGDoModulation  
-        lda   PlaybackControl,y
-        bita  #$02                     ; Is bit 1 (02h) "track is at rest" set on playback?
-        beq   @a
-        rts                            ; If so, quit        
-@a      bita  #$08                     ; Is bit 3 (08h) "modulation on" set on playback?
-        bne   @b
-        rts                            ; If not, quit        
-@b      lda   ModulationWait,y         ; 'ww' period of time before modulation starts
-        beq   @c                       ; if zero, go to it!
-        dec   ModulationWait,y         ; Otherwise, decrement timer
-        rts                            ; return if decremented
-@c      dec   ModulationSpeed,y        ; Decrement modulation speed counter
-        beq   @d
-        rts                            ; Return if not yet zero
-@d      ldx   ModulationPtr,y
-        lda   1,x
-        sta   ModulationSpeed,y
-        lda   ModulationSteps,y
-        bne   @e
-        lda   3,x
-        sta   ModulationSteps,y     
-        neg   ModulationDelta,y
-        rts                
-@e      dec   ModulationSteps,y
-        ldb   ModulationDelta,y
-        sex
-        addd  ModulationVal,y
-        std   ModulationVal,y        
-              
+PSGDoModulation
+        jsr   Modulation
+        bcs   PSGUpdateFreq2
+        rts
+
 PSGUpdateFreq2
         ; V2-DEVIATION (06/10/2026) : the Z80 driver's zPSGUpdateFreq quits
         ; when the track rests or an SFX overrides it ; v1 wrote the music
@@ -1076,6 +989,11 @@ PSGUpdateFreq2
         sex
         addd  NextData,y               ; apply detune but don't update stored frequency
         addd  ModulationVal,y          ; add modulation effect
+        jmp   PSGWriteFreq
+@rts    rts
+
+* PSGWriteFreq - D the frequency of the track Y's PSG channel, written
+PSGWriteFreq
         std   @dyn+1
         andb  #$0F                     ; Keep only lower four bits (first PSG reg write only applies d0-d3 of freq)
         lda   VoiceControl,y
@@ -1089,10 +1007,10 @@ PSGUpdateFreq2
         _lsrd
         _lsrd
         _lsrd
-        _lsrd              
-        andb  #$3F                     ; V2-DEVIATION (06/10/2026) : d4-d9 only (see PSGUpdateFreq)
+        _lsrd
+        andb  #$3F                     ; V2-DEVIATION (06/10/2026) : d4-d9 only, as the Z80 driver : a byte with bit 7 set is a latch to another register
         stb   <SN76489.D
-@rts    rts        
+        rts
  
 ; 70 notes (Note value $81=C3 $C7=G#8) with direct access
 ; (Note value $C8 is reserved for PSG3 to drive noise PSG4)
@@ -1181,13 +1099,9 @@ SFXTrackOffs
         fdb   SFXPSG3                  ; identified by Track id 80C0 in smps sfx file
         fdb   SFXPSG3                  ; identified by Track id 80E0 in smps sfx file
 
-; V2-DEVIATION (06/10/2026) : as the Z80 driver's zMusicTrackOffs, s2's
-; FM3, FM4 and FM5 (SFX channel ids 2, 4, 5) override SongFM3, SongFM4 and
-; SongFM5 ; the SFX track takes the music track's YM2413 channel (2, 3, 4,
-; PlaySound). v1 listed SongFM2 first and kept the header's channel id : an
-; SFX on 2 silenced SongFM2 but played over SongFM3 (channel 2), whose
-; instrument was never given back ; one on 4 silenced SongFM4 and played
-; over SongFM5.
+; V2-DEVIATION (06/10/2026) : the Z80 driver's zMusicTrackOffs : an SFX on
+; FM 2, 4, 5 overrides SongFM3, SongFM4, SongFM5 and takes its YM2413 channel
+; (v1 silenced one track and played over another)
 MusicTrackOffs
         fdb   SongFM3                  ; 2 : FM3
         fdb   SongFM3                  ; 3 : (no SFX on FM4's id 3)
@@ -1276,28 +1190,13 @@ PlaySound_main
         sta   PlaybackControl,y
         ldu   #SFXTrackOffs
         ldu   b,u                      ; u (ix) ptr to SFX Track
-        ldd   #0                       ; clear SFX Track
-        std   ,u
-        std   2,u
-        std   4,u
-        std   6,u
-        std   8,u
-        std   10,u
-        std   12,u
-        std   14,u
-        std   16,u
-        std   18,u
-        std   20,u
-        std   22,u
-        std   24,u
-        std   26,u
-        std   28,u
-        std   30,u
-        std   32,u
-        std   34,u
-        std   36,u
-        std   38,u
-        std   40,u
+        pshs  x,u                      ; clear SFX Track
+        ldx   #smps.track.size/2
+        ldd   #0
+!       std   ,u++
+        leax  -1,x
+        bne   <
+        puls  x,u
 @dyna   ldd   #$0100                   ; (dynamic) TempoDivider
         sta   DurationTimeout,u        ; current duration timeout to 1 (will expire immediately and thus update)
         stb   TempoDivider,u
@@ -1377,19 +1276,15 @@ CoordFlagLookup
 ;              
 cfDetune
         lda   ,x+
-        ; this should be replaced by a conversion of the smps music file
-        ; here to play sonic2 files only
         ldb   VoiceControl,y           ; read channel nb
-        bmi   @a                       ; Is voice control bit 7 (80h) a PSG track set?        
-        asra                           ; ratio freq btw YM2612 and YM2413 is 3.73, so tame a bit (/3)
-        sta   @dyna+1
-        asra        
-        sta   @dynb+1
-@dyna   lda   #0           
-@dynb   suba  #0         
-        ; end of tmp code
+        bmi   @a                       ; a PSG track : as is
+        asra                           ; FM : the YM2612's step about 3.73 times the YM2413's :
+        pshs  a                        ; A/2 - A/4, until the songs are converted
+        asra
+        nega
+        adda  ,s+
 @a      sta   Detune,y
-        rts           
+        rts
 
 ; Return (Sonic 1 & 2)
 ;
@@ -1712,14 +1607,9 @@ cfSkip1
 cfNop 
         rts                                                 
 
-; V2-DEVIATION: in the lwasm obj target `org` does not rewind a section. v1
-; declared the track instances below (a reservation, which an obj section
-; emits as zeros), then went back with `org tracksStart` to write their
-; initial values : in a section the values were appended after the zeros, and
-; every byte that followed moved away from its symbol. The instances are
-; equates on the initial values instead, emitted once, and the members a
-; struct instance would have defined are spelled out from the struct's field
-; offsets (migration/org-does-not-rewind-a-section.md).
+; V2-DEVIATION : the track instances are equates on their initial values
+; (`org` does not rewind a section : migration/org-does-not-rewind-a-section.md),
+; their members spelled out from the struct's offsets.
 _smps.at.here MACRO
 \1              equ   tracksStart+(\2)*smps.track.size
  ENDM
@@ -1792,10 +1682,7 @@ tracksStart                ; This is the beginning of all BGM track memory
         _smps.at.here SFXPSGEnd,19
         _smps.at.here tracksSFXEnd,19
 
-        ; I want struct data to be in binary please ...
-        ; VoiceControl is hardcoded
-        
-        ;org   tracksStart ; V2-DEVIATION: see above, the values follow tracksStart
+        ; the tracks' initial values : PlaybackControl, VoiceControl (the channel)
         fdb   $0006       
         fill  0,sizeof{Track}-2
         fdb   $0000
@@ -1842,49 +1729,3 @@ zRingSpeaker                 fcb 0 ; the Z80 driver's : 0 plays the left ring so
 zSpindashPlayingCounter      fcb 0
 zSpindashExtraFrequencyIndex fcb 0
 zSpindashActiveFlag          fcb 0 ; -1 if spindash charge was the last sound that played
-
-* YM2413 Instrument presets
-* -------------------------
-*
-* /* Order of array = { modulator, carrier } */
-* typedef struct {
-*     Bit8u tl;
-*     Bit8u dc;
-*     Bit8u dm;
-*     Bit8u fb;
-*     Bit8u am[2];
-*     Bit8u vib[2];
-*     Bit8u et[2];
-*     Bit8u ksr[2];
-*     Bit8u multi[2];
-*     Bit8u ksl[2];
-*     Bit8u ar[2];
-*     Bit8u dr[2];
-*     Bit8u sl[2];
-*     Bit8u rr[2];
-* } opll_patch_t;
-
-* static const opll_patch_t patch_ds1001[opll_patch_max] = {
-*     { 0x05, 0x00, 0x00, 0x06,{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x01 },{ 0x00, 0x00 },{ 0x03, 0x01 },{ 0x00, 0x00 },{ 0x0e, 0x08 },{ 0x08, 0x01 },{ 0x04, 0x02 },{ 0x02, 0x07 } }, * 1 : Violin
-*     { 0x14, 0x00, 0x01, 0x05,{ 0x00, 0x00 },{ 0x00, 0x01 },{ 0x00, 0x00 },{ 0x01, 0x00 },{ 0x03, 0x01 },{ 0x00, 0x00 },{ 0x0d, 0x0f },{ 0x08, 0x06 },{ 0x02, 0x01 },{ 0x03, 0x02 } }, * 2 : Guitar
-*     { 0x08, 0x00, 0x01, 0x00,{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x01, 0x01 },{ 0x01, 0x01 },{ 0x00, 0x00 },{ 0x0f, 0x0b },{ 0x0a, 0x02 },{ 0x02, 0x01 },{ 0x00, 0x02 } }, * 3 : Piano
-*     { 0x0c, 0x00, 0x00, 0x07,{ 0x00, 0x00 },{ 0x00, 0x01 },{ 0x01, 0x01 },{ 0x01, 0x00 },{ 0x01, 0x01 },{ 0x00, 0x00 },{ 0x0a, 0x06 },{ 0x08, 0x04 },{ 0x06, 0x02 },{ 0x01, 0x07 } }, * 4 : Flute
-*     { 0x1e, 0x00, 0x00, 0x06,{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x01, 0x01 },{ 0x01, 0x00 },{ 0x02, 0x01 },{ 0x00, 0x00 },{ 0x0e, 0x07 },{ 0x01, 0x06 },{ 0x00, 0x02 },{ 0x01, 0x08 } }, * 5 : Clarinet
-*     { 0x06, 0x00, 0x00, 0x00,{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x02, 0x01 },{ 0x00, 0x00 },{ 0x0a, 0x0e },{ 0x03, 0x02 },{ 0x0f, 0x0f },{ 0x04, 0x04 } }, * 6 : Oboe
-*     { 0x1d, 0x00, 0x00, 0x07,{ 0x00, 0x00 },{ 0x00, 0x01 },{ 0x01, 0x01 },{ 0x00, 0x00 },{ 0x01, 0x01 },{ 0x00, 0x00 },{ 0x08, 0x08 },{ 0x02, 0x01 },{ 0x01, 0x00 },{ 0x01, 0x07 } }, * 7 : Trumpet
-*     { 0x22, 0x01, 0x00, 0x07,{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x01, 0x01 },{ 0x00, 0x00 },{ 0x03, 0x01 },{ 0x00, 0x00 },{ 0x0a, 0x07 },{ 0x02, 0x02 },{ 0x00, 0x01 },{ 0x01, 0x07 } }, * 8 : Organ
-*     { 0x25, 0x00, 0x00, 0x00,{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x01, 0x00 },{ 0x01, 0x01 },{ 0x05, 0x01 },{ 0x00, 0x00 },{ 0x04, 0x07 },{ 0x00, 0x03 },{ 0x07, 0x00 },{ 0x02, 0x01 } }, * 9 : Horn
-*     { 0x0f, 0x00, 0x01, 0x07,{ 0x01, 0x00 },{ 0x00, 0x00 },{ 0x01, 0x00 },{ 0x01, 0x00 },{ 0x05, 0x01 },{ 0x00, 0x00 },{ 0x0a, 0x0a },{ 0x08, 0x05 },{ 0x05, 0x00 },{ 0x01, 0x02 } }, * A : Synthesizer
-*     { 0x24, 0x00, 0x00, 0x07,{ 0x00, 0x01 },{ 0x00, 0x01 },{ 0x00, 0x00 },{ 0x01, 0x00 },{ 0x07, 0x01 },{ 0x00, 0x00 },{ 0x0f, 0x0f },{ 0x08, 0x08 },{ 0x02, 0x01 },{ 0x02, 0x02 } }, * B : Harpsichord
-*     { 0x11, 0x00, 0x00, 0x06,{ 0x00, 0x00 },{ 0x01, 0x00 },{ 0x01, 0x01 },{ 0x01, 0x00 },{ 0x01, 0x03 },{ 0x00, 0x00 },{ 0x06, 0x07 },{ 0x05, 0x04 },{ 0x01, 0x01 },{ 0x08, 0x06 } }, * C : Vibraphone
-*     { 0x13, 0x00, 0x00, 0x05,{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x01, 0x02 },{ 0x03, 0x00 },{ 0x0c, 0x09 },{ 0x09, 0x05 },{ 0x00, 0x00 },{ 0x03, 0x02 } }, * D : Synthesizer Bass
-*     { 0x0c, 0x00, 0x00, 0x00,{ 0x00, 0x00 },{ 0x01, 0x01 },{ 0x01, 0x01 },{ 0x00, 0x00 },{ 0x01, 0x03 },{ 0x00, 0x00 },{ 0x09, 0x0c },{ 0x04, 0x00 },{ 0x03, 0x0f },{ 0x03, 0x06 } }, * E : Acoustic Bass
-*     { 0x0d, 0x00, 0x00, 0x00,{ 0x00, 0x00 },{ 0x00, 0x01 },{ 0x01, 0x01 },{ 0x00, 0x01 },{ 0x01, 0x02 },{ 0x00, 0x00 },{ 0x0c, 0x0d },{ 0x01, 0x05 },{ 0x05, 0x00 },{ 0x06, 0x06 } }, * F : Electric Guitar
-*     /* Rhythm Patches: rows 1 and 4 are bass drum, 2 and 5 are Snare Drum & Hi-Hat, 3 and 6 are Tom and Top Cymbal */
-*     { 0x18, 0x00, 0x01, 0x07,{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x01, 0x00 },{ 0x00, 0x00 },{ 0x0d, 0x00 },{ 0x0f, 0x00 },{ 0x06, 0x00 },{ 0x0a, 0x00 } },
-*     { 0x00, 0x00, 0x00, 0x00,{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x01, 0x00 },{ 0x00, 0x00 },{ 0x0c, 0x00 },{ 0x08, 0x00 },{ 0x0a, 0x00 },{ 0x07, 0x00 } },
-*     { 0x00, 0x00, 0x00, 0x00,{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x05, 0x00 },{ 0x00, 0x00 },{ 0x0f, 0x00 },{ 0x08, 0x00 },{ 0x05, 0x00 },{ 0x09, 0x00 } },
-*     { 0x00, 0x00, 0x00, 0x00,{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x01 },{ 0x00, 0x00 },{ 0x00, 0x0f },{ 0x00, 0x08 },{ 0x00, 0x06 },{ 0x00, 0x0d } },
-*     { 0x00, 0x00, 0x00, 0x00,{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x01 },{ 0x00, 0x00 },{ 0x00, 0x0d },{ 0x00, 0x08 },{ 0x00, 0x06 },{ 0x00, 0x08 } },
-*     { 0x00, 0x00, 0x00, 0x00,{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x00 },{ 0x00, 0x01 },{ 0x00, 0x00 },{ 0x00, 0x0a },{ 0x00, 0x0a },{ 0x00, 0x05 },{ 0x00, 0x05 } }
-* };             
