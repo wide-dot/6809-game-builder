@@ -490,6 +490,18 @@ other way than the camera's rounding : a sprite the camera follows, 1 pixel
 from it one loop in two, is drawn 2 pixels apart (Sonic 2's main character
 shaking as he runs). Cost : 2 bytes and 2 cycles a sprite.
 
+`BuildSprites.YWRAP` lets the playfield wrap vertically, 2048 lines high (Sonic
+2's Metropolis, whose acts join their bottom to their top) : while
+`BuildSprites.yWrapMask` holds `$07` (the game sets it, the default `$FF`
+wraps nothing), a playfield sprite's line is its distance to the camera's
+taken round the 2048 lines, signed, so a sprite just past the playfield's
+bottom shows above its top and the other way round. The playfield's
+positions and the camera's stay within 0-2047 (the game's own wrap). The
+tilemap needs nothing of it : the map's layout carries its first rows again
+after its last (the rows the view reads down from a camera near the
+bottom), and a camera crossing the wrap moves past a view, so the buffer
+redraws the whole view. Cost : 13 bytes, and 12 cycles a playfield sprite.
+
 ### Backgrounds
 
 A `bdraw` sprite saves what it covers before drawing, into cells allocated by

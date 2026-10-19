@@ -10,6 +10,9 @@
 * camera) or in screen coordinates (x_pixel 48-207, y_pixel 28-227) ; a
 * multisprite object (render_subobjects_mask) draws its children, each a
 * playfield position and an image set, under the object's flags.
+* BuildSprites.YWRAP : a playfield that may wrap 2048 lines high, a sprite's
+* line taken round it from the camera's while BuildSprites.yWrapMask is $07
+* (the default $FF : no wrap).
 *
 * input REG : none
 * V2-DEVIATION (18/10/2026) : rewritten from v1's : one routine a step,
@@ -290,7 +293,22 @@ BuildSprites.drawPlayfield
         addd  <BuildSprites.xSize
         cmpd  BuildSprites.xHigh
         bge   @out
-@yTests ldd   <BuildSprites.y
+@yTests
+ IFDEF BuildSprites.YWRAP
+        ldd   <BuildSprites.y                       ; the screen line, signed round the
+        subd  BuildSprites.yLow                     ; playfield's height
+        addd  #$400
+        anda  BuildSprites.yWrapMask
+        subd  #$400
+        std   <BuildSprites.y
+        addd  <BuildSprites.y1
+        blt   @out
+        addd  <BuildSprites.ySize
+        cmpd  #200
+        bge   @out
+        ldd   <BuildSprites.y
+ ELSE
+        ldd   <BuildSprites.y
         addd  <BuildSprites.y1
         cmpd  BuildSprites.yLow
         blt   @out
@@ -299,6 +317,7 @@ BuildSprites.drawPlayfield
         bge   @out
         ldd   <BuildSprites.y                       ; the screen line
         subd  BuildSprites.yLow
+ ENDC
         anda  #$28                          ; V2-DEVIATION : a negative line, 256 lines back
         sta   <BuildSprites.lineCorrection
  IFDEF BuildSprites.HALFLINE
@@ -366,6 +385,9 @@ BuildSprites.xLow  fdb   0
 BuildSprites.xHigh  fdb   0
 BuildSprites.yLow  fdb   0
 BuildSprites.yHigh  fdb   0
+ IFDEF BuildSprites.YWRAP
+BuildSprites.yWrapMask fcb $FF         ; the playfield's height : $07 2048 lines, wrapping
+ ENDC
  IFDEF BuildSprites.FRONT_PASS
 BuildSprites.front fcb 0                   ; set : the pass draws priority 1 alone
  ENDC

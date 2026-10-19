@@ -38,7 +38,7 @@ bench.bgcell.top             equ $9A00
 
 * results (docs/lang/en/benches.md) : magic, count, done, a byte then a word
 * per test
-TESTS                        equ 39
+TESTS                        equ 42
 res.magic                    equ $9C00 ; $CA once the game mode runs
 res.count                    equ $9C01 ; TESTS
 res.done                     equ $9C02 ; $0D once the sequence completed
