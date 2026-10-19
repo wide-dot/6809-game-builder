@@ -68,3 +68,10 @@ in `AnimateSpriteSync` (V2-DEVIATION). r-type's animations run on it : each
 image now lasts its script's duration plus one frame, where v1 played it n+1
 frames short — at a typical drop of 2 to 3, an image of duration 3 goes from
 1 frame to 4. A script tuned by eye against v1 shows it.
+
+Sonic 2, 19/10/2026 : `TileAnimScript` (the animated tiles) had the same
+timer the other way : it took the overshoot as a negative number and
+subtracted it, so a frame lasted D+2 frames at one frame per call and longer
+under drops. It now reloads D + 1 + c' clamped at 0, its first frame D, as
+`AnimateSpriteSync` (V2-DEVIATION ; `examples/irq`, t15 and t16) : Sonic 2's
+animated tiles are back to s2's durations.

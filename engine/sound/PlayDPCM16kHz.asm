@@ -1,12 +1,10 @@
 * ---------------------------------------------------------------------------
 * PlayDPCM16kHz
 * -------------
-* Subroutine to play a Delta PCM sample at 16kHz
-* 6 bit DAC sample value is encoded as a 4bit lookup value in a delta table
-* 62,5 cycles between 2 DAC samples (alternation of 62 and 63 cycles)
-*
-* No IRQ here, this will freeze anything running ...
-* DAC Init from Mission: Liftoff (merci Prehisto ;-))
+* Plays a delta PCM sample at 16 kHz : a 6 bit DAC value a sample, encoded as
+* a 4 bit index in a delta table ; 62.5 cycles between two samples (62 and 63
+* in turn), cycle exact. No IRQ : everything else stops meanwhile.
+* The DAC's init from Mission: Liftoff (thanks to Prehisto)
 *
 * input REG : [y] Pcm_ index to play
 * reset REG : none
@@ -19,16 +17,16 @@
 *
 * ---------------------------------------------------------------------------
 
-PlayDPCM16kHz 
+PlayDPCM16kHz
         pshs  d,x,y,u
         _GetCartPageA
         sta   @RestorePage+1
-        ldd   #$fb3f  ! Mute by CRA to 
-        anda  $e7cf   ! avoid sound when 
-        sta   $e7cf   ! $e7cd written
-        stb   $e7cd   ! Full sound line
-        ora   #$04    ! Disable mute by
-        sta   $e7cf   ! CRA and sound
+        ldd   #$fb3f                   ; muted by CRA, so that writing $e7cd
+        anda  $e7cf                    ; makes no sound
+        sta   $e7cf
+        stb   $e7cd                    ; the full sound line
+        ora   #$04                     ; unmuted
+        sta   $e7cf
         ldu   #@DACDecodeTbl
         lda   #32                      ; init delta value
         sta   @smplh+1
@@ -36,7 +34,7 @@ PlayDPCM16kHz
 @ReadChunk
         lda   sound_page,y             ; [4] load memory page
         beq   @End                     ; [3]
-        _SetCartPageA                  ; for each page switch there is a lag, data in RAM: 3 cycles late, data in ROM: 73 cycles late in stream
+        _SetCartPageA                  ; a page switch lags the stream : 3 cycles in RAM, 73 in ROM
         ldx   sound_start_addr,y       ; [6] Chunk start addr
 @Loop      
         lda   ,x                       ; [4] load data byte
@@ -73,13 +71,13 @@ PlayDPCM16kHz
 @End
         lda   #$00
         sta   $e7cd
-        ldd   #$fbfc  ! Mute by CRA to
-        anda  $e7cf   ! avoid sound when
-        sta   $e7cf   ! $e7cd is written
-        andb  $e7cd   ! Activate
-        stb   $e7cd   ! joystick port
-        ora   #$04    ! Disable mute by
-        sta   $e7cf   ! CRA + joystick
+        ldd   #$fbfc                   ; muted by CRA, so that writing $e7cd
+        anda  $e7cf                    ; makes no sound
+        sta   $e7cf
+        andb  $e7cd                    ; the joystick port back
+        stb   $e7cd
+        ora   #$04                     ; unmuted
+        sta   $e7cf
 @RestorePage        
         lda   #$00
         _SetCartPageA

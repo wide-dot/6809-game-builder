@@ -36,6 +36,11 @@ Next to the example's `to8.config.xml` :
 }
 ```
 
+`joystick` holds toje's joystick once the disk booted (`state` : the
+`set_joystick` arguments), then writes `$A5` at `ready`, which the game mode
+waits on before its joystick tests (`examples/irq`). toje reads button B as
+held : test the directions and A.
+
 `disk` may be a list : an example's targets (one per set of options) run
 the same tests, each line of `bench.ref` prefixed with its disk's name
 (`examples/tilemap`).

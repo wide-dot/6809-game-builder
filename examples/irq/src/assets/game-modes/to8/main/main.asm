@@ -1,5 +1,5 @@
 ;*******************************************************************************
-; IRQ, VBL, palette and the small routines — bench
+; IRQ, VBL, palette, the joypads and the small routines — bench
 ;
 ; The 50 Hz IRQ runs (IrqInit, IrqSet50Hz) with a user routine that counts
 ; its calls ; WaitVBL swaps the screen buffers. The palette routines are
@@ -22,10 +22,17 @@
 ;   t12 RandomNumber from a seed (word : a hash of 16 numbers)
 ;   t13 ClearDataMem fills the data window, the stack and U kept
 ;   t14 GetImgIdA : the image's id read in its page, the caller's page back
+;   t15 TileAnimScript : a frame lasts its D + 1 frames
+;   t16 and 3 frames a call land where 3 calls of a frame do (a D a frame)
+;   t17 ReadJoypads, toje's joystick held right and A (bench.json) : held,
+;       pressed on the first read only, joypad 2 idle, X kept
+;   t18 and bits 0-1 of every result at 0
+;   t19 paged.call : the routine runs in its page, the caller's page back
 ;*******************************************************************************
 
 data.img1       EXTERNAL
 data.img2       EXTERNAL
+data.sub        EXTERNAL
 
  SECTION code
 
@@ -39,7 +46,7 @@ data.img2       EXTERNAL
 
  opt c,ct
 
-TESTS     equ 14
+TESTS     equ 19
 res.magic equ $9C00
 res.count equ $9C01
 res.done  equ $9C02
@@ -60,6 +67,11 @@ R.t11 equ res.base+10
 R.t12 equ res.base+11
 R.t13 equ res.base+12
 R.t14 equ res.base+13
+R.t15 equ res.base+14
+R.t16 equ res.base+15
+R.t17 equ res.base+16
+R.t18 equ res.base+17
+R.t19 equ res.base+18
 W.t11 equ res.sums+2*10
 W.t12 equ res.sums+2*11
 
@@ -73,6 +85,8 @@ bench.sys   equ $9B0A                  ; word
 bench.pal   equ $9B10                  ; 32 bytes : a palette in RAM
 bench.work  equ $9B30                  ; 32 bytes
 bench.obj   equ $9B50                  ; an object's first 32 bytes
+bench.trace equ $9B80                  ; 16 bytes
+bench.ready equ $9BF0                  ; $A5 once bench.py holds the joystick
 
 main
         jsr   InitGlobals
@@ -433,6 +447,135 @@ t13ko
         lda   #1
         sta   R.t14
 t14ko
+; t15 : TileAnimScript, a global D of 4
+        lda   #1
+        sta   gfxlock.frameDrop.count
+        ldx   #t15.list
+        jsr   TileAnimScriptInit
+        ldx   #bench.trace
+        lda   #12
+        sta   bench.n
+t15l    pshs  x
+        jsr   TileAnimScript
+        puls  x
+        lda   TileAnimScriptData+ZACurFrame
+        sta   ,x+
+        dec   bench.n
+        bne   t15l
+        ldx   #bench.trace
+        ldu   #t15.want
+        ldb   #12
+!       lda   ,x+
+        cmpa  ,u+
+        bne   t15ko
+        decb
+        bne   <
+        lda   #1
+        sta   R.t15
+t15ko
+; t16 : a D a frame, 12 calls of a frame against 4 of 3
+        ldx   #t16.list
+        jsr   TileAnimScriptInit
+        lda   #12
+        sta   bench.n
+!       jsr   TileAnimScript
+        dec   bench.n
+        bne   <
+        ldd   TileAnimScriptData+ZACurFrame
+        std   bench.w                  ; the frame and its frames left
+        lda   #3
+        sta   gfxlock.frameDrop.count
+        ldx   #t16.list
+        jsr   TileAnimScriptInit
+        lda   #4
+        sta   bench.n
+!       jsr   TileAnimScript
+        dec   bench.n
+        bne   <
+        ldd   TileAnimScriptData+ZACurFrame
+        cmpd  bench.w
+        bne   t16ko
+        cmpd  #$0A00                   ; frame 10, none left : worked out by hand
+        bne   t16ko
+        ldx   #t16.list                ; 8 frames at once past frame 10's 2 :
+        jsr   TileAnimScriptInit       ; frame 20 starts with none left (clamped),
+        lda   #8                       ; not 255
+        sta   gfxlock.frameDrop.count
+        jsr   TileAnimScript
+        ldd   TileAnimScriptData+ZACurFrame
+        cmpd  #$1400
+        bne   t16ko
+        lda   #1
+        sta   gfxlock.frameDrop.count
+        jsr   TileAnimScript           ; and the next call moves on
+        lda   TileAnimScriptData+ZACurFrame
+        cmpa  #30
+        bne   t16ko
+        lda   #1
+        sta   R.t16
+t16ko   clr   gfxlock.frameDrop.count
+; t17 : ReadJoypads, the joystick held (right, A)
+        lda   #$A5
+!       cmpa  bench.ready              ; bench.py holds it, then says so
+        bne   <
+        ldd   #0
+        std   Ctrl_1
+        std   Ctrl_2
+        ldx   #$1234
+        jsr   ReadJoypads
+        cmpx  #$1234
+        bne   t17ko
+        lda   Ctrl_1_Held
+        anda  #^button_B_mask
+        cmpa  #button_right_mask|button_A_mask
+        bne   t17ko
+        lda   Ctrl_1_Press
+        anda  #^button_B_mask
+        cmpa  #button_right_mask|button_A_mask
+        bne   t17ko
+        lda   Ctrl_2_Held
+        anda  #^button_B_mask
+        bne   t17ko
+        ldd   Ctrl_1
+        std   bench.w                  ; for t18
+        ldd   Ctrl_2
+        std   bench.f0
+        jsr   ReadJoypads
+        lda   Ctrl_1_Press
+        anda  #^button_B_mask
+        bne   t17ko                    ; pressed once
+        lda   #1
+        sta   R.t17
+t17ko
+; t18 : bits 0-1 at 0
+        lda   bench.w
+        ora   bench.w+1
+        ora   bench.f0
+        ora   bench.f0+1
+        ora   Ctrl_1_Held
+        ora   Ctrl_1_Press
+        ora   Ctrl_2_Held
+        ora   Ctrl_2_Press
+        anda  #%00000011
+        bne   >
+        lda   #1
+        sta   R.t18
+!
+; t19 : paged.call
+        _ram.cart.set #5
+        lda   $E7E6
+        sta   bench.t                  ; the caller's page
+        lda   #map.RAM_OVER_CART+assets.data.page
+        ldx   #data.sub
+        jsr   paged.call
+        cmpa  #map.RAM_OVER_CART+assets.data.page ; the page it ran in
+        bne   >
+        lda   $E7E6
+        cmpa  bench.t
+        bne   >
+        lda   #1
+        sta   R.t19
+!
         lda   #$0D
         sta   res.done
 done    bra   done
@@ -513,6 +656,13 @@ t11.cases
         fdb   -256,0
 t11.end
 
+; TileAnimScript : a global D of 4, three frames ; a D a frame (-1)
+t15.list   fdb   t15.script,0
+t15.script fcb   4,3,10,20,30
+t15.want   fcb   10,10,10,10,20,20,20,20,20,30,30,30
+t16.list   fdb   t16.script,0
+t16.script fcb   -1,3,10,2,20,4,30,1
+
 ; GetImgIdA's page index : object 1 and 2's images in the data unit
 Img_Page_Index
         fcb   0
@@ -534,5 +684,8 @@ Img_Page_Index
         INCLUDE "engine/math/RandomNumber.asm"
         INCLUDE "engine/ram/ClearDataMemory.asm"
         INCLUDE "engine/graphics/image/GetImgIdA.asm"
+        INCLUDE "engine/graphics/tilemap/TileAnimScript.asm"
+        INCLUDE "engine/joypad/ReadJoypads2.asm"
+        INCLUDE "engine/system/paged-call.asm"
 
  ENDSECTION
