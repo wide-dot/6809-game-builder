@@ -34,6 +34,37 @@ import lombok.extern.slf4j.Slf4j;
 public class GfxcompPlugin {
 
 	/**
+	 * share="identical" : the variants compiled so far, by image set then
+	 * content key : a later
+	 * variant with the same pixels and encoder parameters shares the first
+	 * one's routine instead of compiling its own (another image's mirror, an
+	 * image symmetric about its axis). Kept per build : a set's slices are as
+	 * many gfxcomp elements, and the build runs them twice (the discovery
+	 * pass, then the real one) : the registry keeps, for a key, the variant
+	 * of that name met last, so a canonical is always one this pass emits.
+	 */
+	public static final String SHARE_NONE = "none";
+	public static final String SHARE_IDENTICAL = "identical";
+
+	private static final java.util.Map<BuildContext, java.util.Map<String, java.util.Map<String, Image>>>
+			SHARED = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+	/** share="identical" : the registry of a set (or a file), null when the gfxcomp keeps every variant's own routine (the default) */
+	private static java.util.Map<String, Image> shared(ImmutableNode node, BuildContext ctx, String set)
+			throws Exception {
+		String share = Attribute.getString(node, ctx, "share", SHARE_NONE);
+		if (!SHARE_NONE.equals(share) && !SHARE_IDENTICAL.equals(share)) {
+			throw new Exception("<gfxcomp share> : unknown value '" + share + "', expected "
+					+ SHARE_NONE + " or " + SHARE_IDENTICAL);
+		}
+		if (set == null || SHARE_NONE.equals(share)) {
+			return null;
+		}
+		return SHARED.computeIfAbsent(ctx, c -> new java.util.HashMap<>())
+				.computeIfAbsent(set, s -> new java.util.HashMap<>());
+	}
+
+	/**
 	 * The compiled parts, each with the symbol it defines — what a pageset
 	 * packs into pages.
 	 *
@@ -67,7 +98,7 @@ public class GfxcompPlugin {
 
 		java.util.List<String[]> parts = new ArrayList<>();
 		for (ImmutableNode child : imageNodes(node, ctx)) {
-			for (String file : compile(child, ctx, gendir, imageset)) {
+			for (String file : compile(child, ctx, gendir, imageset, shared(node, ctx, name == null ? null : "set:" + name))) {
 				if (file.endsWith("_exports.asm")) {
 					continue; // the export block belongs with whichever part is emitted
 				}
@@ -76,7 +107,7 @@ public class GfxcompPlugin {
 				parts.add(new String[] { file, "adr_" + base });
 			}
 		}
-		if (parts.isEmpty()) {
+		if (imageNodes(node, ctx).isEmpty()) {
 			throw new Exception("no <image> to compile in <gfxcomp>");
 		}
 		if (imageset != null) {
@@ -117,12 +148,18 @@ public class GfxcompPlugin {
 		                  : setName != null ? new ImageSet(0, null)
 		                  : null;
 		List<String> generated = new ArrayList<>();
-
-		for (ImmutableNode child : imageNodes(node, ctx)) {
-			generated.addAll(compile(child, ctx, gendir, imageset));
+		// the variants share their routines within the set (a slice's images
+		// are reached through the set's index, whichever slice holds the
+		// code) or, an index of its own, within this file
+		java.util.Map<String, Image> shared = setName != null ? shared(node, ctx, "set:" + setName)
+				: genindex != null ? shared(node, ctx, "file:" + file) : null;
+		List<ImmutableNode> nodes = imageNodes(node, ctx);
+		for (ImmutableNode child : nodes) {
+			generated.addAll(compile(child, ctx, gendir, imageset, shared));
 		}
 
-		if (generated.isEmpty()) {
+		// a file whose every variant shares another's routine compiles nothing
+		if (nodes.isEmpty()) {
 			throw new Exception("no <image> to compile in <gfxcomp>");
 		}
 
@@ -152,8 +189,8 @@ public class GfxcompPlugin {
 				setName != null);
 	}
 
-	private static List<String> compile(ImmutableNode node, BuildContext ctx, String gendir, ImageSet imageset)
-			throws Exception {
+	private static List<String> compile(ImmutableNode node, BuildContext ctx, String gendir, ImageSet imageset,
+			java.util.Map<String, Image> shared) throws Exception {
 
 		String name = Attribute.getString(node, ctx, "name");
 		String filename = ctx.path + File.separator + Attribute.getString(node, ctx, "filename");
@@ -201,7 +238,7 @@ public class GfxcompPlugin {
 			files.add(exportsFile.toString());
 			return files;
 		}
-		return encode(node, ctx, gendir, imageset, name, filename, index);
+		return encode(node, ctx, gendir, imageset, name, filename, index, shared);
 	}
 
 	/**
@@ -448,7 +485,8 @@ public class GfxcompPlugin {
 	}
 
 	private static List<String> encode(ImmutableNode node, BuildContext ctx, String gendir,
-			ImageSet imageset, String name, String filename, Integer index) throws Exception {
+			ImageSet imageset, String name, String filename, Integer index,
+			java.util.Map<String, Image> shared) throws Exception {
 
 		List<String> files = new ArrayList<>();
 		for (ImmutableNode child : node.getChildren()) {
@@ -465,7 +503,21 @@ public class GfxcompPlugin {
 
 			Image image = new Image(name, index, filename, encoder, mirror, shift, position, planes, halfline);
 			image.setAlphaMode(alpha);
+			// a variant drawing the same pixels as one compiled before shares
+			// its routine : no code of its own (shared only through an index)
+			String key = imageset != null && shared != null ? image.contentKey() : null;
+			Image first = key != null ? shared.get(key) : null;
+			if (first != null && !first.getFullName().equals(image.getFullName())) {
+				image.canonical = first;
+				image.nb_cell = first.nb_cell;
+				imageset.addImage(image);
+				log.debug("gfxcomp shares {} with {}", image.getFullName(), first.getFullName());
+				continue;
+			}
 			image.encode(gendir);
+			if (key != null) {
+				shared.put(key, image);
+			}
 			if (imageset != null) {
 				imageset.addImage(image);
 			}
@@ -478,7 +530,7 @@ public class GfxcompPlugin {
 			}
 		}
 
-		if (files.isEmpty()) {
+		if (node.getChildren().isEmpty()) {
 			throw new Exception("image " + name + " has no <encoder>");
 		}
 		return files;

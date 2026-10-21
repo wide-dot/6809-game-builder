@@ -22,12 +22,14 @@
 ; borrow/wrap conversion with non zero camera offsets), the three mirror
 ; subsets, the xloop flag, and a negative screen line — an origin above the
 ; first line, its image under it — in playfield and screen coordinates and
-; at line 0 one line up (t23..t25), the multisprite path (t26..t30), and the
-; priority lists DisplaySprite and DeleteObject keep (t31..t39).
+; at line 0 one line up (t23..t25), the multisprite path (t26..t30), the
+; priority lists DisplaySprite and DeleteObject keep (t31..t39), and the
+; vertical wrap (BuildSprites.YWRAP, t40..t42 : the define on, its mask $FF,
+; t01..t39 are the define off's).
 ;
 ; Results at $9C00, loader-ut convention :
 ;   +0 : $CA once the game mode runs, +1 : TESTS, +2 : $0D once completed
-;   +3.. : $01 per passing test (t01..t39), then one word per test, the VRAM
+;   +3.. : $01 per passing test (t01..t42), then one word per test, the VRAM
 ;   checksum it recorded (0 if none) — docs/lang/en/benches.md
 ;*******************************************************************************
 
@@ -109,6 +111,9 @@ R.t36   equ res.base+35   ; lists : an object never registered deleted
 R.t37   equ res.base+36   ; lists : DisplaySprite clears the hide flag
 R.t38   equ res.base+37   ; lists : DisplaySprite keeps every register
 R.t39   equ res.base+38   ; lists : DisplaySprite without an image registers nothing
+R.t40   equ res.base+39   ; wrap : a sprite past the playfield's top, the camera at its bottom
+R.t41   equ res.base+40   ; wrap : a sprite past its bottom, the camera at its top
+R.t42   equ res.base+41   ; wrap off ($FF) : t40's sprite rejected
 
 ; checksum slots, same rank ; the plain mirror reference uses a spare slot
 S.t03   equ res.sums+2*2
@@ -138,6 +143,9 @@ S.t27   equ res.sums+2*26
 S.t28   equ res.sums+2*27
 S.t29   equ res.sums+2*28
 S.t30   equ res.sums+2*29
+S.t40   equ res.sums+2*39
+S.t41   equ res.sums+2*40
+S.t42   equ res.sums+2*41
 S.plain equ res.sums+2*TESTS   ; unmirrored glyph at the mirror tests' position
 S.ref26 equ res.sums+2*TESTS+2 ; t26's two glyphs drawn by the single path
 
@@ -1206,6 +1214,92 @@ t39
         lda   #1
         sta   R.t39
 
+; ---------------------------------------------------------------------------
+; t40 — the vertical wrap (mask $07) : camera at 500/2040, the sprite at
+; 560/92 (2040+100-2048) is 100 lines below the camera round the 2048 :
+; t16's picture
+; ---------------------------------------------------------------------------
+t40
+        jsr   bench.reset
+        lda   #$07
+        sta   BuildSprites.yWrapMask
+        ldd   #500
+        std   glb_camera_x_pos
+        ldd   #2040
+        std   glb_camera_y_pos
+        ldd   #92
+        jsr   bench.glyph560
+        jsr   BuildSprites
+        ldu   #obj1
+        lda   render_flags,u
+        lbpl  t41
+        jsr   bench.vramsum
+        std   S.t40
+        cmpd  S.t16
+        lbne  t41
+        lda   #1
+        sta   R.t40
+
+; ---------------------------------------------------------------------------
+; t41 — the other way : camera at 500/1990, the sprite at 560/42 is
+; 100 lines below it round the 2048 : t16's picture
+; ---------------------------------------------------------------------------
+t41
+        jsr   bench.reset
+        ldd   #1990
+        std   glb_camera_y_pos
+        ldd   #42
+        jsr   bench.glyph560
+        jsr   BuildSprites
+        ldu   #obj1
+        lda   render_flags,u
+        lbpl  t42
+        jsr   bench.vramsum
+        std   S.t41
+        cmpd  S.t16
+        lbne  t42
+        lda   #1
+        sta   R.t41
+
+; ---------------------------------------------------------------------------
+; t42 — the wrap off (mask $FF, the default) : t40's sprite is 1948 lines
+; above the camera, rejected
+; ---------------------------------------------------------------------------
+t42
+        jsr   bench.reset
+        lda   #$FF
+        sta   BuildSprites.yWrapMask
+        ldd   #2040
+        std   glb_camera_y_pos
+        ldd   #92
+        jsr   bench.glyph560
+        jsr   BuildSprites
+        ldu   #obj1
+        lda   render_flags,u
+        lbmi  benchdone
+        jsr   bench.vramsum
+        std   S.t42
+        lbne  benchdone
+        lda   #1
+        sta   R.t42
+        bra   benchdone
+
+; obj1, the glyph at x 560, y D, playfield coordinates, registered
+bench.glyph560
+        ldu   #obj1
+        std   y_pos,u
+        lda   #1
+        sta   id,u
+        ldx   #set_glyph
+        stx   image_set,u
+        lda   #2
+        sta   priority,u
+        lda   #render_playfieldcoord_mask
+        sta   render_flags,u
+        ldd   #560
+        std   x_pos,u
+        jmp   DisplaySprite
+
 benchdone
         lda   #$0D
         sta   res.done
@@ -1621,6 +1715,7 @@ bench.rowextent
         ; RunObjects is here for UnloadObject only : the overlay pack's
         ; DeleteObject calls it, and a pack member must assemble whole
         INCLUDE "engine/object-management/RunObjects.asm"
+BuildSprites.YWRAP equ 1               ; t40..t42 (its mask $FF : t01..t39 unchanged)
         INCLUDE "engine/graphics/sprite/sprite-overlay-pack.asm"
 
  ENDSECTION

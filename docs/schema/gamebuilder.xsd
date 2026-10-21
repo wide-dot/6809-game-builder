@@ -1408,6 +1408,9 @@
       <xs:attribute name="section" type="xs:string">
         <xs:annotation><xs:documentation>SECTION wrapping the generated includes, code if omitted ; none for a host that already opened one</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="share" type="xs:string">
+        <xs:annotation><xs:documentation>none (default) or identical : a variant drawing the same pixels with the same encoder as one compiled before in its set (an imageset's slices, or this file with genindex) shares that routine instead of compiling its own : an image symmetric about its axis, the mirror of another image. Only through an index : no adr_ symbol of its own</xs:documentation></xs:annotation>
+      </xs:attribute>
       <xs:attribute name="linearbits" type="int6809">
         <xs:annotation><xs:documentation>video memory linear bits</xs:documentation></xs:annotation>
       </xs:attribute>

@@ -221,7 +221,36 @@ id equate an `externPg` relocation resolves against is defined — the baked
 form does not read it, but one source serves both modes.
 
 Exported for the rest of the game to link against : `set_<name>`,
-`idx_<name>`, and every `adr_<name>_<variant>`.
+`idx_<name>`, and every `adr_<name>_<variant>` (but a shared variant's, below).
+
+### Shared variants : `share="identical"`
+
+A variant drawing exactly the same pixels with the same encoder as one compiled
+before need not be compiled again : an image symmetric about its axis is its
+own mirror, and an image is often the mirror of another (a ball opening to
+the left and the same ball opening to the right). With `share="identical"` on
+the `<gfxcomp>`, such a variant compiles nothing : its index entry points at
+the first variant's routine — the same code, the same page.
+
+```xml
+<gfxcomp imageset="ball" share="identical" gendir="..." gensource="...">
+```
+
+- The test is the variant's content after mirror and shift (its pixels, the
+  encoder, the shift, the position, the planes, the alpha, the size and the
+  video memory model) : what decides the emitted code, the name left out.
+- Variants are shared within the set — every slice of a spread set (each
+  `<gfxcomp imageset=...>`), or this file with `genindex` — never between
+  sets : a set's images are loaded together, so the routine an entry points
+  at is there when it is drawn.
+- A shared variant has **no** `adr_<name>_<variant>` of its own : code that
+  calls a drawing routine by name, outside the index, keeps `share="none"`
+  (the default, every variant compiled as before) for that set. The build
+  says so — an undefined `adr_` symbol.
+- The 1bpp encoders keep their own routines.
+
+Measured on Sonic 2's Oil Ocean : the launch ball's 8 frames in their 4
+mirrors are 14 distinct drawings, 32 compiled before (21.6 KB to 10.5 KB).
 
 ### Two ways to reach the second plane
 
@@ -460,6 +489,18 @@ unshifted image rounded by the image's centre parity, which can be the
 other way than the camera's rounding : a sprite the camera follows, 1 pixel
 from it one loop in two, is drawn 2 pixels apart (Sonic 2's main character
 shaking as he runs). Cost : 2 bytes and 2 cycles a sprite.
+
+`BuildSprites.YWRAP` lets the playfield wrap vertically, 2048 lines high (Sonic
+2's Metropolis, whose acts join their bottom to their top) : while
+`BuildSprites.yWrapMask` holds `$07` (the game sets it, the default `$FF`
+wraps nothing), a playfield sprite's line is its distance to the camera's
+taken round the 2048 lines, signed, so a sprite just past the playfield's
+bottom shows above its top and the other way round. The playfield's
+positions and the camera's stay within 0-2047 (the game's own wrap). The
+tilemap needs nothing of it : the map's layout carries its first rows again
+after its last (the rows the view reads down from a camera near the
+bottom), and a camera crossing the wrap moves past a view, so the buffer
+redraws the whole view. Cost : 13 bytes, and 12 cycles a playfield sprite.
 
 ### Backgrounds
 

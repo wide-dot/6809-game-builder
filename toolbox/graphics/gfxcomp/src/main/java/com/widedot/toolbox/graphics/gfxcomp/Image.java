@@ -734,6 +734,46 @@ public class Image {
 	 * (discovery pass, then real pass) for images that almost never change
 	 * between two runs of a working session.
 	 */
+	/**
+	 * The variant of another image (or of this one) whose drawing this one
+	 * shares, null when it has its own : the same pixels after mirror and
+	 * shift and the same encoder parameters make the same code, compiled once
+	 * (GfxcompPlugin.encode). The index then points at the canonical's
+	 * routine.
+	 */
+	public Image canonical;
+
+	/** the routine this variant draws with : its own, or its canonical's */
+	public String routineName() {
+		return canonical != null ? canonical.getFullName() : getFullName();
+	}
+
+	/**
+	 * What decides the emitted code, the image's name left out : two variants
+	 * with the same key compile to the same instructions (the name only labels
+	 * them). Null for the 1bpp encoders, which keep their own.
+	 */
+	public String contentKey() throws Exception {
+		if (isOneBpp() || pixels == null) {
+			return null;
+		}
+		java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+		md.update((type + "|" + shift + "|" + position + "|" + planes + "|" + alphaMode
+				+ "|" + width + "x" + height
+				+ "|" + VideoMemory.memoryLinearBits + "|" + VideoMemory.memoryPlanarBits
+				+ "|" + VideoMemory.memoryLineBytes + "|" + VideoMemory.memoryNbPlanes
+				+ "|" + VideoMemory.memoryPlaneDistance + "|" + VideoMemory.videoMode)
+				.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+		md.update(pixels[0]);
+		md.update((byte) '|');
+		md.update(pixels[1]);
+		StringBuilder hex = new StringBuilder();
+		for (byte b : md.digest()) {
+			hex.append(String.format("%02x", b));
+		}
+		return hex.toString();
+	}
+
 	private com.widedot.m6809.gamebuilder.spi.cache.BuildCache.Entry cacheEntry() throws Exception {
 		return com.widedot.m6809.gamebuilder.spi.cache.BuildCache.entry("gfxcomp", CACHE_VERSION)
 				.keyString(name + "|" + type + "|" + mirror + "|" + shift

@@ -61,11 +61,16 @@ public class ImageSet implements com.widedot.m6809.gamebuilder.spi.globals.Image
 		asm.addCommentLine("the drawing code lives in other files of this build : the builder"
 				+ " resolves each reference against where that file is loaded");
 		asm.add("        INCLUDE \"" + pageByte.include + "\"");
+		java.util.Set<String> declared = new java.util.HashSet<>();
 		for (Entry<String, HashMap<String, Image>> imgEntry : images.entrySet()) {
 			for (Image img : imgEntry.getValue().values()) {
-				extern("adr_" + img.getFullName());
+				// a shared routine is declared once, under its canonical's name
+				if (!declared.add(img.routineName())) {
+					continue;
+				}
+				extern("adr_" + img.routineName());
 				if (img.nb_cell != null) {
-					extern("adr_" + img.getFullName() + AssemblyGenerator.ERASE_SUFFIXE);
+					extern("adr_" + img.routineName() + AssemblyGenerator.ERASE_SUFFIXE);
 				}
 			}
 		}
@@ -154,6 +159,9 @@ public class ImageSet implements com.widedot.m6809.gamebuilder.spi.globals.Image
 				continue;
 			}
 			for (Image img : imgEntry.getValue().values()) {
+				if (img.canonical != null) {
+					continue;           // no routine of its own : its canonical's is exported
+				}
 				asm.add("adr_" + img.getFullName() + " EXPORT");
 				if (img.nb_cell != null) {
 					asm.add("adr_" + img.getFullName() + AssemblyGenerator.ERASE_SUFFIXE + " EXPORT");
@@ -498,11 +506,11 @@ public class ImageSet implements com.widedot.m6809.gamebuilder.spi.globals.Image
 		}
 		flush(line);                       // close the row of bytes in progress
 		asm.addFcb(new String[]{pageSymbol(img, "")});
-		asm.addFdb(new String[]{"adr_"+img.getFullName()});
+		asm.addFdb(new String[]{"adr_"+img.routineName()});
 
 		if (img.nb_cell != null) {
 			asm.addFcb(new String[]{pageSymbol(img, AssemblyGenerator.ERASE_SUFFIXE)});
-			asm.addFdb(new String[]{"adr_"+img.getFullName()+AssemblyGenerator.ERASE_SUFFIXE});
+			asm.addFdb(new String[]{"adr_"+img.routineName()+AssemblyGenerator.ERASE_SUFFIXE});
 			asm.addFcb(new String[]{String.format("$%1$02X", img.nb_cell)}); // unsigned value
 		}
 		asm.flush();
@@ -522,7 +530,7 @@ public class ImageSet implements com.widedot.m6809.gamebuilder.spi.globals.Image
 	 */
 	private String pageSymbol(Image img, String suffix) throws Exception {
 		if (spread) {
-			return pageByte.expr + "adr_" + img.getFullName() + suffix + "$PAGE";
+			return pageByte.expr + "adr_" + img.routineName() + suffix + "$PAGE";
 		}
 		if (file == null) {
 			return "$00";     // the standalone tool : no build, no placement
