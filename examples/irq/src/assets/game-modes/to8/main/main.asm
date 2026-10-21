@@ -28,13 +28,6 @@
 ;       pressed on the first read only, joypad 2 idle, X kept
 ;   t18 and bits 0-1 of every result at 0
 ;   t19 paged.call : the routine runs in its page, the caller's page back
-;   t20 DO_NOT_WAIT_VBL (the target fd-deferred) : WaitVBL returns at once,
-;       the swap asked (WaitVBL.pending), shown by the interrupt, waited by
-;       WaitVBL.done (word : the frames waited) ; the target fd : pass
-;   t21 WaitVBL then (deferred) WaitVBL.done return with the IRQ off
-;
-; Every wait of a VBL is bench.vbl : WaitVBL, then WaitVBL.done when the swap
-; is deferred, a VBL's wait in both targets.
 ;*******************************************************************************
 
 data.img1       EXTERNAL
@@ -53,7 +46,7 @@ data.sub        EXTERNAL
 
  opt c,ct
 
-TESTS     equ 21
+TESTS     equ 19
 res.magic equ $9C00
 res.count equ $9C01
 res.done  equ $9C02
@@ -79,11 +72,8 @@ R.t16 equ res.base+15
 R.t17 equ res.base+16
 R.t18 equ res.base+17
 R.t19 equ res.base+18
-R.t20 equ res.base+19
-R.t21 equ res.base+20
 W.t11 equ res.sums+2*10
 W.t12 equ res.sums+2*11
-W.t20 equ res.sums+2*19
 
 bench.irqs  equ $9B00                  ; word : the user routine's calls
 bench.f0    equ $9B02                  ; word
@@ -119,10 +109,10 @@ main
         jsr   IrqSet50Hz
 
 ; t01 : a frame a VBL, the user routine a frame
-        jsr   bench.vbl
+        jsr   WaitVBL
         jsr   bench.snap
         ldb   #10
-!       jsr   bench.vbl
+!       jsr   WaitVBL
         decb
         bne   <
         orcc  #$10
@@ -147,7 +137,7 @@ main
         sta   bench.t
         ldd   gfxlock.bufferSwap.count
         std   bench.w
-        jsr   bench.vbl
+        jsr   WaitVBL
         lda   gfxlock.backBuffer.id
         eora  bench.t
         cmpa  #1                       ; the other buffer
@@ -156,7 +146,7 @@ main
         subd  bench.w
         cmpd  #1
         bne   >
-        jsr   bench.vbl
+        jsr   WaitVBL
         lda   gfxlock.backBuffer.id
         cmpa  bench.t                  ; and back
         bne   >
@@ -164,9 +154,9 @@ main
         sta   R.t02
 !
 ; t03 : the frames between two swaps, then capped at 2
-        jsr   bench.vbl
+        jsr   WaitVBL
         jsr   bench.spin3
-        jsr   bench.vbl
+        jsr   WaitVBL
         lda   gfxlock.frameDrop.count
         cmpa  #3
         blo   t03ko
@@ -174,9 +164,9 @@ main
         bhi   t03ko
         lda   #2
         sta   Vint_Main_runcount_cap
-        jsr   bench.vbl
+        jsr   WaitVBL
         jsr   bench.spin3
-        jsr   bench.vbl
+        jsr   WaitVBL
         lda   gfxlock.frameDrop.count
         cmpa  #2
         bne   t03ko
@@ -192,7 +182,7 @@ t03ko   lda   #-1
         subd  #258
         std   gfxlock.frame.lastCount
         andcc #$EF
-        jsr   bench.vbl
+        jsr   WaitVBL
         lda   gfxlock.frameDrop.count
         cmpa  #5
         bne   >
@@ -207,9 +197,9 @@ t03ko   lda   #-1
         bne   t05ko                    ; off
         ldd   gfxlock.frame.count
         std   bench.w
-        jsr   bench.vbl
-        jsr   bench.vbl
-        jsr   bench.vbl
+        jsr   WaitVBL
+        jsr   WaitVBL
+        jsr   WaitVBL
         ldd   gfxlock.frame.count
         cmpd  bench.w
         bne   t05ko                    ; nothing counted
@@ -217,8 +207,8 @@ t03ko   lda   #-1
         lda   $6019
         anda  #$20
         beq   t05ko                    ; on again
-        jsr   bench.vbl
-        jsr   bench.vbl
+        jsr   WaitVBL
+        jsr   WaitVBL
         ldd   gfxlock.frame.count
         cmpd  bench.w
         beq   t05ko                    ; counting
@@ -586,45 +576,6 @@ t17ko
         lda   #1
         sta   R.t19
 !
-; t20 : the swap deferred, not waited
- IFDEF DO_NOT_WAIT_VBL
-        jsr   bench.vbl
-        orcc  #$10                     ; no VBL in between
-        ldd   gfxlock.frame.count
-        std   bench.w
-        jsr   WaitVBL
-        ldd   gfxlock.frame.count
-        cmpd  bench.w                  ; no wait
-        bne   t20ko
-        lda   WaitVBL.pending
-        beq   t20ko                    ; asked
-        andcc #$EF
-        jsr   WaitVBL.done
-        lda   WaitVBL.pending
-        bne   t20ko                    ; shown
-        ldd   gfxlock.frame.count
-        subd  bench.w
-        std   W.t20                    ; the frames waited
-        cmpd  #1
-        bhi   t20ko
-        lda   #1
-        sta   R.t20
-t20ko   andcc #$EF
- ELSE
-        lda   #1
-        sta   R.t20
- ENDC
-; t21 : the IRQ off, no hang
-        jsr   IrqOff
-        jsr   WaitVBL
- IFDEF DO_NOT_WAIT_VBL
-        jsr   WaitVBL.done
-        lda   WaitVBL.pending
-        bne   >
- ENDC
-        lda   #1
-        sta   R.t21
-!       jsr   IrqOn
         lda   #$0D
         sta   res.done
 done    bra   done
@@ -632,14 +583,6 @@ done    bra   done
 ;*******************************************************************************
 ; bench helpers
 ;*******************************************************************************
-
-; a VBL's wait : WaitVBL, then WaitVBL.done when the swap is deferred
-bench.vbl
-        jsr   WaitVBL
- IFDEF DO_NOT_WAIT_VBL
-        jsr   WaitVBL.done
- ENDC
-        rts
 
 ; the IRQ's user routine : counts its calls (DP $E7 : extended addressing)
 bench.irq

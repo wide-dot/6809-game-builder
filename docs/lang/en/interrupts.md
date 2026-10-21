@@ -85,56 +85,14 @@ frame applies from the next one or the one after.
   not.
 - The interrupt runs on its own stack : the split's routine may push.
 
-## The buffer swap at the VBL : `DO_NOT_WAIT_VBL`
+## The buffer swap at the VBL : gfxlock
 
-A define, opt-in : a project that does not define it assembles the same
-binary as before (`WaitVBL` waits for the beam to leave the screen, then
-swaps the two screen buffers).
-
-A game whose loop takes several frames loses, waiting, half a frame a loop
-on average ; swapping at once instead tears the screen (the page shown
-changes in the middle of the display). With `DO_NOT_WAIT_VBL` the swap is
-deferred to the interrupt, set on a line out of the display (`IrqSync`,
-255) :
-
-```asm
-DO_NOT_WAIT_VBL equ 1
-
-MainLoop
-        jsr   WaitVBL                  ; the swap asked : no wait
-        ...                            ; the objects : nothing written to the screen
-        jsr   WaitVBL.done             ; the buffer drawn shown : this one mapped
-        ...                            ; the drawing
-        bra   MainLoop
-```
-
-- `WaitVBL` asks the swap and returns : it turns `gfxlock.backBuffer.id`
-  (the buffer the objects display into), counts the frames since its last
-  call (`gfxlock.frameDrop.count`), and leaves the display register's value
-  in `WaitVBL.pending`.
-- `IrqManager`, at the VBL's interrupt, writes it to `$E7DD` : the buffer
-  drawn shows from the top of the next frame.
-- `WaitVBL.done` waits for that write, then maps the other buffer to draw
-  (the data window `$E7E5`, the screen window's half `$E7C3`). The
-  interrupt off (`$6019`) or masked : it writes `$E7DD` itself.
-
-Between `WaitVBL` and `WaitVBL.done` the data window still holds the
-buffer just drawn : nothing there may write the screen (a game's objects
-display into lists, the drawing comes after). Two calls of `WaitVBL`
-without `WaitVBL.done` in between (an act's start clearing both buffers)
-show the last buffer asked ; `WaitVBL.done` counts the swaps asked since
-its last mapping and toggles the screen window's half when it is odd.
-
-### Cost
-
-- `WaitVBL` 61 bytes, some 110 cycles ; `WaitVBL.done` 62 bytes, some 100
-  cycles and the wait, if the drawing comes before the VBL (+44 bytes
-  against the waiting `WaitVBL`) ;
-- the interrupt : 11 bytes, 8 cycles a frame, 20 when it swaps.
-
-### Limits
-
-- The interrupt must be set out of the display : the swap lands when it
-  runs.
-- A loop faster than a frame waits in `WaitVBL.done` : a frame a loop at
-  most, as with the waiting `WaitVBL`.
+`WaitVBL` waits for the beam to leave the screen, then swaps the screen
+buffers : a loop of several frames loses half a frame each time. Such a game
+uses gfxlock (`engine/graphics/buffer/gfxlock.asm`, the frame in
+[`sprites.md`](sprites.md), *Drawing*) : the game's routine calls
+`gfxlock.bufferSwap.check` first, and the interrupt shows the buffer drawn
+once `_gfxlock.off` said the drawing is over ; `_gfxlock.on` waits only when
+the next drawing comes before that swap. Nothing may write the screen outside
+`_gfxlock.on` and `_gfxlock.off` : before the swap the buffer to draw is the
+one shown. The interrupt set out of the display (255) : the swap never tears.
