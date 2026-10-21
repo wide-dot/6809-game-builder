@@ -148,7 +148,8 @@ la description de la PR en garde la trace.
   `examples/tilemap` (banc de TilemapBuffer, 13/13 sur deux cibles — les
   options de sonic-2 sur la seconde : la vue vérifiée cellule par cellule
   contre la carte, puis dessinée, depuis le 18/10/2026),
-  `examples/irq` (banc IRQ 50 Hz, WaitVBL, palette, Mul9x16, CalcSine,
+  `examples/irq` (banc IRQ 50 Hz, gfxlock — le seul double buffer depuis le
+  21/10/2026, WaitVBL retiré —, palette, Mul9x16, CalcSine,
   RandomNumber, ClearDataMem, GetImgIdA, TileAnimScript, ReadJoypads — la
   manette de toje tenue par `bench.json` —, paged.call : 19/19 sous toje,
   l'IRQ active, depuis le 18/10/2026),
