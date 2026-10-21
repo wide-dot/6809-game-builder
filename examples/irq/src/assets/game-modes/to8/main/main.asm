@@ -2,15 +2,17 @@
 ; IRQ, VBL, palette, the joypads and the small routines — bench
 ;
 ; The 50 Hz IRQ runs (IrqInit, IrqSet50Hz) with a user routine that counts
-; its calls ; WaitVBL swaps the screen buffers. The palette routines are
+; its calls and swaps the screen buffers (gfxlock.bufferSwap.check). The palette routines are
 ; checked on their RAM side : toje does not read the palette chip back.
 ;
 ; Witnesses at $9C00 (docs/lang/en/benches.md) : $CA, TESTS, $0D once done,
 ; a byte per test ($01 pass), a word per test.
 ;   t01 the IRQ counts a frame a VBL, and runs the user routine as many times
-;   t02 WaitVBL swaps the buffers : backBuffer.id, bufferSwap.count
-;   t03 the frames between two swaps (3 or 4 after 3 counted), capped
-;   t04 past 255 frames the count is the cap
+;   t02 gfxlock : the interrupt swaps the buffers drawn (_gfxlock.off),
+;       _gfxlock.loop turns backBuffer.id : bufferSwap.count
+;   t03 the frames between two loops (3 or 4 after 3 counted), capped
+;       (gfxlock.frameDrop.max)
+;   t04 7 frames, the cap 5 : the count is the cap
 ;   t05 IrqPause / IrqUnpause : the IRQ off then back on ; off stays off
 ;   t06 IrqSecond : the seconds, then the minute
 ;   t07 PalUpdateNow runs only when PalRefresh asks, and sets it back
@@ -28,13 +30,6 @@
 ;       pressed on the first read only, joypad 2 idle, X kept
 ;   t18 and bits 0-1 of every result at 0
 ;   t19 paged.call : the routine runs in its page, the caller's page back
-;   t20 DO_NOT_WAIT_VBL (the target fd-deferred) : WaitVBL returns at once,
-;       the swap asked (WaitVBL.pending), shown by the interrupt, waited by
-;       WaitVBL.done (word : the frames waited) ; the target fd : pass
-;   t21 WaitVBL then (deferred) WaitVBL.done return with the IRQ off
-;
-; Every wait of a VBL is bench.vbl : WaitVBL, then WaitVBL.done when the swap
-; is deferred, a VBL's wait in both targets.
 ;*******************************************************************************
 
 data.img1       EXTERNAL
@@ -50,10 +45,11 @@ data.sub        EXTERNAL
         INCLUDE "engine/system/to8/map.const.asm"
         INCLUDE "engine/system/to8/ram/ram.macro.asm"
         INCLUDE "engine/system/thomson/bootloader/loader.macro.asm"
+        INCLUDE "engine/graphics/buffer/gfxlock.macro.asm"
 
  opt c,ct
 
-TESTS     equ 21
+TESTS     equ 19
 res.magic equ $9C00
 res.count equ $9C01
 res.done  equ $9C02
@@ -79,11 +75,8 @@ R.t16 equ res.base+15
 R.t17 equ res.base+16
 R.t18 equ res.base+17
 R.t19 equ res.base+18
-R.t20 equ res.base+19
-R.t21 equ res.base+20
 W.t11 equ res.sums+2*10
 W.t12 equ res.sums+2*11
-W.t20 equ res.sums+2*19
 
 bench.irqs  equ $9B00                  ; word : the user routine's calls
 bench.f0    equ $9B02                  ; word
@@ -113,16 +106,17 @@ main
         sta   res.count
         ldd   #0
         std   bench.irqs
+        _gfxlock.init
         ldd   #bench.irq
         std   Irq_user_routine
         jsr   IrqInit
         jsr   IrqSet50Hz
 
 ; t01 : a frame a VBL, the user routine a frame
-        jsr   bench.vbl
+        jsr   bench.frame
         jsr   bench.snap
         ldb   #10
-!       jsr   bench.vbl
+!       jsr   bench.frame
         decb
         bne   <
         orcc  #$10
@@ -145,9 +139,11 @@ main
 ; t02 : the buffers swapped
         lda   gfxlock.backBuffer.id
         sta   bench.t
+        jsr   bench.frame              ; no drawing pending
         ldd   gfxlock.bufferSwap.count
         std   bench.w
-        jsr   bench.vbl
+        jsr   bench.draw
+        jsr   bench.frame              ; the interrupt swaps it
         lda   gfxlock.backBuffer.id
         eora  bench.t
         cmpa  #1                       ; the other buffer
@@ -156,50 +152,48 @@ main
         subd  bench.w
         cmpd  #1
         bne   >
-        jsr   bench.vbl
+        jsr   bench.draw
         lda   gfxlock.backBuffer.id
         cmpa  bench.t                  ; and back
         bne   >
         lda   #1
         sta   R.t02
 !
-; t03 : the frames between two swaps, then capped at 2
-        jsr   bench.vbl
+; t03 : the frames between two loops, then capped at 2
+        jsr   bench.draw
         jsr   bench.spin3
-        jsr   bench.vbl
+        jsr   bench.draw
         lda   gfxlock.frameDrop.count
         cmpa  #3
         blo   t03ko
         cmpa  #4
         bhi   t03ko
         lda   #2
-        sta   Vint_Main_runcount_cap
-        jsr   bench.vbl
+        sta   gfxlock.frameDrop.max
+        jsr   bench.draw
         jsr   bench.spin3
-        jsr   bench.vbl
+        jsr   bench.draw
         lda   gfxlock.frameDrop.count
         cmpa  #2
         bne   t03ko
         lda   #1
         sta   R.t03
-t03ko   lda   #-1
-        sta   Vint_Main_runcount_cap
-; t04 : 258 frames and more : the cap
+t03ko   clr   gfxlock.frameDrop.max
+; t04 : 7 frames, the cap 5
         lda   #5
-        sta   Vint_Main_runcount_cap
+        sta   gfxlock.frameDrop.max
         orcc  #$10
         ldd   gfxlock.frame.count
-        subd  #258
+        subd  #7
         std   gfxlock.frame.lastCount
         andcc #$EF
-        jsr   bench.vbl
+        jsr   bench.draw
         lda   gfxlock.frameDrop.count
         cmpa  #5
         bne   >
         lda   #1
         sta   R.t04
-!       lda   #-1
-        sta   Vint_Main_runcount_cap
+!       clr   gfxlock.frameDrop.max
 ; t05 : IrqPause, IrqUnpause
         jsr   IrqPause
         lda   $6019
@@ -207,9 +201,9 @@ t03ko   lda   #-1
         bne   t05ko                    ; off
         ldd   gfxlock.frame.count
         std   bench.w
-        jsr   bench.vbl
-        jsr   bench.vbl
-        jsr   bench.vbl
+        jsr   bench.beam
+        jsr   bench.beam
+        jsr   bench.beam
         ldd   gfxlock.frame.count
         cmpd  bench.w
         bne   t05ko                    ; nothing counted
@@ -217,8 +211,8 @@ t03ko   lda   #-1
         lda   $6019
         anda  #$20
         beq   t05ko                    ; on again
-        jsr   bench.vbl
-        jsr   bench.vbl
+        jsr   bench.beam
+        jsr   bench.beam
         ldd   gfxlock.frame.count
         cmpd  bench.w
         beq   t05ko                    ; counting
@@ -586,45 +580,6 @@ t17ko
         lda   #1
         sta   R.t19
 !
-; t20 : the swap deferred, not waited
- IFDEF DO_NOT_WAIT_VBL
-        jsr   bench.vbl
-        orcc  #$10                     ; no VBL in between
-        ldd   gfxlock.frame.count
-        std   bench.w
-        jsr   WaitVBL
-        ldd   gfxlock.frame.count
-        cmpd  bench.w                  ; no wait
-        bne   t20ko
-        lda   WaitVBL.pending
-        beq   t20ko                    ; asked
-        andcc #$EF
-        jsr   WaitVBL.done
-        lda   WaitVBL.pending
-        bne   t20ko                    ; shown
-        ldd   gfxlock.frame.count
-        subd  bench.w
-        std   W.t20                    ; the frames waited
-        cmpd  #1
-        bhi   t20ko
-        lda   #1
-        sta   R.t20
-t20ko   andcc #$EF
- ELSE
-        lda   #1
-        sta   R.t20
- ENDC
-; t21 : the IRQ off, no hang
-        jsr   IrqOff
-        jsr   WaitVBL
- IFDEF DO_NOT_WAIT_VBL
-        jsr   WaitVBL.done
-        lda   WaitVBL.pending
-        bne   >
- ENDC
-        lda   #1
-        sta   R.t21
-!       jsr   IrqOn
         lda   #$0D
         sta   res.done
 done    bra   done
@@ -633,16 +588,10 @@ done    bra   done
 ; bench helpers
 ;*******************************************************************************
 
-; a VBL's wait : WaitVBL, then WaitVBL.done when the swap is deferred
-bench.vbl
-        jsr   WaitVBL
- IFDEF DO_NOT_WAIT_VBL
-        jsr   WaitVBL.done
- ENDC
-        rts
-
-; the IRQ's user routine : counts its calls (DP $E7 : extended addressing)
+; the IRQ's user routine : the buffer drawn shown, then counts its calls
+; (DP $E7 : extended addressing)
 bench.irq
+        jsr   gfxlock.bufferSwap.check
         inc   bench.irqs+1
         bne   >
         inc   bench.irqs
@@ -658,7 +607,30 @@ bench.snap
         andcc #$EF
         rts
 
-; until 3 frames are counted since the last swap
+; a frame : until the interrupt counts one
+bench.frame
+        pshs  d
+        ldd   gfxlock.frame.count
+!       cmpd  gfxlock.frame.count
+        beq   <
+        puls  d,pc
+
+; a VBL, the interrupt off : the beam out of the screen, then in again
+bench.beam
+!       tst   $E7E7
+        bpl   <
+!       tst   $E7E7
+        bmi   <
+        rts
+
+; a drawing : gfxlock's frame (nothing drawn), the frames counted
+bench.draw
+        _gfxlock.on
+        _gfxlock.off
+        _gfxlock.loop
+        rts
+
+; until 3 frames are counted since the last loop
 bench.spin3
 !       orcc  #$10
         ldd   gfxlock.frame.count
@@ -732,7 +704,7 @@ Img_Page_Index
         INCLUDE "engine/InitGlobals.asm"
         INCLUDE "engine/irq/Irq.asm"
         INCLUDE "engine/irq/IrqSecond.asm"
-        INCLUDE "engine/graphics/vbl/WaitVBL.asm"
+        INCLUDE "engine/graphics/buffer/gfxlock.asm"
         INCLUDE "engine/palette/PalUpdateNow.asm"
         INCLUDE "engine/palette/PalCycling.asm"
         INCLUDE "engine/palette/palette-fade.asm"

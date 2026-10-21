@@ -14,9 +14,6 @@
 *                     the caller's page kept ; DP $E7 (the monitor's), its
 *                     own stack (Irq_sys_stack)
 *
-* DO_NOT_WAIT_VBL (define, opt-in) : the VBL's interrupt shows the buffer
-* WaitVBL asked (engine/graphics/vbl/WaitVBL.asm) ; V2-DEVIATION 2026-10-21.
-*
 * IRQ_SPLIT (define, opt-in) : a second interrupt a frame, at a line of the
 * display, for a palette change there (a game's water surface). The VBL's
 * interrupt keeps its phase : the timer runs with TCR4 set (a latch write does
@@ -157,13 +154,6 @@ IrqManager
         bra   @count
 @single jsr   IrqSplit_Schedule        ; no split this frame : the next one's
 @count
- ENDC
- IFDEF DO_NOT_WAIT_VBL
-        ldb   WaitVBL.pending          ; the buffer WaitVBL asked shown, at the VBL
-        beq   >
-        stb   $E7DD
-        clr   WaitVBL.pending
-!
  ENDC
         inc   gfxlock.frame.count+1
         bne   >

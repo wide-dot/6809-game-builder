@@ -129,6 +129,10 @@ practice; this is a reading order, not a schedule.
     return address, one region per game mode.
 24. [Overlay: erase by omission, not by repaint](overlay-erase-by-omission.md)
 25. [A per-frame loop is a multiply](frame-drop-loops-are-multiplies.md)
+25a. [A v1 `WaitVBL` main loop becomes a gfxlock frame](waitvbl-to-gfxlock.md) —
+    the drawing between `_gfxlock.on` and `_gfxlock.off`, the swap made by
+    the interrupt at the VBL : no wait for the beam, no tearing ; a raster
+    moves to the split interrupt.
 25b. [A frame-drop timer carries its overshoot](frame-drop-timer-carry.md) —
     the original reloads on reaching -1 : D + 1 + c', clamped at 0 ; v1's
     `AnimateSpriteSync` took the drop twice, its `TileAnimScript` added it.
