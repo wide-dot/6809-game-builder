@@ -1,19 +1,42 @@
-t01 01 0000
-t02 01 0000
-t03 01 0000
-t04 01 0000
-t05 01 0000
-t06 01 0000
-t07 01 0000
-t08 01 0000
-t09 01 0000
-t10 01 0000
-t11 01 00B5
-t12 01 ED3D
-t13 01 0000
-t14 01 0000
-t15 01 0000
-t16 01 0000
-t17 01 0000
-t18 01 0000
-t19 01 0000
+to8 t01 01 0000
+to8 t02 01 0000
+to8 t03 01 0000
+to8 t04 01 0000
+to8 t05 01 0000
+to8 t06 01 0000
+to8 t07 01 0000
+to8 t08 01 0000
+to8 t09 01 0000
+to8 t10 01 0000
+to8 t11 01 00B5
+to8 t12 01 ED3D
+to8 t13 01 0000
+to8 t14 01 0000
+to8 t15 01 0000
+to8 t16 01 0000
+to8 t17 01 0000
+to8 t18 01 0000
+to8 t19 01 0000
+to8 t20 01 0000
+to8 t21 01 0000
+to8-deferred t01 01 0000
+to8-deferred t02 01 0000
+to8-deferred t03 01 0000
+to8-deferred t04 01 0000
+to8-deferred t05 01 0000
+to8-deferred t06 01 0000
+to8-deferred t07 01 0000
+to8-deferred t08 01 0000
+to8-deferred t09 01 0000
+to8-deferred t10 01 0000
+to8-deferred t11 01 00B5
+to8-deferred t12 01 ED3D
+to8-deferred t13 01 0000
+to8-deferred t14 01 0000
+to8-deferred t15 01 0000
+to8-deferred t16 01 0000
+to8-deferred t17 01 0000
+to8-deferred t18 01 0000
+to8-deferred t19 01 0000
+to8-deferred t20 01 0001
+to8-deferred t21 01 0000
