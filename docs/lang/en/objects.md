@@ -55,7 +55,12 @@ never had.
 
 `ManagedObjects_ClearAll` wipes the pool, then runs `InitStack` : every slot
 free, the run list empty. (Until 18/10/2026 it left the free stack alone, and
-the slots in use at a purge were lost until the next `InitStack`.)
+the slots in use at a purge were lost until the next `InitStack`.) It knows the
+pool alone : the display lists, the cells, the collision lists and the objects'
+direct page still name the objects it cleared. To delete every object, call
+`DeleteObject_All` (`engine/graphics/sprite/DeleteObject_All.asm`), the bulk
+counterpart of `DeleteObject` : those structures first, each the game declares
+(`ObjectDp.ENABLED`, `Collision.LISTS`), then the pool.
 
 ## The run list
 

@@ -10,6 +10,8 @@
 *                                          nothing done without an image
 * DisplaySprite_x / DisplaySprite2         X the object, its priority field
 * DisplaySprite_priority / DisplaySprite3  U the object, A the priority
+* DisplaySprite_ClearAll                   every list emptied (the pool
+*                                          cleared : DeleteObject_All)
 * V2-DEVIATION (18/10/2026) : rewritten from v1's : priority 0 also clears
 * rsv_priority (re-displayed at the same priority, the object stayed out of
 * the lists), Y kept, the unlink shared with DeleteObject.
@@ -17,6 +19,14 @@
 
 Tbl_Priority_First_Entry      fill  0,2+(nb_priority_levels*2) ; a priority's first object (entry 0 unused)
 Tbl_Priority_Last_Entry       fill  0,2+(nb_priority_levels*2) ; a priority's last object (entry 0 unused)
+
+DisplaySprite_ClearAll                 ; the lists persist across frames : a
+        ldd   #0                       ; cleared pool leaves them on dead objects
+        ldx   #Tbl_Priority_First_Entry
+!       std   ,x++                     ; first then last entries, contiguous
+        cmpx  #Tbl_Priority_Last_Entry+2+(nb_priority_levels*2)
+        blo   <
+        rts
 
 DisplaySprite_priority
 DisplaySprite3
