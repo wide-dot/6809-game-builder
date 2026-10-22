@@ -187,7 +187,7 @@ la description de la PR en garde la trace.
 | Allocateur TLSF 16 bits (+ realloc + UT embarqués) | `engine/memory/malloc/` | Nouveauté v2 (la v1 n'avait pas d'allocateur dynamique) |
 | ZX0 (compresseur Java + 3 décompresseurs 6809) | `toolbox/gamebuilder/util/zx0`, `engine/compression/zx0/` | |
 | Audio VGC (SN76489) + YMM (YM2413) + outils `vgm2vgc`/`vgm2ymm`/`vgm2sfx` | `engine/sound/`, `toolbox/audio/` | Démontré TO8 **et** MO6 (`examples/sound`) — R-Type v1 utilise exactement YMM + soundFX |
-| Double buffering `gfxlock` (swap sur IRQ 50 Hz, compteurs frame/frame-drop) | `engine/system/thomson/graphics/buffer/` | Porté de la v1 ; base du timing gameplay |
+| Double buffering `gfxlock` (swap sur IRQ 50 Hz, compteurs frame/frame-drop) — le seul double buffer, contrat dans [`gfxlock.md`](docs/lang/en/gfxlock.md) | `engine/graphics/buffer/` (les jeux, import v1) ; `engine/system/thomson/graphics/buffer/` (base v2 : MO6, MPLUS) | Porté de la v1 ; base du timing gameplay |
 | IRQ 50 Hz + sync ligne écran, palette, bank switching, modes vidéo | `engine/system/{to8,mo6}/` | Fonctionnel, minimal |
 | Contrôleurs : clavier, clavier rapide, joypad, pad Megadrive 6 boutons | `engine/system/{to8,mo6}/controller/` | Équivalent v1 (dont `joypad.kb`) |
 | Sprites compilés : `gfxcomp` (PNG → code 6809) **+ le runtime de dessin** | `toolbox/graphics/gfxcomp/`, `engine/graphics/sprite/` | Chaîne complète depuis le 01/08/2026 : `<gfxcomp>` dans le config.xml, index imageset avec page résolue au load-time link, runtime v1 importé 1:1. Les **quatre encodeurs** sont exercés, images compressées comprises (`engine/graphics/codec/zx0_mega.asm` importé, décompresseur rendu relogeable). Banc `examples/sprites` validé sous toje, banc générateur-vs-générateur 11/11. Un set trop gros pour une page est une **collection** (le packer la coule dans les creux d'une arène) et s'indexe par l'élément `<imageset>`, qui grave une page **par image** (comme la v1). Doc : [`sprites.md`](docs/lang/en/sprites.md) |
@@ -710,6 +710,21 @@ index 39, `loader.composition.set` (X = la table, 0 = rien) : elle ne
 charge rien, elle déclare. `boot.entry` de r-type l'appelle avec
 `compositions.boot` avant de demander le title. Règle : **qui amène un état
 par `scene.load` le déclare avant la première convergence.**
+
+## gfxlock : une section par boucle principale (22/10/2026)
+
+**Règle de l'auteur.** Une seule section `_gfxlock.on` / `_gfxlock.off` par
+boucle principale, et TOUTE écriture à l'écran (clear, texte, masque, image
+appelée en direct, `$E7E5`, demi-page de `$E7C3`) est déplacée dedans —
+jamais une section ouverte autour de la routine qui écrit. Avant le swap, la
+fenêtre données montre encore le tampon affiché : une écriture hors section
+clignote (vécu sur Sonic 2, texte d'intro et level select). Deux façons :
+section ouverte avant `RunObjects` (title, menu), ou requête de l'objet
+exécutée par le game mode dans la section (`paged.call`, niveau). Au
+démarrage, `gfxlock.status` à -1 avant l'IRQ, les deux tampons dessinés selon
+`gfxlock.backBuffer.status`, puis `_gfxlock.init` ; la bordure par
+`gfxlock.screenBorder.color` seulement (`$E7DD` est en écriture seule).
+Contrat complet : [`gfxlock.md`](docs/lang/en/gfxlock.md).
 
 ## Page directe : contrat DP (01/08/2026)
 

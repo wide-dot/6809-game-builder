@@ -87,13 +87,9 @@ frame applies from the next one or the one after.
 
 ## The buffer swap at the VBL : gfxlock
 
-The engine's one double buffer is gfxlock (`engine/graphics/buffer/gfxlock.asm`,
-the frame in [`sprites.md`](sprites.md), *Drawing* ; v1's `WaitVBL` is gone,
-[`migration/waitvbl-to-gfxlock.md`](migration/waitvbl-to-gfxlock.md)) : the
-game's routine calls `gfxlock.bufferSwap.check` first, and the interrupt shows
-the buffer drawn once `_gfxlock.off` said the drawing is over ; `_gfxlock.on`
-waits only when the next drawing comes before that swap. Nothing may write the
-screen outside `_gfxlock.on` and `_gfxlock.off` : before the swap the buffer to
-draw is the one shown. The interrupt set out of the display (255) : the swap
-never tears. A palette change at a line of the display (a raster) is the
+The engine's one double buffer is gfxlock ([`gfxlock.md`](gfxlock.md) : the
+state, the one section a main loop, the start) : the game's routine calls
+`gfxlock.bufferSwap.check` first, and the interrupt shows the buffer drawn
+once `_gfxlock.off` said the drawing is over. The interrupt set out of the
+display (255) : the swap never tears. A palette change at a line of the display (a raster) is the
 split's (`IRQ_SPLIT`, above), the VBL's interrupt kept for the swap.

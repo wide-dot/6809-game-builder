@@ -39,7 +39,8 @@ anywhere in the loop. A raster effect was timed by `IrqSync` after the swap.
 
 ## The v2 model
 
-The drawing is bracketed, and the interrupt shows what was drawn :
+The contract in full : [`../gfxlock.md`](../gfxlock.md). The drawing is
+bracketed, and the interrupt shows what was drawn :
 
 - `_gfxlock.on` before the first write to the screen : it waits only when the
   previous drawing is not yet shown, then maps the buffer to draw ;
@@ -63,7 +64,15 @@ kept for the swap.
    `engine/graphics/buffer/gfxlock.asm` instead of `WaitVBL.asm`.
 2. `_gfxlock.init` once the act is loaded and its two buffers drawn ; where
    v1 called `WaitVBL` to show a buffer outside the loop (a start image),
-   `gfxlock.bufferSwap.do`.
+   `gfxlock.bufferSwap.do`. Before the interrupt starts, `gfxlock.status` set
+   to -1 : a unit just loaded holds 0 there, a swap pending, and the
+   interrupt would swap in the middle of the buffers' drawing. Each buffer
+   drawn as `_gfxlock.on` would mount it (`gfxlock.backBuffer.status` bit 0,
+   page 2 or 3), never page 2 then page 3 by name : `bufferSwap.do` shows
+   that one and flips the state. The border goes through
+   `gfxlock.screenBorder.color` alone, applied by the next swap : v1's
+   read-modify-write of `$E7DD` reads a write-only register, the page shown
+   then undefined.
 3. The loop :
 
    ```
@@ -82,9 +91,20 @@ kept for the swap.
    (`gfxlock.on rts`), and calls those.
 4. `jsr gfxlock.bufferSwap.check` first in every user routine the interrupt
    may run (`Irq_user_routine`).
-5. Every other writer of the screen inside `on` / `off` : an object that
-   writes the screen in its own routine calls `gfxlock.on` first (a second
-   call returns at once, the buffer already mapped).
+5. One section a main loop : every write to the screen moves into it, never
+   a section opened around the routine that writes. Under `WaitVBL` the
+   buffer to draw was mounted from the swap on, so an object could write the
+   screen in its own routine (a text, a clear, a mask) ; under gfxlock the
+   window still shows the buffer drawn last until `_gfxlock.on`, and such a
+   write lands in the image shown, one buffer in two : it flickers. Two
+   ways, as R-Type does :
+   - objects that draw directly all along (a title, a menu) : the section
+     opens before `RunObjects` (R-Type's title, its typewriter text) ;
+   - an object that writes now and then in a game mode whose logic must
+     overlap the display (a level) : `RunObjects` stays before the section,
+     the object asks for its writing (its page and its routine) and the game
+     mode runs it in the section by `paged.call` (R-Type's stage draws its
+     HUD there).
 6. `Vint_Main_runcount_cap` becomes `gfxlock.frameDrop.max`.
 7. A raster timed by `IrqSync` becomes a split interrupt : `IRQ_SPLIT equ 1`,
    `Irq_split_line` and `Irq_split_routine` (the routine restores the
@@ -115,6 +135,8 @@ kept for the swap.
 ## Met in
 
 Sonic 2 (`wide-dot/sonic-2`), 2026-10-21 : the title (its raster at line 139
-moved to the split), the level game mode, the special stage ; Sky Chase's
+moved to the split ; 2026-10-22 its section before its objects, the intro's
+text and the level select's flickering otherwise), the level game mode (its
+GAME OVER and results masks asked, run in the section), the special stage ; Sky Chase's
 tearing under `DO_NOT_WAIT_VBL` was the trigger. R-Type was already on
 gfxlock. `WaitVBL.asm` removed from the engine (wide-dot/6809-game-builder#85).
