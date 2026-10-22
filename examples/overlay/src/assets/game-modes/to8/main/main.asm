@@ -25,12 +25,12 @@
 ; at line 0 one line up (t23..t25), the multisprite path (t26..t30), the
 ; priority lists DisplaySprite and DeleteObject keep (t31..t39), and the
 ; vertical wrap (BuildSprites.YWRAP, t40..t42 : the define on, its mask $FF,
-; t01..t39 are the define off's), and ManagedObjects_ClearAll emptying the
-; priority lists (t43..t44).
+; t01..t39 are the define off's), and DeleteObject_All emptying the
+; priority lists (t43..t44) and the modules it is given (t45).
 ;
 ; Results at $9C00, loader-ut convention :
 ;   +0 : $CA once the game mode runs, +1 : TESTS, +2 : $0D once completed
-;   +3.. : $01 per passing test (t01..t44), then one word per test, the VRAM
+;   +3.. : $01 per passing test (t01..t45), then one word per test, the VRAM
 ;   checksum it recorded (0 if none) — docs/lang/en/benches.md
 ;*******************************************************************************
 
@@ -115,8 +115,9 @@ R.t39   equ res.base+38   ; lists : DisplaySprite without an image registers not
 R.t40   equ res.base+39   ; wrap : a sprite past the playfield's top, the camera at its bottom
 R.t41   equ res.base+40   ; wrap : a sprite past its bottom, the camera at its top
 R.t42   equ res.base+41   ; wrap off ($FF) : t40's sprite rejected
-R.t43   equ res.base+42   ; ClearAll : the priority lists emptied
-R.t44   equ res.base+43   ; ClearAll : a slot given again forms a sound list
+R.t43   equ res.base+42   ; DeleteObject_All : the priority lists emptied
+R.t44   equ res.base+43   ; DeleteObject_All : a slot given again forms a sound list
+R.t45   equ res.base+44   ; DeleteObject_All : the collision lists and the direct page too
 
 ; checksum slots, same rank ; the plain mirror reference uses a spare slot
 S.t03   equ res.sums+2*2
@@ -1291,7 +1292,7 @@ t42
         sta   R.t42
 
 ; ---------------------------------------------------------------------------
-; t43 — ManagedObjects_ClearAll empties the priority lists : two pool objects
+; t43 — DeleteObject_All empties the priority lists : two pool objects
 ; registered (O1 in list 3, O2 in list 5), the pool cleared, every head and
 ; tail is 0 (a list left pointing into the cleared pool is a dangling list)
 ; ---------------------------------------------------------------------------
@@ -1305,7 +1306,7 @@ t43
         ldu   #O2
         lda   #5
         jsr   DisplaySprite_priority
-        jsr   ManagedObjects_ClearAll
+        jsr   DeleteObject_All
         ldx   #Tbl_Priority_First_Entry
 !       ldd   ,x++
         lbne  t44
@@ -1320,15 +1321,15 @@ t43
         sta   R.t43
 
 ; ---------------------------------------------------------------------------
-; t44 — after t43's ClearAll, the first free slot (O1, in list 3 before)
+; t44 — after t43's DeleteObject_All, the first free slot (O1, in list 3 before)
 ; registered again in list 3 : the list is O1 alone, list 5 is empty (with
 ; the stale lists, O1 was appended after itself)
 ; ---------------------------------------------------------------------------
 t44
         jsr   LoadObject_u
-        lbeq  benchdone
+        lbeq  t45
         cmpu  #O1
-        lbne  benchdone
+        lbne  t45
         lda   #1
         sta   id,u
         ldx   #set_glyph
@@ -1338,14 +1339,52 @@ t44
         ldx   #L.t34
         jsr   bench.list
         tsta
-        lbne  benchdone
+        lbne  t45
         ldb   #5
         ldx   #L.empty
         jsr   bench.list
         tsta
-        lbne  benchdone
+        lbne  t45
         lda   #1
         sta   R.t44
+
+; ---------------------------------------------------------------------------
+; t45 — DeleteObject_All clears the modules the game declares too : two
+; collision lists (Collision.LISTS 2) and the objects' direct page
+; (ObjectDp.ENABLED), with the priority lists and the pool
+; ---------------------------------------------------------------------------
+t45
+        jsr   bench.reset
+        jsr   bench.pool
+        tsta
+        lbne  benchdone
+        ldu   #O1
+        jsr   bench.prio3              ; a priority list in use
+        ldd   #$A5A5
+        ldx   #Collision.lists         ; both lists : a first and a last box
+!       std   ,x++
+        cmpx  #Collision.lists+Collision.LISTS*4
+        blo   <
+        sta   dp                       ; the direct page's first byte
+        sta   dp_extreg-1              ;   and its last
+        jsr   DeleteObject_All
+        ldx   #Tbl_Priority_First_Entry
+!       ldd   ,x++
+        lbne  benchdone
+        cmpx  #Tbl_Priority_Last_Entry+2+(nb_priority_levels*2)
+        blo   <
+        ldx   #Collision.lists
+!       ldd   ,x++
+        lbne  benchdone
+        cmpx  #Collision.lists+Collision.LISTS*4
+        blo   <
+        lda   dp
+        ora   dp_extreg-1
+        lbne  benchdone
+        lda   O1                       ; the pool : the slot free (id 0)
+        lbne  benchdone
+        lda   #1
+        sta   R.t45
         bra   benchdone
 
 ; obj1, the glyph at x 560, y D, playfield coordinates, registered
@@ -1781,5 +1820,10 @@ bench.rowextent
         INCLUDE "engine/object-management/RunObjects.asm"
 BuildSprites.YWRAP equ 1               ; t40..t42 (its mask $FF : t01..t39 unchanged)
         INCLUDE "engine/graphics/sprite/sprite-overlay-pack.asm"
+ObjectDp.ENABLED equ 1                 ; t45 : DeleteObject_All's modules
+Collision.LISTS  equ 2
+        INCLUDE "engine/object-management/ObjectDp.asm"
+        INCLUDE "engine/collision/collision-lists.asm"
+        INCLUDE "engine/graphics/sprite/DeleteObject_All.asm"
 
  ENDSECTION

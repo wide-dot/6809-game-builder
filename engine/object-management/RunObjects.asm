@@ -6,8 +6,7 @@
 * slot is all zeros.
 *
 * InitStack                    every slot free, the run list empty
-* ManagedObjects_ClearAll      every slot cleared, then InitStack ; in
-*                              OverlayMode the display lists emptied too
+* ManagedObjects_ClearAll      every slot cleared, then InitStack
 * RunObjects                   runs the list's objects in order ; one may
 *                              delete itself or others, or link new ones
 *                              (run the same pass)
@@ -19,11 +18,6 @@
 * V2-DEVIATION : up to 256 objects (ObjID unsigned, abx) ; Obj_Index_Address
 * read on its own unless OBJ_INDEX_LOCAL (a difference of two symbols does not
 * link across units) ; ClearAll also frees the slots (v1 lost the slots in use).
-* OverlayMode : the overlay DisplaySprite keeps a doubly linked list per
-* priority across frames, its heads and tails in Tbl_Priority_First_Entry /
-* Last_Entry ; ClearAll empties them, or they would still point into the
-* cleared pool, and the next object given one of those slots would be linked
-* to itself and drawn with another one's image.
 * ---------------------------------------------------------------------------
 
 object_list_first fdb   0
@@ -34,17 +28,6 @@ RunObjects.freeSlotsEnd
 RunObjects.freeSlot     fdb   0                      ; the top of that stack
 
 ManagedObjects_ClearAll
- IFDEF OverlayMode
-        ldd   #0                       ; the display lists : no object left
-        ldx   #Tbl_Priority_First_Entry
-!       std   ,x++
-        cmpx  #Tbl_Priority_First_Entry+2+(nb_priority_levels*2)
-        blo   <
-        ldx   #Tbl_Priority_Last_Entry
-!       std   ,x++
-        cmpx  #Tbl_Priority_Last_Entry+2+(nb_priority_levels*2)
-        blo   <
- ENDC
         ldd   #0
         ldx   #0
         leay  ,x

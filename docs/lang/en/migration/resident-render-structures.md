@@ -109,6 +109,18 @@ free list (`EraseSprites_ClearAll`), the collision lists
 checkpoint path calls all four; a mode entry that calls fewer should be able to
 say why.
 
+Since 22/10/2026 the engine holds that sequence in one routine,
+`DeleteObject_All` (`engine/graphics/sprite/DeleteObject_All.asm`, included by
+the game after its sprite pack) : the pack's priority lists, its cells in
+background-erase, the objects' direct page under `IFDEF ObjectDp.ENABLED`, the
+collision lists under `IFDEF Collision.LISTS` (the heads the module owns,
+`engine/collision/collision-lists.asm`), then the pool. A mode entry calls it,
+then clears what only the game keeps (`InitDrawSprites` stays the caller's : it
+holds no object). The overlay pack's lists are covered the same way
+(`DisplaySprite_ClearAll` in `overlay-mode/DisplaySprite.asm`) : they persist
+across frames, and a CONTINUE that cleared the pool alone left them on dead
+objects (Xenon 2, wide-dot/6809-game-builder#89).
+
 ## Proof
 
 The measurement that settles this is one 42-byte read — **dump
