@@ -25,11 +25,12 @@
 ; at line 0 one line up (t23..t25), the multisprite path (t26..t30), the
 ; priority lists DisplaySprite and DeleteObject keep (t31..t39), and the
 ; vertical wrap (BuildSprites.YWRAP, t40..t42 : the define on, its mask $FF,
-; t01..t39 are the define off's).
+; t01..t39 are the define off's), and ManagedObjects_ClearAll emptying the
+; priority lists (t43..t44).
 ;
 ; Results at $9C00, loader-ut convention :
 ;   +0 : $CA once the game mode runs, +1 : TESTS, +2 : $0D once completed
-;   +3.. : $01 per passing test (t01..t42), then one word per test, the VRAM
+;   +3.. : $01 per passing test (t01..t44), then one word per test, the VRAM
 ;   checksum it recorded (0 if none) — docs/lang/en/benches.md
 ;*******************************************************************************
 
@@ -114,6 +115,8 @@ R.t39   equ res.base+38   ; lists : DisplaySprite without an image registers not
 R.t40   equ res.base+39   ; wrap : a sprite past the playfield's top, the camera at its bottom
 R.t41   equ res.base+40   ; wrap : a sprite past its bottom, the camera at its top
 R.t42   equ res.base+41   ; wrap off ($FF) : t40's sprite rejected
+R.t43   equ res.base+42   ; ClearAll : the priority lists emptied
+R.t44   equ res.base+43   ; ClearAll : a slot given again forms a sound list
 
 ; checksum slots, same rank ; the plain mirror reference uses a spare slot
 S.t03   equ res.sums+2*2
@@ -173,6 +176,10 @@ main
         sta   res.magic
         lda   #TESTS
         sta   res.count
+        ldx   #res.base            ; every verdict and word 0 until a test
+!       clr   ,x+                  ;   writes it (the words of t43..t44 sat
+        cmpx  #res.sums+2*TESTS    ;   on what the RAM held)
+        blo   <
 
         ; capture the y1 offsets of both imagesets : the row extent probes
         ; derive their expected first line from the real index, so the bench
@@ -1276,12 +1283,69 @@ t42
         jsr   BuildSprites
         ldu   #obj1
         lda   render_flags,u
-        lbmi  benchdone
+        lbmi  t43
         jsr   bench.vramsum
         std   S.t42
-        lbne  benchdone
+        lbne  t43
         lda   #1
         sta   R.t42
+
+; ---------------------------------------------------------------------------
+; t43 — ManagedObjects_ClearAll empties the priority lists : two pool objects
+; registered (O1 in list 3, O2 in list 5), the pool cleared, every head and
+; tail is 0 (a list left pointing into the cleared pool is a dangling list)
+; ---------------------------------------------------------------------------
+t43
+        jsr   bench.reset
+        jsr   bench.pool
+        tsta
+        lbne  benchdone
+        ldu   #O1
+        jsr   bench.prio3
+        ldu   #O2
+        lda   #5
+        jsr   DisplaySprite_priority
+        jsr   ManagedObjects_ClearAll
+        ldx   #Tbl_Priority_First_Entry
+!       ldd   ,x++
+        lbne  t44
+        cmpx  #Tbl_Priority_First_Entry+2+(nb_priority_levels*2)
+        blo   <
+        ldx   #Tbl_Priority_Last_Entry
+!       ldd   ,x++
+        lbne  t44
+        cmpx  #Tbl_Priority_Last_Entry+2+(nb_priority_levels*2)
+        blo   <
+        lda   #1
+        sta   R.t43
+
+; ---------------------------------------------------------------------------
+; t44 — after t43's ClearAll, the first free slot (O1, in list 3 before)
+; registered again in list 3 : the list is O1 alone, list 5 is empty (with
+; the stale lists, O1 was appended after itself)
+; ---------------------------------------------------------------------------
+t44
+        jsr   LoadObject_u
+        lbeq  benchdone
+        cmpu  #O1
+        lbne  benchdone
+        lda   #1
+        sta   id,u
+        ldx   #set_glyph
+        stx   image_set,u
+        jsr   bench.prio3
+        ldb   #3
+        ldx   #L.t34
+        jsr   bench.list
+        tsta
+        lbne  benchdone
+        ldb   #5
+        ldx   #L.empty
+        jsr   bench.list
+        tsta
+        lbne  benchdone
+        lda   #1
+        sta   R.t44
         bra   benchdone
 
 ; obj1, the glyph at x 560, y D, playfield coordinates, registered
