@@ -324,7 +324,9 @@ comparées **octet par octet** avec les précédentes, et `loader-ut` rejoué so
 - **Phase 3** — hygiène : `openipa` (appli Next.js vendorisée de 8,8 Mo) sortie
   des resources et ses deux manifestes JS retirés — c'était l'origine du gros des
   alertes Dependabot ; jar phoneme 7,2 Mo → 815 Ko. Versions toutes figées,
-  logback 1.5.19, `dependabot.yml`, jython déplacé vers son seul consommateur,
+  logback 1.5.19, `dependabot.yml` (retiré le 22/10/2026 : les versions
+  figées ne bougent qu'au besoin ; restent les alertes de vulnérabilité et
+  les « Dependabot security updates »), jython déplacé vers son seul consommateur,
   3 modules morts supprimés avec `libtiled`, `pluginManagement` racine, et
   `mvn clean` qui nettoie enfin `repo/` et `plugins/` (des jars périmés s'y
   empilaient et cassaient le classpath).
