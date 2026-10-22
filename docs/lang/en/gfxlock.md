@@ -124,6 +124,15 @@ the frame of its swap. That is when `gfxlock.status` was 0 before
 `gfxlock.bufferSwap.check`. Before `_gfxlock.off`, the loop then waits until
 `gfxlock.frame.count` is n − 1 past it : the swap comes at the next VBL.
 
+## The wait's back process
+
+While `_gfxlock.on` waits for the swap, it can run a routine in a loop :
+`_gfxlock.backProcess.on <routine>` sets it, `_gfxlock.backProcess.off`
+stops it. The routine runs again and again until the interrupt swaps, so it
+does a small piece of work per call (a decompression step, a precomputation),
+writes nothing to the screen, and keeps X, Y, U and DP : the code around
+`_gfxlock.on` may hold them ; A, B and the condition codes are free.
+
 ## See also
 
 - [`interrupts.md`](interrupts.md) : the interrupt, out of the display, and a
