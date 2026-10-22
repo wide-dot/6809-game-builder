@@ -30,6 +30,8 @@
 ;       pressed on the first read only, joypad 2 idle, X kept
 ;   t18 and bits 0-1 of every result at 0
 ;   t19 paged.call : the routine runs in its page, the caller's page back
+;   t20 _gfxlock.backProcess.on : its routine runs while _gfxlock.on waits
+;       for the swap, and no longer once _gfxlock.backProcess.off
 ;*******************************************************************************
 
 data.img1       EXTERNAL
@@ -49,7 +51,7 @@ data.sub        EXTERNAL
 
  opt c,ct
 
-TESTS     equ 19
+TESTS     equ 20
 res.magic equ $9C00
 res.count equ $9C01
 res.done  equ $9C02
@@ -75,6 +77,7 @@ R.t16 equ res.base+15
 R.t17 equ res.base+16
 R.t18 equ res.base+17
 R.t19 equ res.base+18
+R.t20 equ res.base+19
 W.t11 equ res.sums+2*10
 W.t12 equ res.sums+2*11
 
@@ -580,6 +583,25 @@ t17ko
         lda   #1
         sta   R.t19
 !
+; t20 : the back process, while _gfxlock.on waits for the swap
+        jsr   bench.frame              ; no drawing pending
+        ldd   #0
+        std   bench.w
+        _gfxlock.backProcess.on bench.back
+        jsr   bench.draw               ; a drawing, its swap pending
+        jsr   bench.draw               ; _gfxlock.on waits : the back process runs
+        _gfxlock.backProcess.off
+        ldd   bench.w
+        beq   t20ko                    ; it ran
+        std   bench.f0
+        jsr   bench.draw
+        jsr   bench.draw               ; a wait again, the back process off
+        ldd   bench.w
+        cmpd  bench.f0
+        bne   t20ko                    ; it no longer runs
+        lda   #1
+        sta   R.t20
+t20ko
         lda   #$0D
         sta   res.done
 done    bra   done
@@ -622,6 +644,13 @@ bench.beam
 !       tst   $E7E7
         bmi   <
         rts
+
+; the back process (t20) : counts its calls
+bench.back
+        inc   bench.w+1
+        bne   >
+        inc   bench.w
+!       rts
 
 ; a drawing : gfxlock's frame (nothing drawn), the frames counted
 bench.draw
