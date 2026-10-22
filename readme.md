@@ -92,6 +92,7 @@ Platform distributions are then generated in `package/target` :
 - [the memory and scene model](docs/lang/en/scenes.md)
 - [symbols and link cost](docs/lang/en/symbols.md)
 - [sprites](docs/lang/en/sprites.md) · [objects](docs/lang/en/objects.md) · [tilemaps](docs/lang/en/tilemaps.md)
+- [the double buffer, gfxlock](docs/lang/en/gfxlock.md) · [interrupts](docs/lang/en/interrupts.md)
 
 ## Credits
 - [third-party tools](docs/lang/en/credits.md)

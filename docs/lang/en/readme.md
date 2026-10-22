@@ -103,6 +103,8 @@ Platform distributions are then generated in `package/target` :
 
 [interrupts][interrupts]
 
+[gfxlock — the double buffer][gfxlock]
+
 [migrating from the first generation — the casebook][migration]
 
 ## Toolbox
@@ -128,6 +130,7 @@ Platform distributions are then generated in `package/target` :
 [tilemaps]: tilemaps.md
 [audio]: audio.md
 [interrupts]: interrupts.md
+[gfxlock]: gfxlock.md
 [migration]: migration/README.md
 [toolbox-reference]: toolbox.md
 [credits]: credits.md

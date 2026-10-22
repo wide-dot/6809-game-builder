@@ -341,7 +341,9 @@ having placed the pages itself. See
 ## Drawing
 
 The runtime is v1's, imported as is. A frame looks like this — the order is
-the contract, not a suggestion :
+the contract, not a suggestion ; the section between `_gfxlock.on` and
+`_gfxlock.off` is the loop's only one, every write to the screen inside it
+([`gfxlock.md`](gfxlock.md)) :
 
 ```asm
         jsr   RunObjects              ; each object updates itself and calls
