@@ -17,11 +17,13 @@ keyboard.pressed fcb   0
 
 keyboard.read
         clr   keyboard.pressed
+        clrb                   ; no key down : nothing held
         lda   map.MC6821.PRA
         lsra                   ; Was a key pressed ?
         bcc   >                ; No exit
         jsr   map.GETC         ; Read new key code in b
-        bcc   >
+        tstb                   ; GETC's carry is its ring buffer index, not a key flag
+        beq   >
         cmpb  keyboard.held
         beq   @rts             ; Return if key is already held, Press was cleared, but not Held
         stb   keyboard.pressed ; Store new key for one main loop
