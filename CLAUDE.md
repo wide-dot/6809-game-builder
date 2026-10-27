@@ -932,8 +932,8 @@ l'original, sous le temps de l'Apple sur les trois découpes réelles du
 personnage debout. JUnit `ClipTest` (un modèle du chemin coupé lisant les
 tables générées, contre le décodeur, chaque fenêtre de colonnes) ; banc
 `examples/spritestream` (42/42, `ci/toje-bench/bench.py`, chaque tracé
-contre un second chemin). Branche locale `feat/bm4s-sprite-stream`, PR à
-décider par l'auteur.
+contre un second chemin). Branche `feat/bm4s-sprite-stream`, en pull
+request.
 
 ## Fidélité arcade de R-Type
 
