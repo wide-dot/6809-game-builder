@@ -3387,6 +3387,9 @@
       <xs:attribute name="mergepulls" type="xs:boolean">
         <xs:annotation><xs:documentation>true (default) : the restore routines pull up to three saved groups with one PULS</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="clip" type="xs:boolean">
+        <xs:annotation><xs:documentation>true : the walkers' clip mode, for the engine's spritestream.drawClip (a clip table per facing, the shape and offsets tables, the restore of the rows it cuts). Default false</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 

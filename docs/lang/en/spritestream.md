@@ -1,8 +1,9 @@
 # Sprite streams (bm4s)
 
 Status : toolchain and runtime written and validated under emulation against
-a measured reference, October 2026 (see *Validation*). No example bench in
-this repository yet ; no clipping yet (see *Clipping*).
+a measured reference, October 2026, with a clip mode for boxes crossing the
+screen's edges or a cut rectangle (opt-in, *Clipping*) ; bench
+`examples/spritestream` (see *Validation*).
 
 A compiled sprite ([sprites](sprites.md)) is code : fast, about six bytes a
 drawn screen byte, one routine per variant. A **sprite stream** is data : the
@@ -23,8 +24,8 @@ What the walkers do, per record :
   one restore walker puts a buffer back, last drawn first, so no rectangle is
   saved or copied.
 
-Clipping (a box crossing the screen's edge or a cut rectangle) is not part
-of this version : its form is being decided (*Clipping* below).
+- with the walkers' **clip mode**, draw only the part of a box inside a
+  rectangle (*Clipping*).
 
 ## The pipeline
 
@@ -108,6 +109,7 @@ of the sprites inside a section, every record exported.
 | `save` | true | the walkers save what they mask ; `spritestream.restore` |
 | `opaque` | false | whole bytes in segments of their own, data only |
 | `mergepulls` | true | the restore pulls up to three saved groups at once |
+| `clip` | false | the walkers' clip mode, for `spritestream.drawClip` (walkers only) |
 | `gendir`, `gensource`, `genreport` | | sprites : their sources, the INCLUDE file, a CSV of the sprites |
 | `genwalker` | | the walkers' form |
 
@@ -141,10 +143,12 @@ that would not draw its picture stops the build.
 
 `engine/graphics/sprite/stream/spritestream.asm`, assembled after the
 generated walkers. The game declares `spritestream.HALF` (0 or 1, the copy's
-half), `spritestream.dp` (4 bytes of the direct page : the two save stacks'
-tops, `spritestream.const.asm` for a caller) and optionally `spritestream.STACK` (default
-768 : the most a buffer saves between two restores, plus what an interrupt
-pushes on S while a walker runs). The walkers' temporaries use `dp_engine`.
+half), `spritestream.dp` (8 bytes of the direct page : the two save stacks'
+tops, then the clip rectangle, unused without the clip mode ;
+`spritestream.const.asm` for a caller) and optionally `spritestream.STACK`
+(default 768 : the most a buffer saves between two restores, plus what an
+interrupt pushes on S while a walker runs). The walkers' temporaries use
+`dp_engine`.
 
 | entry | input | |
 |---|---|---|
@@ -152,6 +156,7 @@ pushes on S while a walker runs). The walkers' temporaries use `dp_engine`.
 | `spritestream.restore` | | the buffer's saved bytes put back, last drawn first |
 | `spritestream.draw` | A record page (`$E7E6` value), B facing (0 stored), X left edge x (0-318, even), Y top line (0-255), U record | |
 | `spritestream.drawAt` | A page, B facing + 2 x step, Y screen address of the box's first byte on its top line, U record | the caller has the address |
+| `spritestream.drawClip` | as `draw`, X and Y signed ; the rectangle in `spritestream.clipLeft`, `clipRight` (screen bytes 0-80), `clipTop`, `clipBottom` (lines 0-200), right and bottom excluded | the clip mode : only the part inside the rectangle |
 
 All give the caller's cart page back ; A, B, X, Y, U and CC are lost.
 
@@ -173,16 +178,33 @@ interrupt's own pushes below the deepest frame.
 
 ## Clipping
 
-A box must lie inside the screen : the walkers address its bytes from the
-first one, and a byte past an edge lands on the line before or after, or out
-of the buffer. Three forms were measured on a game's real frames (a cut
-rectangle per image, the screen's edges) : a clip mode of the walkers (a jump
-table per facing sending each record to a handler : whole records drawn by
-their routine, hidden ones skipped, cut ones byte by byte), drawing whole then
-copying the cut zone back from a clean background page, and the source's
-own per row crop (each row's visible part drawn by the existing routines from
-a payload in screen order). The choice is open ; until it is made the
-generator writes no clip support.
+A box must lie inside the screen for `draw` : the walkers address its bytes
+from the first one, and a byte past an edge lands on the line before or
+after, or out of the buffer. `clip="true"` on the walkers
+(`<spritestream genwalker="..." clip="true">`) adds the clip mode, which the
+runtime's `spritestream.drawClip` uses. The streams are the same with or
+without it : a game turns it on without re-encoding a sprite.
+
+- A box inside the rectangle (with its wider stream) takes the draw path, 78
+  cycles more than `draw` ; a box outside it returns.
+- A crossing box is walked through a clip jump table (one per facing, the
+  mirrored one at table number 5 after the reversal table) whose entries are
+  handlers. Each record's row is tracked from Y (the visible rows are an
+  address range), its box bytes come from a shape table (`p`, `n`, then rows
+  and payload bytes a row 2 x CODES bytes before it). A record whose rows and
+  bytes are visible is drawn by its own routine ; a hidden one is skipped ;
+  the visible bytes of a cut one are drawn left to right by a tight loop (the
+  two plane steps alternating, each byte's mask and data found through an
+  offsets table, a pair a byte, read backwards when mirrored), saved as it
+  draws them with one restore record a row ; the walk ends at the first
+  record below the rectangle.
+- The walk keeps its state in `dp_engine` (its 30 bytes) and a few bytes of
+  the manager.
+
+What it adds : the walkers 260 bytes (the clip tables, the shape and offsets
+tables, two restore routines), the runtime 1 063 (`drawClip`, the handlers,
+the cut loops) ; `STACK` must count, for the cut rows, a byte a byte and 3 or
+4 more a row.
 
 ## Costs
 
@@ -195,9 +217,19 @@ Measured under toje (cycle exact) on the recommended set (`segment` 6, `rows`
 | `draw`, mean of the stored and mirrored facings | 4 972 |
 | `restore` of one picture | 1 386 |
 | `drawAt` | 4 911 |
+| `drawClip`, a box inside the rectangle | 5 050 |
+| `drawClip`, each picture cut on each side, in the corners and through a window (6 048 draws) : draw + restore | 11 197 + 1 402 |
 
 Bytes : the walkers and their tables 5 600, the runtime 217, each save stack
-`STACK` + 3 (768 : 6 588 of the half page's 8 192 ; 1 024 : 6 844).
+`STACK` + 3 (768 : 6 588 of the half page's 8 192 ; 1 024 : 6 844). With the
+clip mode : 5 860 and 1 280 (`STACK` 1 024 : 8 167).
+
+Clipped, on the same game's real frames (5 743, each image cut by its own
+rectangle as the original draws it, 211 frames with a box crossing it) : 412
+cycles a frame more on average than the same frames drawn without cuts, a
+crossing image's draw about 11 000 cycles ; a standing character cut at the
+screen's left edge 10 504 cycles (draw and restore), at its right edge
+15 274.
 
 An interrupt during a walk puts 12 bytes on the save stack (the 6809's own ;
 the TO8 monitor jumps to the engine's handler, which switches stacks).
@@ -214,7 +246,19 @@ game's bench, Python). The JUnit tests of `toolbox/graphics/spritestream`
 compare the streams of 96 pictures (a seeded mire) and the walkers' routines
 and jump tables with that prototype's, byte for byte, and assemble the
 walkers of several shape sets with the runtime (the size model of the layout
-checked against lwasm's addresses). The runtime was run under toje on a
+checked against lwasm's addresses). For the clip mode, a model of the cut
+path reads the tables the generator wrote and draws every stream of the
+mire, both facings, through every column window and several row windows :
+equal byte for byte to the decoder's whole walk inside the rectangle,
+untouched outside it.
+
+`examples/spritestream` is the bench of this repository : four test pictures
+drawn on the machine in every entry, each result checked against a second
+path (`draw`, `drawAt` and `drawClip` the same screen ; a cut against the
+whole draw with the outside put back ; the mirrored walk against the stored
+second facing ; a box across each screen edge against the same box cut
+inside the screen), every restore checked, 42 tests replayed by
+`ci/toje-bench/bench.py` against `bench.ref`. The runtime was run under toje on a
 full character set loaded by the loader from a built disk : every picture in
 every draw, exact against the expected screen and restored exactly, the
 double buffer over 2 096 frames of real play, and the machine running

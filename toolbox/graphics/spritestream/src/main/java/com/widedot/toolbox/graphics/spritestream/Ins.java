@@ -119,6 +119,8 @@ final class Ins {
 			return new int[] { 1, 5 };
 		case "abx":
 			return new int[] { 1, 3 };
+		case "deca": case "decb": case "inca": case "incb":
+			return new int[] { 1, 2 };
 		case "pshs": case "puls": case "pshu": case "pulu":
 			return new int[] { 2, 5 + stackBytes(arg) };
 		default:
@@ -135,6 +137,8 @@ final class Ins {
 				return new int[] { 3, 4 };
 			case "ldy": case "lds":
 				return new int[] { 4, 4 };
+			case "cmpy":
+				return new int[] { 4, 5 };
 			default:
 				throw new IllegalArgumentException("Ins : no immediate form for " + op);
 			}

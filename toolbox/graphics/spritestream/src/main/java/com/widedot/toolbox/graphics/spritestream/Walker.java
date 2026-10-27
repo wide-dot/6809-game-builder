@@ -29,6 +29,10 @@ import java.util.Map;
  * code of its restore routine and Y ; the restore walker pulls every record
  * of a buffer back, last first ({@code spritestream.restore}). S is that
  * stack while a walker runs : an interrupt pushes below it, on free space.</li>
+ * <li>clip : a jump table per facing whose routines are the engine's clip
+ * handlers (whole records drawn by their routine, cut ones byte by byte), the
+ * shape and offsets tables they read, and the restore routines of the rows
+ * they cut (a record a row : its bytes, or one byte).</li>
  * </ul>
  *
  * The blocks are laid out around the reversal table : every routine ends
@@ -39,6 +43,11 @@ final class Walker {
 	static final String PF = "spritestream";
 	static final int LINE = 40;
 	static final int[] OFS = { -0x2000, 0x2001 };
+	/** table number of the mirrored clip table : the four drawing tables are 1 to 4 */
+	static final int CLIPK = 5;
+	/** the pushed sequence of one byte at Y : the clip mode's restore of a row of one byte */
+	static final String ONE = "1:0 ";
+
 	final Options o;
 	/** restore routine name by pushed sequence, in creation order */
 	private final Map<String, String> rseq = new LinkedHashMap<String, String>();
@@ -120,8 +129,14 @@ final class Walker {
 				rseq.put(k, "r" + rseq.size());
 			}
 		}
+		if (o.clip && !rseq.containsKey(ONE)) {
+			rseq.put(ONE, "r" + rseq.size());
+		}
 		rnames.add("end");
 		rnames.addAll(rseq.values());
+		if (o.clip) {
+			rnames.add("clip");
+		}
 		if (2 * rnames.size() > 256) {
 			throw new IllegalStateException(rnames.size() + " restore routines, past the 128 the restore walker"
 					+ " indexes : fewer multi-row records or a shorter segment");
@@ -137,7 +152,7 @@ final class Walker {
 		return sb.toString();
 	}
 
-	/** the restore code of a pull sequence name (r3, end) */
+	/** the restore code of a pull sequence name (r3, end, clip) */
 	int rcode(String rname) {
 		return 2 * rnames.indexOf(rname) - rbias;
 	}
@@ -445,6 +460,14 @@ final class Walker {
 			out.add(t);
 		}
 		out.add(new Block(PF + ".jtn").label(PF + ".jtn").add(Ins.data("fdb", PF + ".jtn0," + PF + ".jtn1", 4)));
+		if (o.clip) {
+			Block t = new Block(PF + ".jtc");
+			t.label(t.name);
+			for (String nm : o.names) {
+				t.add(Ins.data("fdb", "end".equals(nm) || "nop".equals(nm) ? PF + ".wn." + nm : PF + ".clipStored", 2));
+			}
+			out.add(t);
+		}
 
 		// mirrored facing
 		if (o.mirrorable) {
@@ -482,7 +505,7 @@ final class Walker {
 				seqs.put(e.getValue(), e.getKey());
 			}
 			for (String nm : rnames) {
-				if ("end".equals(nm)) {
+				if ("end".equals(nm) || "clip".equals(nm)) {
 					continue;
 				}
 				Block rr = new Block(PF + ".wr." + nm);
@@ -491,6 +514,21 @@ final class Walker {
 				java.util.Collections.reverse(groups);
 				rr.addAll(pulls(groups));
 				out.add(rr.op("puls", "b,y").op("jmp", "[b,x]"));
+			}
+			if (o.clip) {
+				// a row of bytes the clip mode drew : Y its last byte, the count,
+				// then the bytes, last first, put back leftwards (RAMA to the
+				// previous column's RAMB -$2001, RAMB to the same column's RAMA
+				// +$2000)
+				String c = PF + ".wr.clip";
+				Block rc = new Block(c);
+				rc.label(c).op("puls", "a").op("cmpy", "#$C000").add(Ins.data("blo", c + ".b", 2))
+						.label(c + ".a").op("puls", "b").op("stb", ",y").op("deca").add(Ins.data("beq", c + ".e", 2))
+						.op("leay", "-8193,y")
+						.label(c + ".b").op("puls", "b").op("stb", ",y").op("deca").add(Ins.data("beq", c + ".e", 2))
+						.op("leay", "8192,y").add(Ins.data("bra", c + ".a", 2))
+						.label(c + ".e").op("puls", "b,y").op("jmp", "[b,x]");
+				out.add(rc);
 			}
 			Block jt = new Block(PF + ".wr.jt");
 			int half = rbias / 2;
@@ -506,6 +544,46 @@ final class Walker {
 			out.add(jt);
 		}
 
+		// clip : the shape table the handlers read, 2 bytes a code (p, n) with,
+		// 2 x CODES bytes before it, the rows and the payload bytes a row
+		// (spritestream.ROWS,x), and the offsets table, 2 bytes a code : its byte
+		// offsets, a pair a byte (mask, data ; data, data when opaque), so that a
+		// cut row's bytes are read in screen order, either way
+		if (o.clip) {
+			Block sh = new Block(PF + ".shapes");
+			sh.label(PF + ".shapes.rows");
+			sh.add(Ins.data("fcb", "0,0,0,0", 4));
+			for (Shape s : o.shapes) {
+				sh.add(Ins.data("fcb", s.rows + "," + s.rowBytes(), 2));
+			}
+			sh.label(sh.name);
+			sh.add(Ins.data("fcb", "0,0,0,0", 4));
+			java.util.Set<String> offTables = new java.util.TreeSet<String>();
+			Block of = new Block(PF + ".offsets");
+			of.label(of.name);
+			of.add(Ins.data("fdb", "0,0", 4));
+			for (Shape s : o.shapes) {
+				String offs = PF + ".offs." + (s.opaque ? "o" : "m") + s.n;
+				offTables.add(offs);
+				sh.add(Ins.data("fcb", s.p + "," + s.n, 2));
+				of.add(Ins.data("fdb", offs, 2));
+			}
+			out.add(sh);
+			out.add(of);
+			for (String t : offTables) {
+				String tail = t.substring(t.lastIndexOf('.') + 1);
+				boolean opaque = tail.charAt(0) == 'o';
+				int n = Integer.parseInt(tail.substring(1));
+				int[][] offs = Shape.offsets(n, opaque);
+				Block ob = new Block(t);
+				ob.label(t);
+				StringBuilder sb = new StringBuilder();
+				for (int i = 0; i < n; i++) {
+					sb.append(i == 0 ? "" : ",").append(opaque ? offs[i][1] : offs[i][0]).append(',').append(offs[i][1]);
+				}
+				out.add(ob.add(Ins.data("fcb", sb.toString(), 2 * n)));
+			}
+		}
 		return out;
 	}
 
@@ -543,7 +621,7 @@ final class Walker {
 		return sb.toString();
 	}
 
-	/** mirrored jump table k (1 to 4 : 1 + 2 x plane parity + box width parity) */
+	/** mirrored jump table k (1 to 4 : 1 + 2 x plane parity + box width parity ; CLIPK the clip one) */
 	private Block mirroredTable(int k) {
 		Block t = new Block(PF + ".jtm" + k);
 		t.label(t.name);
@@ -552,6 +630,8 @@ final class Walker {
 			String target;
 			if ("end".equals(nm) || "nop".equals(nm)) {
 				target = PF + ".wm." + nm;
+			} else if (k == CLIPK) {
+				target = PF + ".clipMirrored";
 			} else {
 				Shape s = o.shapes.get(o.names.indexOf(nm) - 2);
 				target = PF + ".wm." + (q == 0 ? s : s.flip()).name() + "_" + kp;
@@ -567,15 +647,31 @@ final class Walker {
 	String source() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("* Generated by spritestream : the walkers (").append(o.describe()).append(" mergepulls=")
-				.append(o.mergePulls).append(")\n");
+				.append(o.mergePulls).append(" clip=").append(o.clip).append(")\n");
 		sb.append("* Needs the direct page equates ").append(PF).append(".saveS, .top, .jtk : the engine's spritestream.asm\n");
 		eq(sb, PF + ".SEGMENT", String.valueOf(o.segment));
 		eq(sb, PF + ".MIRRORABLE", o.mirrorable ? "1" : "0");
 		eq(sb, PF + ".SAVE", o.save ? "1" : "0");
+		eq(sb, PF + ".CLIP", o.clip ? "1" : "0");
 		eq(sb, PF + ".CODES", String.valueOf(o.names.size()));
 		eq(sb, PF + ".NOP", String.valueOf(o.code("nop")));
+		if (o.mirrorable) {
+			eq(sb, PF + ".CLIPK", String.valueOf(CLIPK));
+		}
 		if (o.save) {
 			eq(sb, PF + ".REND", String.valueOf(rcode("end")));
+		}
+		if (o.save && o.clip) {
+			eq(sb, PF + ".RCLIP", String.valueOf(rcode("clip")));
+			eq(sb, PF + ".RBYTE", String.valueOf(rcode(rseq.get(ONE))));
+		}
+		if (o.clip) {
+			eq(sb, PF + ".ROWS", String.valueOf(-2 * o.names.size()));
+			int rows = 1;
+			for (Shape s : o.shapes) {
+				rows = Math.max(rows, s.rows);
+			}
+			eq(sb, PF + ".MAXROWS", String.valueOf(rows));
 		}
 		List<Block> blocks = blocks();
 		List<Block> placed = new ArrayList<Block>();
@@ -583,7 +679,8 @@ final class Walker {
 		if (o.mirrorable) {
 			placed.add(reversal());
 			int at = 128;                                     // bytes past the reversal table's middle
-			for (int k = 1; k <= 4; k++) {
+			int last = o.clip ? CLIPK : 4;
+			for (int k = 1; k <= last; k++) {
 				int gap = 256 * k - at;
 				while (true) {
 					Block best = null;

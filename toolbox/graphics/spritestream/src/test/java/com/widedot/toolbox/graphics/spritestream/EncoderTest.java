@@ -43,12 +43,12 @@ class EncoderTest {
 		rows.put(3, 3);
 		rows.put(4, 4);
 		Options[] sets = {
-				new Options(6, rows, true, true, false, true),
-				new Options(8, none, false, true, false, true),
-				new Options(8, none, false, false, true, true),
-				new Options(4, rows, true, true, true, false),
-				new Options(15, none, true, true, false, true),
-				new Options(1, none, true, false, false, true),
+				new Options(6, rows, true, true, false, true, true),
+				new Options(8, none, false, true, false, true, true),
+				new Options(8, none, false, false, true, true, false),
+				new Options(4, rows, true, true, true, false, true),
+				new Options(15, none, true, true, false, true, true),
+				new Options(1, none, true, false, false, true, true),
 		};
 		int n = 0;
 		for (Options o : sets) {
@@ -69,7 +69,7 @@ class EncoderTest {
 
 	@Test
 	void opaqueSegmentsAreChosenWhenCheaper() throws Exception {
-		Options o = new Options(8, new TreeMap<Integer, Integer>(), false, false, true, true);
+		Options o = new Options(8, new TreeMap<Integer, Integer>(), false, false, true, true, false);
 		int[][] px = new int[4][64];
 		for (int[] row : px) {
 			java.util.Arrays.fill(row, 2);                 // whole bytes only
@@ -84,7 +84,7 @@ class EncoderTest {
 
 	@Test
 	void aSpriteIsChecked() throws Exception {
-		Options o = PrototypeTest.reco();
+		Options o = PrototypeTest.reco(true);
 		Encoder enc = new Encoder(o);
 		Random r = new Random(1);
 		int[][] base = pixels(r, 10, 12);

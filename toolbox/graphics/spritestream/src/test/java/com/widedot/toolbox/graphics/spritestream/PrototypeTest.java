@@ -30,11 +30,11 @@ import org.junit.jupiter.api.io.TempDir;
  */
 class PrototypeTest {
 
-	static Options reco() throws Exception {
+	static Options reco(boolean clip) throws Exception {
 		Map<Integer, Integer> rows = new TreeMap<Integer, Integer>();
 		rows.put(2, 2);
 		rows.put(3, 2);
-		return new Options(6, rows, true, true, false, true);
+		return new Options(6, rows, true, true, false, true, clip);
 	}
 
 	static String resource(String name) throws Exception {
@@ -62,7 +62,7 @@ class PrototypeTest {
 
 	@Test
 	void theStreamsAreThePrototypes(@TempDir Path tmp) throws Exception {
-		Options o = reco();
+		Options o = reco(true);
 		Encoder enc = new Encoder(o);
 		int n = 0;
 		for (String line : resource("streams.txt").split("\n")) {
@@ -126,7 +126,7 @@ class PrototypeTest {
 	@Test
 	void theWalkersAreThePrototypes() throws Exception {
 		Map<String, List<String>> want = routines(resource("walkers.asm"), true);
-		Map<String, List<String>> got = routines(new Walker(reco()).source(), false);
+		Map<String, List<String>> got = routines(new Walker(reco(false)).source(), false);
 		int compared = 0;
 		for (Map.Entry<String, List<String>> e : want.entrySet()) {
 			String label = e.getKey();
@@ -168,7 +168,7 @@ class PrototypeTest {
 	@Test
 	void theJumpTablesAreThePrototypes() throws Exception {
 		Map<String, List<String>> want = tables(resource("walkers.asm"), true);
-		Map<String, List<String>> got = tables(new Walker(reco()).source(), false);
+		Map<String, List<String>> got = tables(new Walker(reco(false)).source(), false);
 		for (String t : new String[] { "spritestream.jtn0", "spritestream.jtn1", "spritestream.jtm1",
 				"spritestream.jtm2", "spritestream.jtm3", "spritestream.jtm4", "spritestream.wr.jt" }) {
 			assertEquals(want.get(t), got.get(t), t);

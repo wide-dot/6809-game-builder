@@ -101,7 +101,7 @@ class AssemblyTest {
 
 	@Test
 	void theRecommendedSetAssembles(@TempDir Path tmp) throws Exception {
-		check(PrototypeTest.reco(), tmp);
+		check(PrototypeTest.reco(true), tmp);
 	}
 
 	@Test
@@ -115,17 +115,17 @@ class AssemblyTest {
 				{ 8, many, true, true, false },      // 3-row records, every length
 				{ 6, none, false, true, false },     // one facing
 				{ 8, none, false, false, true },     // a background : no save, opaque segments
-				{ 6, PrototypeTest.reco().rows, true, false, false },
+				{ 6, PrototypeTest.reco(true).rows, true, false, false },
 				{ 4, none, true, true, true },
 		};
 		int k = 0;
 		for (Object[] s : sets) {
 			@SuppressWarnings("unchecked")
 			Map<Integer, Integer> rows = (Map<Integer, Integer>) s[1];
-			for (boolean merge : new boolean[] { true, false }) {
+			for (boolean clip : new boolean[] { true, false }) {
 				Path dir = tmp.resolve("set" + k++);
 				Files.createDirectories(dir);
-				check(new Options((Integer) s[0], rows, (Boolean) s[2], (Boolean) s[3], (Boolean) s[4], merge), dir);
+				check(new Options((Integer) s[0], rows, (Boolean) s[2], (Boolean) s[3], (Boolean) s[4], true, clip), dir);
 			}
 		}
 	}

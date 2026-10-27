@@ -36,11 +36,12 @@ public final class Options {
 	final boolean save;
 	final boolean opaque;
 	final boolean mergePulls;
+	final boolean clip;
 	final List<Shape> shapes = new ArrayList<Shape>();
 	final List<String> names = new ArrayList<String>();
 
 	Options(int segment, Map<Integer, Integer> rows, boolean mirrorable, boolean save, boolean opaque,
-			boolean mergePulls) throws Exception {
+			boolean mergePulls, boolean clip) throws Exception {
 		if (segment < 1 || segment > 16) {
 			throw new Exception("segment must be 1 to 16 bytes, got " + segment);
 		}
@@ -50,6 +51,7 @@ public final class Options {
 		this.save = save;
 		this.opaque = opaque;
 		this.mergePulls = mergePulls;
+		this.clip = clip;
 		for (Map.Entry<Integer, Integer> e : this.rows.entrySet()) {
 			if (e.getKey() < 1 || e.getKey() > segment || e.getValue() < 1) {
 				throw new Exception("rows : " + e.getKey() + ":" + e.getValue() + " is not a segment length"
@@ -98,7 +100,8 @@ public final class Options {
 		boolean save = Attribute.getBoolean(node, ctx, "save", true);
 		boolean opaque = Attribute.getBoolean(node, ctx, "opaque", false);
 		boolean merge = Attribute.getBoolean(node, ctx, "mergepulls", true);
-		return new Options(segment, rows, mirrorable, save, opaque, merge);
+		boolean clip = Attribute.getBoolean(node, ctx, "clip", false);
+		return new Options(segment, rows, mirrorable, save, opaque, merge, clip);
 	}
 
 	/** "2:2,3:2" : segment length : most rows ; empty for none */

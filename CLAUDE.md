@@ -156,6 +156,8 @@ la description de la PR en garde la trace.
   `examples/tlsf-ut` (tests unitaires TLSF sur machine),
   `examples/bm4s` (le 320x200 4 couleurs `$41` : `videomode="bm4s"` de
   gfxcomp, `_gfxmode.setBM4S`, banc `ci/toje-bench/bm4s_ut.py`),
+  `examples/spritestream` (sprites par flux bm4s et leur mode clip : 42/42
+  rejoués contre `bench.ref`, chaque tracé contre un second chemin),
   `examples/mplus` (bancs de test carte son MPLUS : DAC, MIDI 6850, MEA8000, SN76489, YM2413).
 - **État de validation au 13/08/2026** : le corpus compte **15 configs et
   63 images** (11 exemples dont collection/stacked-overflow/hscroll/
@@ -916,10 +918,22 @@ tampon dessiné : chaque moitié porte sa pile de sauvegarde). Manuel
 identiques à l'octet, 96 images d'une mire en JUnit ; sous toje dans l'arbre
 du jeu : chaque image dans ses 8 tracés exacte et restaurée, 2 096 trames
 réelles en double tampon, mêmes cycles au cycle près — la restauration perd
-seulement un `jmp`, −4). **Reste pour la grille** : un exemple-banc ici
-(mire, `ci/toje-bench/`), le corpus rejoué, la PR. **Clipping non décidé** :
-la branche `feat/bm4s-sprite-stream-clip` porte l'option « mode clip des
-walkers » mesurée dans l'étude du jeu ; rien de clip sur cette branche.
+seulement un `jmp`, −4).
+
+**Clipping : le mode clip des walkers** (option A de l'étude du jeu, choisie
+par l'auteur), opt-in par `clip="true"` sur `<spritestream genwalker>`,
+`spritestream.drawClip` dans le runtime : une table de saut de clip par
+facing dont les entrées sont des handlers (enregistrement entier → sa
+routine, caché → sauté, coupé → boucle serrée octet par octet, sauvé au fil
+du tracé, un enregistrement de restauration par rangée). Mêmes flux avec ou
+sans. Coût : walkers +260 octets, runtime +1 063 ; mesuré sur le jeu,
++412 cycles par trame en moyenne sur 5 743 trames réelles découpées comme
+l'original, sous le temps de l'Apple sur les trois découpes réelles du
+personnage debout. JUnit `ClipTest` (un modèle du chemin coupé lisant les
+tables générées, contre le décodeur, chaque fenêtre de colonnes) ; banc
+`examples/spritestream` (42/42, `ci/toje-bench/bench.py`, chaque tracé
+contre un second chemin). Branche locale `feat/bm4s-sprite-stream`, PR à
+décider par l'auteur.
 
 ## Fidélité arcade de R-Type
 

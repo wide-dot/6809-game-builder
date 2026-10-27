@@ -381,7 +381,8 @@ public final class Handlers {
 			.opt("mirrorable", BOOL, "true (default) : each record carries its mirrored delta, the walkers draw a stream in both facings (the other facing through a 256 byte reversal table). false : one facing, one byte less a record")
 			.opt("save", BOOL, "true (default) : the walkers push on S every screen byte they mask, then a restore code ; spritestream.restore puts a buffer's bytes back, last drawn first. false : no restore (a background)")
 			.opt("opaque", BOOL, "true : rows are cut into masked and opaque segments (whole bytes, data only) at the least cycles. Default false")
-			.opt("mergepulls", BOOL, "true (default) : the restore routines pull up to three saved groups with one PULS"));
+			.opt("mergepulls", BOOL, "true (default) : the restore routines pull up to three saved groups with one PULS")
+			.opt("clip", BOOL, "true : the walkers' clip mode, for the engine's spritestream.drawClip (a clip table per facing, the shape and offsets tables, the restore of the rows it cuts). Default false"));
 		spec(element("sprite").doc("one sprite of a <spritestream> : a picture and, to draw it on the 2 pixel grid, the same picture moved right by 2 pixels")
 			.req("name", STRING, "sprite name : its record is adr_<name>")
 			.req("filename", STRING, "the picture : indexed PNG, 0 transparent, 1 to 4 the bm4s colours, column 0 at pixel 0 of a screen byte ; an even width when mirrorable")
