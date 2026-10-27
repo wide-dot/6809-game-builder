@@ -8,7 +8,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,6 +26,9 @@ import com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory;
 public class SimpleAssemblyGenerator extends Encoder{
 
 	int maxTries=500000;
+
+	/** the pattern code's first LEAU (withHalves folds U's walk into it) */
+	private static final Pattern LEAU = Pattern.compile("(?i)^LEAU\\s+(-?\\d+),U$");
 
 	boolean FORWARD = true;
 	boolean REARWARD = false;
@@ -251,105 +259,16 @@ public class SimpleAssemblyGenerator extends Encoder{
 	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 	private static List<String> withHalves(Image img, int page, List<String> code, boolean restoreU, int[] cost) throws Exception {
 		byte[] half = img.getHalfPixels(page);
-		if (half == null) {
-			return code;
-		}
-		java.util.TreeMap<Integer, int[]> bytes = new java.util.TreeMap<Integer, int[]>();
-		for (int i = 0; i < half.length; i++) {
-			int v = half[i] & 0xff;
-			if (v == 0) {
-				continue;
-			}
-			int shiftBits = i % 2 == 0 ? 4 : 0;
-			int[] mv = bytes.computeIfAbsent(i / 2, k -> new int[] {0xff, 0});
-			if (v > 8) {
-				mv[0] &= ~(0xf << shiftBits);
-				mv[1] |= (v - 9) << shiftBits;
-			} else {
-				int bits = shiftBits + (v <= 4 ? 2 : 0);
-				mv[0] &= ~(3 << bits);
-				mv[1] |= ((v - 1) & 3) << bits;
-			}
-		}
+		TreeMap<Integer, int[]> bytes = half == null ? new TreeMap<Integer, int[]>() : halfBytes(half);
 		if (bytes.isEmpty()) {
 			return code;
 		}
-		// the writes : one byte, or two neighbours through D
-		List<int[]> ops = new ArrayList<int[]>();   // offset, width, mask0, value0, mask1, value1
-		Integer[] keys = bytes.keySet().toArray(new Integer[0]);
-		for (int k = 0; k < keys.length; k++) {
-			int offset = keys[k] - img.getCoordinate();
-			int[] m0 = bytes.get(keys[k]);
-			if (k + 1 < keys.length && keys[k + 1] == keys[k] + 1) {
-				int[] m1 = bytes.get(keys[k + 1]);
-				ops.add(new int[] {offset, 2, m0[0], m0[1], m1[0], m1[1]});
-				k++;
-			} else {
-				ops.add(new int[] {offset, 1, m0[0], m0[1], 0, 0});
-			}
-		}
-		// the pattern code's first LEAU, from the anchor
-		int leau = -1;
-		Integer first = null;
-		for (int e = 0; e < code.size() && leau < 0; e++) {
-			String[] lines = code.get(e).split("\n", -1);
-			for (int l = 0; l < lines.length; l++) {
-				String op = lines[l].trim();
-				if (op.isEmpty()) {
-					continue;
-				}
-				java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?i)^LEAU\\s+(-?\\d+),U$").matcher(op);
-				if (m.matches()) {
-					first = Integer.parseInt(m.group(1));
-					leau = e;
-				}
-				break;
-			}
-			if (leau < 0 && code.get(e).trim().length() > 0) {
-				break;
-			}
-		}
-		// dynamic programming : per write, the cheapest walk ending with U on
-		// each candidate place (the anchor, or a write's place, or 16 or 128
-		// bytes past it : the reach of a 5 and an 8 bit offset)
-		java.util.List<java.util.Map<Integer, long[]>> best = new ArrayList<>();   // cursor -> cost, previous cursor
-		java.util.Map<Integer, long[]> cur = new java.util.HashMap<>();
-		cur.put(0, new long[] {0, 0});
-		for (int[] op : ops) {
-			java.util.Map<Integer, long[]> next = new java.util.HashMap<>();
-			for (java.util.Map.Entry<Integer, long[]> e : cur.entrySet()) {
-				int c = e.getKey();
-				for (int t : new int[] {Integer.MIN_VALUE, 0, 16, 128}) {
-					int to = t == Integer.MIN_VALUE ? c : op[0] + t;
-					long move = to == c ? 0 : weight(leaSize(to - c), leaCycles(to - c));
-					long total = e.getValue()[0] + move + weight(writeSize(op, op[0] - to), writeCycles(op, op[0] - to));
-					long[] known = next.get(to);
-					if (known == null || total < known[0]) {
-						next.put(to, new long[] {total, c});
-					}
-				}
-			}
-			best.add(next);
-			cur = next;
-		}
-		// the end : U back where the pattern code expects it
-		int end = 0;
-		long endCost = Long.MAX_VALUE;
-		for (java.util.Map.Entry<Integer, long[]> e : cur.entrySet()) {
-			long total = e.getValue()[0] + weight(back(e.getKey(), first, restoreU, 0), back(e.getKey(), first, restoreU, 1));
-			if (total < endCost) {
-				endCost = total;
-				end = e.getKey();
-			}
-		}
-		int[] cursors = new int[ops.size()];
-		int c = end;
-		for (int k = ops.size() - 1; k >= 0; k--) {
-			cursors[k] = c;
-			c = (int) best.get(k).get(c)[1];
-		}
+		List<int[]> ops = halfOps(bytes, img.getCoordinate());
+		int[] leau = firstLeau(code);
+		Integer first = leau == null ? null : leau[1];
+		int[] cursors = walk(ops, first, restoreU);
 		List<String> out = new ArrayList<String>();
-		c = 0;
+		int c = 0;
 		for (int k = 0; k < ops.size(); k++) {
 			int[] op = ops.get(k);
 			if (cursors[k] != c) {
@@ -365,15 +284,110 @@ public class SimpleAssemblyGenerator extends Encoder{
 		cost[0] += back(c, first, restoreU, 1);
 		cost[1] += back(c, first, restoreU, 0);
 		List<String> rest = new ArrayList<String>(code);
-		if (first != null) {
-			String element = rest.get(leau);
+		if (leau != null) {
 			String moved = first - c == 0 ? "" : "\tLEAU " + (first - c) + ",U";
-			rest.set(leau, element.replaceFirst("(?i)LEAU\\s+-?\\d+,U", moved));
+			rest.set(leau[0], rest.get(leau[0]).replaceFirst("(?i)LEAU\\s+-?\\d+,U", moved));
 		} else if (c != 0 && restoreU) {
 			out.add("\tLEAU " + (-c) + ",U");
 		}
 		out.addAll(rest);
 		return out;
+	}
+
+	/** per byte holding a half pair (its index in the plane) : the mask clearing its opaque pixels' bits, their colours */
+	private static TreeMap<Integer, int[]> halfBytes(byte[] half) {
+		TreeMap<Integer, int[]> bytes = new TreeMap<Integer, int[]>();
+		for (int i = 0; i < half.length; i++) {
+			int v = half[i] & 0xff;
+			if (v != 0) {
+				int shiftBits = i % 2 == 0 ? 4 : 0;
+				int[] mv = bytes.computeIfAbsent(i / 2, k -> new int[] {0xff, 0});
+				if (v > 8) {
+					mv[0] &= ~(0xf << shiftBits);
+					mv[1] |= (v - 9) << shiftBits;
+				} else {
+					int bits = shiftBits + (v <= 4 ? 2 : 0);
+					mv[0] &= ~(3 << bits);
+					mv[1] |= ((v - 1) & 3) << bits;
+				}
+			}
+		}
+		return bytes;
+	}
+
+	/** the writes, in address order : offset from the anchor, width (1, or 2 : two neighbours through D), mask and value of each byte */
+	private static List<int[]> halfOps(TreeMap<Integer, int[]> bytes, int coordinate) {
+		List<int[]> ops = new ArrayList<int[]>();
+		Integer[] keys = bytes.keySet().toArray(new Integer[0]);
+		int k = 0;
+		while (k < keys.length) {
+			int[] m0 = bytes.get(keys[k]);
+			boolean pair = k + 1 < keys.length && keys[k + 1] == keys[k] + 1;
+			int[] m1 = pair ? bytes.get(keys[k + 1]) : new int[] {0, 0};
+			ops.add(new int[] {keys[k] - coordinate, pair ? 2 : 1, m0[0], m0[1], m1[0], m1[1]});
+			k += pair ? 2 : 1;
+		}
+		return ops;
+	}
+
+	/** the pattern code's first instruction when it is a LEAU from the anchor : {its element, its offset}, else null */
+	private static int[] firstLeau(List<String> code) {
+		for (int e = 0; e < code.size(); e++) {
+			for (String line : code.get(e).split("\n", -1)) {
+				String op = line.trim();
+				if (!op.isEmpty()) {
+					Matcher m = LEAU.matcher(op);
+					return m.matches() ? new int[] {e, Integer.parseInt(m.group(1))} : null;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * where U stands for each write : per write, the cheapest walk ending with
+	 * U on each candidate place (where it was, or the write's place, or 16 or
+	 * 128 bytes past it : the reach of a 5 and an 8 bit offset), the end's
+	 * cost included (back)
+	 */
+	// the toolchain signals build errors with plain Exceptions (48 throw sites)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	private static int[] walk(List<int[]> ops, Integer first, boolean restoreU) throws Exception {
+		List<Map<Integer, long[]>> best = new ArrayList<Map<Integer, long[]>>();   // cursor -> cost, previous cursor
+		Map<Integer, long[]> cur = new HashMap<Integer, long[]>();
+		cur.put(0, new long[] {0, 0});
+		for (int[] op : ops) {
+			Map<Integer, long[]> next = new HashMap<Integer, long[]>();
+			for (Map.Entry<Integer, long[]> e : cur.entrySet()) {
+				int c = e.getKey();
+				for (int to : new int[] {c, op[0], op[0] + 16, op[0] + 128}) {
+					long move = to == c ? 0 : weight(leaSize(to - c), leaCycles(to - c));
+					long total = e.getValue()[0] + move + weight(writeSize(op, op[0] - to), writeCycles(op, op[0] - to));
+					long[] known = next.get(to);
+					if (known == null || total < known[0]) {
+						next.put(to, new long[] {total, c});
+					}
+				}
+			}
+			best.add(next);
+			cur = next;
+		}
+		int end = 0;
+		long endCost = Long.MAX_VALUE;
+		for (Map.Entry<Integer, long[]> e : cur.entrySet()) {
+			long total = e.getValue()[0] + weight(back(e.getKey(), first, restoreU, 0), back(e.getKey(), first, restoreU, 1));
+			if (total < endCost) {
+				endCost = total;
+				end = e.getKey();
+			}
+		}
+		int[] cursors = new int[ops.size()];
+		int c = end;
+		for (int k = ops.size() - 1; k >= 0; k--) {
+			cursors[k] = c;
+			c = (int) best.get(k).get(c)[1];
+		}
+		return cursors;
 	}
 
 	/** bytes first, cycles next */

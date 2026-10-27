@@ -41,6 +41,10 @@ import com.widedot.toolbox.graphics.gfxcomp.transformer.mirror.Mirror;
  */
 public class HalfPairsTest {
 
+	/** where the interpreter puts the two planes */
+	private static final int PLANE0 = 0x2000;
+	private static final int PLANE1 = 0x8000;
+
 	@BeforeEach
 	void bm4sGeometry() {
 		VideoMemory.memoryLinearBits = 4;
@@ -97,14 +101,16 @@ public class HalfPairsTest {
 
 	// --- a 6809 interpreter for what the draw encoder emits
 
-	private static final int PLANE0 = 0x2000;
-	private static final int PLANE1 = 0x8000;
-
 	/** runs the routine with U on plane 0's anchor ; every write counted per address */
 	private static final class Cpu {
+		static final Pattern INDEXED = Pattern.compile("^(-?\\d*),U$");
 		final int[] mem = new int[0x10000];
 		final int[] writes = new int[0x10000];
-		int a, b, x, y, u;
+		int a;
+		int b;
+		int x;
+		int y;
+		int u;
 		int loc1;
 
 		int d() {
@@ -130,8 +136,6 @@ public class HalfPairsTest {
 			return mem[at & 0xffff] << 8 | mem[at + 1 & 0xffff];
 		}
 
-		static final Pattern INDEXED = Pattern.compile("^(-?\\d*),U$");
-
 		int ea(String operand) {
 			Matcher m = INDEXED.matcher(operand);
 			if (!m.matches()) {
@@ -149,70 +153,83 @@ public class HalfPairsTest {
 			return wide ? ld16(at) : mem[at];
 		}
 
+		/** the code from its first line to its RTS */
 		void run(String code) {
 			for (String raw : code.split("\n")) {
 				String line = raw.trim();
-				if (line.isEmpty() || raw.startsWith("adr_") || line.startsWith("INCLUDE") || line.startsWith("OPT")) {
-					continue;
-				}
-				String[] p = line.split("\\s+", 2);
-				String op = p[0].toUpperCase();
-				String arg = p.length > 1 ? p[1].trim() : "";
-				switch (op) {
-				case "LDA": a = value(arg, false); break;
-				case "LDB": b = value(arg, false); break;
-				case "LDD": d(value(arg, true)); break;
-				case "LDX": x = value(arg, true); break;
-				case "LDY": y = value(arg, true); break;
-				case "LDU":
-					if (!arg.equals("<glb_screen_location_1")) {
-						throw new IllegalStateException(line);
-					}
-					u = loc1;
-					break;
-				case "ANDA": a &= value(arg, false); break;
-				case "ANDB": b &= value(arg, false); break;
-				case "ORA": a |= value(arg, false); break;
-				case "ORB": b |= value(arg, false); break;
-				case "ADDD": d(d() + value(arg, true) & 0xffff); break;
-				case "STA": st8(ea(arg), a); break;
-				case "STB": st8(ea(arg), b); break;
-				case "STD": st16(ea(arg), d()); break;
-				case "STX": st16(ea(arg), x); break;
-				case "STY": st16(ea(arg), y); break;
-				case "LEAU": u = ea(arg); break;
-				case "PSHU":
-					// pushed from the last of the PUL order down : S U Y X DP B A CC
-					String[] regs = arg.split(",");
-					List<String> order = List.of("CC", "A", "B", "DP", "X", "Y", "S", "U", "D");
-					List<String> pushed = new ArrayList<String>();
-					for (String r : regs) {
-						pushed.add(r.trim().toUpperCase());
-					}
-					String[] down = {"Y", "X", "B", "A"};
-					for (String r : down) {
-						boolean in = pushed.contains(r) || (pushed.contains("D") && (r.equals("A") || r.equals("B")));
-						if (!in) {
-							continue;
-						}
-						switch (r) {
-						case "Y": u -= 2; st16(u, y); break;
-						case "X": u -= 2; st16(u, x); break;
-						case "B": u -= 1; st8(u, b); break;
-						default: u -= 1; st8(u, a); break;
-						}
-					}
-					for (String r : pushed) {
-						if (!order.contains(r) || r.equals("CC") || r.equals("DP") || r.equals("S") || r.equals("U")) {
-							throw new IllegalStateException(line);
-						}
-					}
-					break;
-				case "RTS": return;
-				default: throw new IllegalStateException("not interpreted : " + line);
+				boolean skip = line.isEmpty() || raw.startsWith("adr_") || line.startsWith("INCLUDE") || line.startsWith("OPT");
+				if (!skip && !step(line)) {
+					return;
 				}
 			}
 			throw new IllegalStateException("no RTS");
+		}
+
+		/** one instruction ; false on RTS */
+		boolean step(String line) {
+			String[] p = line.split("\\s+", 2);
+			String op = p[0].toUpperCase();
+			String arg = p.length > 1 ? p[1].trim() : "";
+			switch (op) {
+			case "LDA": a = value(arg, false); break;
+			case "LDB": b = value(arg, false); break;
+			case "LDD": d(value(arg, true)); break;
+			case "LDX": x = value(arg, true); break;
+			case "LDY": y = value(arg, true); break;
+			case "LDU": u = screenLocation1(line, arg); break;
+			case "ANDA": a &= value(arg, false); break;
+			case "ANDB": b &= value(arg, false); break;
+			case "ORA": a |= value(arg, false); break;
+			case "ORB": b |= value(arg, false); break;
+			case "ADDD": d(d() + value(arg, true) & 0xffff); break;
+			case "STA": st8(ea(arg), a); break;
+			case "STB": st8(ea(arg), b); break;
+			case "STD": st16(ea(arg), d()); break;
+			case "STX": st16(ea(arg), x); break;
+			case "STY": st16(ea(arg), y); break;
+			case "LEAU": u = ea(arg); break;
+			case "PSHU": pshu(line, arg); break;
+			case "RTS": return false;
+			default: throw new IllegalStateException("not interpreted : " + line);
+			}
+			return true;
+		}
+
+		/** the only LDU the draw encoder emits : the second plane's pointer */
+		int screenLocation1(String line, String arg) {
+			if (!"<glb_screen_location_1".equals(arg)) {
+				throw new IllegalStateException(line);
+			}
+			return loc1;
+		}
+
+		/** pushed from the last of the PUL order down : Y X B A (D is A and B) ; the encoder pushes nothing else */
+		void pshu(String line, String arg) {
+			List<String> pushed = new ArrayList<String>();
+			for (String r : arg.split(",")) {
+				String reg = r.trim().toUpperCase();
+				if (!List.of("A", "B", "D", "X", "Y").contains(reg)) {
+					throw new IllegalStateException(line);
+				}
+				pushed.add(reg);
+			}
+			boolean dPushed = pushed.contains("D");
+			if (pushed.contains("Y")) {
+				u -= 2;
+				st16(u, y);
+			}
+			if (pushed.contains("X")) {
+				u -= 2;
+				st16(u, x);
+			}
+			if (pushed.contains("B") || dPushed) {
+				u -= 1;
+				st8(u, b);
+			}
+			if (pushed.contains("A") || dPushed) {
+				u -= 1;
+				st8(u, a);
+			}
 		}
 	}
 
@@ -222,7 +239,7 @@ public class HalfPairsTest {
 	 * 80*y + 2*(x/4) + x%2 of the plane's lines, the high nibble at an even
 	 * one, its left pixel in the nibble's high two bits
 	 */
-	private static void drawsExactly(Path dir, int[][] rows, int shift, String position, long seed) throws Exception {
+	private static int drawsExactly(Path dir, int[][] rows, int shift, String position, long seed) throws Exception {
 		Object[] built = compile(dir, rows, Image.TYPE_DRAW, shift, position);
 		Image image = (Image) built[0];
 		String code = (String) built[1];
@@ -240,6 +257,7 @@ public class HalfPairsTest {
 		int height = rows.length;
 		int width = rows[0].length;
 		int[] expected = background.clone();
+		int opaque = 0;
 		for (int y = 0; y < height; y++) {
 			for (int sx = 0; sx < width; sx++) {
 				int c = rows[y][sx];
@@ -251,12 +269,14 @@ public class HalfPairsTest {
 				int at = ((x / 2) % 2 == 0 ? PLANE0 : PLANE1) + nibble / 2;
 				int bits = (nibble % 2 == 0 ? 4 : 0) + (sx % 2 == 0 ? 2 : 0);
 				expected[at] = expected[at] & ~(3 << bits) | (c - 1) << bits;
+				opaque++;
 			}
 		}
 		for (int i = 0; i < expected.length; i++) {
 			assertEquals(expected[i], cpu.mem[i], String.format("byte $%04X, shift %d, %s\n%s", i, shift, position, code));
 			assertTrue(cpu.writes[i] <= 1, String.format("byte $%04X written %d times\n%s", i, cpu.writes[i], code));
 		}
+		return opaque;
 	}
 
 	private static int[][] random(Random rnd, int w, int h, int transparentPercent) {
@@ -321,16 +341,18 @@ public class HalfPairsTest {
 	void randomPicturesDrawExactly(@TempDir Path dir) throws Exception {
 		Random rnd = new Random(42);
 		int n = 0;
+		int opaque = 0;
 		for (int round = 0; round < 12; round++) {
 			int w = 2 * (1 + rnd.nextInt(16));
 			int h = 1 + rnd.nextInt(24);
 			int[][] rows = random(rnd, w, h, new int[] {20, 50, 80}[round % 3]);
 			for (int shift = 0; shift < 2; shift++) {
 				for (String position : new String[] {Image.POSITION_TOP_LEFT, Image.POSITION_CENTER}) {
-					drawsExactly(dir.resolve("r" + n++), rows, shift, position, round);
+					opaque += drawsExactly(dir.resolve("r" + n++), rows, shift, position, round);
 				}
 			}
 		}
+		assertTrue(opaque > 1000, "the random pictures drew " + opaque + " opaque pixels");
 	}
 
 	@Test

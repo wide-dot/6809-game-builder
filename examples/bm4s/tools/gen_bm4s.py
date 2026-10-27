@@ -67,11 +67,13 @@ def marker():
 
 
 def halves():
-    """16x8 over the band : every pair kind, diagonally, in every nibble.
+    """
+    16x8 over the band : every pair kind, diagonally, in every nibble.
 
     Kind (p + y) % 4 of pair p on line y : left pixel alone, right pixel
     alone, both (two colours), none. The pixel left out of a half pair has
-    to show the band beneath it."""
+    to show the band beneath it.
+    """
     im = new320(16, 8, T)
     px = im.load()
     for y in range(8):
