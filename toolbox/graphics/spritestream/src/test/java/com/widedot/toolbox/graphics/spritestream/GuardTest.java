@@ -72,28 +72,31 @@ class GuardTest {
 				continue;
 			}
 			Shape sh = o.shape(code);
-			int row = Math.floorDiv(y, Walker.LINE), col = Math.floorMod(y, Walker.LINE);
-			int lo = 2 * col + sh.p;
-			boolean whole = row >= rt && row + sh.rows <= rb && lo >= jl && lo + sh.n <= jr;
-			if (whole) {
-				for (int[] p : w.bodyN(sh, 0, 0).pushed) {
-					total += p[0];
-				}
-				total += 3;
-			} else {
-				for (int k = 0; k < sh.rows; k++) {
-					int r = row + k;
-					int seen = Math.min(lo + sh.n, jr) - Math.max(lo, jl);
-					if (r >= rt && r < rb && seen > 0) {
-						total += seen + (seen == 1 ? 3 : 4);
-					}
-				}
-			}
+			int row = Math.floorDiv(y, Walker.LINE);
+			int lo = 2 * Math.floorMod(y, Walker.LINE) + sh.p;
+			total += recordPushes(w, sh, row, lo, rt, rb, jl, jr);
 			u += sh.rows * sh.rowBytes() + (o.mirrorable ? 1 : 0);
 			if (sh.advances()) {
 				y += Walker.LINE * (sh.rows - 1);
 			}
 		}
+	}
+
+	/** what one record at row, box byte lo pushes : by its routine when wholly visible, else row by row */
+	private static int recordPushes(Walker w, Shape sh, int row, int lo, int rt, int rb, int jl, int jr) {
+		if (row >= rt && row + sh.rows <= rb && lo >= jl && lo + sh.n <= jr) {
+			int total = 3;
+			for (int[] p : w.bodyN(sh, 0, 0).pushed) {
+				total += p[0];
+			}
+			return total;
+		}
+		int seen = Math.min(lo + sh.n, jr) - Math.max(lo, jl);
+		if (seen <= 0) {
+			return 0;
+		}
+		int shown = Math.min(row + sh.rows, rb) - Math.max(row, rt);
+		return Math.max(shown, 0) * (seen + (seen == 1 ? 3 : 4));
 	}
 
 	@Test
@@ -110,7 +113,8 @@ class GuardTest {
 			Encoder enc = new Encoder(o);
 			Walker w = new Walker(o);
 			for (int k = 0; k < 100; k++) {
-				int wd = 2 * (1 + r.nextInt(40)), h = 1 + r.nextInt(70);
+				int wd = 2 * (1 + r.nextInt(40));
+				int h = 1 + r.nextInt(70);
 				Picture p = new Picture("random" + k, EncoderTest.pixels(r, wd, h));
 				byte[] s = enc.stream(p.bytes);
 				int bound = Decoder.saveBound(o, s, true);
@@ -121,8 +125,10 @@ class GuardTest {
 				}
 				int n = p.bytes.length == 0 ? 0 : p.bytes[0].length;
 				for (int c = 0; c < 30; c++) {
-					int rt = r.nextInt(h + 1), rb = rt + r.nextInt(h + 1 - rt);
-					int jl = r.nextInt(n + 1), jr = jl + r.nextInt(n + 1 - jl);
+					int rt = r.nextInt(h + 1);
+					int rb = rt + r.nextInt(h + 1 - rt);
+					int jl = r.nextInt(n + 1);
+					int jr = jl + r.nextInt(n + 1 - jl);
 					int cut = clipPushes(o, w, s, rt, rb, jl, jr);
 					assertTrue(cut <= bound, p.file + " : a draw cut to rows " + rt + "-" + rb + ", bytes " + jl + "-"
 							+ jr + " pushes " + cut + ", past the bound " + bound);

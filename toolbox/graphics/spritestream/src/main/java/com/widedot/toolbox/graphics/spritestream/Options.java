@@ -47,6 +47,8 @@ public final class Options {
 		this(segment, rows, mirrorable, save, opaque, mergePulls, clip, false);
 	}
 
+	// the toolchain signals build errors with plain Exceptions (see Encoder and Image)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 	Options(int segment, Map<Integer, Integer> rows, boolean mirrorable, boolean save, boolean opaque,
 			boolean mergePulls, boolean clip, boolean guard) throws Exception {
 		if (segment < 1 || segment > 16) {
