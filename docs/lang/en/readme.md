@@ -109,6 +109,8 @@ Platform distributions are then generated in `package/target` :
 
 [gfxlock — the double buffer][gfxlock]
 
+[keyboard — the 6804's frames (TO8)][keyboard]
+
 [migrating from the first generation — the casebook][migration]
 
 ## Toolbox
@@ -136,6 +138,7 @@ Platform distributions are then generated in `package/target` :
 [audio]: audio.md
 [interrupts]: interrupts.md
 [gfxlock]: gfxlock.md
+[keyboard]: keyboard.md
 [migration]: migration/README.md
 [toolbox-reference]: toolbox.md
 [credits]: credits.md

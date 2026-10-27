@@ -227,6 +227,13 @@ map.STATUS.GETC_SS2   equ %00000001
 
 ; MC6846.PCR bit masks
 map.MC6846.PCR.DAC_MUTE  equ %00001000
+map.MC6846.PCR.CP1_IRQ   equ %00000001 ; CP1 interrupt enable : the monitor reads the keyboard
+map.MC6846.PCR.CP1_RISE  equ %00000010 ; CP1 active edge : 1 rising, 0 falling
+
+; MC6846 keyboard link bit masks (the 6804 : CP1 in, P5 out)
+map.MC6846.CSR.CP1       equ %00000010 ; CP1 flag : an active edge seen
+map.MC6846.PDR.ACK       equ %00100000 ; P5 : ACK to the 6804, active low
+map.MC6846.PDR.LOWER     equ %00001000 ; P3 : the monitor's lower case flag
 
 map.RAM_OVER_CART     equ %01100000
 
