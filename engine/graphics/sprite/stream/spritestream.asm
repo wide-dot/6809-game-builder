@@ -64,7 +64,7 @@ spritestream.GUARD equ 0
 spritestream.IRQ equ 12
  ENDC
  IFNDEF spritestream.DRAWAT
-spritestream.DRAWAT equ 1                    ; 0 : drawAt left out (its bytes to the save stack)
+spritestream.DRAWAT equ 1                    ; 0 : drawAt left out, its bytes to the save stack
  ENDC
 
         INCLUDE "engine/graphics/sprite/stream/spritestream.const.asm"

@@ -151,7 +151,7 @@ tops, then the clip rectangle, unused without the clip mode ;
 `spritestream.const.asm` for a caller) and optionally `spritestream.STACK`
 (default 768 : the most a buffer saves between two restores, plus what an
 interrupt pushes on S while a walker runs), and `spritestream.DRAWAT` 0 to
-leave `drawAt` out (133 bytes of the half page, for the save stack of a game
+leave `drawAt` out (105 bytes of the half page measured with the clip mode and the guard, for the save stack of a game
 that does not call it). The walkers' temporaries use `dp_engine`.
 
 | entry | input | |
