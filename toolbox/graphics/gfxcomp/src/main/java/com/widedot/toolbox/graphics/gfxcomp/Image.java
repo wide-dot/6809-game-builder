@@ -188,9 +188,11 @@ public class Image {
 	 * 3 = onebpp code anchored on the canvas reference byte/row, packed box
 	 * byte-aligned (pre-shifted variants keep their bit, exact x1/y1 offsets) ;
 	 * 4 = draw1/clear1 walk U row by row (LEAU, 5-bit offsets, D pairs, no
-	 * redundant AND), clear stores zeros.
+	 * redundant AND), clear stores zeros ; 5 = bm4s draw lays half
+	 * transparent pairs with masks, a byte once (its whole pair taken from the
+	 * pattern code), U walked, the walk folded into the first LEAU.
 	 */
-	private static final String CACHE_VERSION = "4";
+	private static final String CACHE_VERSION = "5";
 
 	public String planes;
 
@@ -371,10 +373,29 @@ public class Image {
 		}
 		byte[][] scratch = new byte[][] {half[0].clone(), half[1].clone()};
 		Shift.transform(half, scratch, height, shift);
+		// a byte holding a half pair is read, masked and written back : its
+		// other pixel pair goes into that write too (9-24 : both pixels, the
+		// packed colour + 9) and leaves the pattern code, which would read and
+		// write the same byte a second time
+		for (int page = 0; page < 2; page++) {
+			for (int i = 0; i < half[page].length; i++) {
+				int other = i ^ 1;
+				if (half[page][i] != 0 && half[page][other] == 0 && pixels[page][other] != 0) {
+					half[page][other] = (byte) (8 + pixels[page][other]);
+					pixels[page][other] = 0;
+					data[page][other] = 0;
+				}
+			}
+		}
 		halfPixels = half;
 	}
 
-	/** the half pairs of a plane (prepareHalves), null when the picture has none */
+	/**
+	 * the half pairs of a plane (prepareHalves), null when the picture has
+	 * none : per packed pixel, 1-4 its left pixel opaque in the colour 0-3,
+	 * 5-8 its right one, 9-24 both (the packed colour + 9, a pair sharing its
+	 * byte with a half pair)
+	 */
 	public byte[] getHalfPixels(int ramPage) {
 		return halfPixels == null ? null : halfPixels[ramPage];
 	}

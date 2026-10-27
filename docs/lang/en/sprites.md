@@ -169,12 +169,17 @@ What the game sees :
 - transparency goes by pixel pairs for every encoder but one : a pair is
   transparent as a whole or not at all, and a half transparent pair is a
   build error naming it, as are an odd width and a fifth colour ;
-- the exception is `draw` without mirror nor half lines : a half transparent
-  pair (one pixel opaque, the other not) is laid by itself, before the
-  plane's own code, as `LDA n,U / ANDA #mask / ORA #colour / STA n,U` (10
-  cycles, 8 bytes per pair), the opaque pixel's two bits replaced and its
-  neighbour's kept. The rest of the picture compiles exactly as it would with
-  those pixels left out ; a picture without half pairs compiles as before ;
+- the exception is `draw` without mirror nor half lines : a byte holding a
+  half transparent pair (one pixel opaque, the other not) is laid once for
+  its four pixels, before the plane's pattern code : `LDA n,U / ANDA #mask /
+  ORA #colours / STA n,U`, the AND left out when the colours set every
+  opaque bit, the OR when they are all 0, two neighbour bytes through D. The
+  byte's other pair, when whole, joins that write and leaves the pattern
+  code, so no byte is read and written twice. U walks between the writes
+  (LEAU placed by dynamic programming so that each offset is none, 5 or 8
+  bits, bytes first then cycles), and the walk is folded into the pattern
+  code's first LEAU. A byte costs 6 to 10 bytes and 8 to 14 cycles ; a
+  picture without half pairs compiles as before ;
 - the 1bpp encoders have no bm4s form and are refused.
 
 `examples/bm4s` is the bench (`ci/toje-bench/bm4s_ut.py` compares the screen

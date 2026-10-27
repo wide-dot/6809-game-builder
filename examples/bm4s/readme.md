@@ -61,5 +61,6 @@ glyph seen through both pre-shifted variants.
   pixel exact and each left out pixel showing the band ;
 - the controls : on the same capture, each of the 32 half pairs expected
   drawn whole, or its pixel on the other side, is refused ;
-- `ci/build-corpus.sh` before the bench changed : 121 images byte identical
+- `halves` compiles to 16 writes (one `STD` a line a plane : its 64 pairs) ;
+- `ci/build-corpus.sh` : the 117 images of the other examples byte identical
   (a picture without half pairs compiles as it did).
