@@ -20,6 +20,7 @@ ext_variables_size           equ 20  ; per dynamic object
 * otherwise unused.
 sprite1                      equ dp
 sprite2                      equ Dynamic_Object_RAM
+sprite3                      equ Dynamic_Object_RAM+object_size
 
 * the dynamic object pool, right below the screen result area
 Dynamic_Object_RAM           equ $9800

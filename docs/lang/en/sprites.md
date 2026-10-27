@@ -166,9 +166,15 @@ What the game sees :
 
 - a position unit is two screen pixels : `x_pixel` keeps its 0..159 range,
   and a pre-shifted variant (`shift="1"`) is a 2 pixel shift ;
-- transparency goes by pixel pairs : a pair is transparent as a whole or not
-  at all, and a half transparent pair is a build error naming it, as are an
-  odd width and a fifth colour ;
+- transparency goes by pixel pairs for every encoder but one : a pair is
+  transparent as a whole or not at all, and a half transparent pair is a
+  build error naming it, as are an odd width and a fifth colour ;
+- the exception is `draw` without mirror nor half lines : a half transparent
+  pair (one pixel opaque, the other not) is laid by itself, before the
+  plane's own code, as `LDA n,U / ANDA #mask / ORA #colour / STA n,U` (10
+  cycles, 8 bytes per pair), the opaque pixel's two bits replaced and its
+  neighbour's kept. The rest of the picture compiles exactly as it would with
+  those pixels left out ; a picture without half pairs compiles as before ;
 - the 1bpp encoders have no bm4s form and are refused.
 
 `examples/bm4s` is the bench (`ci/toje-bench/bm4s_ut.py` compares the screen

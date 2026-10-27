@@ -8,8 +8,10 @@ step) ; its outputs are committed, and --check tells whether they are the
 pictures it would draw.
 
 Convention : index 0 transparent, 1..4 the colours 0..3 of the $41 palette.
-Transparency goes by pixel pairs in bm4s (gfxcomp refuses a half
-transparent pair), so the transparent hole is pair aligned.
+Transparency goes by pixel pairs in bm4s for every encoder but draw
+(gfxcomp refuses a half transparent pair elsewhere), so the glyph's hole is
+pair aligned ; the halves picture, drawn by the draw encoder alone, is made
+of half pairs.
 
 The pictures are test patterns, not drawings : single-pixel features
 everywhere, so a lost bit or a swapped pair shows as a wrong picture.
@@ -64,6 +66,25 @@ def marker():
     return im
 
 
+def halves():
+    """16x8 over the band : every pair kind, diagonally, in every nibble.
+
+    Kind (p + y) % 4 of pair p on line y : left pixel alone, right pixel
+    alone, both (two colours), none. The pixel left out of a half pair has
+    to show the band beneath it."""
+    im = new320(16, 8, T)
+    px = im.load()
+    for y in range(8):
+        c, d = (CYAN, BLACK) if y % 2 == 0 else (BLACK, CYAN)
+        for p in range(8):
+            kind = (p + y) % 4
+            if kind in (0, 2):
+                px[2 * p, y] = c
+            if kind in (1, 2):
+                px[2 * p + 1, y] = c if kind == 1 else d
+    return im
+
+
 def band():
     """320x24, the background : three strips of single-pixel detail."""
     w, h = 320, 24
@@ -84,7 +105,7 @@ def main():
     """Draw the three pictures ; --check compares them with the committed ones instead."""
     check = '--check' in sys.argv[1:]
     stale = []
-    for name, make in (('glyph', glyph), ('marker', marker), ('band', band)):
+    for name, make in (('glyph', glyph), ('marker', marker), ('halves', halves), ('band', band)):
         im = make()
         path = os.path.join(OUT, name + '.png')
         if check:

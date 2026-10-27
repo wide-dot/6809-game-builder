@@ -7,11 +7,13 @@
 Two checks, both against what the example claims in its readme :
 
 1. the witnesses at $9C00 (see the game mode's main.asm) : +0 magic $CA,
-   +1..+4, +8, +9, +10 at $01, the frame counter (+5) moving, the head of
+   +1..+4, +8..+11 at $01, the frame counter (+5) moving, the head of
    the free cell list (+6) holding still ;
 2. the screen, compared at 320x200 against the source pictures
    (src/assets/sprites/*.png, drawn at 320 in 4 colours) : on every capture
-   the band matches exactly, the moving sprite (glyph or marker, the
+   the band matches exactly with the halves sprite over it (a sprite of
+   half transparent pairs, drawn by the draw encoder's masks : the pixel
+   left out of a pair shows the band), the moving sprite (glyph or marker, the
    animation alternates them) matches exactly where it is found, and no
    pixel is lit outside them (the erase path leaves no trail). Over the run
    the glyph has to be seen on both pre-shifted variants (an even and an odd
@@ -78,13 +80,42 @@ def find(scr, pic, skip_rows):
     return out
 
 
-def check_screen(scr, band, sprites):
+def over(band, pic, x0, y0):
+    """The band with the picture's opaque pixels laid at (x0, y0)."""
+    out = [row[:] for row in band]
+    for y, row in enumerate(pic):
+        for x, c in enumerate(row):
+            if c is not None:
+                out[y0 + y][x0 + x] = c
+    return out
+
+
+def find_band(scr, band, halves):
+    """Every (band row, halves x, halves y) where the band shows with the halves over it."""
+    bh, hh, hw = len(band), len(halves), len(halves[0])
+    out = []
+    for by in range(200 - bh + 1):
+        wrong = [(x, y) for y in range(bh) for x in range(320) if scr[by + y][x] != band[y][x]]
+        if not wrong or len(wrong) > hh * hw:
+            continue
+        xs = [x for x, _ in wrong]
+        ys = [y for _, y in wrong]
+        if max(xs) - min(xs) >= hw or max(ys) - min(ys) >= hh:
+            continue
+        for hy in range(max(0, max(ys) - hh + 1), min(min(ys), bh - hh) + 1):
+            for hx in range(max(0, max(xs) - hw + 1), min(min(xs), 320 - hw) + 1):
+                if matches(scr, over(band, halves, hx, hy), 0, by):
+                    out.append((by, hx, hy))
+    return out
+
+
+def check_screen(scr, band, halves, sprites):
     """(error or None, the sprite found and where)."""
     bh = len(band)
-    rows = [y for y in range(200 - bh + 1) if matches(scr, band, 0, y)]
+    rows = find_band(scr, band, halves)
     if len(rows) != 1:
-        return 'the band is found %d times, not once' % len(rows), None
-    by = rows[0]
+        return 'the band and the halves over it are found %d times, not once' % len(rows), None
+    by = rows[0][0]
     skip = set(range(by, by + bh))
     found = [(name, xy) for name, pic in sprites.items() for xy in find(scr, pic, skip)]
     if len(found) != 1:
@@ -105,6 +136,7 @@ def main():
     disk = sys.argv[1]
     shots = int(sys.argv[2]) if len(sys.argv) > 2 else 12
     band = picture('band')
+    halves = picture('halves')
     sprites = {'glyph': picture('glyph'), 'marker': picture('marker')}
 
     t = Toje()
@@ -112,7 +144,7 @@ def main():
     verdict = 2
     for _ in range(60):
         t.call('run_frames', {'n': 25, 'timeout_ms': 20000})
-        b = t.read('9C00', 11)
+        b = t.read('9C00', 12)
         if b[0] == 0xCA and b[8] == 0x01:
             break
     else:
@@ -123,7 +155,8 @@ def main():
 
     errors = []
     expect = {1: 'glyph index', 2: 'marker index', 3: 'sprite drawn', 4: 'cell allocated',
-              8: 'animation seen', 9: 'band index', 10: 'band drawn as an overlay'}
+              8: 'animation seen', 9: 'band index', 10: 'band drawn as an overlay',
+              11: 'halves index'}
     for k, what in expect.items():
         if b[k] != 0x01:
             errors.append('$9C%02X (%s) is $%02X' % (k, what, b[k]))
@@ -135,13 +168,13 @@ def main():
             t.call('run_frames', {'n': 7, 'timeout_ms': 20000})
             png = os.path.join(tmp, 'shot%02d.png' % i)
             t.call('screenshot', {'path': png})
-            err, where = check_screen(screen(png), band, sprites)
+            err, where = check_screen(screen(png), band, halves, sprites)
             print('shot %2d : %s' % (i, err or '%s at (%d,%d)' % where), flush=True)
             if err:
                 errors.append('shot %d : %s' % (i, err))
             elif where[0] == 'glyph':
                 variants.add(where[1] % 4)
-    b = t.read('9C00', 11)
+    b = t.read('9C00', 12)
     if b[5] == frame:
         errors.append('the frame counter ($9C05) does not move')
     if (b[6], b[7]) != cells:
@@ -154,7 +187,7 @@ def main():
         print('BM4S-UT FAIL\n  ' + '\n  '.join(errors))
         verdict = 1
     else:
-        print('BM4S-UT PASS (%d captures, both glyph variants, no trail)' % shots)
+        print('BM4S-UT PASS (%d captures, both glyph variants, the half pairs, no trail)' % shots)
         verdict = 0
     t.close()
     sys.exit(verdict)

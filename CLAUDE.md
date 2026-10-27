@@ -155,7 +155,9 @@ la description de la PR en garde la trace.
   l'IRQ active, depuis le 18/10/2026),
   `examples/tlsf-ut` (tests unitaires TLSF sur machine),
   `examples/bm4s` (le 320x200 4 couleurs `$41` : `videomode="bm4s"` de
-  gfxcomp, `_gfxmode.setBM4S`, banc `ci/toje-bench/bm4s_ut.py`),
+  gfxcomp, `_gfxmode.setBM4S`, banc `ci/toje-bench/bm4s_ut.py` ; les
+  demi-paires transparentes passent par l'encodeur `draw` seul, masquées
+  pixel par pixel, depuis le 27/10/2026),
   `examples/spritestream` (sprites par flux bm4s et leur mode clip : 42/42
   rejoués contre `bench.ref`, chaque tracé contre un second chemin),
   `examples/mplus` (bancs de test carte son MPLUS : DAC, MIDI 6850, MEA8000, SN76489, YM2413),

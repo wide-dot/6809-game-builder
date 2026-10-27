@@ -20,7 +20,8 @@ mode is copied from :
 
 `x_pixel` keeps its 0..159 range : one unit is two screen pixels, and the
 pre-shifted variant is a 2 pixel shift. Transparency goes by pixel pairs
-(gfxcomp refuses a half transparent pair).
+(gfxcomp refuses a half transparent pair, except in the `draw` encoder,
+which lays it with a mask : `docs/lang/en/sprites.md`).
 
 The pictures are test patterns drawn by `tools/gen_bm4s.py` (authoring : the
 build never runs it ; `--check` tells whether the committed PNGs are what it
@@ -36,7 +37,9 @@ python3 ../../ci/toje-bench/bm4s_ut.py dist/to8.fd
 ```
 
 The bench reads the witnesses at `$9C00` (main.asm) and compares twelve
-captures against the 320 pixel sources : the band exact, the moving sprite
+captures against the 320 pixel sources : the band exact with the halves
+sprite over it (half transparent pairs, each pixel left out showing the
+band beneath), the moving sprite
 (glyph or marker) exact where it is found, no pixel lit elsewhere, and the
 glyph seen through both pre-shifted variants.
 
@@ -50,3 +53,13 @@ glyph seen through both pre-shifted variants.
   variants), no trail ;
 - the compiled sprite unit is byte for byte the one the earlier Python
   recoding produced (02/10/2026).
+
+## Half pairs (toje, 27/10/2026)
+
+- `halves` (16x8, every pair kind in every nibble, drawn by `draw` alone, an
+  overlay on the band's white and red columns) : 12 captures, each laid
+  pixel exact and each left out pixel showing the band ;
+- the controls : on the same capture, each of the 32 half pairs expected
+  drawn whole, or its pixel on the other side, is refused ;
+- `ci/build-corpus.sh` before the bench changed : 121 images byte identical
+  (a picture without half pairs compiles as it did).

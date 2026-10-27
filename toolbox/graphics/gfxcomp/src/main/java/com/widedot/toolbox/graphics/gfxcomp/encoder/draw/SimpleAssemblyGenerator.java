@@ -127,6 +127,17 @@ public class SimpleAssemblyGenerator extends Encoder{
 		cyclesSpriteCode2 = regOpt.getAsmCodeCycles();
 		sizeSpriteCode2 = regOpt.getAsmCodeSize();
 
+		// bm4s : the half transparent pairs, laid apart (each byte with its
+		// pixels' mask) before the plane's code, U on the anchor still
+		int[] cost = new int[2];
+		spriteCode1 = withHalves(img, 0, spriteCode1, cost);
+		cyclesSpriteCode1 += cost[0];
+		sizeSpriteCode1 += cost[1];
+		cost = new int[2];
+		spriteCode2 = withHalves(img, 1, spriteCode2, cost);
+		cyclesSpriteCode2 += cost[0];
+		sizeSpriteCode2 += cost[1];
+
 		if (planesByCursor()) {
 			secondPlaneThroughY(img);
 		}
@@ -217,6 +228,51 @@ public class SimpleAssemblyGenerator extends Encoder{
 			size += Register.sizeDirectST[Register.B];
 		}		
 		return size;
+	}
+
+	/**
+	 * bm4s, a plane's half transparent pairs (Image.getHalfPixels : 1-4 the
+	 * left pixel opaque in the colour 0-3, 5-8 the right one) : the planes'
+	 * pattern code leaves them transparent ; each byte holding one is laid
+	 * here, LDA / ANDA with its opaque pixels' two bits cleared / ORA their
+	 * colour / STA, at its offset from the anchor (the code's first LEAU
+	 * starts from there). A bm4s pixel is a byte's two bits, leftmost first :
+	 * the packed pixel at an even index is the byte's high nibble. cost : the
+	 * cycles and the bytes added.
+	 */
+	// the toolchain signals build errors with plain Exceptions (48 throw sites)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	private static List<String> withHalves(Image img, int page, List<String> code, int[] cost) throws Exception {
+		byte[] half = img.getHalfPixels(page);
+		if (half == null) {
+			return code;
+		}
+		java.util.TreeMap<Integer, int[]> bytes = new java.util.TreeMap<Integer, int[]>();
+		for (int i = 0; i < half.length; i++) {
+			int v = half[i] & 0xff;
+			if (v == 0) {
+				continue;
+			}
+			boolean left = v <= 4;
+			int bits = (i % 2 == 0 ? 4 : 0) + (left ? 2 : 0);
+			int[] maskValue = bytes.computeIfAbsent(i / 2, k -> new int[] {0xff, 0});
+			maskValue[0] &= ~(3 << bits);
+			maskValue[1] |= ((v - 1) & 3) << bits;
+		}
+		List<String> out = new ArrayList<String>();
+		for (java.util.Map.Entry<Integer, int[]> e : bytes.entrySet()) {
+			int offset = e.getKey() - img.getCoordinate();
+			out.add(String.format("\tLDA %d,U\n\tANDA #$%02X\n\tORA #$%02X\n\tSTA %d,U",
+					offset, e.getValue()[0] & 0xff, e.getValue()[1], offset));
+			cost[0] += Register.costIndexedLD[Register.A] + Register.costImmediateAND[Register.A]
+					+ Register.costImmediateOR[Register.A] + Register.costIndexedST[Register.A]
+					+ 2 * Register.getIndexedOffsetCost(offset);
+			cost[1] += Register.sizeIndexedLD[Register.A] + Register.sizeImmediateAND[Register.A]
+					+ Register.sizeImmediateOR[Register.A] + Register.sizeIndexedST[Register.A]
+					+ 2 * Register.getIndexedOffsetSize(offset);
+		}
+		out.addAll(code);
+		return out;
 	}
 
 	/** true when the code walks to the second plane instead of pointing at it */
