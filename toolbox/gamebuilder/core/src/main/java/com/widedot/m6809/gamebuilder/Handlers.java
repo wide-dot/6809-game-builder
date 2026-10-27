@@ -466,7 +466,8 @@ public final class Handlers {
 			.opt("planarbits", INT, "instead of videomode : bits written before changing plane")
 			.opt("linebytes", INT, "instead of videomode : bytes per line, 0 to fit the image")
 			.opt("planes", INT, "instead of videomode : number of memory planes")
-			.opt("pixeldepth", INT, "instead of videomode : bits per pixel"));
+			.opt("pixeldepth", INT, "instead of videomode : bits per pixel")
+			.opt("codec", STRING, "none (default) : the plane's bytes as they are ; zx0 : the plane compressed, and it stays so in RAM (a forward stream in the loader's classic format, no in-place byte) : the game decompresses it (engine/compression/zx0)"));
 		spec(element("mscroll").doc("build one mscroll asset (tile-major tileset, map or start buffer) from an indexed map PNG")
 			.req("filename", STRING, "input .png : the whole map, indexed, a whole number of 8x16 tiles")
 			.req("output", STRING, "map, tiles or start — which asset this direntry holds")

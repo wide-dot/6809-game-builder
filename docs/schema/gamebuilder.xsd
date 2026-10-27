@@ -2610,6 +2610,9 @@
       <xs:attribute name="pixeldepth" type="int6809">
         <xs:annotation><xs:documentation>instead of videomode : bits per pixel</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="codec" type="xs:string">
+        <xs:annotation><xs:documentation>none (default) : the plane's bytes as they are ; zx0 : the plane compressed, and it stays so in RAM (a forward stream in the loader's classic format, no in-place byte) : the game decompresses it (engine/compression/zx0)</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 
