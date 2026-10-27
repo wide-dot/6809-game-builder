@@ -1,0 +1,6 @@
+{
+  "disk": "dist/to8.fd",
+  "witnesses": "9C00",
+  "tests": 42,
+  "frames": 6000
+}

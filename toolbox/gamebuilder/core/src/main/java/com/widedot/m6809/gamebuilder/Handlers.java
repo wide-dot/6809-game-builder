@@ -344,6 +344,8 @@ public final class Handlers {
 		FILES.put("tilepatch", com.widedot.m6809.gamebuilder.plugin.tilemap.TilepatchPlugin::getFile);
 		FILES.put("tilereset", com.widedot.m6809.gamebuilder.plugin.tilemap.TileresetPlugin::getFile);
 		FILES.put("imageset", com.widedot.toolbox.graphics.gfxcomp.ImagesetPlugin::getFile);
+		FILES.put("spritestream", com.widedot.toolbox.graphics.spritestream.SpritestreamPlugin::getFile);
+		PARTS.put("spritestream", com.widedot.toolbox.graphics.spritestream.SpritestreamPlugin::getParts);
 		FILES.put("animation", AnimationPlugin::getFile);
 		// also an object : inside <lwasm> a linkable table, as file content
 		// a loadable 32 byte file
@@ -367,6 +369,24 @@ public final class Handlers {
 			.opt("overflow", STRING, "past maxsize : error (default, the build stops) or trim (the picture's bottom lines dropped until the routine fits, a warning)")
 			.opt("frames", STRING, "an animated part : comma separated pictures of the same size, transparent where the picture does not change ; each a routine <label>_F<k>_Draw, <label>_Draw's inputs, called after it, writing the bytes that hold its pixels")
 			.opt("picture", BOOL, "false : the frames alone, the picture's routine in another unit (a page each). Default true"));
+		spec(element("spritestream").doc("sprites as streams of masked row segments drawn at run time by generated walkers (bm4s) : with <sprite> children, each sprite's record and streams (one source each under gendir ; in an <lwasm> gensource includes them in a section and exports every record adr_<name>, in an arena collection each sprite is a part) ; with genwalker, the walkers, the restore walker and their tables for the engine's spritestream.asm. The streams and the walkers must share their options : set them once with <default name=\"spritestream.xxx\">. Every stream is decoded back and compared with its picture, both facings when mirrorable")
+			.opt("gendir", STRING, "sprites : directory receiving one source a sprite (its record adr_<name>, then its streams)")
+			.opt("gensource", STRING, "sprites in an <lwasm> : generated source including them, inside a section, every record exported")
+			.opt("genreport", STRING, "sprites : a CSV of every sprite (width, height, box bytes, mirror flag, stream bytes)")
+			.opt("genwalker", STRING, "the walkers' form : the generated source of the walkers, the restore walker and their tables, to assemble with the engine's spritestream.asm. No <sprite> then")
+			.opt("section", STRING, "SECTION wrapping the sprites in gensource, code if omitted ; none for a host that already opened one")
+			.opt("videomode", STRING, "bm4s (the only one) : 320x200 in 4 colours, indexed pictures, 0 transparent, 1 to 4 the colours, column 0 at pixel 0 of a screen byte")
+			.opt("segment", INT, "the longest record, in screen bytes : a row's run of bytes is cut every segment bytes. Default 6")
+			.opt("rows", STRING, "multi-row records : comma list of <bytes>:<rows>, a run of that length repeated on consecutive rows drawn by one record of up to that many rows ; none for none. Default 2:2,3:2")
+			.opt("mirrorable", BOOL, "true (default) : each record carries its mirrored delta, the walkers draw a stream in both facings (the other facing through a 256 byte reversal table). false : one facing, one byte less a record")
+			.opt("save", BOOL, "true (default) : the walkers push on S every screen byte they mask, then a restore code ; spritestream.restore puts a buffer's bytes back, last drawn first. false : no restore (a background)")
+			.opt("opaque", BOOL, "true : rows are cut into masked and opaque segments (whole bytes, data only) at the least cycles. Default false")
+			.opt("mergepulls", BOOL, "true (default) : the restore routines pull up to three saved groups with one PULS")
+			.opt("clip", BOOL, "true : the walkers' clip mode, for the engine's spritestream.drawClip (a clip table per facing, the shape and offsets tables, the restore of the rows it cuts). Default false"));
+		spec(element("sprite").doc("one sprite of a <spritestream> : a picture and, to draw it on the 2 pixel grid, the same picture moved right by 2 pixels")
+			.req("name", STRING, "sprite name : its record is adr_<name>")
+			.req("filename", STRING, "the picture : indexed PNG, 0 transparent, 1 to 4 the bm4s colours, column 0 at pixel 0 of a screen byte ; an even width when mirrorable")
+			.opt("shifted", STRING, "the same picture moved right by 2 pixels (2 transparent columns on its left) : drawn at the odd 2 pixel steps"));
 		spec(element("tilemap").doc("generate the page/address table of a tile index map, baked in a .static section")
 			.req("map", STRING, "tile index .bin (leanscroll output), big endian, column major")
 			.req("label", STRING, "label of the generated table")

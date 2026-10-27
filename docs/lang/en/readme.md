@@ -38,6 +38,8 @@ boss included) ; the R-Type port on this generation already runs its stages
   builder measures, places and publishes, the runtime places nothing
 - generate compiled sprites from png files (four encoders, mirror and
   pre-shift variants) and their image-set indexes
+- generate sprite streams (bm4s) : masked row segments drawn in both facings
+  by generated walkers, with their save stack
 - generate tile maps and the whole level-map chain (leanscroll)
 - convert pcm, vgm audio data (`vgm2ymm`, `vgm2vgc`, `vgm2sfx`)
 - compress code and data (zx0)
@@ -97,6 +99,8 @@ Platform distributions are then generated in `package/target` :
 
 [sprites][sprites]
 
+[sprite streams][spritestream]
+
 [tilemaps][tilemaps]
 
 [audio][audio]
@@ -127,6 +131,7 @@ Platform distributions are then generated in `package/target` :
 [groups]: groups.md
 [objects]: objects.md
 [sprites]: sprites.md
+[spritestream]: spritestream.md
 [tilemaps]: tilemaps.md
 [audio]: audio.md
 [interrupts]: interrupts.md
