@@ -134,7 +134,7 @@ public class Png2BinPlugin {
 		byte[] data = Files.readAllBytes(Paths.get(wanted));
 		byte[] out = encode(data, codec);
 		log.info("png2bin {} plane {} : {} bytes{}", png.getName(), plane, out.length,
-		         out == data ? "" : " (" + codec + ", " + data.length + " raw)");
+		         "none".equals(codec(codec)) ? "" : " (" + codec + ", " + data.length + " raw)");
 		return new Binary(out);
 	}
 
