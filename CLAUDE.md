@@ -158,8 +158,10 @@ la description de la PR en garde la trace.
   gfxcomp, `_gfxmode.setBM4S`, banc `ci/toje-bench/bm4s_ut.py` ; les
   demi-paires transparentes passent par l'encodeur `draw` seul, masquées
   pixel par pixel, depuis le 27/10/2026),
-  `examples/spritestream` (sprites par flux bm4s et leur mode clip : 42/42
-  rejoués contre `bench.ref`, chaque tracé contre un second chemin),
+  `examples/spritestream` (sprites par flux bm4s et leur mode clip : 44/44
+  rejoués contre `bench.ref`, chaque tracé contre un second chemin ; la
+  garde de la pile de sauvegarde, `guard="true"`, t43-t44, depuis le
+  27/10/2026),
   `examples/mplus` (bancs de test carte son MPLUS : DAC, MIDI 6850, MEA8000, SN76489, YM2413),
   `examples/keyboard` (la trame du 6804 lue par `keyboard.fast`, banc
   `ci/toje-bench/keyboard_ut.py`, 13/13 sous toje corrigé).

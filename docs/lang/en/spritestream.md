@@ -110,6 +110,7 @@ of the sprites inside a section, every record exported.
 | `opaque` | false | whole bytes in segments of their own, data only |
 | `mergepulls` | true | the restore pulls up to three saved groups at once |
 | `clip` | false | the walkers' clip mode, for `spritestream.drawClip` (walkers only) |
+| `guard` | false | records carry what their draw saves, the runtime skips a draw the save stack cannot hold (*The guard* ; needs `save`) |
 | `gendir`, `gensource`, `genreport` | | sprites : their sources, the INCLUDE file, a CSV of the sprites |
 | `genwalker` | | the walkers' form |
 
@@ -122,7 +123,9 @@ of 79 screen bytes and 255 rows.
 Record, 8 bytes, at `adr_<name>` : stream of the picture, stream of the
 shifted picture (the same when there is none), their box bytes N0 and N1,
 the rows, the mirror flag — 1 when the picture's width is 2 mod 4 : the
-mirror of each stream then lands on the other stream's 2 pixel step.
+mirror of each stream then lands on the other stream's 2 pixel step. With
+`guard`, two words more (12 bytes) : what a whole draw of either stream
+saves, exactly, and the most a draw cut by `drawClip` saves.
 
 Stream : records `[mirrored delta] [code] [delta] [payload]`, the first byte
 only in mirrorable streams. A delta is the change of the walker's Y,
@@ -175,6 +178,37 @@ the same buffer, two images later. After a cut, `init`.
 **Interrupts.** S is the save stack while a walker runs : an interrupt
 pushes below its top, on free space. `STACK` must leave room for the
 interrupt's own pushes below the deepest frame.
+
+## The guard
+
+The save stack has the size the game gives it (`STACK`), and nothing stops a
+frame whose draws save more : the stack then grows down over the manager's
+code, which sits just below it, and the next draw that runs that code
+crashes the machine. A game that cannot bound what a frame draws (a crowd of
+falling pieces, characters gathering) turns `guard` on, for the streams and
+the walkers alike.
+
+Each record then carries two words after its 8 bytes : W, what a whole draw
+pushes (each record of the stream its n bytes a row, then its restore code
+and Y : n x rows + 3), exactly, the larger of its two streams ; and C, the
+most a draw cut by the clip mode pushes (each visible row of a cut record
+its visible bytes then 3 or 4 : n x rows + 4 x rows a record). Before a
+draw, the runtime checks that the stack holds it above
+`spritestream.IRQ` bytes (default 12, an interrupt's pushes) :
+`draw`, `drawAt` and a box `drawClip` draws whole against W, a box it cuts
+against C. A draw that would not fit is not drawn — the screen is left as
+it was, nothing saved — and `spritestream.skips` (a byte of each half,
+wrapping) counts it. A frame that runs out of stack loses its last sprites
+for that frame instead of the machine.
+
+The builder computes both words from the stream it emits (`Decoder.saveBound`),
+checked in JUnit against two counts that share no code with it : what the
+generated walker routines push (equal to W, both facings) and what the clip
+mode pushes on random windows (at most C). The walkers declare
+`spritestream.GUARD` to the runtime, which assembles the checks only then.
+
+What it costs : the records 4 bytes each ; the runtime 50 bytes (the three
+checks, the skip, the counter) ; a draw 22 cycles (`drawAt` 34).
 
 ## Clipping
 

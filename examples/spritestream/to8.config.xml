@@ -30,6 +30,9 @@
                 <default name="spritestream.rows" value="2:2,3:2"/>
                 <default name="spritestream.mirrorable" value="true"/>
                 <default name="spritestream.save" value="true"/>
+                <!-- the records carry the most their draw saves, the runtime
+                     skips a draw its save stack cannot hold (t43-t44) -->
+                <default name="spritestream.guard" value="true"/>
 
                 <!-- Game mode : the tests -->
                 <!-- ******************************************************* -->

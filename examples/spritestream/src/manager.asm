@@ -13,6 +13,9 @@
         INCLUDE "src/bench.equ"
 
  IFEQ spritestream.HALF
+spritestream.skips       EXPORT       ; the guard (t43-t44) : its count, the stack, its bottom record
+spritestream.stack       EXPORT
+spritestream.stack.end   EXPORT
 spritestream.init        EXPORT
 spritestream.restore     EXPORT
 spritestream.draw        EXPORT

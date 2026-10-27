@@ -88,6 +88,36 @@ final class Decoder {
 		return box;
 	}
 
+	/**
+	 * what a draw of the stream pushes on the save stack, either facing :
+	 * whole (cut false), exactly, a record the n bytes of each of its rows then
+	 * its restore code and Y (3 bytes) ; cut by the clip mode (cut true), at
+	 * most, each visible row of a record its visible bytes then 3 or 4 bytes
+	 * (spritestream.clip.eol), a wholly visible record its routine : n x rows
+	 * + 4 x rows a record bounds both.
+	 */
+	static int saveBound(Options o, byte[] s, boolean cut) throws Exception {
+		int u = o.mirrorable ? 1 : 0;
+		int bound = 0;
+		for (int guard = 0;; guard++) {
+			if (guard > 100000 || u + 2 > s.length) {
+				throw new Exception("stream runs past its end");
+			}
+			int code = s[u] & 0xFF;
+			u += 2;
+			if (code == o.code("end")) {
+				return bound;
+			}
+			if (code == o.code("nop")) {
+				u += o.mirrorable ? 1 : 0;
+				continue;
+			}
+			Shape sh = o.shape(code);
+			bound += cut ? (sh.n + 4) * sh.rows : sh.n * sh.rows + 3;
+			u += sh.rows * sh.rowBytes() + (o.mirrorable ? 1 : 0);
+		}
+	}
+
 	/** the stream drawn in a facing equals the picture's bytes, else the first difference */
 	static void check(Options o, byte[] s, int[][][] vb, boolean mirrored, String what) throws Exception {
 		int h = vb.length, w = h == 0 ? 0 : vb[0].length;

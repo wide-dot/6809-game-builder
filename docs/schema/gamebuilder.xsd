@@ -3393,6 +3393,9 @@
       <xs:attribute name="clip" type="xs:boolean">
         <xs:annotation><xs:documentation>true : the walkers' clip mode, for the engine's spritestream.drawClip (a clip table per facing, the shape and offsets tables, the restore of the rows it cuts). Default false</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="guard" type="xs:boolean">
+        <xs:annotation><xs:documentation>true : each record carries what its draw saves (2 words after the 8 bytes : whole, exactly ; cut by drawClip, at most), and the engine's runtime skips a draw its save stack cannot hold (spritestream.skips counts them) instead of writing past the stack. Needs save. Default false</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 

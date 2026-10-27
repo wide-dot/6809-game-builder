@@ -67,6 +67,10 @@ public class SpritestreamPlugin {
 		final int n0;
 		final int n1;
 		final int flag;
+		/** guard : the most a whole draw of either stream saves, else 0 */
+		int bound;
+		/** guard : the most a cut draw (drawClip's cut path) of either stream saves */
+		int cutBound;
 
 		Encoded(Sprite sprite, byte[] s0, byte[] s1, int n0, int n1, int flag) {
 			this.sprite = sprite;
@@ -78,7 +82,7 @@ public class SpritestreamPlugin {
 		}
 
 		int bytes() {
-			return 8 + s0.length + (s1 == null ? 0 : s1.length);
+			return 8 + (bound > 0 ? 4 : 0) + s0.length + (s1 == null ? 0 : s1.length);
 		}
 	}
 
@@ -215,7 +219,12 @@ public class SpritestreamPlugin {
 			}
 		}
 		int flag = o.mirrorable && 4 * n0 - b.width == 2 ? 1 : 0;
-		return new Encoded(s, s0, s1, n0, n1, flag);
+		Encoded e = new Encoded(s, s0, s1, n0, n1, flag);
+		if (o.guard) {
+			e.bound = Math.max(Decoder.saveBound(o, s0, false), s1 == null ? 0 : Decoder.saveBound(o, s1, false));
+			e.cutBound = Math.max(Decoder.saveBound(o, s0, true), s1 == null ? 0 : Decoder.saveBound(o, s1, true));
+		}
+		return e;
 	}
 
 	/** a sprite's part source : its record, then its streams */
@@ -228,6 +237,10 @@ public class SpritestreamPlugin {
 		sb.append("        fdb   ").append(a).append(".s0,").append(a).append(e.s1 == null ? ".s0" : ".s1").append('\n');
 		sb.append("        fcb   ").append(e.n0).append(',').append(e.n1).append(',').append(e.sprite.base.height)
 				.append(',').append(e.flag).append('\n');
+		if (o.guard) {
+			sb.append("        fdb   ").append(e.bound).append(',').append(e.cutBound)
+					.append("       ; what a draw saves, whole and cut at most (guard)\n");
+		}
 		bytes(sb, a + ".s0", e.s0);
 		if (e.s1 != null) {
 			bytes(sb, a + ".s1", e.s1);
