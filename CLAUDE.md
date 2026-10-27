@@ -957,8 +957,7 @@ l'entrée IRQ du moniteur et le gfxlock — à vérifier sur machine). 269 octet
 Banc `examples/keyboard` + `ci/toje-bench/keyboard_ut.py` (13/13) : il exige
 un toje dont le 6804 laisse CRC bit 0 au CPU et dont le 6846 lâche sa ligne
 IRQ quand CP1 n'est pas autorisé (wide-dot/toje#64) ; le toje publié 1.9.0
-échoue (le moniteur prend toutes les trames). Branche locale
-`feat/keyboard-frame-read`, PR à décider par l'auteur.
+échoue (le moniteur prend toutes les trames).
 
 ## Fidélité arcade de R-Type
 
