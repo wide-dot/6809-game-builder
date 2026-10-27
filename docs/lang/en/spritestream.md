@@ -150,8 +150,9 @@ half), `spritestream.dp` (8 bytes of the direct page : the two save stacks'
 tops, then the clip rectangle, unused without the clip mode ;
 `spritestream.const.asm` for a caller) and optionally `spritestream.STACK`
 (default 768 : the most a buffer saves between two restores, plus what an
-interrupt pushes on S while a walker runs). The walkers' temporaries use
-`dp_engine`.
+interrupt pushes on S while a walker runs), and `spritestream.DRAWAT` 0 to
+leave `drawAt` out (133 bytes of the half page, for the save stack of a game
+that does not call it). The walkers' temporaries use `dp_engine`.
 
 | entry | input | |
 |---|---|---|

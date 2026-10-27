@@ -39,7 +39,8 @@
 *   spritestream.draw      A = record page ($E7E6 value), B = facing (0 the
 *                          stored one, else mirrored), X = x of the left edge
 *                          (0-318, even), Y = top line (0-255), U = record
-*   spritestream.drawAt    A = record page, B = facing (bit 0) + 2 x step
+*   spritestream.drawAt    (unless spritestream.DRAWAT is 0)
+*                          A = record page, B = facing (bit 0) + 2 x step
 *                          (bit 1 : x mod 4 = 2), Y = screen address of the
 *                          box's first byte on its top line, U = record
 *   spritestream.drawClip  as draw, X and Y signed : only the part inside
@@ -61,6 +62,9 @@ spritestream.GUARD equ 0
  ENDC
  IFNDEF spritestream.IRQ
 spritestream.IRQ equ 12
+ ENDC
+ IFNDEF spritestream.DRAWAT
+spritestream.DRAWAT equ 1                    ; 0 : drawAt left out (its bytes to the save stack)
  ENDC
 
         INCLUDE "engine/graphics/sprite/stream/spritestream.const.asm"
@@ -180,6 +184,7 @@ spritestream.skip                   ; a draw the save stack cannot hold
         rts
  ENDC
 
+ IFNE spritestream.DRAWAT
 * ---------------------------------------------------------------------------
 * spritestream.drawAt
 * ---------------------------------------------------------------------------
@@ -243,6 +248,8 @@ spritestream.drawAt
 @end    lda   <spritestream.page
         sta   map.CF74021.CART
         rts
+
+ ENDC
 
  IFNE spritestream.CLIP
 * ---------------------------------------------------------------------------
