@@ -47,7 +47,7 @@ def state():
 
 
 def log_since(n0, n1):
-    """the log entries n0..n1-1 : (frame, pressed)"""
+    """Return the log entries n0..n1-1 : (frame, pressed)."""
     out = []
     for n in range(n0, n1):
         b = t.read('$%04X' % (LOG + 2 * (n % 128)), 2)
@@ -62,8 +62,11 @@ def run(n):
 
 
 def key(code, mods=(), hold=3, gap=3, repeats=0):
-    """mods held, the key pressed for hold frames (then repeats more 'down'
-    events, the 6804's repeat, hold frames apart), released, gap frames"""
+    """Hold mods, press the key for hold frames, then release it.
+
+    Repeats adds that many more 'down' events (the 6804's repeat), hold frames
+    apart ; gap frames follow the release.
+    """
     for m in mods:
         t.call('press_key', {'scancode': m, 'down': True})
     t.call('press_key', {'scancode': '%02X' % code, 'down': True})
@@ -78,11 +81,14 @@ def key(code, mods=(), hold=3, gap=3, repeats=0):
 
 
 def check(name, presses, expected, extra=None):
-    """press the keys, compare the new log entries with expected"""
+    """Press the keys, compare the new log entries with expected."""
     ran[0] += 1
     s0 = state()
     for p in presses:
-        key(*p) if isinstance(p, tuple) else key(p)
+        if isinstance(p, tuple):
+            key(*p)
+        else:
+            key(p)
     s1 = state()
     got = log_since(s0['logged'], s1['logged'])
     ok = got == expected and (s1['count'] - s0['count']) % 256 == len(expected)
@@ -99,7 +105,7 @@ def check(name, presses, expected, extra=None):
 
 
 def held_check():
-    """a held key : pressed once, then repeats ; held while down, none after"""
+    """Check a held key : pressed once, then repeats ; held while down, none after."""
     ran[0] += 1
     s0 = state()
     t.call('press_key', {'scancode': '3D', 'down': True})
@@ -123,7 +129,7 @@ def held_check():
 
 
 def symbols(example):
-    """the game mode's symbols, at their address"""
+    """Return the game mode's symbols, at their address."""
     cfg = open(os.path.join(example, 'to8.config.xml')).read()
     base = int(re.search(r'name="gm.keyboard"[^>]*address="\$([0-9A-Fa-f]+)"', cfg).group(1), 16)
     sym = {}
@@ -146,7 +152,7 @@ def span(sym, start, end, limit=300000):
 
 
 def cycles(example):
-    """keyboard.fast.read timed between read.call and read.done"""
+    """Time keyboard.fast.read between read.call and read.done."""
     sym = symbols(example)
     span_read = lambda: span(sym, 'read.call', 'read.done')
     print('cycles of keyboard.fast.read, jsr included :')
