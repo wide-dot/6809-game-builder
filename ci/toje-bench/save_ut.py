@@ -45,8 +45,11 @@ SECTOR = 256
 
 
 def boot(t, before_go=None, frames=4000):
-    """Reset the machine (disk in place), boot from the floppy, run until the game is done ;
-    the game's last save let go when it waits (before_go(t) first, when given)."""
+    """
+    Boot from the floppy, the machine reset with the disk in place, until the game is done.
+
+    The game's last save is let go when it waits (before_go(t) first, when given).
+    """
     t.call('reset')
     t.call('run_frames', {'n': 100})
     t.press('0F', 5)
