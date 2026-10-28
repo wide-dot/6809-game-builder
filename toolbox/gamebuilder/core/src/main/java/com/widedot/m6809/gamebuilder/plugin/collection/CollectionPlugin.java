@@ -161,7 +161,7 @@ public class CollectionPlugin {
 		String codec = DirEntryPlugin.effectiveCodec(Attribute.getStringOpt(node, ctx, "codec"));
 		String linkSection = Attribute.getStringOpt(node, ctx, "linkdata");
 		if (Attribute.getBoolean(node, ctx, "writable", false)) {
-			throw new Exception(Attribute.getString(node, ctx, "name")
+			throw new IllegalArgumentException(Attribute.getString(node, ctx, "name")
 					+ " : a collection cannot be writable, its members land where the packer puts them");
 		}
 		String section = Attribute.getStringOpt(node, ctx, "section");

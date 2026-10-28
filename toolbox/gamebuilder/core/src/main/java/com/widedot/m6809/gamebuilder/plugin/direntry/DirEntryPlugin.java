@@ -32,6 +32,9 @@ public class DirEntryPlugin {
 	/** size of one directory entry block ; a file id is an index of those */
 	public static final int BLOCK_SIZE = 8;
 
+	/** a disk sector : a writable file's unit */
+	public static final int SECTOR_SIZE = 256;
+
 	/**
 	 * Number of blocks an entry occupies, hence how many file ids it consumes.
 	 * DirectoryPlugin reserves ids from the configuration before the entries
@@ -230,8 +233,6 @@ public class DirEntryPlugin {
 	
 	public static final String ZX0 = "zx0";
 
-	/** a disk sector : a writable file's unit */
-	public static final int SECTOR_SIZE = 256;
 
 	/**
 	 * A writable file ({@code writable="true"}) is written back over its own
@@ -242,13 +243,13 @@ public class DirEntryPlugin {
 	static void checkWritable(String name, String codec, boolean linkDeclared, boolean scene)
 			throws Exception {
 		if (effectiveCodec(codec) != null) {
-			throw new Exception(name + " : a writable file is stored raw, declare codec=\"none\"");
+			throw new IllegalArgumentException(name + " : a writable file is stored raw, declare codec=\"none\"");
 		}
 		if (linkDeclared) {
-			throw new Exception(name + " : a writable file carries no link data, drop linkdata");
+			throw new IllegalArgumentException(name + " : a writable file carries no link data, drop linkdata");
 		}
 		if (scene) {
-			throw new Exception(name + " : a scene table cannot be writable");
+			throw new IllegalArgumentException(name + " : a scene table cannot be writable");
 		}
 	}
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""The bench of loader.file.save : examples/save booted four times on one disk image.
+"""
+The bench of loader.file.save : examples/save booted four times on one disk image.
 
     python3 ci/toje-bench/save_ut.py examples/save
 

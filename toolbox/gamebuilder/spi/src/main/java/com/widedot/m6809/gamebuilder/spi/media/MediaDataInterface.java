@@ -33,7 +33,7 @@ public interface MediaDataInterface {
 	 * as {@link #cwrite}. Media without a geometry cannot hold one.
 	 */
 	default byte[] cwriteWhole(String location, byte[] srcData, String name) throws Exception {
-		throw new Exception("this media cannot hold a writable file : it needs a floppy disk");
+		throw new UnsupportedOperationException("this media cannot hold a writable file : it needs a floppy disk");
 	}
 
 	/**

@@ -259,7 +259,7 @@ public class FdUtil implements MediaDataInterface{
             throw new Exception(m);
         }
         if (srcData.length == 0 || srcData.length % storage.segment.sectorSize != 0) {
-            throw new Exception(String.format("'%s' : %d bytes, a writable file is whole sectors of %d",
+            throw new IllegalArgumentException(String.format("'%s' : %d bytes, a writable file is whole sectors of %d",
                     name, srcData.length, storage.segment.sectorSize));
         }
         // a sector the previous file began cannot be written back whole
