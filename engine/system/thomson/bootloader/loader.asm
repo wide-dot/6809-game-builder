@@ -1225,12 +1225,22 @@ ldsec1  ldd   >track              ; read track/sect
 ; never touches a neighbour and file.load
 ; reads it back. Its directory must be the
 ; one in memory (loader.dir.load first,
-; with <name>.dir), as for file.load. A
-; failed write is the caller's to handle :
-; no retry prompt, no I/O Error screen.
+; with <name>.dir), as for file.load ; it
+; is read again from the drive before the
+; write (one directory read) : another
+; disk, or none, goes through the insert
+; prompt. A failed write is the caller's
+; to handle : no retry, no I/O Error.
 ;---------------------------------------
 loader.file.save
         pshs  dp,a,x,y,u
+        pshs  b,x,u
+        ldy   >loader.dir         ; the disk in the drive checked first : its
+        lda   dir.header.diskId,y ; directory read again (tag and id ; the
+        clr   >loader.dir         ; prompt when it is another disk or none),
+        clr   >loader.dir+1       ; never a write on a disk taken for another
+        jsr   loader.dir.load
+        puls  b,x,u
         jsr   ram.set
         jsr   loader.dir.getFile
         ldd   dir.entry.sizea,y   ; whole sectors only : no partial

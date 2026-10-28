@@ -983,7 +983,10 @@ identique à l'octet (corpus : 121 images inchangées). Refusés au build :
 codec, `linkdata`, table de scène, membre de collection.
 `loader.file.save` (table de saut 54, X = id, B = page, U = source, après
 `_loader.dir.load`) : C = 0 écrit, sinon B = `$80` (pas inscriptible sur
-place) ou `DK.STA` (`$01` protégée). 153 octets dans le loader.
+place) ou `DK.STA` (`$01` protégée). Il relit d'abord le répertoire
+depuis le lecteur (`dir.load` ne fait rien quand il est déjà en mémoire) :
+une autre disquette, ou aucune, passe par l'invite, jamais une écriture
+sur la mauvaise. 172 octets dans le loader.
 **Fait de la ROM du TO8** : DKCONT dispatche sur le bit le plus bas de
 `DK.OPC`, et l'écriture d'un secteur est **`$08`** ; `$04` ne fait que
 poser un drapeau et rend C = 0 sans rien écrire. Manuel

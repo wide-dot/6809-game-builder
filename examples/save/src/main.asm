@@ -20,7 +20,10 @@ bench.readback  equ   bench+4          ; 1 : save.data read back as written
 bench.counted   equ   bench+5          ; the boot count read back
 bench.around    equ   bench+6          ; 1 : before.data and after.data as declared
 bench.refused   equ   bench+7          ; loader.file.save on before.data : its B ($80), 0 : written
-bench.size      equ   8
+bench.hand      equ   bench+8          ; $D5 : the last save waits for bench.go (the disk check)
+bench.go        equ   bench+9          ; set by the bench : the last save goes
+bench.checked   equ   bench+10         ; that save : 0 written, else its B
+bench.size      equ   11
 
 SIZE            equ   512              ; save.data on the disk : 300 bytes, rounded up
 buf             equ   $7000            ; the save in RAM (resident page)
@@ -94,6 +97,17 @@ refuse
         bcs   refused
         clrb
 refused stb   bench.refused
+
+; the disk checked before a write : the bench may put another disk in first
+; (the loader reads the directory again, and asks for the right disk)
+        lda   #$D5
+        sta   bench.hand
+wait    tst   bench.go
+        beq   wait
+        _loader.file.save #save.data,#1,#buf
+        bcs   checked
+        clrb
+checked stb   bench.checked
         lda   #$0D
         sta   bench.magic
 done    bra   done
