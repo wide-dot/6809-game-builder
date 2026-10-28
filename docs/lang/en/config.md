@@ -81,6 +81,23 @@ every key up first, then one down. The text code is written for size : a
 3x5 font, a glyph a word, only the digits of the target's disks
 (`loader.dir.physicalDisks`, generated) — 130 bytes for two disks.
 
+**The game's prompt (28/10/2026).** A game that shows the prompt its own way
+— in its status line, in its font, or not at all — declares
+`<define symbol="loader.PROMPT_HOOK"/>` on the target and installs a
+routine with `loader.prompt.hook.set` (jump table 57, X = the routine, 0 :
+the loader's own prompt again). When a disk is missing the loader calls it
+with A = the disk the player counts (1-9), waits for the key as above, then
+calls it with A = 0 before it reads again : the game takes its text away.
+The hook comes before the bar's text and the monitor's. It runs inside the
+loader : registers are free but DP (`$60`, the monitor's), and the data
+window must hold the loader again on return — a routine that mounts a
+video page there to draw mounts `loader.PAGE` back before its `rts` ; it
+lives where the loader does not map (the resident page). Installed for a
+moment (around a save) or for good. 49 bytes in the loader, 41 when the
+target already has a writable file (`save.md`) ; nothing without the
+define. Bench : `examples/loader-ut` T20 (the hook installed for the
+switch to disk 1, removed for the way back).
+
 **Fewer swaps.** With one drive, every change of directory between two
 disks is a swap the player makes. The builder groups a composition's scenes
 by directory ; the convergence walks each table in two phases, the

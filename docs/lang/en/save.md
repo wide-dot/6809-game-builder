@@ -51,6 +51,15 @@ size. Like `loader.file.load`, it reads the file's entry from the directory
 in memory : `_loader.dir.load` first (it prompts for the disk if another
 one is in the drive).
 
+**The disk is checked before the write.** `_loader.dir.load` does nothing
+when the directory asked for is already in memory, so the player may have
+changed the disk since. `loader.file.save` reads that directory again from
+the drive (its `IDX` tag and its disk id, one directory read) before it
+writes a byte : another disk, or none, goes through the insert-disk prompt,
+and the write waits for the right one. The check knows the builder's
+directories, not the game : another game built by this builder with the
+same directory id passes it.
+
 On return CC carry clear : written. Carry set : not written, and B says
 why :
 
@@ -65,13 +74,18 @@ failure in the middle leaves the sectors written so far : a save that must
 survive a cut keeps two files and a sequence number, and reads the newest
 valid one.
 
+A disk change before the write (the player took the disk out) goes through
+the loader's insert-disk prompt ; a game that wants it in its own screen
+installs a prompt hook (`config.md`, *The game's prompt*).
+
 ## Cost
 
-- In the loader, only with `loader.FILE_WRITE` : 153 bytes (150 of code,
+- In the loader, only with `loader.FILE_WRITE` : 172 bytes (169 of code,
   3 in the jump table).
 - On the disk : the sectors the rounding adds, and at most one sector
   skipped before the file.
-- At run time : the monitor's write, about one turn of the disk (200 ms)
+- At run time : the directory read again (one sector per directory sector),
+  then the monitor's write, about one turn of the disk (200 ms)
   per sector (each call to DKCONT stops the motor on its way out, the
   next one restarts it).
 

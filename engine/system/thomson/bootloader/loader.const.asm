@@ -21,6 +21,7 @@ loader.dir.unload.IDX           equ   45 ; Give the current directory's buffer b
 loader.loadbar.set.IDX          equ   48 ; Install the loader's own loading bar (X = loadbar.PARAMS bytes : video page, address x+40*y, width in pixels, height, pixel byte, pulse palette entry, pulse period in units or 0, colour count, then the colour table itself — count GR0B words, at most loadbar.PULSE_MAX — copied with the rest) and reset the counters
 loader.loadbar.text.set.IDX     equ   51 ; Where the bar writes "DISK n" when a disk is missing (X = address x+40*y in the bar's page, 0 = none : the monitor prompt)
 loader.file.save.IDX            equ   54 ; Write a <file writable="true"> back over its sectors (X = file id, B = source page, U = source address ; its directory in memory) : C = 0 written, else B = DK.STA or $80 not writable. Only with loader.FILE_WRITE (the builder defines it when the target declares a writable file)
+loader.prompt.hook.set.IDX      equ   57 ; Install the game's insert-disk prompt (X = routine, 0 = the loader's own) : called with A = the disk (1-9), then A = 0 after the key. Only with loader.PROMPT_HOOK (a <define> of the target)
 ; The progress hook : called by the loader after every addition to its
 ; progress counter — one unit per sector read (a re-read served from the
 ; cache counts too, the directory counts it), one per 512 bytes a compressed

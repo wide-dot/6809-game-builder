@@ -22,7 +22,11 @@ the machine is reset between two boots, the disk left in place :
 3. the write protection on, a reset : the write refused with the monitor's
    status $01 (write protected), nothing read back but what the disk held
    (count 2) ;
-4. the protection off, a reset : boot count still 2.
+4. the protection off, a reset : boot count still 2 ; before the game's last
+   save (it waits for the bench, witness +8 = $D5), a blank disk in the
+   drive : the loader reads the directory again before it writes, finds
+   none and asks for the disk — the blank image untouched, the game held ;
+   the image back in, a key : the save written.
 
 Exit code : 0 pass, 1 fail.
 """
@@ -35,19 +39,29 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mcp import Toje  # noqa: E402
 
 WITNESS = 0x9C00
-NAMES = ('magic', 'boots', 'signed', 'saved', 'readback', 'counted', 'around', 'refused')
+NAMES = ('magic', 'boots', 'signed', 'saved', 'readback', 'counted', 'around', 'refused',
+         'hand', 'go', 'checked')
 SECTOR = 256
 
 
-def boot(t, frames=4000):
-    """Reset the machine (disk in place), boot from the floppy, run until the game is done."""
+def boot(t, before_go=None, frames=4000):
+    """
+    Boot from the floppy, the machine reset with the disk in place, until the game is done.
+
+    The game's last save is let go when it waits (before_go(t) first, when given).
+    """
     t.call('reset')
     t.call('run_frames', {'n': 100})
     t.press('0F', 5)
     for _ in range(frames // 25):
         t.call('run_frames', {'n': 25})
-        if t.read('%04X' % WITNESS, 1)[0] == 0x0D:
+        w = t.read('%04X' % WITNESS, len(NAMES))
+        if w[0] == 0x0D:
             break
+        if w[8] == 0xD5 and w[9] == 0:
+            if before_go:
+                before_go(t)
+            t.call('write_memory', {'addr': '%04X' % (WITNESS + 9), 'bytes': ['01']})
     return dict(zip(NAMES, t.read('%04X' % WITNESS, len(NAMES))))
 
 
@@ -94,8 +108,24 @@ def main(args):
               and w['counted'] == 2 and w['readback'] == 0, 'DK.STA $%02X, %s' % (w['saved'], w))
 
         t.call('set_write_protect', {'on': False})
-        w = boot(t)
+        blank = os.path.join(tmp, 'blank.fd')
+        open(blank, 'wb').write(bytes(len(original)))
+        held = {}
+
+        def other_disk(t):
+            t.call('mount_disk', {'path': blank, 'write_protect': False})
+            t.call('write_memory', {'addr': '%04X' % (WITNESS + 9), 'bytes': ['01']})
+            t.call('run_frames', {'n': 400})
+            held['magic'] = t.read('%04X' % WITNESS, 1)[0]
+            held['blank'] = not any(open(blank, 'rb').read())
+            t.call('mount_disk', {'path': image, 'write_protect': False})
+            t.press('0F', 5)
+
+        w = boot(t, other_disk)
         check('boot 4 : nothing written while protected', w['boots'] == 2, str(w))
+        check('boot 4 : another disk, not written', held.get('magic') == 0xCA and held.get('blank'),
+              'game held %s, blank image untouched %s' % (held.get('magic') == 0xCA, held.get('blank')))
+        check('boot 4 : the right disk back, written', w['magic'] == 0x0D and w['checked'] == 0, str(w))
     finally:
         t.close()
         shutil.rmtree(tmp, ignore_errors=True)

@@ -15,7 +15,10 @@ One resident game mode, nothing on screen. At each boot it :
 4. loads `before.data` and `after.data`, the raw files declared on each
    side of it (100 bytes of `$A5`, of `$5A`), and checks them ;
 5. asks `loader.file.save` to write `before.data`, not declared writable :
-   refused, `$80`.
+   refused, `$80` ;
+6. waits for the bench (`+8` = `$D5`, until it writes `+9`), then writes
+   `save.data` once more : the bench may have put another disk in the
+   drive meanwhile.
 
 On the disk : `before.data` from the first sector of `DATA`, `save.data` on
 the next two sectors (the one `before.data` began is skipped), `after.data`
@@ -43,6 +46,9 @@ Output in `dist/to8.fd`.
 | `+5` | the boot count read back |
 | `+6` | 1 : the neighbours as declared |
 | `+7` | `loader.file.save` on `before.data` : its B (`$80`) |
+| `+8` | `$D5` : the last write waits for `+9` |
+| `+9` | set by the bench : the last write goes |
+| `+10` | that write : 0 written, else its B |
 
 ## The bench
 
@@ -55,6 +61,9 @@ boots with a reset between them (the disk stays in) : the first boot reads
 count 0, writes 1 and finds it back, and exactly two sectors of the image
 file change, holding what the game wrote ; the second reads 1 ; the third,
 write-protected, gets `DK.STA $01` and reads 2 ; the fourth, unprotected
-again, still reads 2.
+again, still reads 2 — and before its last write the bench mounts a blank
+image : the loader reads the directory again, finds none and asks for the
+disk, the blank image stays blank and the game waits ; the image back in and
+a key, the write goes.
 
-Result on 28/10/2026 : **BENCH save PASS : 8/8** (toje 1.9.0).
+Result on 28/10/2026 : **BENCH save PASS : 10/10** (toje 1.9.0).
