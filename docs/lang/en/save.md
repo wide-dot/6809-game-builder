@@ -65,6 +65,10 @@ failure in the middle leaves the sectors written so far : a save that must
 survive a cut keeps two files and a sequence number, and reads the newest
 valid one.
 
+A disk change before the write (the player took the disk out) goes through
+the loader's insert-disk prompt ; a game that wants it in its own screen
+installs a prompt hook (`config.md`, *The game's prompt*).
+
 ## Cost
 
 - In the loader, only with `loader.FILE_WRITE` : 153 bytes (150 of code,

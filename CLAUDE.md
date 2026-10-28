@@ -689,6 +689,11 @@ sans lire le disque une scène sans données de lien. `<sd drive="1">` met une
 disquette dans les unités 2/3 du même .sd. Loader : +281 octets sur sonic
 (4 148 → 4 429). Manuel : `config.md`, *Several disks*. Bancs : loader-ut
 un lecteur et `--two-drives` (toje `feature/second-drive`), r-type 7/7.
+L'invite du jeu (28/10/2026) : `<define symbol="loader.PROMPT_HOOK"/>` +
+`loader.prompt.hook.set` (table de saut 57) — le loader appelle la routine
+du jeu avec A = le disque (1-9), attend la touche, la rappelle avec A = 0 ;
+avant le texte de la barre et celui du moniteur. 49 octets, rien sans le
+define. Banc loader-ut T20 ; manuel `config.md`, *The game's prompt*.
 
 ## La barre de chargement : le loader compte, l'engine dessine (07/09/2026)
 

@@ -42,6 +42,8 @@ operation — see the loader analysis in the repository `CLAUDE.md`.
 | +14 | T14 index churn : 16 cycles of +22 export-only files (32 entries at the peak — the bench loads by hand and declares its own index size, `<define symbol="loader.file.linkData.SLOTS" value="32"/>`) then mass unload of all 22 ($FC peak count, $FD value, $FE unload/floor) |
 | +17 | T17 scene unload : `loader.scene.unload` deindexes every file the named scene loaded (`$D5` premise, `$D6` still indexed, `$D7` count did not drop, `$D8` replay was not a no-op) — exercises both the cached-table path and the re-read one |
 | +15 | T15 multi-disk : switch to disk 1, load a file from it, cross-disk links checked both ways, disk 0 files still linked, then switch back ($EA content/inbound fixup, $EB outbound symbol, $EC disk 0 links lost, $ED count, $EE disk 0 unusable) |
+| +19 | T20 prompt hook (`loader.prompt.hook.set`, `<define symbol="loader.PROMPT_HOOK"/>`) : installed for T15's switch to disk 1, removed for the way back (the loader's own prompt) ; every call that showed disk 1 followed by one that took it away (`$DA`) — `loader_ut.py` also requires one call at least with one drive |
+| +20/+21/+22 | T20 trace : the hook's calls with a disk number, with 0, the last disk shown |
 | +24/+25 | info : `#marker.cc.begin` before the second scene load |
 | +26 | T11 progress : remaining iterations |
 | +27 | T15 disk handshake : `$D1` waiting for disk 1, `$D2` disk 1 loaded, `$D3` waiting for disk 0, `$D4` back on disk 0 |
