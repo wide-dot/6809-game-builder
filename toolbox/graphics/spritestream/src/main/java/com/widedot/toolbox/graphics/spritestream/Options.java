@@ -37,11 +37,20 @@ public final class Options {
 	final boolean opaque;
 	final boolean mergePulls;
 	final boolean clip;
+	/** each record carries the most its draw saves (2 bytes) ; the runtime skips a draw the save stack cannot hold */
+	final boolean guard;
 	final List<Shape> shapes = new ArrayList<Shape>();
 	final List<String> names = new ArrayList<String>();
 
 	Options(int segment, Map<Integer, Integer> rows, boolean mirrorable, boolean save, boolean opaque,
 			boolean mergePulls, boolean clip) throws Exception {
+		this(segment, rows, mirrorable, save, opaque, mergePulls, clip, false);
+	}
+
+	// the toolchain signals build errors with plain Exceptions (see Encoder and Image)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	Options(int segment, Map<Integer, Integer> rows, boolean mirrorable, boolean save, boolean opaque,
+			boolean mergePulls, boolean clip, boolean guard) throws Exception {
 		if (segment < 1 || segment > 16) {
 			throw new Exception("segment must be 1 to 16 bytes, got " + segment);
 		}
@@ -52,6 +61,10 @@ public final class Options {
 		this.opaque = opaque;
 		this.mergePulls = mergePulls;
 		this.clip = clip;
+		this.guard = guard;
+		if (guard && !save) {
+			throw new Exception("guard needs save : it bounds what a draw pushes on the save stack");
+		}
 		for (Map.Entry<Integer, Integer> e : this.rows.entrySet()) {
 			if (e.getKey() < 1 || e.getKey() > segment || e.getValue() < 1) {
 				throw new Exception("rows : " + e.getKey() + ":" + e.getValue() + " is not a segment length"
@@ -101,7 +114,8 @@ public final class Options {
 		boolean opaque = Attribute.getBoolean(node, ctx, "opaque", false);
 		boolean merge = Attribute.getBoolean(node, ctx, "mergepulls", true);
 		boolean clip = Attribute.getBoolean(node, ctx, "clip", false);
-		return new Options(segment, rows, mirrorable, save, opaque, merge, clip);
+		boolean guard = Attribute.getBoolean(node, ctx, "guard", false);
+		return new Options(segment, rows, mirrorable, save, opaque, merge, clip, guard);
 	}
 
 	/** "2:2,3:2" : segment length : most rows ; empty for none */
@@ -163,6 +177,9 @@ public final class Options {
 		}
 		sb.append(" mirrorable=").append(mirrorable).append(" save=").append(save).append(" opaque=")
 				.append(opaque);
+		if (guard) {
+			sb.append(" guard=true");
+		}
 		return sb.toString();
 	}
 }

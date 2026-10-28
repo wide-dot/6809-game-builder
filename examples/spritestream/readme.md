@@ -23,6 +23,10 @@ What it proves, every result checked on the machine against a second path
   the screen, a uniform background) draws the same visible part as the same
   box moved inside the screen and cut on the same bytes, changes nothing
   else, and restores ;
+- the guard (`guard="true"` on the shape set) : with the save stack's top
+  leaving `flag` its whole draw's bound less one byte, the draw is skipped
+  (`spritestream.skips` one more, the screen the background, t43) ; with
+  exactly its bound, it is drawn, the screen t01's, and restores (t44) ;
 - after every test, nothing written past the screen in either plane.
 
 The pictures are test patterns drawn by `tools/gen_spritestream.py`
@@ -44,6 +48,13 @@ cd ../.. && python3 ci/toje-bench/bench.py examples/spritestream
 The game mode writes its verdicts at `$9C00` (`docs/lang/en/benches.md` ;
 the tests and their codes in `main.asm`) ; the words are the draws'
 checksums, compared with `bench.ref` : a changed word is a changed picture.
+
+## Result with the guard (toje, 27/10/2026)
+
+44/44, identical to the reference : t01-t42 word for word as before the
+guard (it changed no draw), t43 one skip, t44 t01's checksum. Broken on
+purpose (the interrupt's margin dropped from the check) : t43 fails, and
+nothing else.
 
 ## Result (toje 1.9.0, 27/10/2026)
 

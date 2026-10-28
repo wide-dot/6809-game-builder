@@ -653,6 +653,9 @@ final class Walker {
 		eq(sb, PF + ".MIRRORABLE", o.mirrorable ? "1" : "0");
 		eq(sb, PF + ".SAVE", o.save ? "1" : "0");
 		eq(sb, PF + ".CLIP", o.clip ? "1" : "0");
+		if (o.guard) {
+			eq(sb, PF + ".GUARD", "1");
+		}
 		eq(sb, PF + ".CODES", String.valueOf(o.names.size()));
 		eq(sb, PF + ".NOP", String.valueOf(o.code("nop")));
 		if (o.mirrorable) {

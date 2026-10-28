@@ -28,6 +28,14 @@
 ;            changed (the visible part put back to the background, the
 ;            screen is the background), the restore gives the background
 ;            back. The word : the visible part's checksum.
+;   t43-t44  the guard (<spritestream guard="true">) : flag stored at x 120
+;            (the first case of t01-t16), the save stack's top set to leave
+;            the draw its bound (the record's bytes 8-9) less one byte : not
+;            drawn, spritestream.skips one more, the screen the background
+;            (t43, the word : skips' step, 1) ; then exactly its bound : drawn,
+;            the screen t01's, the restore gives the background back (t44, the
+;            word : the draw's checksum, t01's). A bottom record (REND) at the
+;            top set : the restore walker's end there.
 ;
 ; Every test also checks the bytes past the screen in each plane
 ; ($BF40-$BFFF, $DF40-$DFFF) unchanged.
@@ -48,6 +56,9 @@ adr_flag                EXTERNAL
 adr_flagm               EXTERNAL
 adr_slab                EXTERNAL
 adr_tall                EXTERNAL
+spritestream.skips      EXTERNAL
+spritestream.stack      EXTERNAL
+spritestream.stack.end  EXTERNAL
 
  SECTION code
 
@@ -59,7 +70,7 @@ adr_tall                EXTERNAL
         INCLUDE "engine/graphics/sprite/stream/spritestream.const.asm"
 
 bench.w         equ   $9C00
-bench.N         equ   42
+bench.N         equ   44
 bench.res       equ   bench.w+3
 bench.words     equ   bench.res+bench.N
 bench.PAGE      equ   map.RAM_OVER_CART+assets.sprites.page
@@ -137,6 +148,23 @@ main
         leay  bench.CASE,y
         cmpy  #bench.casesEnd
         bne   @e
+        ; t43-t44 : the guard, on the patterned background
+        clr   bench.uni
+        lbsr  bench.fill
+        lbsr  bench.sum
+        std   bench.bg
+        lda   #-1                           ; t43 : one byte short of the bound
+        sta   bench.gd
+        ldy   #bench.casesA
+        lbsr  bench.load
+        lbsr  bench.caseG
+        lbsr  bench.put
+        clr   bench.gd                      ; t44 : the bound exactly
+        ldy   #bench.casesA
+        lbsr  bench.load
+        lbsr  bench.caseG
+        lbsr  bench.put
+        jsr   spritestream.init
         lda   #$0D
         sta   bench.w+2
 @end    bra   @end
@@ -333,6 +361,55 @@ bench.same
         rts
 @f      lda   bench.code
         bra   bench.fail
+
+* t43-t44 : the stack's top at its bottom + IRQ + the record's bound +
+* bench.gd (-1 or 0), a bottom record there, the case drawn
+bench.caseG
+        sts   bench.s
+        ldu   [bench.cp]                    ; the record
+        ldb   bench.gd
+        sex
+        addd  8,u                           ; its bound
+        addd  #spritestream.stack
+        addd  #spritestream.IRQ
+        std   spritestream.top0             ; half 0 : the bench draws with manager 0
+        tfr   d,x
+        ldy   #spritestream.stack.end        ; its bottom record, copied there : the
+        ldd   ,y                            ; restore walker's end
+        std   ,x
+        lda   2,y
+        sta   2,x
+        lda   spritestream.skips
+        sta   bench.sk
+        lbsr  bench.draw
+        lda   spritestream.skips
+        suba  bench.sk
+        tst   bench.gd
+        beq   @fit
+        sta   bench.word+1                  ; t43 : skipped once
+        clr   bench.word
+        cmpa  #1
+        beq   @once
+        lda   #$E1
+        lbra  bench.fail
+@once   lda   #$E2                          ; nothing drawn
+        lbsr  bench.back
+        lda   #$01
+        rts
+@fit    tsta                                ; t44 : drawn
+        beq   @drawn
+        lda   #$E3
+        lbra  bench.fail
+@drawn  lbsr  bench.sum
+        std   bench.word
+        cmpd  bench.words                   ; t01's draw
+        beq   @same
+        lda   #$E4
+        lbra  bench.fail
+@same   lda   #$E5                          ; restored
+        lbsr  bench.back
+        lda   #$01
+        rts
 
 * --------------------------------------------------------------------------
 * the case drawn by each entry
@@ -734,6 +811,8 @@ bench.sum1      fdb   0
 bench.bg        fdb   0                     ; the background's checksum
 bench.tsum      fdb   0                     ; the bytes past the screen's
 bench.uni       fcb   0                     ; 0 the patterned background, else the uniform one
+bench.gd        fcb   0                     ; t43-t44 : the top's offset from the bound
+bench.sk        fcb   0                     ; t43-t44 : skips before the draw
 bench.k         fcb   0                     ; the cut
 bench.mode      fcb   0
 bench.x         fdb   0                     ; the case : x, y, x / 4

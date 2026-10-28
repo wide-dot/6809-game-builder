@@ -21,7 +21,13 @@
 *
 * Record (8 bytes, in the sprite's page) : stream of the picture, stream of
 * the picture 2 pixels right, box bytes of each, height, mirror flag (the
-* mirror of each stream lands on the other's 2 pixel step).
+* mirror of each stream lands on the other's 2 pixel step) ; with the
+* walkers' guard (spritestream.GUARD), 2 words more : what its draw saves,
+* whole (exactly) and cut by drawClip (at most).
+*
+* Guard : a draw whose saves the stack could not hold below its top (less
+* spritestream.IRQ bytes, default 12, for an interrupt's pushes) is not
+* drawn : spritestream.skips counts it, the screen is left as it was.
 *
 * A frame, inside the loop's gfxlock section : spritestream.restore first
 * (the bytes the draws of this buffer's last frame saved, put back), then the
@@ -33,7 +39,8 @@
 *   spritestream.draw      A = record page ($E7E6 value), B = facing (0 the
 *                          stored one, else mirrored), X = x of the left edge
 *                          (0-318, even), Y = top line (0-255), U = record
-*   spritestream.drawAt    A = record page, B = facing (bit 0) + 2 x step
+*   spritestream.drawAt    (unless spritestream.DRAWAT is 0)
+*                          A = record page, B = facing (bit 0) + 2 x step
 *                          (bit 1 : x mod 4 = 2), Y = screen address of the
 *                          box's first byte on its top line, U = record
 *   spritestream.drawClip  as draw, X and Y signed : only the part inside
@@ -49,6 +56,15 @@
  ENDC
  IFNDEF spritestream.STACK
 spritestream.STACK equ 768
+ ENDC
+ IFNDEF spritestream.GUARD
+spritestream.GUARD equ 0
+ ENDC
+ IFNDEF spritestream.IRQ
+spritestream.IRQ equ 12
+ ENDC
+ IFNDEF spritestream.DRAWAT
+spritestream.DRAWAT equ 1                    ; 0 : drawAt left out, its bytes to the save stack
  ENDC
 
         INCLUDE "engine/graphics/sprite/stream/spritestream.const.asm"
@@ -92,6 +108,12 @@ spritestream.draw
         sta   map.CF74021.CART      ; the record's
         stb   <spritestream.facing
 spritestream.draw.mounted
+ IFNE spritestream.GUARD
+        ldd   <spritestream.top
+        subd  8,u                   ; what this draw saves
+        cmpd  #spritestream.stack+spritestream.IRQ
+        lblo  spritestream.skip     ; the stack cannot hold it
+ ENDC
         lda   7,u
         sta   <spritestream.flag
         tfr   y,d
@@ -154,6 +176,15 @@ spritestream.draw.mounted
         sta   map.CF74021.CART
         rts
 
+ IFNE spritestream.GUARD
+spritestream.skip                   ; a draw the save stack cannot hold
+        inc   spritestream.skips
+        lda   <spritestream.page
+        sta   map.CF74021.CART
+        rts
+ ENDC
+
+ IFNE spritestream.DRAWAT
 * ---------------------------------------------------------------------------
 * spritestream.drawAt
 * ---------------------------------------------------------------------------
@@ -164,6 +195,14 @@ spritestream.drawAt
         sta   <spritestream.page
         puls  a
         sta   map.CF74021.CART
+ IFNE spritestream.GUARD
+        pshs  b
+        ldd   <spritestream.top
+        subd  8,u
+        cmpd  #spritestream.stack+spritestream.IRQ
+        puls  b                     ; (PULS keeps the flags)
+        lblo  spritestream.skip
+ ENDC
         tfr   b,a
         anda  #1
         sta   <spritestream.facing
@@ -209,6 +248,8 @@ spritestream.drawAt
 @end    lda   <spritestream.page
         sta   map.CF74021.CART
         rts
+
+ ENDC
 
  IFNE spritestream.CLIP
 * ---------------------------------------------------------------------------
@@ -295,7 +336,14 @@ spritestream.drawClip
         cmpb  <spritestream.clipBottom
         bhi   @cut
         jmp   spritestream.draw.mounted
-@cut    stx   spritestream.cl.x
+@cut
+ IFNE spritestream.GUARD
+        ldd   <spritestream.top
+        subd  10,u                  ; the most a cut draw saves
+        cmpd  #spritestream.stack+spritestream.IRQ
+        lblo  spritestream.skip
+ ENDC
+        stx   spritestream.cl.x
         sty   spritestream.cl.y0
         tfr   x,d
         andb  #2
@@ -824,6 +872,9 @@ spritestream.clip.partv
 * the save stack of this half : it grows down from its bottom record
 * ---------------------------------------------------------------------------
 
+ IFNE spritestream.GUARD
+spritestream.skips      fcb   0                 ; the draws skipped (wraps)
+ ENDC
  IFNE spritestream.SAVE
 spritestream.stack      rmb   spritestream.STACK
 spritestream.stack.end  fcb   spritestream.REND,0,0 ; the restore walker's end

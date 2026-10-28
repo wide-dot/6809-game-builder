@@ -2,3 +2,5 @@
 ; read by the manager unit (src/manager.asm) and the game mode.
 spritestream.dp     equ   $9F60                 ; 8 bytes : the stacks' tops, the clip rectangle
 spritestream.STACK  equ   512                   ; one sprite at a time here
+spritestream.IRQ    equ   12                    ; the guard's margin (t43-t44), shared : a
+                                                ; constant crosses units here, not as an export
