@@ -1,0 +1,3 @@
+Symbol: builder.lwasm.size.save (/Users/benoitrousseau/Documents/Claude/Projects/6809-game-builder-masks/examples/save/src/data//build/before.raw) = 0009
+Symbol: loader.ADDRESS (/Users/benoitrousseau/Documents/Claude/Projects/6809-game-builder-masks/examples/save/src/data//build/before.raw) = A000
+Symbol: loader.PAGE (/Users/benoitrousseau/Documents/Claude/Projects/6809-game-builder-masks/examples/save/src/data//build/before.raw) = 0004

@@ -164,7 +164,10 @@ la description de la PR en garde la trace.
   27/10/2026),
   `examples/mplus` (bancs de test carte son MPLUS : DAC, MIDI 6850, MEA8000, SN76489, YM2413),
   `examples/keyboard` (la trame du 6804 lue par `keyboard.fast`, banc
-  `ci/toje-bench/keyboard_ut.py`, 13/13 sous toje corrigé).
+  `ci/toje-bench/keyboard_ut.py`, 13/13 sous toje corrigé),
+  `examples/save` (un fichier `writable` réécrit par `loader.file.save` et
+  retrouvé au boot suivant, banc `ci/toje-bench/save_ut.py`, 8/8, depuis le
+  28/10/2026).
 - **État de validation au 13/08/2026** : le corpus compte **15 configs et
   63 images** (11 exemples dont collection/stacked-overflow/hscroll/
   tilescroll/objects/sprites, plus `games/r-type` — sorti du moteur le
@@ -962,6 +965,25 @@ Banc `examples/keyboard` + `ci/toje-bench/keyboard_ut.py` (13/13) : il exige
 un toje dont le 6804 laisse CRC bit 0 au CPU et dont le 6846 lâche sa ligne
 IRQ quand CP1 n'est pas autorisé (wide-dot/toje#64) ; le toje publié 1.9.0
 échoue (le moniteur prend toutes les trames).
+
+## Sauvegarde sur disquette : `writable` et `loader.file.save` (28/10/2026)
+
+`<file writable="true" codec="none">` : un fichier que le jeu réécrit sur
+ses propres secteurs (une sauvegarde). Le builder le pose sur des secteurs
+entiers à lui (il saute un secteur que le précédent a entamé, sa taille est
+arrondie à 256 × n, le suivant repart sur un secteur neuf), publie
+`<nom>.dir` (l'id de son répertoire) et écrit `loader.FILE_WRITE equ 1`
+dans `gen/directories/locations.asm` : sans fichier writable, le loader est
+identique à l'octet (corpus : 121 images inchangées). Refusés au build :
+codec, `linkdata`, table de scène, membre de collection.
+`loader.file.save` (table de saut 54, X = id, B = page, U = source, après
+`_loader.dir.load`) : C = 0 écrit, sinon B = `$80` (pas inscriptible sur
+place) ou `DK.STA` (`$01` protégée). 153 octets dans le loader.
+**Fait de la ROM du TO8** : DKCONT dispatche sur le bit le plus bas de
+`DK.OPC`, et l'écriture d'un secteur est **`$08`** ; `$04` ne fait que
+poser un drapeau et rend C = 0 sans rien écrire. Manuel
+[`save.md`](docs/lang/en/save.md), banc `examples/save` sous toje (image
+montée en écriture par `mount_disk`).
 
 ## Fidélité arcade de R-Type
 

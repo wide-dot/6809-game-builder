@@ -229,6 +229,33 @@ public class DirEntryPlugin {
 //	...
 	
 	public static final String ZX0 = "zx0";
+
+	/** a disk sector : a writable file's unit */
+	public static final int SECTOR_SIZE = 256;
+
+	/**
+	 * A writable file ({@code writable="true"}) is written back over its own
+	 * sectors by loader.file.save : stored raw (the loader writes what it is
+	 * given, no codec on the way back), without link data (nothing to
+	 * relocate in a save) and never a scene table.
+	 */
+	static void checkWritable(String name, String codec, boolean linkDeclared, boolean scene)
+			throws Exception {
+		if (effectiveCodec(codec) != null) {
+			throw new Exception(name + " : a writable file is stored raw, declare codec=\"none\"");
+		}
+		if (linkDeclared) {
+			throw new Exception(name + " : a writable file carries no link data, drop linkdata");
+		}
+		if (scene) {
+			throw new Exception(name + " : a scene table cannot be writable");
+		}
+	}
+
+	/** the size rounded up to whole sectors, at least one */
+	static int wholeSectors(int length) {
+		return Math.max(1, (length + SECTOR_SIZE - 1) / SECTOR_SIZE) * SECTOR_SIZE;
+	}
 	
 	public static void run(ImmutableNode node, BuildContext ctx, MediaDataInterface media) throws Exception {
     	
@@ -253,6 +280,10 @@ public class DirEntryPlugin {
 		String linkSection = Attribute.getStringOpt(node, ctx, "linkdata");
 		boolean linkDeclared = (linkSection!=null?true:false);
 		boolean scene = Attribute.getBoolean(node, ctx, "scene", false);
+		boolean writable = Attribute.getBoolean(node, ctx, "writable", false);
+		if (writable) {
+			checkWritable(name, Attribute.getStringOpt(node, ctx, "codec"), linkDeclared, scene);
+		}
 		// how this file's references are resolved — see BakeMode. Declared
 		// here, in the configuration that places everything, never in the
 		// source : the same unit can be fully linked in one project and fully
@@ -346,6 +377,11 @@ public class DirEntryPlugin {
 					name, length, MAX_FILE_SIZE, ((length-1) & 0x3fff) + 1);
 	    }
 		
+		if (writable) {
+			// whole sectors : the loader writes them back and reads them
+			// straight into RAM, no partial sector shared with a neighbour
+			length = wholeSectors(length);
+		}
 		byte[] bin = new byte[length];
 		
 		int o = 0;
@@ -548,7 +584,7 @@ public class DirEntryPlugin {
 		byte[] sizedDirentry = Arrays.copyOf(file, i);
 		DirEntry entry = new DirEntry(name, sizedDirentry, length, pageSpans);
 		if (bin.length > 0) {
-			entry.pending.add(new DirEntry.Pending(section, bin, name, dataPatch));
+			entry.pending.add(new DirEntry.Pending(section, bin, name, dataPatch, writable));
 		}
 		if (hasLinkData) {
 			entry.pending.add(new DirEntry.Pending(linkSection, linkdata.data,

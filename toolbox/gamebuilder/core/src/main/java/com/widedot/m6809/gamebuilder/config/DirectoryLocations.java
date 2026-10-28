@@ -93,7 +93,26 @@ public final class DirectoryLocations {
 			}
 		}
 		ctx.dirLocations.trailer = interleaveBlock(il);
+		ctx.dirLocations.fileWrite = hasWritable(targetNode);
 		write(ctx);
+	}
+
+	/**
+	 * A {@code <file writable="true">} anywhere in the target : the loader then
+	 * assembles loader.file.save (loader.FILE_WRITE). Opt-in by declaration —
+	 * a target without one gets the loader it always had, byte for byte.
+	 */
+	static boolean hasWritable(ImmutableNode node) {
+		for (ImmutableNode child : node.getChildren()) {
+			if ("file".equals(child.getNodeName())
+					&& "true".equals(String.valueOf(child.getAttributes().get("writable")))) {
+				return true;
+			}
+			if (hasWritable(child)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -185,6 +204,10 @@ public final class DirectoryLocations {
 		out.append("* the drive it found the disk in] [track] [sector 0-based]")
 		   .append(System.lineSeparator());
 		out.append("loader.dir.location.SIZE equ 4").append(System.lineSeparator());
+		if (ctx.dirLocations.fileWrite) {
+			// a writable file in the target : loader.file.save is assembled
+			out.append("loader.FILE_WRITE equ 1").append(System.lineSeparator());
+		}
 		out.append("loader.dir.count equ ").append(rows.size()).append(System.lineSeparator());
 		// a MACRO, not data : this file is included at the top of the loader
 		// assembly, BEFORE its org — bytes emitted here would land outside

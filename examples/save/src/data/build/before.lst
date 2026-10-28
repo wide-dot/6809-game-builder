@@ -1,0 +1,15 @@
+                      (c/data/before.asm):00001         ; before.data : 100 bytes of $A5, a raw file that ends inside its sector :
+                      (c/data/before.asm):00002         ; the writable file after it must not start in that sector
+0000 A5A5A5A5A5A5A5A5 (c/data/before.asm):00003                 fill  $A5,100
+     A5A5A5A5A5A5A5A5
+     A5A5A5A5A5A5A5A5
+     A5A5A5A5A5A5A5A5
+     A5A5A5A5A5A5A5A5
+     A5A5A5A5A5A5A5A5
+     A5A5A5A5A5A5A5A5
+     A5A5A5A5A5A5A5A5
+     A5A5A5A5A5A5A5A5
+     A5A5A5A5A5A5A5A5
+     A5A5A5A5A5A5A5A5
+     A5A5A5A5A5A5A5A5
+     A5A5A5A5

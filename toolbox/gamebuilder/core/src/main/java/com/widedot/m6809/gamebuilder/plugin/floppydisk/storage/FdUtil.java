@@ -250,6 +250,25 @@ public class FdUtil implements MediaDataInterface{
         write(location, srcData, name);
     }
 
+    @Override
+    public byte[] cwriteWhole(String location, byte[] srcData, String name) throws Exception {
+        Section s = storage.sections.get(location);
+        if (s == null) {
+            String m = "Unknown Section: " + location;
+            log.error(m);
+            throw new Exception(m);
+        }
+        if (srcData.length == 0 || srcData.length % storage.segment.sectorSize != 0) {
+            throw new Exception(String.format("'%s' : %d bytes, a writable file is whole sectors of %d",
+                    name, srcData.length, storage.segment.sectorSize));
+        }
+        // a sector the previous file began cannot be written back whole
+        if (dataMask[getIndex(s)]) {
+            nextSector(s);
+        }
+        return cwrite(location, srcData, name);
+    }
+
     /**
      * continuously write data to a section - partial sector write
      */
