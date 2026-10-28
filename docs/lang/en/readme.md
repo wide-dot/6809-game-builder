@@ -49,6 +49,7 @@ boss included) ; the R-Type port on this generation already runs its stages
 
 #### Engine
 - boot loader, file and scene loader, hot scene swap from disk
+- write a declared file back to the disk (a saved game)
 - load time linker on files, with a full lifecycle : reload dedup,
   explicit unload, overlap trap, multi-disk
 - zx0 decompression in place
@@ -95,6 +96,8 @@ Platform distributions are then generated in `package/target` :
 
 [groups and loading model][groups]
 
+[writing a file back — saved games][save]
+
 [objects][objects]
 
 [sprites][sprites]
@@ -131,6 +134,7 @@ Platform distributions are then generated in `package/target` :
 [scenes]: scenes.md
 [symbols]: symbols.md
 [groups]: groups.md
+[save]: save.md
 [objects]: objects.md
 [sprites]: sprites.md
 [spritestream]: spritestream.md

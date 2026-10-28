@@ -51,6 +51,9 @@ public class DirLocations {
 	/** how many directories the emission has completed : the index size is only final after the last */
 	public int emitted;
 
+	/** the target declares a {@code <file writable="true">} : its loader assembles loader.file.save */
+	public boolean fileWrite;
+
 	public void declare(int id, Row row) {
 		byId.put(id, row);
 	}
@@ -81,5 +84,6 @@ public class DirLocations {
 		byId.clear();
 		trailer = null;
 		emitted = 0;
+		fileWrite = false;
 	}
 }

@@ -25,6 +25,18 @@ public interface MediaDataInterface {
 	}
 
 	/**
+	 * A writable file ({@code <file writable="true">}) : its bytes, already a
+	 * whole number of sectors, start on a sector of their own (a sector the
+	 * cursor has begun is skipped and lost to the section) and leave the next
+	 * file a fresh one. The loader writes such a file back over its sectors,
+	 * which must therefore hold nothing else. Returns the location descriptor
+	 * as {@link #cwrite}. Media without a geometry cannot hold one.
+	 */
+	default byte[] cwriteWhole(String location, byte[] srcData, String name) throws Exception {
+		throw new UnsupportedOperationException("this media cannot hold a writable file : it needs a floppy disk");
+	}
+
+	/**
 	 * Write that REFUSES to leave the section's declared track and face.
 	 *
 	 * The loader reads a directory as CONTIGUOUS sectors of one track/face :
