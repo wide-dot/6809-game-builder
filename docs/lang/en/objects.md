@@ -186,6 +186,27 @@ really there, which is what the arcade's probe reads too. Without the define
 the unit is v1's byte for byte. A sensor further left than the camera's
 sub-tile rest still wraps the byte index : clamp it to the camera.
 
+An object that probes the same plane at several points, frame after frame,
+can ask for all of a render's probes at once. Define `terrainCollision.BOX`
+in the terrain unit and in the resident half : the unit gets a fifth jump
+table entry, `terrainCollision.checkBox` at +12 (the init patches it with the
+other four), and the resident half the gates `terrainCollision.doBox` (one
+plane, its number in B, like `.do`) and `terrainCollision.doFoeBox` (the
+planes of `.doFoe`). The box is `terrainCollision.sensor.x/.y` for its left
+and top edges and `terrainCollision.box.w/.h` for its width and height minus
+one. B = 0 means every tile of the box is free, so every point probe inside it
+would have answered free : the caller may skip them, exactly. B != 0 means a
+tile is solid, or the box leaves the tables (screen columns 8..175, lines
+11..190), or the plane is read another way (the background's boss-follow
+shift, a background with its own camera) : the caller then probes point by
+point, as without the box. The tiles are read with the same table entries and
+the same signed `a,y` addressing as `checkPosition`. Cost : about 190 cycles,
+60 more per row of the box and 15 per byte past a row's first ; 3 bytes of
+jump table and 234 bytes in the unit, 64 bytes resident. Without the define
+both halves are assembled as before, byte for byte. The POW of r-type uses it
+for its flight : three boxes swept by its three probes over the render's
+frames (8 190 cycles a render down to 5 210 in open air, stage 5).
+
 One thing v2 makes explicit that v1 hid : the mounted code reads the resident
 sensors and boss-follow state directly. Under `undefextern` that coupling was
 invisible ; here the terrain unit declares eight `EXTERNAL`s and the game

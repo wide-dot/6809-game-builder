@@ -13,6 +13,9 @@
         jmp   terrainCollision.checkXaxisRight
         jmp   terrainCollision.checkXaxisLeft
         jmp   terrainCollision.updateByte
+ IFDEF terrainCollision.BOX
+        jmp   terrainCollision.checkBox
+ ENDC
 
 terrainCollision.loadMap
         ldx   #terrainCollision.maps
@@ -246,6 +249,138 @@ terrainCollision.checkXaxisLeft
         ldd   #0
 !       std   terrainCollision.impact.x
         rts
+
+ IFDEF terrainCollision.BOX
+; ---------------------------------------------------------------------------
+; terrainCollision.checkBox - is any tile of a box solid?
+; ---------------------------------------------------------------------------
+; The question a whole render's probes ask at once: an object that probes the
+; same plane at several points, frame after frame, covers them all with one
+; box; when every tile of it is free, so is every probe, and they need not run.
+;
+; input : B map id
+;         terrainCollision.sensor.x/.y the box's left and top edges (x in the
+;         world, as for a point; y a line)
+;         terrainCollision.box.w/.h its width and height minus one (0: one
+;         column, one line)
+; output: B = 0 when every tile of the box is free; B != 0 when one is solid,
+;         or when the box leaves the tables (the screen's columns 8..175, the
+;         lines 11..190) or the plane is read another way (the boss-follow
+;         shift of the background, a background with its own camera): the
+;         caller then probes point by point, as without the box
+;
+; The tiles are read as terrainCollision.checkPosition reads one, the same
+; table entries and the same `a,y` addressing, so a free box is exactly a run
+; of free points.
+; Cost: about 190 cycles, plus about 60 a row of the box and 15 a byte past
+; the first of a row.
+; ---------------------------------------------------------------------------
+terrainCollision.checkBox
+        ldx   #terrainCollision.maps
+        aslb
+        ldy   b,x                      ; the plane's map
+        tstb                           ; the background (0)?
+        bne   @columns                 ; no: the foreground, read plainly
+ IFDEF BG_OWN_CAMERA
+        lbra  @unsure                  ; a background with its own camera: not handled
+ ELSE
+        lda   terrainCollision.bgByteOff ; is the background shifted
+        ora   terrainCollision.bgBitShift ; by the boss's advance?
+        lbne  @unsure                  ; yes: not handled
+ ENDC
+@columns
+        ldd   terrainCollision.sensor.x
+        subd  glb_camera_x_pos         ; the left edge on the screen
+        tsta                           ; beyond 0..255?
+        lbne  @unsure                  ; yes: off the tables
+        addb  scroll_tile_pos_offset24 ; the left edge's table index, as loadMap
+        lbcs  @unsure                  ; wrapped: off the tables
+        cmpb  #8                       ; left of the tables?
+        lblo  @unsure                  ; yes
+        stb   terrainCollision.box.x0
+        addb  terrainCollision.box.w   ; the right edge's index
+        lbcs  @unsure                  ; wrapped: off the tables
+        cmpb  #8+168                   ; right of the tables?
+        lbhs  @unsure                  ; yes
+        ldx   #terrainCollision.xOffset
+        abx
+        lda   ,x                       ; the right edge's byte
+        adda  scroll_tile_pos          ; scrolled, as loadMap
+        sta   terrainCollision.box.col1
+        ldx   #terrainCollision.xMask
+        abx
+        ldb   ,x                       ; the right edge's tile
+        decb                           ; it and the tiles
+        comb                           ; left of it in its byte
+        stb   terrainCollision.box.mask1
+        ldb   terrainCollision.box.x0
+        ldx   #terrainCollision.xOffset
+        abx
+        lda   ,x                       ; the left edge's byte
+        adda  scroll_tile_pos          ; scrolled
+        sta   terrainCollision.box.col0
+        ldx   #terrainCollision.xMask
+        abx
+        ldb   ,x                       ; the left edge's tile
+        lslb                           ; it and the tiles
+        decb                           ; right of it in its byte
+        cmpa  terrainCollision.box.col1 ; both edges in one byte?
+        bne   @mask0                   ; no
+        andb  terrainCollision.box.mask1 ; yes: the tiles between them
+@mask0  stb   terrainCollision.box.mask0
+        ; the lines: the top, every sixth after it, and the bottom
+        ldd   terrainCollision.sensor.y
+        cmpd  #11                      ; above the table?
+        lblo  @unsure                  ; yes
+        addb  terrainCollision.box.h   ; the bottom line
+        adca  #0
+        lbcs  @unsure                  ; wrapped: the top was negative
+        cmpd  #11+180                  ; below the table (or the top negative)?
+        lbhs  @unsure                  ; yes
+        std   terrainCollision.box.y1
+        ldd   terrainCollision.sensor.y
+@row    std   terrainCollision.box.y
+        _asld
+        ldx   #terrainCollision.yOffset
+        ldd   d,x                      ; the row's offset in the map
+        leax  d,y                      ; X = the row
+        lda   terrainCollision.box.col0
+        ldb   a,x                      ; the left byte
+        andb  terrainCollision.box.mask0 ; its tiles in the box
+        bne   @solid
+        cmpa  terrainCollision.box.col1 ; one byte?
+        beq   @next                    ; yes: the row is done
+@mid    inca                           ; the next byte
+        cmpa  terrainCollision.box.col1 ; the right one?
+        beq   @last
+        ldb   a,x                      ; a byte between: all its tiles
+        bne   @solid
+        bra   @mid
+@last   ldb   a,x                      ; the right byte
+        andb  terrainCollision.box.mask1 ; its tiles in the box
+        bne   @solid
+@next   ldd   terrainCollision.box.y
+        cmpd  terrainCollision.box.y1  ; was it the bottom line?
+        beq   @free                    ; yes: every row is free
+        addd  #6                       ; the next row
+        cmpd  terrainCollision.box.y1  ; past the bottom?
+        bls   @row                     ; no
+        ldd   terrainCollision.box.y1  ; yes: the bottom line's row
+        bra   @row
+@free   clrb                           ; every tile free
+        rts
+@solid
+@unsure ldb   #$FF                     ; solid, or not known here
+        rts
+
+terrainCollision.box.x0    fcb 0
+terrainCollision.box.col0  fcb 0
+terrainCollision.box.col1  fcb 0
+terrainCollision.box.mask0 fcb 0
+terrainCollision.box.mask1 fcb 0
+terrainCollision.box.y     fdb 0
+terrainCollision.box.y1    fdb 0
+ ENDC
 
 terrainCollision.yOffset equ *-22 ; minus vertical viewport position * 2
         fdb   00*lvlMapWidth,00*lvlMapWidth,00*lvlMapWidth,00*lvlMapWidth,00*lvlMapWidth,00*lvlMapWidth
