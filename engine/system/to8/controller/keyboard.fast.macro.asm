@@ -1,30 +1,25 @@
  IFNDEF keyboard.fast.macro.asm
 keyboard.fast.macro.asm equ 1
 
+; C = 1 while a key is down (KTEST) ; Shift and CNT alone are no key
 _keyboard.fast.ktst MACRO
-        lda   map.MC6821.PRA            ; Test KTST bit (PA0)
-        lsra                            ; Move to carry
+        lda   map.MC6821.PRA
+        lsra
  ENDM
 
-_keyboard.fast.flush MACRO
-        lda   map.MC6846.PDR            ; Read PDR
-        anda  #$DF                      ; Clear PP5 (ready)
-        sta   map.MC6846.PDR            ; Save PDR
-        ldb   map.MC6846.PCR            ; Read PCR
-        andb  #$FC                      ; Clear bits 0-1
-        stb   map.MC6846.PCR            ; Save PCR
-        ora   #$20                      ; Set PP5 (done)
-        sta   map.MC6846.PDR            ; Save PDR
-        coma                            ; Set carry = 1 (key pressed)
+_keyboard.fast.init MACRO
+        jsr   keyboard.fast.init
  ENDM
 
-_keyboard.fast.check MACRO
-        jsr   keyboard.fast.check
+_keyboard.fast.read MACRO
+        jsr   keyboard.fast.read
  ENDM
 
+; waits for a key pressed (not a repeat), its frame in D
 _keyboard.fast.waitKey MACRO
-@loop   jsr   keyboard.fast.check
-        beq   @loop
+@loop   jsr   keyboard.fast.read
+        ldd   keyboard.fast.pressed
+        bmi   @loop
  ENDM
 
  ENDC

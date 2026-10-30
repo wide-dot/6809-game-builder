@@ -117,6 +117,10 @@ public class Image {
 	public Integer nb_cell;
 	
 	private BufferedImage image;
+	/** bm4s, the draw encoder : the half transparent pairs (PixelPairs.halves), null when none */
+	private BufferedImage halfImage;
+	/** halfImage in the planes' layout, after the shift (getHalfPixels), null when none */
+	private byte[][] halfPixels;
 	public ColorModel colorModel;
 	private int width;
 	private int height;
@@ -184,9 +188,11 @@ public class Image {
 	 * 3 = onebpp code anchored on the canvas reference byte/row, packed box
 	 * byte-aligned (pre-shifted variants keep their bit, exact x1/y1 offsets) ;
 	 * 4 = draw1/clear1 walk U row by row (LEAU, 5-bit offsets, D pairs, no
-	 * redundant AND), clear stores zeros.
+	 * redundant AND), clear stores zeros ; 5 = bm4s draw lays half
+	 * transparent pairs with masks, a byte once (its whole pair taken from the
+	 * pattern code), U walked, the walk folded into the first LEAU.
 	 */
-	private static final String CACHE_VERSION = "4";
+	private static final String CACHE_VERSION = "5";
 
 	public String planes;
 
@@ -298,7 +304,15 @@ public class Image {
 					throw new Exception("image " + imageName + " : the " + encoderType
 							+ " encoder draws one bit per pixel, it has no bm4s form");
 				}
-				image = PixelPairs.pack(image, imageFile);
+				// a half transparent pair : the draw encoder lays its opaque
+				// pixel apart (the other encoders, a mirror and the halfline
+				// option do not carry it : refused there)
+				boolean halves = type == TYPE_DRAW_INT && mirror == Mirror.NONE_INT && !halfline;
+				BufferedImage source = image;
+				image = PixelPairs.pack(source, imageFile, halves);
+				if (halves) {
+					halfImage = PixelPairs.halves(source);
+				}
 			}
 			
 			variant = variantKey(type, mirror, shift);
@@ -329,7 +343,61 @@ public class Image {
 		} else {
 			prepareImages();
 			Shift.transform(pixels, data, height, shift);
+			prepareHalves();
 		}
+	}
+
+	/**
+	 * the half pairs in the planes' layout (prepareImages' : a line of 80 per
+	 * plane, the packed pixels 0-1 in plane 0, 2-3 in plane 1, then the next
+	 * pair of each), shifted as the planes are ; null when the picture has none
+	 */
+	private void prepareHalves() throws Exception {
+		if (halfImage == null) {
+			return;
+		}
+		boolean any = false;
+		byte[][] half = new byte[2][80 * height];
+		WritableRaster in = halfImage.getRaster();
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				int v = in.getSample(x, y, 0);
+				if (v != 0) {
+					half[(x / 2) % 2][80 * y + 2 * (x / 4) + x % 2] = (byte) v;
+					any = true;
+				}
+			}
+		}
+		if (!any) {
+			return;
+		}
+		byte[][] scratch = new byte[][] {half[0].clone(), half[1].clone()};
+		Shift.transform(half, scratch, height, shift);
+		// a byte holding a half pair is read, masked and written back : its
+		// other pixel pair goes into that write too (9-24 : both pixels, the
+		// packed colour + 9) and leaves the pattern code, which would read and
+		// write the same byte a second time
+		for (int page = 0; page < 2; page++) {
+			for (int i = 0; i < half[page].length; i++) {
+				int other = i ^ 1;
+				if (half[page][i] != 0 && half[page][other] == 0 && pixels[page][other] != 0) {
+					half[page][other] = (byte) (8 + pixels[page][other]);
+					pixels[page][other] = 0;
+					data[page][other] = 0;
+				}
+			}
+		}
+		halfPixels = half;
+	}
+
+	/**
+	 * the half pairs of a plane (prepareHalves), null when the picture has
+	 * none : per packed pixel, 1-4 its left pixel opaque in the colour 0-3,
+	 * 5-8 its right one, 9-24 both (the packed colour + 9, a pair sharing its
+	 * byte with a half pair)
+	 */
+	public byte[] getHalfPixels(int ramPage) {
+		return halfPixels == null ? null : halfPixels[ramPage];
 	}
 	
 	// TODO - create n method as transformers
@@ -767,6 +835,12 @@ public class Image {
 		md.update(pixels[0]);
 		md.update((byte) '|');
 		md.update(pixels[1]);
+		if (halfPixels != null) {
+			md.update((byte) '|');
+			md.update(halfPixels[0]);
+			md.update((byte) '|');
+			md.update(halfPixels[1]);
+		}
 		StringBuilder hex = new StringBuilder();
 		for (byte b : md.digest()) {
 			hex.append(String.format("%02x", b));
@@ -790,7 +864,9 @@ public class Image {
 				// shift ; data is lossy (transparent and colour 1 both store
 				// 0), so hash pixels
 				.keyBytes(pixels[0])
-				.keyBytes(pixels[1]);
+				.keyBytes(pixels[1])
+				.keyBytes(halfPixels == null ? new byte[0] : halfPixels[0])
+				.keyBytes(halfPixels == null ? new byte[0] : halfPixels[1]);
 	}
 
 	private void restoreFromCache(Path cacheDir, String outputDir) throws Exception {

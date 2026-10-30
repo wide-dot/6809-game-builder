@@ -27,6 +27,14 @@ ci/run-benches.sh                                 # contre sa référence bench.
 
 cd examples/bm4s           # 320x200 4 couleurs ($41) : témoins + écran
 python3 ../../ci/toje-bench/bm4s_ut.py dist/to8.fd   # comparé aux sources 320 px
+
+# keyboard.fast, la trame du 6804 : touches pressées par toje, journal lu
+# trame par trame ; exige le 6804 et le 6846 corrigés (wide-dot/toje#64)
+python3 ci/toje-bench/keyboard_ut.py examples/keyboard [--cycles]
+
+# loader.file.save : une sauvegarde écrite, retrouvée au boot suivant, refusée
+# disquette protégée — l'image copiée de dist/to8.fd et montée en écriture
+python3 ci/toje-bench/save_ut.py examples/save
 ```
 
 Codes de sortie : 0 = pass, 1 = fail/blocage, 2 = pas de verdict.

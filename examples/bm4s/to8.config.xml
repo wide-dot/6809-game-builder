@@ -53,6 +53,13 @@
                                 <encoder name="bdraw" mirror="none" shift="0"/>
                                 <encoder name="draw" mirror="none" shift="0"/>
                             </image>
+                            <!-- Half transparent pairs : only the draw encoder
+                                 takes them, laying each with a mask, so the
+                                 pixel left out shows what is beneath. Drawn
+                                 as an overlay over the band. -->
+                            <image name="halves" filename="src/assets/sprites/halves.png" index="3">
+                                <encoder name="draw" mirror="none" shift="0"/>
+                            </image>
                             <!-- A compressed image. It answers to the draw slot,
                                  which is what puts it in the index at all, and
                                  it is full width on purpose : the zx0 encoder

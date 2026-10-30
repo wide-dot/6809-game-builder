@@ -8,7 +8,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,6 +26,9 @@ import com.widedot.toolbox.graphics.gfxcomp.setting.VideoMemory;
 public class SimpleAssemblyGenerator extends Encoder{
 
 	int maxTries=500000;
+
+	/** the pattern code's first LEAU (withHalves folds U's walk into it) */
+	private static final Pattern LEAU = Pattern.compile("(?i)^LEAU\\s+(-?\\d+),U$");
 
 	boolean FORWARD = true;
 	boolean REARWARD = false;
@@ -127,6 +135,17 @@ public class SimpleAssemblyGenerator extends Encoder{
 		cyclesSpriteCode2 = regOpt.getAsmCodeCycles();
 		sizeSpriteCode2 = regOpt.getAsmCodeSize();
 
+		// bm4s : the half transparent pairs, laid apart (each byte with its
+		// pixels' mask) before the plane's code
+		int[] cost = new int[2];
+		spriteCode1 = withHalves(img, 0, spriteCode1, !planesByPointer() || !spriteCode1.isEmpty(), cost);
+		cyclesSpriteCode1 += cost[0];
+		sizeSpriteCode1 += cost[1];
+		cost = new int[2];
+		spriteCode2 = withHalves(img, 1, spriteCode2, !planesByPointer() || !spriteCode2.isEmpty(), cost);
+		cyclesSpriteCode2 += cost[0];
+		sizeSpriteCode2 += cost[1];
+
 		if (planesByCursor()) {
 			secondPlaneThroughY(img);
 		}
@@ -217,6 +236,249 @@ public class SimpleAssemblyGenerator extends Encoder{
 			size += Register.sizeDirectST[Register.B];
 		}		
 		return size;
+	}
+
+	/**
+	 * bm4s, a plane's half transparent pairs (Image.getHalfPixels : 1-4 the
+	 * left pixel opaque in the colour 0-3, 5-8 the right one, 9-24 both) :
+	 * the plane's pattern code leaves their bytes alone ; each is laid here,
+	 * once for its four pixels : read, AND clearing its opaque pixels' bits
+	 * (left out when the colours set them all), OR their colours (left out
+	 * when all 0), written back. Two neighbour bytes go through D. A bm4s
+	 * pixel is two bits of a byte, leftmost first : the packed pixel at an
+	 * even index is the byte's high nibble.
+	 *
+	 * The writes run before the pattern code, U walking between them : where
+	 * to move it (LEAU) is chosen by dynamic programming over the bytes in
+	 * address order, so that each is reached through the shortest offset
+	 * (none, 5 or 8 bits rather than 16), bytes first and cycles next. The
+	 * walk is folded into the pattern code's first LEAU, which starts from the
+	 * anchor, so U is where that code expects it. cost : cycles and bytes added.
+	 */
+	// the toolchain signals build errors with plain Exceptions (48 throw sites)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	private static List<String> withHalves(Image img, int page, List<String> code, boolean restoreU, int[] cost) throws Exception {
+		byte[] half = img.getHalfPixels(page);
+		TreeMap<Integer, int[]> bytes = half == null ? new TreeMap<Integer, int[]>() : halfBytes(half);
+		if (bytes.isEmpty()) {
+			return code;
+		}
+		List<int[]> ops = halfOps(bytes, img.getCoordinate());
+		int[] leau = firstLeau(code);
+		Integer first = leau == null ? null : leau[1];
+		int[] cursors = walk(ops, first, restoreU);
+		List<String> out = new ArrayList<String>();
+		int c = 0;
+		for (int k = 0; k < ops.size(); k++) {
+			int[] op = ops.get(k);
+			if (cursors[k] != c) {
+				out.add("\tLEAU " + (cursors[k] - c) + ",U");
+				cost[0] += leaCycles(cursors[k] - c);
+				cost[1] += leaSize(cursors[k] - c);
+				c = cursors[k];
+			}
+			out.add(write(op, op[0] - c));
+			cost[0] += writeCycles(op, op[0] - c);
+			cost[1] += writeSize(op, op[0] - c);
+		}
+		cost[0] += back(c, first, restoreU, 1);
+		cost[1] += back(c, first, restoreU, 0);
+		List<String> rest = new ArrayList<String>(code);
+		if (leau != null) {
+			String moved = first - c == 0 ? "" : "\tLEAU " + (first - c) + ",U";
+			rest.set(leau[0], rest.get(leau[0]).replaceFirst("(?i)LEAU\\s+-?\\d+,U", moved));
+		} else if (c != 0 && restoreU) {
+			out.add("\tLEAU " + (-c) + ",U");
+		}
+		out.addAll(rest);
+		return out;
+	}
+
+	/** per byte holding a half pair (its index in the plane) : the mask clearing its opaque pixels' bits, their colours */
+	private static TreeMap<Integer, int[]> halfBytes(byte[] half) {
+		TreeMap<Integer, int[]> bytes = new TreeMap<Integer, int[]>();
+		for (int i = 0; i < half.length; i++) {
+			int v = half[i] & 0xff;
+			if (v != 0) {
+				int shiftBits = i % 2 == 0 ? 4 : 0;
+				int[] mv = bytes.computeIfAbsent(i / 2, k -> new int[] {0xff, 0});
+				if (v > 8) {
+					mv[0] &= ~(0xf << shiftBits);
+					mv[1] |= (v - 9) << shiftBits;
+				} else {
+					int bits = shiftBits + (v <= 4 ? 2 : 0);
+					mv[0] &= ~(3 << bits);
+					mv[1] |= ((v - 1) & 3) << bits;
+				}
+			}
+		}
+		return bytes;
+	}
+
+	/** the writes, in address order : offset from the anchor, width (1, or 2 : two neighbours through D), mask and value of each byte */
+	private static List<int[]> halfOps(TreeMap<Integer, int[]> bytes, int coordinate) {
+		List<int[]> ops = new ArrayList<int[]>();
+		Integer[] keys = bytes.keySet().toArray(new Integer[0]);
+		int k = 0;
+		while (k < keys.length) {
+			int[] m0 = bytes.get(keys[k]);
+			boolean pair = k + 1 < keys.length && keys[k + 1] == keys[k] + 1;
+			int[] m1 = pair ? bytes.get(keys[k + 1]) : new int[] {0, 0};
+			ops.add(new int[] {keys[k] - coordinate, pair ? 2 : 1, m0[0], m0[1], m1[0], m1[1]});
+			k += pair ? 2 : 1;
+		}
+		return ops;
+	}
+
+	/** the pattern code's first instruction when it is a LEAU from the anchor : {its element, its offset}, else null */
+	private static int[] firstLeau(List<String> code) {
+		for (int e = 0; e < code.size(); e++) {
+			for (String line : code.get(e).split("\n", -1)) {
+				String op = line.trim();
+				if (!op.isEmpty()) {
+					Matcher m = LEAU.matcher(op);
+					return m.matches() ? new int[] {e, Integer.parseInt(m.group(1))} : null;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * where U stands for each write : per write, the cheapest walk ending with
+	 * U on each candidate place (where it was, or the write's place, or 16 or
+	 * 128 bytes past it : the reach of a 5 and an 8 bit offset), the end's
+	 * cost included (back)
+	 */
+	// the toolchain signals build errors with plain Exceptions (48 throw sites)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	private static int[] walk(List<int[]> ops, Integer first, boolean restoreU) throws Exception {
+		List<Map<Integer, long[]>> best = new ArrayList<Map<Integer, long[]>>();   // cursor -> cost, previous cursor
+		Map<Integer, long[]> cur = new HashMap<Integer, long[]>();
+		cur.put(0, new long[] {0, 0});
+		for (int[] op : ops) {
+			Map<Integer, long[]> next = new HashMap<Integer, long[]>();
+			for (Map.Entry<Integer, long[]> e : cur.entrySet()) {
+				int c = e.getKey();
+				for (int to : new int[] {c, op[0], op[0] + 16, op[0] + 128}) {
+					long move = to == c ? 0 : weight(leaSize(to - c), leaCycles(to - c));
+					long total = e.getValue()[0] + move + weight(writeSize(op, op[0] - to), writeCycles(op, op[0] - to));
+					long[] known = next.get(to);
+					if (known == null || total < known[0]) {
+						next.put(to, new long[] {total, c});
+					}
+				}
+			}
+			best.add(next);
+			cur = next;
+		}
+		int end = 0;
+		long endCost = Long.MAX_VALUE;
+		for (Map.Entry<Integer, long[]> e : cur.entrySet()) {
+			long total = e.getValue()[0] + weight(back(e.getKey(), first, restoreU, 0), back(e.getKey(), first, restoreU, 1));
+			if (total < endCost) {
+				endCost = total;
+				end = e.getKey();
+			}
+		}
+		int[] cursors = new int[ops.size()];
+		int c = end;
+		for (int k = ops.size() - 1; k >= 0; k--) {
+			cursors[k] = c;
+			c = (int) best.get(k).get(c)[1];
+		}
+		return cursors;
+	}
+
+	/** bytes first, cycles next */
+	private static long weight(int size, int cycles) {
+		return size * 1000L + cycles;
+	}
+
+	private static int leaSize(int offset) throws Exception {
+		return Register.sizeIndexedLEA + Register.getIndexedOffsetSize(offset);
+	}
+
+	private static int leaCycles(int offset) throws Exception {
+		return Register.costIndexedLEA + Register.getIndexedOffsetCost(offset);
+	}
+
+	/**
+	 * the cost (what : 0 bytes, 1 cycles) of giving U back once the writes
+	 * leave it at c : the first LEAU's offset changed, or a LEAU of its own
+	 * (none when the pattern code is empty and the caller resets U)
+	 */
+	private static int back(int c, Integer first, boolean restoreU, int what) throws Exception {
+		if (first != null) {
+			int now = first - c == 0 ? 0 : (what == 0 ? leaSize(first - c) : leaCycles(first - c));
+			int was = what == 0 ? leaSize(first) : leaCycles(first);
+			return now - was;
+		}
+		if (c == 0 || !restoreU) {
+			return 0;
+		}
+		return what == 0 ? leaSize(-c) : leaCycles(-c);
+	}
+
+	/** an AND is needed when an opaque bit has to end up 0, an OR when one has to end up 1 */
+	private static boolean needsAnd(int mask, int value) {
+		return (~mask & ~value & 0xff) != 0;
+	}
+
+	private static String write(int[] op, int offset) {
+		String at = (offset == 0 ? "" : Integer.toString(offset)) + ",U";
+		StringBuilder sb = new StringBuilder();
+		if (op[1] == 1) {
+			sb.append("\tLDA ").append(at);
+			if (needsAnd(op[2], op[3])) {
+				sb.append(String.format("\n\tANDA #$%02X", op[2] & 0xff));
+			}
+			if (op[3] != 0) {
+				sb.append(String.format("\n\tORA #$%02X", op[3]));
+			}
+			sb.append("\n\tSTA ").append(at);
+		} else {
+			sb.append("\tLDD ").append(at);
+			if (needsAnd(op[2], op[3])) {
+				sb.append(String.format("\n\tANDA #$%02X", op[2] & 0xff));
+			}
+			if (needsAnd(op[4], op[5])) {
+				sb.append(String.format("\n\tANDB #$%02X", op[4] & 0xff));
+			}
+			if (op[3] != 0) {
+				sb.append(String.format("\n\tORA #$%02X", op[3]));
+			}
+			if (op[5] != 0) {
+				sb.append(String.format("\n\tORB #$%02X", op[5]));
+			}
+			sb.append("\n\tSTD ").append(at);
+		}
+		return sb.toString();
+	}
+
+	private static int writeSize(int[] op, int offset) throws Exception {
+		int r = op[1] == 1 ? Register.A : Register.D;
+		int size = Register.sizeIndexedLD[r] + Register.sizeIndexedST[r] + 2 * Register.getIndexedOffsetSize(offset);
+		size += (needsAnd(op[2], op[3]) ? 2 : 0) + (op[3] != 0 ? 2 : 0);
+		if (op[1] == 2) {
+			size += (needsAnd(op[4], op[5]) ? 2 : 0) + (op[5] != 0 ? 2 : 0);
+		}
+		return size;
+	}
+
+	private static int writeCycles(int[] op, int offset) throws Exception {
+		int r = op[1] == 1 ? Register.A : Register.D;
+		int cycles = Register.costIndexedLD[r] + Register.costIndexedST[r] + 2 * Register.getIndexedOffsetCost(offset);
+		cycles += (needsAnd(op[2], op[3]) ? 2 : 0) + (op[3] != 0 ? 2 : 0);
+		if (op[1] == 2) {
+			cycles += (needsAnd(op[4], op[5]) ? 2 : 0) + (op[5] != 0 ? 2 : 0);
+		}
+		return cycles;
+	}
+
+	/** true when the second plane is reached through glb_screen_location_1, U reset */
+	private boolean planesByPointer() {
+		return !planesByOffset() && !planesByCursor();
 	}
 
 	/** true when the code walks to the second plane instead of pointing at it */

@@ -12,7 +12,11 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import com.widedot.m6809.gamebuilder.spi.Binary;
 import com.widedot.m6809.gamebuilder.spi.BuildContext;
 import com.widedot.m6809.gamebuilder.spi.ObjectDataInterface;
+import com.widedot.m6809.gamebuilder.spi.cache.BuildCache;
 import com.widedot.m6809.gamebuilder.spi.configuration.Attribute;
+import com.widedot.m6809.util.zx0.Compressor;
+import com.widedot.m6809.util.zx0.Main;
+import com.widedot.m6809.util.zx0.Optimizer;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -79,6 +83,8 @@ public class Png2BinPlugin {
 		Integer guard     = Attribute.getInteger(node, ctx, "guardcolor", 0);
 		Integer maxsize   = Attribute.getInteger(node, ctx, "maxsize", 0);
 		Boolean shift     = Attribute.getBoolean(node, ctx, "shiftcolors", true);
+		String codec      = Attribute.getString(node, ctx, "codec", "none");
+		codec(codec);     // an unknown codec fails before the conversion
 
 		Png2Bin.Buffer buffer = BUFFERS.get(bufferName.toLowerCase());
 		if (buffer == null) {
@@ -126,7 +132,41 @@ public class Png2BinPlugin {
 		}
 
 		byte[] data = Files.readAllBytes(Paths.get(wanted));
-		log.info("png2bin {} plane {} : {} bytes", png.getName(), plane, data.length);
-		return new Binary(data);
+		byte[] out = encode(data, codec);
+		log.info("png2bin {} plane {} : {} bytes{}", png.getName(), plane, out.length,
+		         "none".equals(codec(codec)) ? "" : " (" + codec + ", " + data.length + " raw)");
+		return new Binary(out);
+	}
+
+	/** the codecs : none (the plane as it is) or zx0 */
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	static String codec(String codec) throws Exception {
+		String c = codec.toLowerCase();
+		if (!c.equals("none") && !c.equals("zx0")) {
+			throw new Exception("png2bin : codec '" + codec + "' is not one of [none, zx0]");
+		}
+		return c;
+	}
+
+	/**
+	 * The plane's bytes as the codec stores them. zx0 : one forward stream in
+	 * the classic format (the loader's decompressor, engine/compression/zx0/
+	 * zx0_6809_mega.asm), without the loader's in-place delta byte : the data
+	 * stays compressed in RAM, the game decompresses it where it wants it.
+	 */
+	static byte[] encode(byte[] data, String codec) throws Exception {
+		if (codec(codec).equals("none")) {
+			return data;
+		}
+		BuildCache.Entry entry = BuildCache.entry("png2bin-zx0", "1").keyBytes(data);
+		byte[] hit = entry.findBlob();
+		if (hit == null) {
+			hit = new Compressor().compress(
+					new Optimizer().optimize(data, 0, Main.MAX_OFFSET_ZX0, Main.DEFAULT_THREADS, false),
+					data, 0, false, false, new int[1]);
+			entry.storeBlob(hit);
+		}
+		return hit;
 	}
 }
