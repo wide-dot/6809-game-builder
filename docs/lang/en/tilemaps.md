@@ -361,6 +361,88 @@ example over the column engine (`TILES_COLS` defined) ; the whole initial
 scroll, both planes and the patch animation included, renders pixel for
 pixel what `to8.config.xml` renders (101 captures compared under toje).
 
+## A periodic band : `<periodicband>` and `periodicband.draw`
+
+Some decors repeat along x with a short period — a ceiling and a floor of
+the same few tiles, all along a level. Drawn as a tilemap they pay a cell
+envelope per tile and, after the sprites, a masked write per half
+transparent byte. `periodicband` draws such a band from the picture of ONE
+period, at any horizontal phase, BM16 :
+
+- its **full lines** (no transparent pixel) come from tables, one per line :
+  the 12 bytes a plane shows in a period are read once (`pulu`) and stored
+  at their three places of a 144 px window (`std`/`stx` at fixed offsets).
+  Each table is doubled, so any rotation reads in one go ; a 2 px step swaps
+  the planes, a 1 px step picks the other parity's tables. The S register
+  and the interrupts are left alone. 305 cycles a line, both planes ;
+- its **other lines** (the stems) are compiled strips of 16 px, both pixel
+  parities, by the `draw` encoder of gfxcomp : the band's transparency is
+  kept there. 9 or 10 strips per call ; the first starts up to 14 px left
+  of the window and the last ends up to 14 px right of it — the 8 px side
+  margins of a 160 px line, wrapping to the neighbouring line, which a
+  playfield mask must cover.
+
+The band covers what is under its full lines and keeps what shows through
+its stems : called after the sprites, it is a foreground whose solid part
+hides them. A band whose full lines span the whole window also spares the
+clearing of those lines.
+
+The build makes the band ready inside the `<lwasm>` unit that holds the
+runtime, before the `<gfxcomp>` that compiles the strips :
+
+```xml
+<periodicband image="src/band.png" period="48"
+              tiles="assets.gm.main" sheet="gen/band/strips.png"
+              x="8" y="60" width="144" section="band"
+              gensource="gen/band/band.asm"/>
+<gfxcomp gendir="gen/band" gensource="gen/band/includes.asm" section="band">
+    <image name="strips" filename="gen/band/strips.png" grid="16x24">
+        <encoder name="draw" mirror="none" shift="0" position="top-left"/>
+    </image>
+</gfxcomp>
+<asm filename="src/main.asm"/>   <!-- INCLUDEs periodicband.asm -->
+```
+
+- `image` : indexed PNG, index 0 transparent (gfxcomp's convention, index =
+  colour + 1), a whole number of periods wide — the period is checked pixel
+  by pixel, a pixel that breaks it is a named error ;
+- `period` : a multiple of 16 px ; `x`, `y`, `width` : the window on the
+  screen (defaults 8, 0, 144), `width` a whole number of periods ;
+- `sheet` : the strip sheet written for the `<gfxcomp grid>` (cells of 16 px
+  by the stems' height : from the first to the last line that is neither
+  full nor empty, a full line inside it left transparent) ; `tiles` : the
+  file hosting the compiled strips, whose entry points the strip table
+  names (`adr_<host>_<id>_ND0`) ;
+- `gensource` : the equates (`periodicband.PERIOD`, `.X`, `.RUNS`,
+  `.STEMS`...), the runs of full lines, the tables (2 × period bytes a
+  line) and the strip table ; `section` : its section (code if omitted —
+  another one when the unit's first byte must stay the entry point).
+
+The runtime, `engine/graphics/tilemap/periodicband/periodicband.asm`, is
+assembled after the generated source and needs the engine's constants :
+
+```
+        ldb   phase                    ; 0..period-1
+        clra
+        tfr   d,y
+        jsr   periodicband.draw        ; between _gfxlock.on and _gfxlock.off
+```
+
+The window's pixel x shows the picture's pixel `(x + phase) mod period`.
+Every register is destroyed ; the routine modifies itself (the unit lives in
+RAM). The writer is written for the case it was measured on — a period of
+48 px in a 144 px window — and other geometries stop the assembly with a
+named error.
+
+Validation : `examples/periodicband` draws a test pattern at its 48 phases
+on a background the band never uses, and `ci/toje-bench/periodicband_ut.py`
+compares each capture with the picture (48/48 exact, nothing outside the
+window and its margins) ; the JUnit tests of `PeriodicbandPlugin` check the
+tables and the strips against the picture at every phase through a model of
+the runtime's reads. Measured on r-type's stage 5 (36 full lines, 24 stem
+lines) : 11 060 cycles for the full lines and ~6 800 for the strips, against
+36 000 for the same decor as a column tilemap.
+
 ## Chunked maps : `<chunkmap>` and TilemapBuffer
 
 The Mega Drive Sonic games lay their levels out in two levels of

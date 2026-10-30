@@ -341,6 +341,7 @@ public final class Handlers {
 		FILES.put("tilemap", com.widedot.m6809.gamebuilder.plugin.tilemap.TilemapPlugin::getFile);
 		FILES.put("backlines", com.widedot.toolbox.graphics.backlines.BacklinesPlugin::getFile);
 		FILES.put("tilecols", com.widedot.m6809.gamebuilder.plugin.tilemap.TilecolsPlugin::getFile);
+		FILES.put("periodicband", com.widedot.m6809.gamebuilder.plugin.tilemap.PeriodicbandPlugin::getFile);
 		FILES.put("tilepatch", com.widedot.m6809.gamebuilder.plugin.tilemap.TilepatchPlugin::getFile);
 		FILES.put("tilereset", com.widedot.m6809.gamebuilder.plugin.tilemap.TileresetPlugin::getFile);
 		FILES.put("imageset", com.widedot.toolbox.graphics.gfxcomp.ImagesetPlugin::getFile);
@@ -375,6 +376,16 @@ public final class Handlers {
 			.req("gensource", STRING, "generated source file of the table")
 			.opt("section", STRING, "section of the table, map if omitted")
 			.opt("bitdepth", INT, "bits per tile index in the map, 16 if omitted"));
+		spec(element("periodicband").doc("make a picture whose pattern repeats along x ready for engine/graphics/tilemap/periodicband (BM16) : its full lines (no transparent pixel) become per-line tables the runtime's writer reads, its other lines a sheet of 16 px strips for a <gfxcomp grid>, both pixel parities side by side ; the generated source holds the geometry, the tables and the strip table")
+			.req("image", STRING, "the picture, indexed PNG, index 0 transparent ; its width a whole number of periods, checked pixel by pixel")
+			.req("period", INT, "the pattern's period in pixels, a multiple of 16")
+			.req("tiles", STRING, "the file hosting the strips : entries reference adr_<host>_<id>_ND0, the cells of the <gfxcomp grid> that compiles the sheet")
+			.req("sheet", STRING, "the strip sheet written for that <gfxcomp grid> (cells of 16 px by the strips' height)")
+			.req("gensource", STRING, "generated source : equates, tables, strip table")
+			.opt("x", INT, "screen x of the window's left edge, in pixels, a multiple of 4 ; 8 if omitted")
+			.opt("y", INT, "screen line of the picture's top line, 0 if omitted")
+			.opt("width", INT, "the window's width in pixels, a whole number of periods ; 144 if omitted")
+			.opt("section", STRING, "section of the generated tables, code if omitted"));
 		spec(element("tilecols").doc("generate the SPARSE COLUMN table of a tile index map for the column scroll engine (scroll-columns.asm) : one word per column, then per column its full cells only (page, address, video offset), baked in a .static section")
 			.req("map", STRING, "tile index .bin (leanscroll output), big endian, column major")
 			.req("label", STRING, "label of the generated table")
