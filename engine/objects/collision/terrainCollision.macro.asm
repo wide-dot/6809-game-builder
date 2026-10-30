@@ -12,4 +12,10 @@ _terrainCollision.init MACRO
         std   terrainCollision.main.xAxis.doLeft.address
         addd  #3
         std   terrainCollision.main.update.address
+ IFDEF terrainCollision.BOX
+        addd  #3
+        std   terrainCollision.main.box.address
+        lda   Obj_Index_Page+\1
+        sta   terrainCollision.main.box.page
+ ENDC
  ENDM    

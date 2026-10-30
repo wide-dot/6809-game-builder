@@ -169,6 +169,50 @@ terrainCollision.main.xAxis.doLeft.address equ *-2
         _SetCartPageA
         rts
 
+; --- terrainCollision.BOX: a whole box asked at once (opt-in) ---
+; The box's width and height minus one, beside the sensor that gives its
+; corner (terrainCollision.checkBox in terrainCollision.asm says the rest).
+; The plane cut, or the terrain disabled: every tile free, as .do answers.
+ IFDEF terrainCollision.BOX
+terrainCollision.box.w fcb 0
+terrainCollision.box.h fcb 0
+
+terrainCollision.doBox
+        lda   terrainCollision.disabled    ; the tilemap "erased" (boss killed)?
+        bne   @off
+        ldx   #terrainCollision.planeOff   ; ...or THIS plane alone cut?
+        abx
+        tst   ,x
+        beq   @active
+@off    clrb                               ; -> no collision (B=0)
+        rts
+@active _GetCartPageA
+        sta   @page
+        lda   #0
+terrainCollision.main.box.page equ *-1
+        _SetCartPageA
+        jsr   >0
+terrainCollision.main.box.address equ *-2
+        lda   #0
+@page   equ *-1
+        _SetCartPageA
+        rts
+
+; the box as a ground enemy sees it, as terrainCollision.doFoe a point
+  IFDEF globals.foeBgSolid
+terrainCollision.doFoeBox
+        ldb   #1                           ; the foreground: the hard scenery
+        jsr   terrainCollision.doBox
+        tstb
+        bne   @solid
+        lda   globals.foeBgSolid           ; is the background GROUND here?
+        beq   @solid                       ; no: B = 0
+        clrb                               ; the background: the gums
+        jmp   terrainCollision.doBox
+@solid  rts
+  ENDC
+ ENDC
+
 terrainCollision.update
         sta   @a
         _GetCartPageA
