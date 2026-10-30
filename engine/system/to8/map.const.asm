@@ -139,6 +139,7 @@ map.DK.SEC          equ $604C ; sector
 map.DK.TRK          equ $604A ; $604B ; track
 map.DK.STA          equ $604E ; return status
 map.DK.BUF          equ $604F ; $6050 ; data write location
+map.SCRMOD          equ $605F ; display mode as the monitor knows it
 map.IRQPT           equ $6021 ; $6022 ; routine - irq
 map.FIRQPT          equ $6023 ; $6024 ; routine - firq
 map.TIMERPT         equ $6027 ; $6028 ; routine - irq timer
