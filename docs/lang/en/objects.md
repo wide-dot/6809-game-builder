@@ -186,6 +186,19 @@ really there, which is what the arcade's probe reads too. Without the define
 the unit is v1's byte for byte. A sensor further left than the camera's
 sub-tile rest still wraps the byte index : clamp it to the camera.
 
+The row table covers the map's lines, 11 to 190. A sensor above or below
+them indexed whatever surrounds the table — code, or the next map — and read
+walls at random : an enemy falling into a pit landed on the screen's bottom
+edge. The arcade's probe reads empty rows there (its tile plane goes on
+under the play area, and a probe above the screen comes down to them).
+Define `TERRAIN_OFFMAP_ROWS` in the terrain unit and the table gets the
+lines -24 to 10 and 191 to 220 (130 bytes), all on the rows past the map's
+last : put one empty row (`fill 0,lvlMapWidth`) after each map the table
+reads. Under `BG_OWN_CAMERA` the lines below go on row by row (30 to 34),
+the background reading its own taller map : give the foreground map five
+empty rows. No cycle : the table is longer, nothing is tested. Without the
+define the unit is byte for byte what it was.
+
 One thing v2 makes explicit that v1 hid : the mounted code reads the resident
 sensors and boss-follow state directly. Under `undefextern` that coupling was
 invisible ; here the terrain unit declares eight `EXTERNAL`s and the game
