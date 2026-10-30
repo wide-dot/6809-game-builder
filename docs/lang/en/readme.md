@@ -38,6 +38,8 @@ boss included) ; the R-Type port on this generation already runs its stages
   builder measures, places and publishes, the runtime places nothing
 - generate compiled sprites from png files (four encoders, mirror and
   pre-shift variants) and their image-set indexes
+- generate sprite streams (bm4s) : masked row segments drawn in both facings
+  by generated walkers, with their save stack
 - generate tile maps and the whole level-map chain (leanscroll)
 - convert pcm, vgm audio data (`vgm2ymm`, `vgm2vgc`, `vgm2sfx`)
 - compress code and data (zx0)
@@ -47,6 +49,7 @@ boss included) ; the R-Type port on this generation already runs its stages
 
 #### Engine
 - boot loader, file and scene loader, hot scene swap from disk
+- write a declared file back to the disk (a saved game)
 - load time linker on files, with a full lifecycle : reload dedup,
   explicit unload, overlap trap, multi-disk
 - zx0 decompression in place
@@ -93,9 +96,13 @@ Platform distributions are then generated in `package/target` :
 
 [groups and loading model][groups]
 
+[writing a file back — saved games][save]
+
 [objects][objects]
 
 [sprites][sprites]
+
+[sprite streams][spritestream]
 
 [tilemaps][tilemaps]
 
@@ -104,6 +111,8 @@ Platform distributions are then generated in `package/target` :
 [interrupts][interrupts]
 
 [gfxlock — the double buffer][gfxlock]
+
+[keyboard — the 6804's frames (TO8)][keyboard]
 
 [migrating from the first generation — the casebook][migration]
 
@@ -125,12 +134,15 @@ Platform distributions are then generated in `package/target` :
 [scenes]: scenes.md
 [symbols]: symbols.md
 [groups]: groups.md
+[save]: save.md
 [objects]: objects.md
 [sprites]: sprites.md
+[spritestream]: spritestream.md
 [tilemaps]: tilemaps.md
 [audio]: audio.md
 [interrupts]: interrupts.md
 [gfxlock]: gfxlock.md
+[keyboard]: keyboard.md
 [migration]: migration/README.md
 [toolbox-reference]: toolbox.md
 [credits]: credits.md

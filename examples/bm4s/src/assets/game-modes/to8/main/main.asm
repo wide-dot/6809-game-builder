@@ -29,6 +29,7 @@
 ;   +8 : $01 once the animation has been seen on both of its frames
 ;   +9 : $01 the compressed image's imageset entry reads back as expected
 ;   +10: $01 the compressed image was drawn, and drawn as an overlay
+;   +11: $01 the halves imageset index reads back as expected
 ;
 ; The compressed image is a full width band, and that is not incidental : a
 ; zx0 image is decompressed straight onto the screen in one contiguous run,
@@ -38,6 +39,7 @@
 set_glyph    EXTERNAL
 set_marker EXTERNAL
 set_band     EXTERNAL
+set_halves   EXTERNAL
 Ani_glyph    EXTERNAL
 
  SECTION code
@@ -170,6 +172,19 @@ main
         sta   $9C09
 @bandsetko
 
+        ldx   #set_halves
+        lda   ,x                           ; unmirrored sub set offset
+        beq   @halvesko
+        lda   4,x                          ; x_size : 16 pixels at 320, 8 units
+        cmpa  #7
+        bne   @halvesko
+        lda   5,x                          ; y_size
+        cmpa  #7
+        bne   @halvesko
+        lda   #$01
+        sta   $9C0B
+@halvesko
+
         ; one object, the animated sprite, near the middle of the screen.
         ; render_flags leaves render_playfieldcoord unset, so the engine takes
         ; the position as screen coordinates and never looks at x_pos/y_pos ;
@@ -214,10 +229,28 @@ main
         lda   #3                           ; priority 3 : behind the shell
         sta   priority,u
 
-        ldx   #sprite1                     ; register both in the run list
+        ; Half transparent pairs over the band : an overlay in front of it,
+        ; still. The pixel each pair leaves out has to show the band.
+        ldu   #sprite3
+        lda   #3                           ; id 3
+        sta   id,u
+        lda   #render_overlay_mask
+        sta   render_flags,u
+        lda   #screen_left+30
+        sta   x_pixel,u
+        lda   #screen_top+132              ; on the band's white and red columns,
+        sta   y_pixel,u                    ; which its cyan and black never match
+        ldx   #set_halves
+        stx   image_set,u
+        lda   #1                           ; priority 1 : in front of the band
+        sta   priority,u
+
+        ldx   #sprite1                     ; register them in the run list
         stx   object_list_first
         ldx   #sprite2
         stx   run_object_next+sprite1
+        ldx   #sprite3
+        stx   run_object_next+sprite2
 
 mainLoop
         jsr   RunObjects
@@ -314,7 +347,8 @@ ObjectRun
         jsr   DisplaySprite
         rts
 
-; the compressed sprite has no animation : its image never changes
+; the compressed sprite and the half pairs have no animation : their images
+; never change
 ObjectRunBall
         jsr   DisplaySprite
         rts

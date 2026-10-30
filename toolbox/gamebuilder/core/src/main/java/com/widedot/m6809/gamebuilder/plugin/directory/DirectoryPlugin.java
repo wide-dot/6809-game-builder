@@ -365,7 +365,9 @@ public class DirectoryPlugin {
 			if (isLink ? !link : !data) {
 				continue;
 			}
-			byte[] location = media.cwrite(pending.section, pending.bytes, pending.name);
+			byte[] location = pending.whole
+					? media.cwriteWhole(pending.section, pending.bytes, pending.name)
+					: media.cwrite(pending.section, pending.bytes, pending.name);
 			System.arraycopy(location, 0, entry.data, pending.patchOffset, 6);
 			it.remove();
 		}
@@ -447,6 +449,11 @@ public class DirectoryPlugin {
 				// its file ids (partitioned directories, see
 				// docs/lang/fr/analyse-repertoires-partitionnes-2026-08.md)
 				if (plugin.equals("scene")) {
+					writer.write(name + ".dir equ " + id + System.lineSeparator());
+				}
+				// a writable file too : loader.file.save and loader.file.load
+				// read it through the directory in memory
+				if (plugin.equals("file") && Attribute.getBoolean(child, resCtx, "writable", false)) {
 					writer.write(name + ".dir equ " + id + System.lineSeparator());
 				}
 

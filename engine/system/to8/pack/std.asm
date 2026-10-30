@@ -9,3 +9,4 @@
         INCLUDE "engine/system/to8/palette/palette.macro.asm"
         INCLUDE "engine/system/to8/controller/keyboard.fast.macro.asm"
         INCLUDE "engine/system/thomson/controller/ascii.const.asm"
+        INCLUDE "engine/system/to8/controller/scancode.const.asm"

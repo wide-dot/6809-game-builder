@@ -55,6 +55,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -132,6 +134,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -197,6 +201,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -263,6 +269,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -358,6 +366,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -423,6 +433,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -527,6 +539,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -589,6 +603,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -654,6 +670,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -716,6 +734,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -793,6 +813,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -861,6 +883,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -929,6 +953,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -1006,6 +1032,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -1089,6 +1117,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -1154,6 +1184,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -1186,6 +1218,9 @@
       </xs:attribute>
       <xs:attribute name="scene" type="xs:boolean">
         <xs:annotation><xs:documentation>generated by &lt;scene&gt;, never authored : the entry is a scene table and carries a second block with the progress units its load will count</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="writable" type="xs:boolean">
+        <xs:annotation><xs:documentation>true : the game writes this file back over its own sectors with loader.file.save (a save game). Stored raw (needs codec="none", no linkdata), its size rounded up to whole sectors of 256 bytes that no other file shares ; &lt;name&gt;.dir is published with its id, and the target's loader gets loader.FILE_WRITE. Default false</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="arena" type="xs:string">
         <xs:annotation><xs:documentation>attributed place : arena to range this file into ; loads of it become bare names</xs:documentation></xs:annotation>
@@ -1255,6 +1290,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -1332,6 +1369,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -1397,6 +1436,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -1498,6 +1539,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -1563,6 +1606,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -1637,6 +1682,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -1726,6 +1773,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -1797,6 +1846,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -1862,6 +1913,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -1927,6 +1980,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -1995,6 +2050,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -2087,6 +2144,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -2152,6 +2211,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -2223,6 +2284,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -2291,6 +2354,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -2380,6 +2445,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -2540,6 +2607,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -2611,6 +2680,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -2665,6 +2736,9 @@
       <xs:attribute name="pixeldepth" type="int6809">
         <xs:annotation><xs:documentation>instead of videomode : bits per pixel</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="codec" type="xs:string">
+        <xs:annotation><xs:documentation>none (default) : the plane's bytes as they are ; zx0 : the plane compressed, and it stays so in RAM (a forward stream in the loader's classic format, no in-place byte) : the game decompresses it (engine/compression/zx0)</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 
@@ -2715,6 +2789,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -2801,6 +2877,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -2875,6 +2953,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -2955,6 +3035,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -3032,6 +3114,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -3100,6 +3184,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -3171,6 +3257,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -3239,6 +3327,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -3262,6 +3352,183 @@
       </xs:attribute>
       <xs:attribute name="sector" type="int6809" use="required">
         <xs:annotation><xs:documentation>first sector, 1 based</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- one sprite of a <spritestream> : a picture and, to draw it on the 2 pixel grid, the same picture moved right by 2 pixels -->
+  <xs:element name="sprite">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="composition"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="file"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="images"/>
+        <xs:element ref="imageset"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="rect"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilecols"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="tilepatch"/>
+        <xs:element ref="tilereset"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
+      </xs:choice>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>sprite name : its record is adr_&lt;name&gt;</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="filename" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>the picture : indexed PNG, 0 transparent, 1 to 4 the bm4s colours, column 0 at pixel 0 of a screen byte ; an even width when mirrorable</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="shifted" type="xs:string">
+        <xs:annotation><xs:documentation>the same picture moved right by 2 pixels (2 transparent columns on its left) : drawn at the odd 2 pixel steps</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- sprites as streams of masked row segments drawn at run time by generated walkers (bm4s) : with <sprite> children, each sprite's record and streams (one source each under gendir ; in an <lwasm> gensource includes them in a section and exports every record adr_<name>, in an arena collection each sprite is a part) ; with genwalker, the walkers, the restore walker and their tables for the engine's spritestream.asm. The streams and the walkers must share their options : set them once with <default name="spritestream.xxx">. Every stream is decoded back and compared with its picture, both facings when mirrorable -->
+  <xs:element name="spritestream">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="composition"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="file"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="images"/>
+        <xs:element ref="imageset"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="rect"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilecols"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="tilepatch"/>
+        <xs:element ref="tilereset"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+        <xs:element ref="zone"/>
+      </xs:choice>
+      <xs:attribute name="gendir" type="xs:string">
+        <xs:annotation><xs:documentation>sprites : directory receiving one source a sprite (its record adr_&lt;name&gt;, then its streams)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gensource" type="xs:string">
+        <xs:annotation><xs:documentation>sprites in an &lt;lwasm&gt; : generated source including them, inside a section, every record exported</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="genreport" type="xs:string">
+        <xs:annotation><xs:documentation>sprites : a CSV of every sprite (width, height, box bytes, mirror flag, stream bytes)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="genwalker" type="xs:string">
+        <xs:annotation><xs:documentation>the walkers' form : the generated source of the walkers, the restore walker and their tables, to assemble with the engine's spritestream.asm. No &lt;sprite&gt; then</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="section" type="xs:string">
+        <xs:annotation><xs:documentation>SECTION wrapping the sprites in gensource, code if omitted ; none for a host that already opened one</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="videomode" type="xs:string">
+        <xs:annotation><xs:documentation>bm4s (the only one) : 320x200 in 4 colours, indexed pictures, 0 transparent, 1 to 4 the colours, column 0 at pixel 0 of a screen byte</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="segment" type="int6809">
+        <xs:annotation><xs:documentation>the longest record, in screen bytes : a row's run of bytes is cut every segment bytes. Default 6</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="rows" type="xs:string">
+        <xs:annotation><xs:documentation>multi-row records : comma list of &lt;bytes&gt;:&lt;rows&gt;, a run of that length repeated on consecutive rows drawn by one record of up to that many rows ; none for none. Default 2:2,3:2</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="mirrorable" type="xs:boolean">
+        <xs:annotation><xs:documentation>true (default) : each record carries its mirrored delta, the walkers draw a stream in both facings (the other facing through a 256 byte reversal table). false : one facing, one byte less a record</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="save" type="xs:boolean">
+        <xs:annotation><xs:documentation>true (default) : the walkers push on S every screen byte they mask, then a restore code ; spritestream.restore puts a buffer's bytes back, last drawn first. false : no restore (a background)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="opaque" type="xs:boolean">
+        <xs:annotation><xs:documentation>true : rows are cut into masked and opaque segments (whole bytes, data only) at the least cycles. Default false</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="mergepulls" type="xs:boolean">
+        <xs:annotation><xs:documentation>true (default) : the restore routines pull up to three saved groups with one PULS</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="clip" type="xs:boolean">
+        <xs:annotation><xs:documentation>true : the walkers' clip mode, for the engine's spritestream.drawClip (a clip table per facing, the shape and offsets tables, the restore of the rows it cuts). Default false</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="guard" type="xs:boolean">
+        <xs:annotation><xs:documentation>true : each record carries what its draw saves (2 words after the 8 bytes : whole, exactly ; cut by drawClip, at most), and the engine's runtime skips a draw its save stack cannot hold (spritestream.skips counts them) instead of writing past the stack. Needs save. Default false</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -3313,6 +3580,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -3378,6 +3647,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -3476,6 +3747,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -3559,6 +3832,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -3690,6 +3965,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -3782,6 +4059,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -3850,6 +4129,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -3927,6 +4208,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -3995,6 +4278,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -4063,6 +4348,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>
@@ -4137,6 +4424,8 @@
         <xs:element ref="scene"/>
         <xs:element ref="sd"/>
         <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
         <xs:element ref="target"/>
         <xs:element ref="tilecols"/>
         <xs:element ref="tilemap"/>

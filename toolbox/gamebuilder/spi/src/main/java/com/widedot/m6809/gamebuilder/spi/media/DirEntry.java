@@ -28,12 +28,19 @@ public class DirEntry {
 		public final byte[] bytes;
 		public final String name;
 		public final int patchOffset;
+		/** a writable file's data : sectors of its own (MediaDataInterface#cwriteWhole) */
+		public final boolean whole;
 
 		public Pending(String section, byte[] bytes, String name, int patchOffset) {
+			this(section, bytes, name, patchOffset, false);
+		}
+
+		public Pending(String section, byte[] bytes, String name, int patchOffset, boolean whole) {
 			this.section = section;
 			this.bytes = bytes;
 			this.name = name;
 			this.patchOffset = patchOffset;
+			this.whole = whole;
 		}
 	}
 

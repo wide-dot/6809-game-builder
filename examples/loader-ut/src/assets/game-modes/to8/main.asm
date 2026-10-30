@@ -38,6 +38,13 @@
 ;   +18 : T19 composition convergence : converging to a declared state drops
 ;         the scenes it does not hold, loads those it lacks, and leaves the
 ;         intersection untouched — one global link at the end ($E4..$E9)
+;   +19 : T20 prompt hook : installed for T15's switch to disk 1, removed
+;         before the switch back (the loader's own prompt) ; every call that
+;         showed disk 1 (directory 1 is on the target's first <floppydisk>)
+;         followed by one that took it away ($DA)
+;   +20 : T20 trace : the hook's calls with a disk number
+;   +21 : T20 trace : its calls with 0 (the key pressed)
+;   +22 : T20 trace : the last disk number shown
 ;
 ;   +24 : (word, info) value of #marker.cc.begin BEFORE scene "second"
 ;         (expected $0000 : unresolved symbols silently resolve to 0)
@@ -563,11 +570,15 @@ init
         sta   @res15
         _loader.file.linkData.count
         std   test.t15.count
+        ldx   #prompt.hook                    ; T20 : the game's prompt for disk 1
+        jsr   loader.ADDRESS+loader.prompt.hook.set.IDX
         lda   #$D1
         sta   result+27                       ; ask for disk 1
         _loader.dir.load #1
         lda   #$D2
         sta   result+27                       ; disk 1 directory is loaded
+        ldx   #0                              ; the loader's own prompt again
+        jsr   loader.ADDRESS+loader.prompt.hook.set.IDX
         _loader.scene.load #d1.scenes.main
         _ram.cart.set #page.markers
         ; inbound cross-disk fixup : gm.anchor (disk 0) patched into disk 1 data
@@ -784,6 +795,24 @@ init
 @res19  equ   *-1
         jsr   test.next
 
+        ; T20 : the prompt hook (T15's switch to disk 1). With one drive the
+        ; bench sees at least one prompt (ci/toje-bench/loader_ut.py checks
+        ; +20) ; with two drives none. Each shown disk 1 (directory 1 is on
+        ; the target's first <floppydisk>), each taken away.
+        ;   $DA a prompt not taken away, or another disk number
+        lda   result+20
+        cmpa  result+21
+        bne   @f20
+        tsta
+        beq   @ok20                           ; two drives : no prompt
+        lda   result+22
+        cmpa  #1
+        beq   @ok20
+@f20    lda   #$DA
+        bra   @end20
+@ok20   lda   #$01
+@end20  jsr   test.next
+
         ; done : write final status
         lda   #result.DONE_OK
         ldb   test.fails
@@ -864,6 +893,18 @@ marker.check
 ; store result in next slot of the
 ; result table, count failures
 ;---------------------------------------
+; prompt.hook : the game's insert-disk prompt (loader.prompt.hook.set) :
+; A = the disk the player counts, 0 once a key was pressed. DP is the
+; monitor's : extended addressing only.
+prompt.hook
+        tsta
+        beq   @away
+        sta   >result+22                      ; the disk shown
+        inc   >result+20
+        rts
+@away   inc   >result+21
+        rts
+
 test.next
         pshs  b,x
         ldx   #result
