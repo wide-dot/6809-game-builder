@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Generate the periodicband example's test band, src/band.png.
+"""
+Generate the periodicband example's test band, src/band.png.
 
     python3 tools/gen_band.py            # write it
     python3 tools/gen_band.py --check    # exit 1 if the committed one differs

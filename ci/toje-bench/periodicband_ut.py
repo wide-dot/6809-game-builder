@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Replay examples/periodicband under toje, headless : the periodic band bench.
+"""
+Replay examples/periodicband under toje, headless : the periodic band bench.
 
     cd examples/periodicband
     python3 ../../ci/toje-bench/periodicband_ut.py dist/to8.fd
@@ -46,7 +47,7 @@ def check(png, band, phase):
     def screen(x, y):
         return cap.getpixel((32 + 4 * x + 1, 112 + 2 * y))
 
-    w, h = band.size
+    h = band.size[1]
     px = band.load()
     bg = screen(80, 10)
     rel, faults = {'bg': bg}, []

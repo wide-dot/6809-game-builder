@@ -18,7 +18,8 @@ import org.junit.jupiter.api.Test;
  */
 class PeriodicbandPluginTest {
 
-	private static final int P = 48, W = 96;
+	private static final int P = 48;
+	private static final int W = 96;
 
 	/**
 	 * A test card, 96 x 10, period 48 : lines 0-2 full, 3-4 stems, 5-6 empty,
@@ -77,7 +78,10 @@ class PeriodicbandPluginTest {
 	void writerEveryPhase() throws Exception {
 		BufferedImage im = card();
 		PeriodicbandPlugin.Band b = band(im);
-		int bytes = P / 4, table = 2 * bytes, parity = 2 * table, line = 2 * parity;
+		int bytes = P / 4;
+		int table = 2 * bytes;
+		int parity = 2 * table;
+		int line = 2 * parity;
 		// the tables of the first run, as the runtime sees them : one stream
 		int[] stream = new int[3 * line];
 		for (int l = 0; l < 3; l++) {
@@ -85,7 +89,9 @@ class PeriodicbandPluginTest {
 		}
 		for (int p = 0; p < P; p++) {
 			// periodicband.draw's class, the same arithmetic
-			int e = p & 1, s = p >> 1, t = s >> 1;
+			int e = p & 1;
+			int s = p >> 1;
+			int t = s >> 1;
 			boolean swap = (s & 1) != 0;
 			int u = e * parity + (swap ? t + 1 : table + t);
 			int d1 = swap ? table - 1 - bytes : -(table + bytes);
@@ -113,8 +119,10 @@ class PeriodicbandPluginTest {
 		PeriodicbandPlugin.Band b = band(im);
 		int perParity = P / PeriodicbandPlugin.STRIP;
 		for (int p = 0; p < P; p++) {
-			int e = p & 1, q = p - e;
-			int k0 = q / 16, x0 = -(q % 16);
+			int e = p & 1;
+			int q = p - e;
+			int k0 = q / 16;
+			int x0 = -(q % 16);
 			int n = 144 / 16 + (q % 16 != 0 ? 1 : 0);
 			for (int y = b.stemsTop; y <= b.stemsBottom; y++) {
 				for (int x = 0; x < 144; x++) {

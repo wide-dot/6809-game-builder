@@ -21,6 +21,7 @@ import com.widedot.m6809.gamebuilder.plugin.layout.LayoutPlugin;
 import com.widedot.m6809.gamebuilder.plugin.lwasm.LwasmPlugin;
 import com.widedot.m6809.gamebuilder.plugin.sap.SapPlugin;
 import com.widedot.m6809.gamebuilder.plugin.sd.SdPlugin;
+import com.widedot.m6809.gamebuilder.plugin.tilemap.PeriodicbandPlugin;
 import com.widedot.m6809.gamebuilder.spi.DefaultPluginInterface;
 import com.widedot.m6809.gamebuilder.spi.FilePluginInterface;
 import com.widedot.m6809.gamebuilder.spi.ObjectPluginInterface;
@@ -342,7 +343,7 @@ public final class Handlers {
 		FILES.put("tilemap", com.widedot.m6809.gamebuilder.plugin.tilemap.TilemapPlugin::getFile);
 		FILES.put("backlines", com.widedot.toolbox.graphics.backlines.BacklinesPlugin::getFile);
 		FILES.put("tilecols", com.widedot.m6809.gamebuilder.plugin.tilemap.TilecolsPlugin::getFile);
-		FILES.put("periodicband", com.widedot.m6809.gamebuilder.plugin.tilemap.PeriodicbandPlugin::getFile);
+		FILES.put("periodicband", PeriodicbandPlugin::getFile);
 		FILES.put("tilepatch", com.widedot.m6809.gamebuilder.plugin.tilemap.TilepatchPlugin::getFile);
 		FILES.put("tilereset", com.widedot.m6809.gamebuilder.plugin.tilemap.TileresetPlugin::getFile);
 		FILES.put("imageset", com.widedot.toolbox.graphics.gfxcomp.ImagesetPlugin::getFile);
