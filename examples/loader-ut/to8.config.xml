@@ -461,6 +461,8 @@
             <define symbol="loader.file.linkData.SLOTS" value="32"/>
 
             <define symbol="boot.CHECK_MEMORY_EXT"/>
+            <!-- T20 : the game's insert-disk prompt (loader.prompt.hook.set) -->
+            <define symbol="loader.PROMPT_HOOK"/>
 
             <data section="LOADER">
                 <lwasm format="raw" gensource="gen/bootloader/loader.asm">

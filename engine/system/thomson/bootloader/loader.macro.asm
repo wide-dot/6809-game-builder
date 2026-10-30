@@ -27,6 +27,27 @@ _loader.dir.load MACRO
         jsr   loader.ADDRESS+loader.dir.load.IDX
  ENDM
 
+; loads a file whole at a destination : \1 file id, \2 page, \3 address (its
+; directory in memory : _loader.dir.load first)
+_loader.file.load MACRO
+        ldx   \1
+        ldb   \2
+        ldu   \3
+        jsr   loader.ADDRESS+loader.file.load.IDX
+ ENDM
+
+; writes a <file writable="true"> back over its sectors from RAM : \1 file id,
+; \2 source page, \3 source address (its directory in memory : _loader.dir.load
+; with <name>.dir first). CC : cs = not written, B = why (DK.STA ; $80 : the
+; file cannot be written in place). Needs loader.FILE_WRITE (a writable file
+; in the target).
+_loader.file.save MACRO
+        ldx   \1
+        ldb   \2
+        ldu   \3
+        jsr   loader.ADDRESS+loader.file.save.IDX
+ ENDM
+
 _loader.file.getPageID MACRO
         ldd   \1
         jsr   loader.ADDRESS+loader.file.getPageID.IDX

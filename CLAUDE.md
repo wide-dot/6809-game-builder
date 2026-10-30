@@ -155,8 +155,19 @@ la description de la PR en garde la trace.
   l'IRQ active, depuis le 18/10/2026),
   `examples/tlsf-ut` (tests unitaires TLSF sur machine),
   `examples/bm4s` (le 320x200 4 couleurs `$41` : `videomode="bm4s"` de
-  gfxcomp, `_gfxmode.setBM4S`, banc `ci/toje-bench/bm4s_ut.py`),
-  `examples/mplus` (bancs de test carte son MPLUS : DAC, MIDI 6850, MEA8000, SN76489, YM2413).
+  gfxcomp, `_gfxmode.setBM4S`, banc `ci/toje-bench/bm4s_ut.py` ; les
+  demi-paires transparentes passent par l'encodeur `draw` seul, masquées
+  pixel par pixel, depuis le 27/10/2026),
+  `examples/spritestream` (sprites par flux bm4s et leur mode clip : 44/44
+  rejoués contre `bench.ref`, chaque tracé contre un second chemin ; la
+  garde de la pile de sauvegarde, `guard="true"`, t43-t44, depuis le
+  27/10/2026),
+  `examples/mplus` (bancs de test carte son MPLUS : DAC, MIDI 6850, MEA8000, SN76489, YM2413),
+  `examples/keyboard` (la trame du 6804 lue par `keyboard.fast`, banc
+  `ci/toje-bench/keyboard_ut.py`, 13/13 sous toje corrigé),
+  `examples/save` (un fichier `writable` réécrit par `loader.file.save` et
+  retrouvé au boot suivant, banc `ci/toje-bench/save_ut.py`, 8/8, depuis le
+  28/10/2026).
 - **État de validation au 13/08/2026** : le corpus compte **15 configs et
   63 images** (11 exemples dont collection/stacked-overflow/hscroll/
   tilescroll/objects/sprites, plus `games/r-type` — sorti du moteur le
@@ -189,7 +200,7 @@ la description de la PR en garde la trace.
 | Audio VGC (SN76489) + YMM (YM2413) + outils `vgm2vgc`/`vgm2ymm`/`vgm2sfx` | `engine/sound/`, `toolbox/audio/` | Démontré TO8 **et** MO6 (`examples/sound`) — R-Type v1 utilise exactement YMM + soundFX |
 | Double buffering `gfxlock` (swap sur IRQ 50 Hz, compteurs frame/frame-drop) — le seul double buffer, contrat dans [`gfxlock.md`](docs/lang/en/gfxlock.md) | `engine/graphics/buffer/` (les jeux, import v1) ; `engine/system/thomson/graphics/buffer/` (base v2 : MO6, MPLUS) | Porté de la v1 ; base du timing gameplay |
 | IRQ 50 Hz + sync ligne écran, palette, bank switching, modes vidéo | `engine/system/{to8,mo6}/` | Fonctionnel, minimal |
-| Contrôleurs : clavier, clavier rapide, joypad, pad Megadrive 6 boutons | `engine/system/{to8,mo6}/controller/` | Équivalent v1 (dont `joypad.kb`) |
+| Contrôleurs : clavier, clavier rapide, joypad, pad Megadrive 6 boutons | `engine/system/{to8,mo6}/controller/` | Équivalent v1 (dont `joypad.kb`). Sur TO8, `keyboard.fast` lit la trame du 6804 (touche, Shift, CNT) depuis le 27/10/2026, voir plus bas |
 | Sprites compilés : `gfxcomp` (PNG → code 6809) **+ le runtime de dessin** | `toolbox/graphics/gfxcomp/`, `engine/graphics/sprite/` | Chaîne complète depuis le 01/08/2026 : `<gfxcomp>` dans le config.xml, index imageset avec page résolue au load-time link, runtime v1 importé 1:1. Les **quatre encodeurs** sont exercés, images compressées comprises (`engine/graphics/codec/zx0_mega.asm` importé, décompresseur rendu relogeable). Banc `examples/sprites` validé sous toje, banc générateur-vs-générateur 11/11. Un set trop gros pour une page est une **collection** (le packer la coule dans les creux d'une arène) et s'indexe par l'élément `<imageset>`, qui grave une page **par image** (comme la v1). Doc : [`sprites.md`](docs/lang/en/sprites.md) |
 | Autres outils graphiques : `png2bin` (+ buffers `-vs/-vst/-hs`), `png2pal`, `stm2bin`, `leanscroll` | `toolbox/graphics/` | Substantiels mais sans consommateur runtime |
 | wddebug | `toolbox/debug/` | Très actif ; ses vues sprites/collisions/objets débuggent les structures v1 en attendant la v2 |
@@ -678,6 +689,11 @@ sans lire le disque une scène sans données de lien. `<sd drive="1">` met une
 disquette dans les unités 2/3 du même .sd. Loader : +281 octets sur sonic
 (4 148 → 4 429). Manuel : `config.md`, *Several disks*. Bancs : loader-ut
 un lecteur et `--two-drives` (toje `feature/second-drive`), r-type 7/7.
+L'invite du jeu (28/10/2026) : `<define symbol="loader.PROMPT_HOOK"/>` +
+`loader.prompt.hook.set` (table de saut 57) — le loader appelle la routine
+du jeu avec A = le disque (1-9), attend la touche, la rappelle avec A = 0 ;
+avant le texte de la barre et celui du moniteur. 49 octets, rien sans le
+define. Banc loader-ut T20 ; manuel `config.md`, *The game's prompt*.
 
 ## La barre de chargement : le loader compte, l'engine dessine (07/09/2026)
 
@@ -893,6 +909,89 @@ de place. Pas de réglage (décision auteur, 16/10) : r-type sort identique
 à l'octet, sans `<composition>` le rangement par arène reste (rien n'y dit
 qui peut partager des octets), la passe de découverte aussi. Code :
 `ArenaPacker.packFiles`, tests `ArenaPackerFileTest`, manuel `scenes.md`.
+
+## Sprites par flux bm4s : `<spritestream>` (27/10/2026, branche locale)
+
+Un gestionnaire de sprites qui stocke des données au lieu de code : chaque
+image bm4s (PNG indexé, 0 transparent, 1-4 les couleurs) devient un flux de
+segments de ligne masqués (masque + donnée par octet écran, ~3 octets par
+octet dessiné contre ~6 en compilé), tiré à l'exécution par des **walkers
+générés** pour tout le jeu de formes : les deux facings depuis un seul flux
+(table d'inversion de 256 octets), la sauvegarde des octets masqués fusionnée
+au dessin (pile S, un walker de restauration par tampon, dernier dessiné
+premier rendu). Module `toolbox/graphics/spritestream` (élément
+`<spritestream>` : `<sprite>` → enregistrements + flux, en pièces d'une
+collection ; `genwalker` → walkers et tables, mis en place par la taille
+exacte de chaque instruction autour des tables alignées) ; runtime
+`engine/graphics/sprite/stream/spritestream.asm` (+ `.const.asm`), une copie
+par moitié de la demi-page vidéo `$4000-$5FFF` (le gfxlock y monte celle du
+tampon dessiné : chaque moitié porte sa pile de sauvegarde). Manuel
+[`spritestream.md`](docs/lang/en/spritestream.md).
+
+**Validé** contre le prototype mesuré du jeu consommateur (flux et routines
+identiques à l'octet, 96 images d'une mire en JUnit ; sous toje dans l'arbre
+du jeu : chaque image dans ses 8 tracés exacte et restaurée, 2 096 trames
+réelles en double tampon, mêmes cycles au cycle près — la restauration perd
+seulement un `jmp`, −4).
+
+**Clipping : le mode clip des walkers** (option A de l'étude du jeu, choisie
+par l'auteur), opt-in par `clip="true"` sur `<spritestream genwalker>`,
+`spritestream.drawClip` dans le runtime : une table de saut de clip par
+facing dont les entrées sont des handlers (enregistrement entier → sa
+routine, caché → sauté, coupé → boucle serrée octet par octet, sauvé au fil
+du tracé, un enregistrement de restauration par rangée). Mêmes flux avec ou
+sans. Coût : walkers +260 octets, runtime +1 063 ; mesuré sur le jeu,
++412 cycles par trame en moyenne sur 5 743 trames réelles découpées comme
+l'original, sous le temps de l'Apple sur les trois découpes réelles du
+personnage debout. JUnit `ClipTest` (un modèle du chemin coupé lisant les
+tables générées, contre le décodeur, chaque fenêtre de colonnes) ; banc
+`examples/spritestream` (42/42, `ci/toje-bench/bench.py`, chaque tracé
+contre un second chemin). Branche `feat/bm4s-sprite-stream`, en pull
+request.
+
+## Clavier TO8 : `keyboard.fast`, la trame du 6804 (27/10/2026)
+
+Le moniteur lit chaque trame du 6804 sous son interruption CP1 et n'en garde
+que le caractère : Shift + flèche y est la flèche, CNT-J la flèche bas.
+`keyboard.fast` (TO8) coupe cette interruption et lit la trame de 9 bits
+lui-même, avec les instructions chronométrées du récepteur du moniteur
+(banque 1 `$F08E-$F0F4`) : numéro de touche, Shift, CNT. L'ancien
+`keyboard.fast` (un « une touche ? » par KTEST plus un ACK sans lecture, jamais
+terminé ni testé, inclus pour rien par `mplus`) est remplacé sous le même nom ;
+le MO6 n'est pas touché (pas de 6804). `init` (interruption coupée, verrou
+majuscules levé : le bit Shift de la trame vaut aussi pour CAPS LOCK engagé,
+manuel technique), `read` (C = 1, D = la trame ; `pressed`/`held` comme
+`keyboard.read`), `poll` (à placer en tête de la routine IRQ : le drapeau CP1
+du 6846 s'efface sur lecture du CSR puis accès à `$E7C3`, ce que font
+l'entrée IRQ du moniteur et le gfxlock — à vérifier sur machine). 269 octets ;
+`read` 115 cycles sans trame, ~1 520 avec. Manuel
+[`keyboard.md`](docs/lang/en/keyboard.md), constantes `scancode.const.asm`.
+Banc `examples/keyboard` + `ci/toje-bench/keyboard_ut.py` (13/13) : il exige
+un toje dont le 6804 laisse CRC bit 0 au CPU et dont le 6846 lâche sa ligne
+IRQ quand CP1 n'est pas autorisé (wide-dot/toje#64) ; le toje publié 1.9.0
+échoue (le moniteur prend toutes les trames).
+
+## Sauvegarde sur disquette : `writable` et `loader.file.save` (28/10/2026)
+
+`<file writable="true" codec="none">` : un fichier que le jeu réécrit sur
+ses propres secteurs (une sauvegarde). Le builder le pose sur des secteurs
+entiers à lui (il saute un secteur que le précédent a entamé, sa taille est
+arrondie à 256 × n, le suivant repart sur un secteur neuf), publie
+`<nom>.dir` (l'id de son répertoire) et écrit `loader.FILE_WRITE equ 1`
+dans `gen/directories/locations.asm` : sans fichier writable, le loader est
+identique à l'octet (corpus : 121 images inchangées). Refusés au build :
+codec, `linkdata`, table de scène, membre de collection.
+`loader.file.save` (table de saut 54, X = id, B = page, U = source, après
+`_loader.dir.load`) : C = 0 écrit, sinon B = `$80` (pas inscriptible sur
+place) ou `DK.STA` (`$01` protégée). Il relit d'abord le répertoire
+depuis le lecteur (`dir.load` ne fait rien quand il est déjà en mémoire) :
+une autre disquette, ou aucune, passe par l'invite, jamais une écriture
+sur la mauvaise. 172 octets dans le loader.
+**Fait de la ROM du TO8** : DKCONT dispatche sur le bit le plus bas de
+`DK.OPC`, et l'écriture d'un secteur est **`$08`** ; `$04` ne fait que
+poser un drapeau et rend C = 0 sans rien écrire. Manuel
+[`save.md`](docs/lang/en/save.md), banc `examples/save` sous toje (image
+montée en écriture par `mount_disk`).
 
 ## Fidélité arcade de R-Type
 

@@ -19,7 +19,10 @@ import java.awt.image.WritableRaster;
  * (the palette entries the mode shows). Packed convention, the encoders' :
  * index 0 transparent, 1 to 16 the BM16 colour + 1. BM16 transparency goes by
  * pixel, so a pair is transparent as a whole or not at all : a half
- * transparent pair cannot be drawn and is refused, as is an odd width.
+ * transparent pair is refused, as is an odd width — unless the caller draws it
+ * apart (the draw encoder : halves) : it is then transparent in the packed
+ * picture, and halves() gives its opaque pixel, which the encoder lays with a
+ * mask of that pixel's two bits.
  */
 public final class PixelPairs {
 
@@ -33,6 +36,16 @@ public final class PixelPairs {
 	// the toolchain signals build errors with plain Exceptions
 	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 	public static BufferedImage pack(BufferedImage src, String file) throws Exception {
+		return pack(src, file, false);
+	}
+
+	/**
+	 * the packed picture ; halves : a half transparent pair is accepted and
+	 * packed transparent (its opaque pixel : halves())
+	 */
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	public static BufferedImage pack(BufferedImage src, String file, boolean halves) throws Exception {
 		int width = src.getWidth();
 		int height = src.getHeight();
 		if (width % 2 != 0) {
@@ -48,7 +61,30 @@ public final class PixelPairs {
 		WritableRaster out = dst.getRaster();
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x += 2) {
-				out.setSample(x / 2, y, 0, pair(file, x, y, in.getSample(x, y, 0), in.getSample(x + 1, y, 0)));
+				out.setSample(x / 2, y, 0, pair(file, x, y, in.getSample(x, y, 0), in.getSample(x + 1, y, 0), halves));
+			}
+		}
+		return dst;
+	}
+
+	/**
+	 * the half transparent pairs of a source pack() accepted them in, at the
+	 * packed picture's size : per pair 0 (none), 1 to 4 the left pixel opaque
+	 * in the colour 0 to 3, 5 to 8 the right one
+	 */
+	public static BufferedImage halves(BufferedImage src) {
+		int width = src.getWidth();
+		int height = src.getHeight();
+		BufferedImage dst = new BufferedImage(width / 2, height, BufferedImage.TYPE_BYTE_INDEXED, packedModel());
+		WritableRaster in = src.getRaster();
+		WritableRaster out = dst.getRaster();
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x += 2) {
+				int left = in.getSample(x, y, 0);
+				int right = in.getSample(x + 1, y, 0);
+				if ((left == 0) != (right == 0)) {
+					out.setSample(x / 2, y, 0, left != 0 ? left : right + COLOURS);
+				}
 			}
 		}
 		return dst;
@@ -57,13 +93,16 @@ public final class PixelPairs {
 	/** the packed index of the pair at (x, y), 0 when both are transparent */
 	// the toolchain signals build errors with plain Exceptions
 	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
-	private static int pair(String file, int x, int y, int left, int right) throws Exception {
+	private static int pair(String file, int x, int y, int left, int right, boolean halves) throws Exception {
 		if (left > COLOURS || right > COLOURS) {
 			throw new Exception(file + " : pixel (" + (left > COLOURS ? x : x + 1) + "," + y + ") has index "
 					+ Math.max(left, right) + ", a bm4s picture has " + COLOURS
 					+ " colours (indexes 1 to " + COLOURS + ", 0 transparent)");
 		}
 		if ((left == 0) != (right == 0)) {
+			if (halves) {
+				return 0;                      // drawn apart (halves())
+			}
 			throw new Exception(file + " : the pixel pair (" + x + "," + y + ")-(" + (x + 1) + "," + y
 					+ ") is half transparent : in bm4s transparency goes by pixel pairs");
 		}

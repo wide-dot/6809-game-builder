@@ -118,6 +118,16 @@ fileid   rmb types.WORD   ; [0000 000] [0000 000]    - [file id]
         jmp   >loader.dir.unload           ; OK
         jmp   >loader.loadbar.set          ; OK
         jmp   >loader.loadbar.text.set     ; OK
+ IFDEF loader.FILE_WRITE                   ; a <file writable="true"> in the target
+        jmp   >loader.file.save            ; OK
+ ELSE
+  IFDEF loader.PROMPT_HOOK
+        jmp   >loader.file.unwritable      ; the next entry keeps its offset
+  ENDC
+ ENDC
+ IFDEF loader.PROMPT_HOOK                  ; <define symbol="loader.PROMPT_HOOK"/>
+        jmp   >loader.prompt.hook.set      ; OK
+ ENDC
 
 ; callbacks that can be modified by user at runtime
 error   jmp   >dskerr     ; Called if a read error is detected
@@ -147,6 +157,9 @@ dirEntry  fdb 0    ; This directory's location entry (byte 1 : the drive found)
 dirTries  fcb 0    ; 0 : first try of a round, $FF : the other drive's
 dirAsked  fcb 0    ; nonzero once the player was prompted for this directory
 noDrive2  fcb 0    ; nonzero : the second drive answered "not ready"
+ IFDEF loader.PROMPT_HOOK
+prompt.hook fdb 0  ; the game's insert-disk prompt, 0 : the loader's own
+ ENDC
 dirSkew   fcb 0    ; Interleave skew of that directory's track (skewtab,
                    ; same rule as ldsec) : the media rotates the soft
                    ; interleave map every track, so the sclist index is
@@ -692,6 +705,29 @@ loader.loadbar.text.set
         stx   >loadbar.text
         rts
 
+ IFDEF loader.PROMPT_HOOK
+;-----------------------------------------------------------------
+; loader.prompt.hook.set
+;
+; input  REG : [X] the game's prompt routine (0 : the loader's own)
+;-----------------------------------------------------------------
+; When a disk is missing, the routine is called with A = the disk the
+; player counts (1-9) ; the loader then waits for a key, and calls it
+; again with A = 0 before it reads : the game takes its text away.
+; Registers are free but DP ($60, the monitor's) ; the data window must
+; hold the loader again on return.
+;-----------------------------------------------------------------
+loader.prompt.hook.set
+        stx   >prompt.hook
+        rts
+  IFNDEF loader.FILE_WRITE
+loader.file.unwritable
+        ldb   #$80                ; no writable file in the target
+        orcc  #$01
+        rts
+  ENDC
+ ENDC
+
 
 ; X source, U destination, B bytes (1-255)
 loader.copy
@@ -1167,6 +1203,115 @@ ldsec1  ldd   >track              ; read track/sect
         jsr   >pulse              ; send sector pulse
         puls  x,y,u,pc
 
+ IFDEF loader.FILE_WRITE
+;---------------------------------------
+; loader.file.save
+;
+; input  REG : [X] file id
+; input  REG : [B] source - page number
+; input  REG : [U] source - address
+; output REG : [CC] C = 0 written
+;              C = 1 not written, [B] why : the monitor's DK.STA ($01 write
+;              protected, $02 timing, $04 sector, $08 data, $10 not
+;              ready) or $80 : the file cannot be written in place
+;---------------------------------------
+; Write a file back over its own sectors
+; on the disk, from RAM : a save game.
+;---------------------------------------
+; Only a <file writable="true"> can be
+; written : the builder stores it raw, on
+; whole sectors no other file shares (its
+; size rounded up to them), so writing it
+; never touches a neighbour and file.load
+; reads it back. Its directory must be the
+; one in memory (loader.dir.load first,
+; with <name>.dir), as for file.load ; it
+; is read again from the drive before the
+; write (one directory read) : another
+; disk, or none, goes through the insert
+; prompt. A failed write is the caller's
+; to handle : no retry, no I/O Error.
+;---------------------------------------
+loader.file.save
+        pshs  dp,a,x,y,u
+        pshs  b,x,u
+        ldy   >loader.dir         ; the disk in the drive checked first : its
+        lda   dir.header.diskId,y ; directory read again (tag and id ; the
+        clr   >loader.dir         ; prompt when it is another disk or none),
+        clr   >loader.dir+1       ; never a write on a disk taken for another
+        jsr   loader.dir.load
+        puls  b,x,u
+        jsr   ram.set
+        jsr   loader.dir.getFile
+        ldd   dir.entry.sizea,y   ; whole sectors only : no partial
+        bne   @refuse             ; first one (and not an empty file),
+        lda   dir.entry.sizez,y   ; no partial last one,
+        bne   @refuse
+        lda   dir.entry.bitfld,y  ; not compressed
+        bmi   @refuse
+        ldb   dir.entry.nsector,y
+        beq   @refuse
+        lda   #map.REG.DP
+        tfr   a,dp                ; the monitor's registers
+        stb   >nsect
+        ldd   dir.entry.track,y   ; track, face and sector
+        std   >track
+        ldd   #$ffff              ; ptsec may hold a sector this writes :
+        std   >ptsec.key          ; the cache no longer vouches for it
+@sector stu   <map.DK.BUF
+        bsr   wrsec
+        bcs   @out                ; B = DK.STA
+        leau  256,u
+        tst   >nsect
+        bne   @sector
+        andcc #$FE                ; written
+@out    puls  dp,a,x,y,u,pc
+@refuse ldb   #$80
+        orcc  #$01
+        puls  dp,a,x,y,u,pc
+
+* Write a sector : ldsec's addressing (the drive from the face bit, the
+* interleave), the monitor's write operation, one retry but on a write
+* protected disk. C = 1 : not written, B = DK.STA.
+wrsec   pshs  x,y,u
+        lda   >track              ; [0000 000] track [0] drive
+        lsr   <map.DK.DRV         ; make room to drive id
+        lsra                      ; set cc with bit0 (drive) of track variable
+        rol   <map.DK.DRV         ; set bit0 of drive id with cc
+        ldb   >track
+        lsrb                      ; the track number
+        andb  #loader.interleave.SKEW_MASK
+        ldx   #skewtab
+        ldb   b,x
+        addb  >sector
+        andb  #$0f
+        ldx   #sclist
+        ldb   b,x                 ; the physical sector
+        clr   <map.DK.TRK
+        std   <map.DK.TRK+1       ; track/sector
+        ldb   #$08                ; operation : write sector (the disk ROM's table at
+        stb   <map.DK.OPC         ; $E0F0 by the lowest bit set : $04 only sets a flag)
+        jsr   >map.DKCONT
+        bcc   @next
+        ldb   <map.DK.STA
+        bitb  #$01                ; write protected : no use trying again
+        bne   @fail
+        ldb   #$08
+        stb   <map.DK.OPC         ; (a failed call may leave it changed)
+        jsr   >map.DKCONT
+        bcc   @next
+        ldb   <map.DK.STA
+@fail   orcc  #$01
+        puls  x,y,u,pc
+@next   ldd   >track              ; next sector, face, track : as ldsec1
+        addd  #$f1
+        andb  #$0f
+        std   >track
+        dec   >nsect
+        andcc #$FE
+        puls  x,y,u,pc
+ ENDC
+
 * Default exit on a read error the retry did not cure (the `error` slot of
 * the jump table, a game may point it elsewhere) : the readable message,
 * not the reset it used to be — a reset on the real machine told nothing.
@@ -1295,13 +1440,30 @@ err2    ldb   ,u+                ; Read char
         andb  #$7f               ; Mask char
 err3    _monitor.jmp.putc
 
-* The insert-disk prompt, then a keystroke. With the loader's bar on
+* The insert-disk prompt, then a keystroke. With a prompt hook
+* (loader.prompt.hook.set) : the game's routine shows it and takes it away.
+* With the loader's bar on
 * screen (its hook installed, a place given for its text) : "DISK n"
 * drawn by the bar in its page and its colours — no mode, page or palette
 * to take back (loadbar.asm). Otherwise the monitor's text at lines 11-13
 * of the page it writes, as always.
 info    pshs  d,x,y,u
-        ldd   >loader.progress.hook
+ IFDEF loader.PROMPT_HOOK
+        ldx   >prompt.hook
+        beq   @bar
+        lda   >messdiskId
+        anda  #$0F                ; the disk number, 1-9
+        jsr   ,x                  ; the game shows it
+@hup    _loader.keyDown
+        bcs   @hup
+@hdown  _loader.keyDown
+        bcc   @hdown
+        clra
+        ldx   >prompt.hook
+        jsr   ,x                  ; A = 0 : the key pressed, its text away
+        puls  d,x,y,u,pc
+ ENDC
+@bar    ldd   >loader.progress.hook
         cmpd  #loadbar.hook
         bne   @text
         ldd   >loadbar.text

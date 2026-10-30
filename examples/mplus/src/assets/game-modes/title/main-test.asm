@@ -172,7 +172,6 @@ main.str.KO         fcs "KO"
  IFDEF TO8
         INCLUDE "engine/system/to8/irq/irq.asm"
         INCLUDE "engine/system/to8/map.const.asm"
-        INCLUDE "engine/system/to8/controller/keyboard.fast.asm"
  ENDC
 
  IFDEF MO6       
