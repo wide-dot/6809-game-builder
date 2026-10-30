@@ -1,33 +1,31 @@
 #!/usr/bin/env python3
-"""
-Replay examples/periodicband under toje, headless : the periodic band bench.
+"""Replay examples/periodicband under toje, headless : the periodic band bench."""
 
-    cd examples/periodicband
-    python3 ../../ci/toje-bench/periodicband_ut.py dist/to8.fd
-
-The game mode draws the band (src/band.png, period 48) at each of its 48
-phases in turn, on a screen filled with colour 15 (a colour the band never
-uses). The script arms the bench ($A5 at $9C05) : the game mode then holds
-each phase until the script, its capture checked, writes the counter back
-($9C02 -> $9C04). The witnesses say which phase is on screen (+1) and when
-both buffers hold it (+2 moves).
-
-For every phase, the capture is compared with the picture at that phase :
-
-1. inside the window (x 8-151, lines 60-99) each pixel shows the picture's
-   pixel (x - 8 + phase) mod 48, the background where the picture is
-   transparent : the picture index -> screen colour relation must be a
-   function, and one to one (no two indexes on one colour) ;
-2. outside the window, everything is the background, but for the side
-   margins (x 0-7 and 152-159) of the band's lines and of the lines just
-   above and below : the strips may spill there (the runtime's contract, a
-   playfield mask covers them in a game).
-
-toje's capture is 704x624 : the 320x200 screen at (32, 112), a BM16 pixel
-4 capture pixels wide and 2 tall.
-
-Exit code : 0 pass, 1 fail, 2 no verdict.
-"""
+#     cd examples/periodicband
+#     python3 ../../ci/toje-bench/periodicband_ut.py dist/to8.fd
+#
+# The game mode draws the band (src/band.png, period 48) at each of its 48
+# phases in turn, on a screen filled with colour 15 (a colour the band never
+# uses). The script arms the bench ($A5 at $9C05) : the game mode then holds
+# each phase until the script, its capture checked, writes the counter back
+# ($9C02 -> $9C04). The witnesses say which phase is on screen (+1) and when
+# both buffers hold it (+2 moves).
+#
+# For every phase, the capture is compared with the picture at that phase :
+#
+# 1. inside the window (x 8-151, lines 60-99) each pixel shows the picture's
+#    pixel (x - 8 + phase) mod 48, the background where the picture is
+#    transparent : the picture index -> screen colour relation must be a
+#    function, and one to one (no two indexes on one colour) ;
+# 2. outside the window, everything is the background, but for the side
+#    margins (x 0-7 and 152-159) of the band's lines and of the lines just
+#    above and below : the strips may spill there (the runtime's contract, a
+#    playfield mask covers them in a game).
+#
+# toje's capture is 704x624 : the 320x200 screen at (32, 112), a BM16 pixel
+# 4 capture pixels wide and 2 tall.
+#
+# Exit code : 0 pass, 1 fail, 2 no verdict.
 import os
 import signal
 import sys

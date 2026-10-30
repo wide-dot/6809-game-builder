@@ -1,29 +1,27 @@
 #!/usr/bin/env python3
-"""
-Generate the periodicband example's test band, src/band.png.
+"""Generate the periodicband example's test band, src/band.png."""
 
-    python3 tools/gen_band.py            # write it
-    python3 tools/gen_band.py --check    # exit 1 if the committed one differs
-
-Not artwork : a measuring pattern, period 48 px, two periods wide (96 x 40).
-
-  lines  0-7   FULL : every pixel opaque, drawn by the runtime's writer
-  lines  8-15  STEMS : diagonal strokes, transparent between them
-  lines 16-23  empty
-  lines 24-31  STEMS, the strokes the other way
-  lines 32-39  FULL
-
-On a full line the colour is 1 + (7x + y) mod 15 : two neighbours never share
-a colour (7 is prime to 15) and the period of the colours (15) is not the
-band's, so a pair taken one pixel off, a swapped plane or a wrong rotation
-shows a wrong colour instead of a plausible picture. The strokes leave half
-bytes transparent, the case where a compiled strip must mask.
-
-Palette convention of gfxcomp : index 0 transparent, indices 1..16 the TO8
-colours 0..15. Index 16 (colour 15) is left out of the band : it is the
-background the game mode fills the screen with, so a transparent pixel drawn
-by mistake, or a pixel spilled where it should not be, is seen.
-"""
+#     python3 tools/gen_band.py            # write it
+#     python3 tools/gen_band.py --check    # exit 1 if the committed one differs
+#
+# Not artwork : a measuring pattern, period 48 px, two periods wide (96 x 40).
+#
+#   lines  0-7   FULL : every pixel opaque, drawn by the runtime's writer
+#   lines  8-15  STEMS : diagonal strokes, transparent between them
+#   lines 16-23  empty
+#   lines 24-31  STEMS, the strokes the other way
+#   lines 32-39  FULL
+#
+# On a full line the colour is 1 + (7x + y) mod 15 : two neighbours never share
+# a colour (7 is prime to 15) and the period of the colours (15) is not the
+# band's, so a pair taken one pixel off, a swapped plane or a wrong rotation
+# shows a wrong colour instead of a plausible picture. The strokes leave half
+# bytes transparent, the case where a compiled strip must mask.
+#
+# Palette convention of gfxcomp : index 0 transparent, indices 1..16 the TO8
+# colours 0..15. Index 16 (colour 15) is left out of the band : it is the
+# background the game mode fills the screen with, so a transparent pixel drawn
+# by mistake, or a pixel spilled where it should not be, is seen.
 import io
 import os
 import sys
