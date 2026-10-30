@@ -167,7 +167,10 @@ la description de la PR en garde la trace.
   `ci/toje-bench/keyboard_ut.py`, 13/13 sous toje corrigé),
   `examples/save` (un fichier `writable` réécrit par `loader.file.save` et
   retrouvé au boot suivant, banc `ci/toje-bench/save_ut.py`, 8/8, depuis le
-  28/10/2026).
+  28/10/2026),
+  `examples/periodicband` (une bande qui répète tous les 48 px, dessinée à
+  ses 48 phases sur un fond qu'elle n'utilise pas : 48/48 captures exactes
+  sous toje, `ci/toje-bench/periodicband_ut.py`, depuis le 30/10/2026).
 - **État de validation au 13/08/2026** : le corpus compte **15 configs et
   63 images** (11 exemples dont collection/stacked-overflow/hscroll/
   tilescroll/objects/sprites, plus `games/r-type` — sorti du moteur le
@@ -992,6 +995,26 @@ sur la mauvaise. 172 octets dans le loader.
 poser un drapeau et rend C = 0 sans rien écrire. Manuel
 [`save.md`](docs/lang/en/save.md), banc `examples/save` sous toje (image
 montée en écriture par `mount_disk`).
+
+## La bande périodique : `<periodicband>` (30/10/2026)
+
+Un décor qui répète le long de x avec une courte période (le plafond et le
+sol du stage 5 de r-type : 48 px, un tiers de la fenêtre) se dessine sans
+tilemap. `<periodicband>` (handler du cœur, `PeriodicbandPlugin`) lit
+l'image d'une période (au moins), vérifie la période pixel par pixel, et
+sépare ses lignes : les lignes PLEINES deviennent des tables (les 12 octets
+d'un plan doublés, par parité), les autres une planche de bandes de 16 px
+qu'une `<gfxcomp grid>` compile dans la même unité. Le runtime
+`engine/graphics/tilemap/periodicband/periodicband.asm` (opt-in, inclus à
+la demande) écrit les lignes pleines à la manière du fond montagne de
+lotus-adnz — `pulu` une fois, `std`/`stx` trois fois sur la fenêtre de
+144 px, plans échangés pour le pas de 2 px, ni S ni IRQ — puis appelle 9 ou
+10 bandes, qui débordent dans les marges de 8 px (un masque doit les
+couvrir). 305 cycles par ligne pleine. Écrit pour une période de 48 px
+dans 144 px (autre géométrie : erreur d'assemblage nommée). Banc
+`examples/periodicband` 48/48, JUnit au modèle des lectures du runtime,
+corpus identique à l'octet (116 images). r-type stage 5 : tuiles 36 000 →
+~17 900 cycles par rendu. Manuel : `tilemaps.md`, *A periodic band*.
 
 ## Fidélité arcade de R-Type
 
