@@ -382,6 +382,25 @@ terrainCollision.box.y     fdb 0
 terrainCollision.box.y1    fdb 0
  ENDC
 
+; OFF THE MAP (TERRAIN_OFFMAP_ROWS) : the table only covers the map's lines,
+; 11..190 ; a sensor above or below indexed whatever surrounds it — code, the
+; next map — and read walls at random (a Bink falling into a pit landed on the
+; screen's bottom edge, stage 6 : 70 walls in 136 probes under line 190). The
+; arcade's probe reads empty rows there : its tile plane has rows under the
+; play area, and a probe above the screen comes down to them. Defined, the
+; table gets the lines -24..10 and 191..220, all on the rows past the map's
+; last : the unit puts EMPTY rows after each map the table reads — one row
+; (lvlMapWidth bytes), or five under BG_OWN_CAMERA, whose background reads
+; its own map on (rows 30..34, its seam padded to match). Not defined, the
+; unit is byte for byte what it was.
+ IFDEF TERRAIN_OFFMAP_ROWS
+        ; lines -24..10, 35 entries : the empty row past the map
+        fdb   30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth
+        fdb   30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth
+        fdb   30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth
+        fdb   30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth
+        fdb   30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth
+ ENDC
 terrainCollision.yOffset equ *-22 ; minus vertical viewport position * 2
         fdb   00*lvlMapWidth,00*lvlMapWidth,00*lvlMapWidth,00*lvlMapWidth,00*lvlMapWidth,00*lvlMapWidth
         fdb   01*lvlMapWidth,01*lvlMapWidth,01*lvlMapWidth,01*lvlMapWidth,01*lvlMapWidth,01*lvlMapWidth
@@ -417,6 +436,22 @@ terrainCollision.yOffset equ *-22 ; minus vertical viewport position * 2
         ; le reste sous-ligne de la camera de fond (0..5) s'ajoute a l'index
         ; AVANT la quantification : la derniere ligne deborde d'autant
         fdb   30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth
+  IFDEF TERRAIN_OFFMAP_ROWS
+        ; lines 197..220 : the rows on, the background's own map goes on
+        fdb   31*lvlMapWidth,31*lvlMapWidth,31*lvlMapWidth,31*lvlMapWidth,31*lvlMapWidth,31*lvlMapWidth
+        fdb   32*lvlMapWidth,32*lvlMapWidth,32*lvlMapWidth,32*lvlMapWidth,32*lvlMapWidth,32*lvlMapWidth
+        fdb   33*lvlMapWidth,33*lvlMapWidth,33*lvlMapWidth,33*lvlMapWidth,33*lvlMapWidth,33*lvlMapWidth
+        fdb   34*lvlMapWidth,34*lvlMapWidth,34*lvlMapWidth,34*lvlMapWidth,34*lvlMapWidth,34*lvlMapWidth
+  ENDC
+ ELSE
+  IFDEF TERRAIN_OFFMAP_ROWS
+        ; lines 191..220 : the one empty row past the map
+        fdb   30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth
+        fdb   30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth
+        fdb   30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth
+        fdb   30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth
+        fdb   30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth,30*lvlMapWidth
+  ENDC
  ENDC
         
  IFDEF TERRAIN_LEFT_MARGIN
