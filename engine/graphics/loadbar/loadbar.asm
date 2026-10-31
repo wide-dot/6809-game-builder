@@ -67,7 +67,7 @@ loadbar
 loadbar.page         fcb   3
 loadbar.address      fdb   0
 loadbar.width        fcb   40
-loadbar.height       fcb   4
+loadbar.height       fcb   1
 loadbar.pixels       fcb   $11
 loadbar.PARAMS       equ   *-loadbar
 loadbar.text         fdb   0   ; the text's place, 0 : none
