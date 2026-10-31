@@ -89,6 +89,14 @@ evidence was worthless: the bench was not switching the machine into 160x200
 320x200 with two colours per 8 horizontal pixels. A game mode that draws has
 to call `_gfxmode.setBM16`.
 
+The macros write the gate array (`$E7DC`) only, the monitor never learns
+the mode. On TO8 the boot sector sets the monitor's `SCRMOD` (`$605F`) to
+`$40` before it reads the loader, and leaves the warm-reset signature
+(`$60FE-FF` = `$A55A`) alone, so that a reset keeps `SCRMOD`, reprograms the
+gate array and brings the menu back in 40 columns. Bits 7 and 2 stay clear, so the
+monitor's `PUTC` still writes as in 40 columns (the loader's disk prompt and
+I/O error). See [migration/reset-to-40-columns.md](migration/reset-to-40-columns.md).
+
 A compressed image also has no erase routine, so the object carrying it must
 set `render_overlay_mask`. That flag does both halves of the job: it sends
 `CheckSpritesRefresh` to the `D` slot, the only one a compressed image is

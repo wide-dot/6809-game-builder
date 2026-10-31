@@ -19,7 +19,7 @@
         orcc  #$50
 
 ; Check computer type
-        leax  <mess1,pcr          ; Error message
+        ldx   #mess1              ; Error message
         lda   #$02                ; Load code
         cmpa  >$fff0              ; Check machine code
         bhs   err                 ; Error if not TO+
@@ -64,7 +64,16 @@
         IFGT loader.ADDRESS-((loader.ADDRESS/256)*256)
         ERROR "loader.ADDRESS is expected to be a multiple of 256 bytes. Ex: $A000, $6100, ..."
         ENDC                     ; b register is always 0
-        stb   <$60ff             ; Cold reset
+                                 ; No cold reset : $60FE-FF keeps the monitor's
+                                 ; $A55A, the reset button takes the warm path,
+                                 ; which keeps SCRMOD (the cold one clears
+                                 ; $6000-$6FFF)
+        lda   #$40               ; Display mode : not 40 columns, so that a
+        sta   <map.SCRMOD        ; reset reprograms the gate array (the game
+                                 ; sets its mode in $E7DC, the monitor never
+                                 ; learns it). Bits 7 and 2 clear : PUTC still
+                                 ; writes as in 40 columns. See
+                                 ; migration/reset-to-40-columns.md
         lda   #$02               ; >read code
         std   <map.DK.OPC        ; Read/Head 0
         ldu   #blist             ; Interleave list
@@ -90,9 +99,6 @@ boot3   inc   <map.DK.BUF        ; Move sector ptr
                                  ; (measured 2026-08-07): two anchors for one
                                  ; address is how they drift.
         jmp   >loader.ADDRESS
-
-; Error messages
-mess1   fcs   "Only for TO8/8D/9+"
 
         IFGT *-$6278
         ERROR "boot code part 1 is too large !"
@@ -122,6 +128,8 @@ err3    tfr   dp,a               ; Read DP
         swi                      ; Display for MO
         fcb   $82                ; Display for MO
 
+; Error messages
+mess1   fcs   "Only for TO8/8D/9+"
 mess2   fcs   "Requires 256Ko ext."
 mess3   fcs   "     I/O|Error"
 

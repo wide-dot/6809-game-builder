@@ -87,6 +87,9 @@ practice; this is a reading order, not a schedule.
 
 13. [The video mode is not set for you](video-mode.md) — check this before
     judging anything on screen.
+13b. [A reset goes back to 40 columns only if the monitor knows the mode
+    changed](reset-to-40-columns.md) — the boot sector writes `SCRMOD`, and
+    keeps the reset warm.
 14. [Screen coordinates are offset](screen-coordinates.md)
 15. [The opening pre-scroll paints the viewport — port it](init-prescroll.md) —
     the one whose absence a screenshot will not reveal. It turned out to be
