@@ -757,10 +757,11 @@ lu avant la première lecture (depuis le 08/09 ; la mesure par le loader,
 `engine/graphics/loadbar/loadbar.asm`, est assemblé DANS le loader après
 son code et s'installe par `loader.loadbar.set` (table de saut 48, X =
 `loadbar.PARAMS` octets : page vidéo, adresse x+40·y, largeur en pixels, hauteur,
-octet de pixels, puis la pulsation — entrée de palette, période en unités
-ou 0, nombre de teintes, puis les teintes elles-mêmes, copiées avec le
-reste — 8 au plus — parce que l'unité qui les apporte peut être celle que
-le chargement recouvre ; une écriture de palette par pas) —
+octet de pixels, copiés parce que l'unité qui les apporte peut être celle
+que le chargement recouvre ; la palette est au jeu : la pulsation, une
+entrée de palette changée pendant le chargement, est retirée le 31/10/2026,
+une écriture EF9369 en cours d'affichage laissant un point sur un vrai
+TO8) —
 depuis le 08/09 ; il fallait avant le recopier dans un `<reserved>` du
 layout, parce qu'il tourne pendant que le chargement recouvre l'unité qui
 l'apportait. Budget d'un hook : 2 000 cycles, un tour de disque au-delà.

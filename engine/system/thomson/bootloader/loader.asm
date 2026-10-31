@@ -651,10 +651,8 @@ loader.progress.rts
 ;
 ; input  REG : [X] the bar's parameters, loadbar.PARAMS bytes : video page,
 ;                  address (x + 40*y of the first byte, top line), width in
-;                  pixels, height in lines, pixel byte (colour c = c*$11),
-;                  then the pulse — palette entry, period in units (0 : no
-;                  pulse), colour count, then the colours themselves (GR0B
-;                  words, at most loadbar.PULSE_MAX) — copied too
+;                  pixels, height in lines, pixel byte (colour c = c*$11) ;
+;                  the palette is the caller's
 ;-----------------------------------------------------------------
 ; The loader's own loading bar (engine/graphics/loadbar/loadbar.asm,
 ; assembled after the loader's code, 08/09/2026) : copy the parameters,
@@ -669,27 +667,13 @@ loader.loadbar.set
         ldu   #loadbar
         ldb   #loadbar.PARAMS
         bsr   loader.copy
-        ; the pulse colours come right after, `count` words : copied too —
-        ; the caller's bytes may be what the load is about to overwrite
-        ldb   loadbar.pulse.count
-        aslb
-        beq   @clear.from
-        bsr   loader.copy
-@clear.from
         ldu   #loadbar.acc                ; a fresh start : accumulator, next
-        ldb   #loadbar.STATE              ;   pixel, total seen, pulse tick and
-        clra                              ;   step
+        ldb   #loadbar.STATE              ;   pixel, total seen
+        clra
 @clear  sta   ,u+
         decb
         bne   @clear
-        ; a pulsing bar starts on the first colour of its table, whatever
-        ; the palette holds : a screen faded to black shows it from the
-        ; first pixel (the stage hand-over draws it on the faded frame)
-        tst   loadbar.pulse.period
-        beq   @hook
-        ldx   #loadbar.pulse.table
-        jsr   loadbar.colour
-@hook   ldx   #loadbar.hook
+        ldx   #loadbar.hook
         jmp   loader.progress.hook.set
 
 ;-----------------------------------------------------------------
