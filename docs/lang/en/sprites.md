@@ -91,8 +91,9 @@ to call `_gfxmode.setBM16`.
 
 The macros write the gate array (`$E7DC`) only, the monitor never learns
 the mode. On TO8 the boot sector sets the monitor's `SCRMOD` (`$605F`) to
-`$40` before it reads the loader, so that a reset reprograms the gate array
-and brings the menu back in 40 columns. Bits 7 and 2 stay clear, so the
+`$40` before it reads the loader, and leaves the warm-reset signature
+(`$60FE-FF` = `$A55A`) alone, so that a reset keeps `SCRMOD`, reprograms the
+gate array and brings the menu back in 40 columns. Bits 7 and 2 stay clear, so the
 monitor's `PUTC` still writes as in 40 columns (the loader's disk prompt and
 I/O error). See [migration/reset-to-40-columns.md](migration/reset-to-40-columns.md).
 

@@ -64,7 +64,10 @@
         IFGT loader.ADDRESS-((loader.ADDRESS/256)*256)
         ERROR "loader.ADDRESS is expected to be a multiple of 256 bytes. Ex: $A000, $6100, ..."
         ENDC                     ; b register is always 0
-        stb   <$60ff             ; Cold reset
+                                 ; No cold reset : $60FE-FF keeps the monitor's
+                                 ; $A55A, the reset button takes the warm path,
+                                 ; which keeps SCRMOD (the cold one clears
+                                 ; $6000-$6FFF)
         lda   #$40               ; Display mode : not 40 columns, so that a
         sta   <map.SCRMOD        ; reset reprograms the gate array (the game
                                  ; sets its mode in $E7DC, the monitor never
