@@ -25,7 +25,7 @@
 * executing the engine's bytes as a hook). So the block lives where no
 * scene ever loads : since 08/09/2026 it is assembled INSIDE THE LOADER,
 * after its code, and a game installs it with loader.loadbar.set (jump
-* table, X = the seven parameters below). It is still written to be
+* table, X = the five parameters below). It is still written to be
 * copied anywhere — parameters, state and code together, every reference
 * relative to the PC, `loadbar.SIZE` bytes from `loadbar`, the entry point
 * at `loadbar.hook.OFFSET` from the copy — for a build that wants it
@@ -36,15 +36,13 @@
 *   loadbar.width    pixels, 1 to 160
 *   loadbar.height   lines
 *   loadbar.pixels   the byte written : colour c gives c*$11
-*   loadbar.pulse.*  the PULSE (08/09/2026) : every `period` units the palette
-*                    entry `index` takes the next colour of the table, `count`
-*                    words (at most loadbar.PULSE_MAX) in the GR0B form of a
-*                    Pal_ table, cyclic — a ramp there and back is a breathing
-*                    bar. Period 0 : no pulse. One palette write per step, not
-*                    per unit. Pick an entry the picture on screen does not
-*                    use, or it breathes too.
-*   width 0, period 0 : a HIDDEN bar — installed, nothing drawn, for a load
-*   too short for a bar that may still need its text (below).
+*   width 0 : a HIDDEN bar — installed, nothing drawn, for a load too short
+*   for a bar that may still need its text (below).
+* The palette is the game's : the bar never writes it (its pulse, a palette
+* entry stepped while loading, was removed 31/10/2026 : a write to the
+* EF9369 while the screen is drawn shows a dot on a real TO8, and the
+* sectors come at any line). A bar over a screen faded to black has its
+* colour lit by the game before loader.loadbar.set.
 *
 * THE TEXT (09/10/2026) : when a disk is missing, the loader's prompt
 * writes "DISK n" in the bar's page — no mode, page or palette to change and
@@ -60,14 +58,10 @@
 * one byte position (two pixels in the form bank, the third and the gap in
 * the colour bank), and only the digits of the target's disks
 * (loader.dir.physicalDisks, from the builder).
-* loadbar.PARAMS bytes from `loadbar` are the parameters a caller sets, the
-* colour table follows them IN THE CALLER'S RECORD (`count` words) and is
-* copied here too : the splash's own bytes are overwritten by the load its
-* bar shows (seen 08/09/2026 : a pointer to the table gave the bar the colour
-* of whatever the engine's code left there). The state comes last, cleared
-* by loader.loadbar.set.
-* map.CF74021.CART and map.EF9369.* come from the machine's map.const.asm,
-* included first.
+* loadbar.PARAMS bytes from `loadbar` are the parameters a caller sets,
+* copied here : the splash's own bytes are overwritten by the load its bar
+* shows. The state comes last, cleared by loader.loadbar.set.
+* map.CF74021.CART comes from the machine's map.const.asm, included first.
 * ---------------------------------------------------------------------------
 loadbar
 loadbar.page         fcb   3
@@ -75,20 +69,13 @@ loadbar.address      fdb   0
 loadbar.width        fcb   40
 loadbar.height       fcb   4
 loadbar.pixels       fcb   $11
-loadbar.pulse.index  fcb   0
-loadbar.pulse.period fcb   0
-loadbar.pulse.count  fcb   0
 loadbar.PARAMS       equ   *-loadbar
-loadbar.PULSE_MAX    equ   8
-loadbar.pulse.table  fill  0,loadbar.PULSE_MAX*2
 loadbar.text         fdb   0   ; the text's place, 0 : none
 loadbar.text.pairs   fill  0,4 ; two pixels as a byte, by their two bits (%00 : 0, never written)
 loadbar.text.bits    fdb   0   ; the glyph being drawn (pairs+4)
 loadbar.acc          fdb   0
 loadbar.next         fcb   0
 loadbar.total        fdb   0
-loadbar.pulse.tick   fcb   0
-loadbar.pulse.step   fcb   0
 loadbar.keep         fcb   0 ; the mask of the neighbour pixel in the byte
 loadbar.ours         fcb   0 ; our pixel's nibble
 loadbar.STATE        equ   *-loadbar.acc
@@ -149,39 +136,7 @@ loadbar.hook
         puls  a
         sta   map.CF74021.CART
         bra   @loop
-@done
-        ; the pulse : `period` units per step, one palette write per step
-        lda   loadbar.pulse.period,pcr
-        beq   @rts
-        ldb   ,s                       ; the units
-        addb  loadbar.pulse.tick,pcr
-        cmpb  loadbar.pulse.period,pcr
-        blo   @tick
-        subb  loadbar.pulse.period,pcr
-        stb   loadbar.pulse.tick,pcr
-        lda   loadbar.pulse.step,pcr
-        inca
-        cmpa  loadbar.pulse.count,pcr
-        blo   >
-        clra
-!       sta   loadbar.pulse.step,pcr
-        asla                           ; a word per colour
-        leax  loadbar.pulse.table,pcr
-        leax  a,x
-        bsr   loadbar.colour
-        bra   @rts
-@tick   stb   loadbar.pulse.tick,pcr
-@rts    puls  b,pc
-
-* X = a colour, %GGGGRRRR %0000BBBB : into the bar's palette entry
-loadbar.colour
-        lda   loadbar.pulse.index,pcr
-        asla                           ; the EF9369 address counts bytes
-        sta   map.EF9369.A
-        ldd   ,x
-        sta   map.EF9369.D             ; green and red
-        stb   map.EF9369.D             ; blue
-        rts
+@done   puls  b,pc
 
 * A = the disk number, 1 to 9 : "DISK n" at loadbar.text
 loadbar.text.draw
