@@ -22,7 +22,6 @@ import com.widedot.m6809.util.color.LAB;
  */
 final class Conversion {
 
-	private final int[] profile;
 	private final double[] lift;            // black, from, floor ; null : none
 	private final boolean darkestBlack;
 	private final boolean exact;            // v1's arithmetic
@@ -30,13 +29,13 @@ final class Conversion {
 	private final double[][] exactTable = new double[4096][];
 
 	Conversion(int[] profile, double[] lift, boolean darkestBlack) {
-		this.profile = profile;
 		this.lift = lift;
 		this.darkestBlack = darkestBlack;
 		this.exact = lift != null || darkestBlack;
-		for (int r = 0, i = 0; r < 16; r++) {
+		for (int r = 0; r < 16; r++) {
 			for (int g = 0; g < 16; g++) {
-				for (int b = 0; b < 16; b++, i++) {
+				for (int b = 0; b < 16; b++) {
+					int i = r << 8 | g << 4 | b;
 					if (exact) {
 						exactTable[i] = lab(profile[r], profile[g], profile[b]);
 					} else {

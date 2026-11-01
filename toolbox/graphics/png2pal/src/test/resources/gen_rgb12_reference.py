@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-"""The reference of png2pal's format="rgb12" with lift and darkest="black" (FullTest of
-Rgb12Test) : v1 Another World's palette conversion, its code as it was
-(archive/v1/tools/gen_data.py of wide-dot/another-world, choice D), run on a mire.
+"""
+Write the reference of png2pal's format="rgb12" with lift and darkest="black".
+
+Rgb12Test's reference : v1 Another World's palette conversion, its code as it was
+(archive/v1/tools/gen_data.py of wide-dot/another-world, choice D), run on a mire ; only
+its docstrings reshaped.
 
     python3 gen_rgb12_reference.py            # writes rgb12-mire.bin and rgb12-mire.ref
     python3 gen_rgb12_reference.py --check    # exit 1 if they differ from what it computes
@@ -83,8 +86,11 @@ LIFT_BLACK, LIFT_FROM, LIFT_FLOOR = 5, 15, 42
 
 
 def to8_levels(rgb):
-    """The TO8 (r, g, b) levels whose rendering is closest (CIEDE2000) to rgb, its
-    lightness lifted, as png2pal does."""
+    """
+    Return the TO8 (r, g, b) levels whose rendering is closest (CIEDE2000) to rgb.
+
+    Its lightness lifted, as png2pal does.
+    """
     global _TO8_LAB
     if rgb not in _LEVELS_CACHE:
         if _TO8_LAB is None:

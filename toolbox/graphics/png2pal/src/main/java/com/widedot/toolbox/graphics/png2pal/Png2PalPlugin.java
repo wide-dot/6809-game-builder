@@ -236,23 +236,38 @@ public class Png2PalPlugin {
 		if (o.palettes < 1 || (o.palettes > 1 && !o.format.equals("rgb12"))) {
 			throw new Exception("png2pal : palettes " + o.palettes + " : several palettes come from format rgb12");
 		}
-		String lift = Attribute.getStringOpt(node, ctx, "lift");
-		if (lift != null) {
-			String[] v = lift.split(",");
-			if (v.length != 3) {
-				throw new Exception("png2pal : lift '" + lift + "' is not black,from,floor");
-			}
-			o.lift = new double[] {Double.parseDouble(v[0].trim()), Double.parseDouble(v[1].trim()), Double.parseDouble(v[2].trim())};
-			if (!(o.lift[0] <= o.lift[1] && o.lift[1] < 100 && o.lift[2] < 100)) {
-				throw new Exception("png2pal : lift '" + lift + "' : black <= from < 100 and floor < 100");
-			}
+		o.lift = lift(Attribute.getStringOpt(node, ctx, "lift"));
+		o.darkestBlack = darkestBlack(Attribute.getString(node, ctx, "darkest", "keep"));
+		return o;
+	}
+
+	/** lift="black,from,floor" in L*, null when absent */
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	static double[] lift(String lift) throws Exception {
+		if (lift == null) {
+			return null;
 		}
-		String darkest = Attribute.getString(node, ctx, "darkest", "keep").toLowerCase();
-		if (!darkest.equals("keep") && !darkest.equals("black")) {
+		String[] v = lift.split(",");
+		if (v.length != 3) {
+			throw new Exception("png2pal : lift '" + lift + "' is not black,from,floor");
+		}
+		double[] l = {Double.parseDouble(v[0].trim()), Double.parseDouble(v[1].trim()), Double.parseDouble(v[2].trim())};
+		if (!(l[0] <= l[1] && l[1] < 100 && l[2] < 100)) {
+			throw new Exception("png2pal : lift '" + lift + "' : black <= from < 100 and floor < 100");
+		}
+		return l;
+	}
+
+	/** darkest="keep" or "black" */
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	static boolean darkestBlack(String darkest) throws Exception {
+		String d = darkest.toLowerCase();
+		if (!d.equals("keep") && !d.equals("black")) {
 			throw new Exception("png2pal : darkest '" + darkest + "' is not one of [keep, black]");
 		}
-		o.darkestBlack = darkest.equals("black");
-		return o;
+		return d.equals("black");
 	}
 
 	/**
