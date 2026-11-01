@@ -291,7 +291,11 @@ public final class Handlers {
 			.opt("offset", INT, "first color index")
 			.opt("mode", STRING, "bin, and only as file content ; inside <lwasm> the table is always the exported form")
 			.opt("section", STRING, "name of the generated SECTION, default code")
-			.opt("profile", STRING, "color profile"));
+			.opt("profile", STRING, "color profile")
+			.opt("format", STRING, "png (default) : the PNG's palette ; rgb12 : filename is a binary of big endian $0RGB words (Amiga, Atari ST palettes), read from its start")
+			.opt("palettes", INT, "format rgb12 : how many palettes of colors words the file holds, converted one after the other into one table. Default 1")
+			.opt("lift", STRING, "black,from,floor in L* (e.g. 5,15,42) : the darks spread above the TO8's first level before the search, L* from..100 to floor..100, a colour at most black kept. The search then runs on unrounded Lab values")
+			.opt("darkest", STRING, "keep (default) or black : the darkest colour of each palette written black. With lift or darkest, the search runs on unrounded Lab values (v1 Another World's conversion)"));
 		spec(element("txt2bas").doc("tokenize a BASIC text file")
 			.req("filename", STRING, "input text file")
 			.req("tokenset", STRING, "BASIC token set"));

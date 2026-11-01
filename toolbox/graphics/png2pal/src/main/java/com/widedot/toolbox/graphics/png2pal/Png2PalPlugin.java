@@ -11,7 +11,8 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.awt.Color;
 import java.awt.image.ColorModel;
 import java.io.IOException;
@@ -32,14 +33,24 @@ public class Png2PalPlugin {
 	public static final String DAT  = "dat";
 	public static final String BIN  = "bin";
 
-	private static LAB labColor;
-	private static LAB[] paletteLab = new LAB[4096];
-	private static int[] paletteRGB = new int[4096];
-	private static int rgbProfile[];
-	private static HashMap<Integer, Integer> rgbIndex = new HashMap<Integer, Integer>();	
+	/** what is read and how it is converted, beyond the colours and the offset */
+	public static final class Options {
+		/** png : the PNG's PLTE ; rgb12 : a binary of big endian $0RGB words (Amiga, Atari ST) */
+		public String format = "png";
+		/** rgb12 : palettes of {@code colors} words, one after the other from the file's start */
+		public int palettes = 1;
+		/** black, from, floor in L* : the darks spread above the TO8's first level (Conversion) */
+		public double[] lift;
+		/** the darkest colour of each palette written black */
+		public boolean darkestBlack;
+	}
 
 	public static byte[] run(String symbol, String mode, int colors, int offset, String profile, String filename, String gensource) throws Exception {
 		return run(symbol, mode, colors, offset, profile, filename, gensource, "code");
+	}
+
+	public static byte[] run(String symbol, String mode, int colors, int offset, String profile, String filename, String gensource, String section) throws Exception {
+		return run(symbol, mode, colors, offset, profile, filename, gensource, section, new Options());
 	}
 
 	/**
@@ -48,25 +59,13 @@ public class Png2PalPlugin {
 	 *        has to stop being called {@code code}, or it would merge with nothing
 	 *        and lead the binary in the entry point's place.
 	 */
-	public static byte[] run(String symbol, String mode, int colors, int offset, String profile, String filename, String gensource, String section) throws Exception {
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	public static byte[] run(String symbol, String mode, int colors, int offset, String profile, String filename, String gensource, String section, Options options) throws Exception {
 		
 		log.debug("Process one or more PNG files to extract and convert indexed palette data.");
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
-		
-		// build full palette values
-		rgbProfile = FileResourcesUtils.get(profile+".txt");
-		int i = 0;
-		for (int r=0; r<16; r++) {
-			for (int g=0; g<16; g++) {
-				for (int b=0; b<16; b++) {
-					labColor = LAB.fromRGBr(rgbProfile[r], rgbProfile[g], rgbProfile[b], 1.0);
-					paletteLab[i]=labColor;
-					paletteRGB[i] = (0xFF000000 & (255 << 24)) | (0x00FF0000 & (rgbProfile[r] << 16)) | (0x0000FF00 & (rgbProfile[g] << 8)) | (0x000000FF & rgbProfile[b]);
-					i++;
-				}
-			}
-			rgbIndex.put(rgbProfile[r], r);
-		}
+		Conversion conversion = new Conversion(FileResourcesUtils.get(profile+".txt"), options.lift, options.darkestBlack);
 		
 		// process indexed colors of png files
 		File file = new File(filename);
@@ -76,10 +75,17 @@ public class Png2PalPlugin {
 		  throw new Exception(m);
 		}
 		
-		if (!file.isDirectory()) {
+		if ("rgb12".equals(options.format)) {
+			if (file.isDirectory()) {
+				throw new Exception("png2pal : format rgb12 reads one file, " + filename + " is a directory");
+			}
+			outputStream.write(convertFile(symbol, mode, colors, rgb12(file, colors, options.palettes), file, gensource, section, conversion));
+		} else if (!"png".equals(options.format)) {
+			throw new Exception("png2pal : format '" + options.format + "' is not one of [png, rgb12]");
+		} else if (!file.isDirectory()) {
 			
 			// Single file processing
-			outputStream.write(convertFile(symbol, mode, colors, offset, file, gensource, section));
+			outputStream.write(convertFile(symbol, mode, colors, png(file, colors, offset), file, gensource, section, conversion));
 		} else {
 			
 			// Directory processing
@@ -87,37 +93,62 @@ public class Png2PalPlugin {
 
 			File[] files = file.listFiles((d, name) -> name.endsWith(".png"));
 			for (File curFile : files) {
-				outputStream.write(convertFile(symbol, mode, colors, offset, curFile, gensource, section));
+				outputStream.write(convertFile(symbol, mode, colors, png(curFile, colors, offset), curFile, gensource, section, conversion));
 			}
 		}
 		log.debug("Conversion ended sucessfully.");
 
 		return outputStream.toByteArray();
 	}
+
+	/** a PNG's colours offset..offset+colors (colors 0 : as many as its pixel size allows) */
+	private static List<Color> png(File file, int colors, int offset) throws IOException {
+		ColorModel colorModel = ImageIO.read(file).getColorModel();
+		int n = colors == 0 ? (int) Math.pow(2, colorModel.getPixelSize()) : colors;
+		List<Color> out = new ArrayList<>();
+		for (int i = offset; i < offset + n; i++) {
+			out.add(new Color(colorModel.getRGB(i)));
+		}
+		return out;
+	}
+
+	/** palettes of big endian $0RGB words : a component c is c * 17 */
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	static List<Color> rgb12(File file, int colors, int palettes) throws Exception {
+		byte[] data = Files.readAllBytes(file.toPath());
+		if (data.length < 2 * colors * palettes) {
+			throw new Exception("png2pal : " + file.getName() + " holds " + data.length / 2 + " words, not "
+			                  + palettes + " palettes of " + colors);
+		}
+		List<Color> out = new ArrayList<>();
+		for (int i = 0; i < colors * palettes; i++) {
+			int w = (data[2 * i] & 0xFF) << 8 | data[2 * i + 1] & 0xFF;
+			out.add(new Color(((w >> 8) & 15) * 17, ((w >> 4) & 15) * 17, (w & 15) * 17));
+		}
+		return out;
+	}
 	
-	private static byte[] convertFile(String symbol, String mode, int colors, int offset, File file, String gensource, String section) throws Exception {
+	private static byte[] convertFile(String symbol, String mode, int colors, List<Color> colours, File file, String gensource, String section, Conversion conversion) throws Exception {
 		
 		log.debug("Process file: {}", file.getAbsolutePath());
 		byte[] result;
 		String ext;
-		
-		// Set nb of colors to process
-		ColorModel colorModel = ImageIO.read(file).getColorModel();
-		if (colors == 0) colors = (int) Math.pow(2, colorModel.getPixelSize());
+		int[][] levels = conversion.levels(colours, colors == 0 ? colours.size() : colors);
 		
 		// Set the process mode
 	     switch (mode) {
          case OBJ:
      		 if (symbol == null) symbol = FileUtil.removeExtension(file.getName());
-        	 result = Png2PalPlugin.genObject(symbol, mode, colors, offset, colorModel, section).getBytes();
+        	 result = Png2PalPlugin.genObject(symbol, colours, levels, section).getBytes();
         	 ext = ASM_EXT;
              break;
          case DAT:
-        	 result = Png2PalPlugin.genData(symbol, mode, colors, offset, colorModel).getBytes();
+        	 result = Png2PalPlugin.genData(symbol, colours, levels).getBytes();
         	 ext = ASM_EXT;
              break;
          case BIN:
-        	 result = Png2PalPlugin.genBinary(symbol, mode, colors, offset, colorModel);
+        	 result = Png2PalPlugin.genBinary(levels);
         	 ext = BIN_EXT;
              break;
          default:
@@ -144,124 +175,85 @@ public class Png2PalPlugin {
 		return result;
 	}
 	
-	public static String genObject(String symbol, String mode, int colors, int offset, ColorModel colorModel) throws IOException {
-		return genObject(symbol, mode, colors, offset, colorModel, "code");
-	}
-
-	public static String genObject(String symbol, String mode, int colors, int offset, ColorModel colorModel, String section) throws IOException {
+	public static String genObject(String symbol, List<Color> colours, int[][] levels, String section) {
 
 		// Generate assembly code
-		String code = "";
-		
-		code += symbol + " EXPORT" + System.lineSeparator()
-		      + System.lineSeparator()
-              + " SECTION " + section + System.lineSeparator()
-              + symbol + System.lineSeparator();
-		
-		int nearestColor;
-		for (int colorIndex = offset; colorIndex < offset+colors; colorIndex++) {
-			Color color = new Color(colorModel.getRGB(colorIndex));
-			
-			nearestColor = getNearestColor(color);
-
-			int r = rgbIndex.get((nearestColor >> 16) & 0xFF);
-			int g = rgbIndex.get((nearestColor >> 8) & 0xFF);
-			int b = rgbIndex.get(nearestColor & 0xFF);
-			
-			log.debug("idx:{}\tRGB:{},{},{}\t({},{},{})", colorIndex-1, color.getRed(), color.getGreen(), color.getBlue(), r, g, b);
-			
-			code += "        fdb   $"
-					+ Integer.toHexString(g)
-					+ Integer.toHexString(r)					
-					+ "0"
-					+ Integer.toHexString(b)
-					+ " ; GR0B ("
-					+ color.getGreen() + ","
-					+ color.getRed()   + ",0,"
-					+ color.getBlue()  + ")"
-					+ System.lineSeparator();
-		}
-		
-		code += " ENDSECTION" + System.lineSeparator();
-		
-		return code;
+		StringBuilder code = new StringBuilder();
+		code.append(symbol).append(" EXPORT").append(System.lineSeparator())
+		    .append(System.lineSeparator())
+		    .append(" SECTION ").append(section).append(System.lineSeparator())
+		    .append(symbol).append(System.lineSeparator());
+		code.append(entries(colours, levels));
+		code.append(" ENDSECTION").append(System.lineSeparator());
+		return code.toString();
 	}
 	
-	public static String genData(String symbol, String mode, int colors, int offset, ColorModel colorModel) throws IOException {
+	public static String genData(String symbol, List<Color> colours, int[][] levels) {
+		return symbol + System.lineSeparator() + entries(colours, levels);
+	}
 
-		// Generate assembly code
-		String code = symbol + System.lineSeparator();
-		
-		int nearestColor;
-		for (int colorIndex = offset; colorIndex < offset+colors; colorIndex++) {
-			Color color = new Color(colorModel.getRGB(colorIndex));
-			
-			nearestColor = getNearestColor(color);
-
-			int r = rgbIndex.get((nearestColor >> 16) & 0xFF);
-			int g = rgbIndex.get((nearestColor >> 8) & 0xFF);
-			int b = rgbIndex.get(nearestColor & 0xFF);
-			
-			log.debug("idx:{}\tRGB:{},{},{}\t({},{},{})", colorIndex-1, color.getRed(), color.getGreen(), color.getBlue(), r, g, b);
-			
-			code += "        fdb   $"
-					+ Integer.toHexString(g)
-					+ Integer.toHexString(r)					
-					+ "0"
-					+ Integer.toHexString(b)
-					+ " ; GR0B ("
-					+ color.getGreen() + ","
-					+ color.getRed()   + ",0,"
-					+ color.getBlue()  + ")"
-					+ System.lineSeparator();
+	private static String entries(List<Color> colours, int[][] levels) {
+		StringBuilder code = new StringBuilder();
+		for (int i = 0; i < levels.length; i++) {
+			Color color = colours.get(i);
+			int r = levels[i][0];
+			int g = levels[i][1];
+			int b = levels[i][2];
+			log.debug("idx:{}\tRGB:{},{},{}\t({},{},{})", i, color.getRed(), color.getGreen(), color.getBlue(), r, g, b);
+			code.append("        fdb   $")
+			    .append(Integer.toHexString(g))
+			    .append(Integer.toHexString(r))
+			    .append("0")
+			    .append(Integer.toHexString(b))
+			    .append(" ; GR0B (")
+			    .append(color.getGreen()).append(",")
+			    .append(color.getRed()).append(",0,")
+			    .append(color.getBlue()).append(")")
+			    .append(System.lineSeparator());
 		}
-		
-		return code;
+		return code.toString();
 	}
 	
-	public static byte[] genBinary(String symbol, String mode, int colors, int offset, ColorModel colorModel) throws IOException {
-
-		// Generate assembly code
-		byte[] bin = new byte[colors*2];
-		
-		int nearestColor;
-		for (int colorIndex = offset; colorIndex < offset+colors; colorIndex++) {
-			Color color = new Color(colorModel.getRGB(colorIndex));
-			
-			nearestColor = getNearestColor(color);
-
-			int r = rgbIndex.get((nearestColor >> 16) & 0xFF);
-			int g = rgbIndex.get((nearestColor >> 8) & 0xFF);
-			int b = rgbIndex.get(nearestColor & 0xFF);
-			
-			log.debug("idx:{}\tRGB:{},{},{}\t({},{},{})", colorIndex-1, color.getRed(), color.getGreen(), color.getBlue(), r, g, b);
-			
-			bin[(colorIndex-offset)*2]   = (byte) ((g << 4) + r);
-			bin[(colorIndex-offset)*2+1] = (byte) b;
+	public static byte[] genBinary(int[][] levels) {
+		byte[] bin = new byte[levels.length * 2];
+		for (int i = 0; i < levels.length; i++) {
+			bin[i * 2]     = (byte) ((levels[i][1] << 4) + levels[i][0]);
+			bin[i * 2 + 1] = (byte) levels[i][2];
 		}
-		
 		return bin;
 	}
-	
-	private static int getNearestColor(Color color) {
-		LAB currentColor = new LAB(0, 0, 0);
-		
-		int j, nearestColor;
-		double distance, minDistance;
-		
-		currentColor = LAB.fromRGBr(color.getRed(), color.getGreen(), color.getBlue(), 1.0);
-		minDistance = Double.POSITIVE_INFINITY;
-		nearestColor = 0;
-		for (j = 0; j < 4096; j++) {
-			distance = LAB.ciede2000(currentColor, paletteLab[j]);
-			if (distance < minDistance) {
-				nearestColor = paletteRGB[j];
-				minDistance = distance;
+
+	/** format, palettes, lift, darkest : the element's attributes beyond the colours */
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	static Options options(ImmutableNode node, BuildContext ctx) throws Exception {
+		Options o = new Options();
+		o.format = Attribute.getString(node, ctx, "format", "png").toLowerCase();
+		if (!o.format.equals("png") && !o.format.equals("rgb12")) {
+			throw new Exception("png2pal : format '" + o.format + "' is not one of [png, rgb12]");
+		}
+		o.palettes = Attribute.getInteger(node, ctx, "palettes", 1);
+		if (o.palettes < 1 || (o.palettes > 1 && !o.format.equals("rgb12"))) {
+			throw new Exception("png2pal : palettes " + o.palettes + " : several palettes come from format rgb12");
+		}
+		String lift = Attribute.getStringOpt(node, ctx, "lift");
+		if (lift != null) {
+			String[] v = lift.split(",");
+			if (v.length != 3) {
+				throw new Exception("png2pal : lift '" + lift + "' is not black,from,floor");
+			}
+			o.lift = new double[] {Double.parseDouble(v[0].trim()), Double.parseDouble(v[1].trim()), Double.parseDouble(v[2].trim())};
+			if (!(o.lift[0] <= o.lift[1] && o.lift[1] < 100 && o.lift[2] < 100)) {
+				throw new Exception("png2pal : lift '" + lift + "' : black <= from < 100 and floor < 100");
 			}
 		}
-		return nearestColor;
+		String darkest = Attribute.getString(node, ctx, "darkest", "keep").toLowerCase();
+		if (!darkest.equals("keep") && !darkest.equals("black")) {
+			throw new Exception("png2pal : darkest '" + darkest + "' is not one of [keep, black]");
+		}
+		o.darkestBlack = darkest.equals("black");
+		return o;
 	}
-
 
 	/**
 	 * Handler for the <png2pal> element, registered by the builder.
@@ -299,7 +291,7 @@ public class Png2PalPlugin {
 	  
 	  if (filename != null) filename = ctx.path + File.separator + filename;
 	  if (gensource != null) gensource = ctx.path + File.separator + gensource;
-			byte[] data = Png2PalPlugin.run(symbol, mode, colors, offset, profile, filename, gensource);
+			byte[] data = Png2PalPlugin.run(symbol, mode, colors, offset, profile, filename, gensource, "code", options(node, ctx));
 	  return new Binary(data);
 	}
 
@@ -337,7 +329,7 @@ public class Png2PalPlugin {
 	  gensource = ctx.path + File.separator + gensource;
 
 	  // the exported form : one label the rest of the game can link against
-	  Png2PalPlugin.run(symbol, Png2PalPlugin.OBJ, colors, offset, profile, filename, gensource, section);
+	  Png2PalPlugin.run(symbol, Png2PalPlugin.OBJ, colors, offset, profile, filename, gensource, section, options(node, ctx));
 	  return new File(gensource);
 	}
 }

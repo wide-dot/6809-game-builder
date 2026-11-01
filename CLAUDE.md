@@ -1034,6 +1034,18 @@ Sonic 2 (`tools/gen_v2.py`, `bottom_up_b16`) est l'écart que ce buffer
 remplace. Cas : [`background-image.md`](docs/lang/en/migration/background-image.md) ;
 manuel : readme de png2bin ; banc `examples/fullscreen`.
 
+## Palettes de mots 12 bits et sombres remontés : `png2pal` (01/11/2026)
+
+`format="rgb12"` lit des palettes de mots `$0RGB` (Amiga, ST) au début d'un
+binaire, `palettes` palettes de `colors` mots, une seule table. `lift=
+"noir,depuis,plancher"` (L*) étale les sombres au-dessus du premier niveau du
+TO8 (97/255, L* ~41) avant la recherche, `darkest="black"` met au noir la
+couleur la plus sombre de chaque palette : la conversion D du portage v1
+d'Another World. Avec l'une ou l'autre, Lab exact et CIEDE2000 à atan2 exact
+(le chemin par défaut, inchangé, arrondit Lab et prend l'atan2 rapide de
+`LAB`) : 4096/4096 couleurs identiques au code v1 (`Rgb12Test`, référence
+produite par `gen_rgb12_reference.py`). Manuel : readme de png2pal.
+
 ## Fidélité arcade de R-Type
 
 Section sortie le 18/10/2026 avec le jeu : `wide-dot/r-type`,

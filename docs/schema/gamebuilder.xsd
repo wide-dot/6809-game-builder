@@ -2829,6 +2829,18 @@
       <xs:attribute name="profile" type="xs:string">
         <xs:annotation><xs:documentation>color profile</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="format" type="xs:string">
+        <xs:annotation><xs:documentation>png (default) : the PNG's palette ; rgb12 : filename is a binary of big endian $0RGB words (Amiga, Atari ST palettes), read from its start</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="palettes" type="int6809">
+        <xs:annotation><xs:documentation>format rgb12 : how many palettes of colors words the file holds, converted one after the other into one table. Default 1</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="lift" type="xs:string">
+        <xs:annotation><xs:documentation>black,from,floor in L* (e.g. 5,15,42) : the darks spread above the TO8's first level before the search, L* from..100 to floor..100, a colour at most black kept. The search then runs on unrounded Lab values</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="darkest" type="xs:string">
+        <xs:annotation><xs:documentation>keep (default) or black : the darkest colour of each palette written black. With lift or darkest, the search runs on unrounded Lab values (v1 Another World's conversion)</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 

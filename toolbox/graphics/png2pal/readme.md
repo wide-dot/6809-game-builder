@@ -89,9 +89,41 @@ The plugin name is : png2pal
 | colors      | 16                     | 1-256               | number of colors to convert                                     |
 | symbol      | *filename<sup>1</sup>* | *lwasm symbol*      | asm symbol to place in front of data (for *obj* and *dat* mode) |
 | gensource   | *filename<sup>2</sup>* | *file or dir name*  | output file or directory for generated files                    |
+| format      | png                    | png, rgb12          | input : the PNG's palette, or big endian $0RGB words            |
+| palettes    | 1                      | 1-n                 | rgb12 : palettes of *colors* words in the file, one table        |
+| lift        |                        | black,from,floor    | the darks spread above the TO8's first level (L*)               |
+| darkest     | keep                   | keep, black         | the darkest colour of each palette written black                |
 
 <sup>1</sup> without extension
 <sup>2</sup> with mode specific extension (.asm or .bin)
+
+### Palettes of 12-bit words : `format="rgb12"`
+
+An Amiga or Atari ST game keeps its palettes as big endian `$0RGB` words, 4 bits a
+component (component *c* is *c* x 17). `format="rgb12"` reads them from the start of
+`filename`, `palettes` palettes of `colors` words, and converts them into one table,
+palette after palette (`offset` does not apply).
+
+### Darks the TO8 cannot show : `lift` and `darkest`
+
+The TO8's first level above black is already 97/255 (L* about 41) : every dark colour of a
+picture meets there, and dark details melt. Two options, by palette :
+
+- `lift="black,from,floor"` : before the search, a colour's lightness L* from..100 is
+  spread to floor..100 ; a colour at most black (L*) keeps it. The darks stay apart, the
+  picture gets lighter.
+- `darkest="black"` : the darkest colour of each palette is written black.
+
+`lift="5,15,42" darkest="black"` is the conversion Another World's v1 port chose
+(its choice D). With either option the search runs on Lab values as computed and the exact
+CIEDE2000 (the default path rounds Lab to whole numbers and uses a fast atan2) : the levels
+are that port's, to the bit (`Rgb12Test`, against its code run on the 4096 colours by
+`src/test/resources/gen_rgb12_reference.py`).
+
+```xml
+<png2pal symbol="Pal_water" filename="data/res/026.bin" format="rgb12" palettes="32"
+         lift="5,15,42" darkest="black"/>
+```
 
 ### Command line
 Command line use the same parameters as the ones used by plugin.
