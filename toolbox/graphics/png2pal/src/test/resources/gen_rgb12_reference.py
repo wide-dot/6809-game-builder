@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
-"""
-Write the reference of png2pal's format="rgb12" with lift and darkest="black".
+"""Write the reference of png2pal's format="rgb12" with lift and darkest="black"."""
 
-Rgb12Test's reference : v1 Another World's palette conversion, its code as it was
-(archive/v1/tools/gen_data.py of wide-dot/another-world, choice D), run on a mire ; only
-its docstrings reshaped.
+# Rgb12Test's reference : v1 Another World's palette conversion, its code as it was
+# (archive/v1/tools/gen_data.py of wide-dot/another-world, choice D), run on a mire ; only
+# its docstrings reshaped.
+#
+#     python3 gen_rgb12_reference.py            # writes rgb12-mire.bin and rgb12-mire.ref
+#     python3 gen_rgb12_reference.py --check    # exit 1 if they differ from what it computes
+#
+# rgb12-mire.bin : 256 palettes of 16 big endian $0RGB words, every one of the 4096 colours
+# once, spread (word n = n * 2731 mod 4096) so each palette mixes darks and lights.
+# rgb12-mire.ref : the same palettes in TO8 levels, GGGGRRRR then 0000BBBB a colour, the
+# lightness lifted (L* 15..100 to 42..100, L* 5 or less kept), the darkest colour of each
+# palette black.
 
-    python3 gen_rgb12_reference.py            # writes rgb12-mire.bin and rgb12-mire.ref
-    python3 gen_rgb12_reference.py --check    # exit 1 if they differ from what it computes
-
-rgb12-mire.bin : 256 palettes of 16 big endian $0RGB words, every one of the 4096 colours
-once, spread (word n = n * 2731 mod 4096) so each palette mixes darks and lights.
-rgb12-mire.ref : the same palettes in TO8 levels, GGGGRRRR then 0000BBBB a colour, the
-lightness lifted (L* 15..100 to 42..100, L* 5 or less kept), the darkest colour of each
-palette black.
-"""
 import os
 import sys
 
@@ -86,11 +85,7 @@ LIFT_BLACK, LIFT_FROM, LIFT_FLOOR = 5, 15, 42
 
 
 def to8_levels(rgb):
-    """
-    Return the TO8 (r, g, b) levels whose rendering is closest (CIEDE2000) to rgb.
-
-    Its lightness lifted, as png2pal does.
-    """
+    """Return the TO8 (r, g, b) levels closest (CIEDE2000) to rgb, its lightness lifted."""
     global _TO8_LAB
     if rgb not in _LEVELS_CACHE:
         if _TO8_LAB is None:
