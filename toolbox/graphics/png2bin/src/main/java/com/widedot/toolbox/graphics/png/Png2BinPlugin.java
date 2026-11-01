@@ -30,6 +30,9 @@ import lombok.extern.slf4j.Slf4j;
  *   &lt;png2bin filename="src/band.png" gendir="gen/band"
  *            videomode="bm16" buffer="hscroll" guardcolor="11" plane="0"/&gt;
  *
+ * buffer="fullscreen" is the exception : the 16 000 bytes DrawFullscreenImage
+ * copies hold both planes, so it is declared once, plane 0.
+ *
  * The element yields **one plane**, because a direntry is one file and the two
  * planes of a Thomson bitmap live at two different addresses. Declare it twice,
  * once per plane ; the conversion itself runs once per declaration and writes
@@ -59,6 +62,7 @@ public class Png2BinPlugin {
 		BUFFERS.put("vscroll",      Png2Bin.Buffer.VSCROLL);
 		BUFFERS.put("vscrolltile",  Png2Bin.Buffer.VSCROLL_TILE);
 		BUFFERS.put("hscroll",      Png2Bin.Buffer.HSCROLL);
+		BUFFERS.put("fullscreen",   Png2Bin.Buffer.FULLSCREEN);
 	}
 
 	/** a named mode's layout : linearBits, planarBits, lineBytes, planes, pixelDepth */
@@ -105,6 +109,9 @@ public class Png2BinPlugin {
 			if (linearBits == 0 || pixelDepth == 0) {
 				throw new Exception("png2bin : give a videomode, or linearbits and pixeldepth");
 			}
+		}
+		if (buffer == Png2Bin.Buffer.FULLSCREEN && plane != 0) {
+			throw new Exception("png2bin : buffer fullscreen holds both planes, declare it once with plane 0");
 		}
 		if (plane < 0 || plane >= planes) {
 			throw new Exception("png2bin : plane " + plane + " does not exist, this mode has " + planes);

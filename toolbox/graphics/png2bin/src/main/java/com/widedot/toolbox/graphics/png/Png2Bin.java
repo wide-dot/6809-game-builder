@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.widedot.m6809.util.FileUtil;
+import com.widedot.toolbox.graphics.engine.FullscreenImage;
 import com.widedot.toolbox.graphics.engine.HorizontalScroll;
 import com.widedot.toolbox.graphics.engine.VerticalScroll;
 import com.widedot.toolbox.graphics.engine.VerticalScrollTile;
@@ -51,7 +52,9 @@ public class Png2Bin {
 		/** vertical scroll tile data */
 		VSCROLL_TILE,
 		/** horizontal scroll code buffer, for a 160px band that loops on itself */
-		HSCROLL
+		HSCROLL,
+		/** a 160x200 BM16 picture as DrawFullscreenImage copies it : both planes, climbing */
+		FULLSCREEN
 	}
 
 	private final int linearBits;
@@ -125,6 +128,18 @@ public class Png2Bin {
 		byte[][] planes = convert(image, png.colorModel.getPixelSize(), png.height, line);
 
 		List<String> files = write(planes, pngFile, outputDir);
+
+		if (buffer == Buffer.FULLSCREEN) {
+			if (png.width != 160 || png.height != 200 || pixelDepth != 4 || nbPlanes != 2
+			    || planes[0].length != FullscreenImage.BANK || files.size() != 2) {
+				throw new Exception("png2bin : buffer fullscreen takes a 160x200 picture in bm16, whole planes ; "
+				                  + pngFile.getName() + " is " + png.width + "x" + png.height);
+			}
+			try (FileOutputStream fos = new FileOutputStream(new File(files.get(0) + ".fullscreen"))) {
+				fos.write(FullscreenImage.of(planes[0], planes[1]));
+			}
+			return files;
+		}
 
 		for (String file : files) {
 			switch (buffer) {

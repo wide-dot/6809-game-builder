@@ -38,3 +38,35 @@ What it buys is RAM : a 320x200 title card of two 8 000-byte planes is
 about a third of that compressed. What it costs is the decompression at
 show time. An unknown codec is a named build error. The compression is
 cached (`.builder-cache`, domain `png2bin-zx0`) like the loader's entries.
+
+## A full screen picture : `buffer="fullscreen"`
+
+`buffer="fullscreen"` turns a 160x200 BM16 picture into the 16 000 bytes
+`engine/graphics/draw/DrawFullscreenImage.asm` copies into the data window.
+The routine pulls 7 bytes with `PULU` and pushes them with `PSHS`, from the
+end of a bank down to its start : the data holds each bank's 7-byte blocks
+from the last to the first, the `$C000` bank (pixels 0-1 of each four) first,
+then the `$A000` bank. Both planes are in it, so it is declared once, plane 0 ;
+another size or video mode is a named build error. v1 wrote the same bytes
+(`PngToBottomUpB16Bin`, an act's `backgroundImage`).
+
+```xml
+<file name="assets.image" page="$05" address="$0000">
+    <png2bin filename="src/picture.png" gendir="gen/assets/picture"
+             videomode="bm16" buffer="fullscreen" plane="0"/>
+</file>
+```
+
+```asm
+image   fcb   map.RAM_OVER_CART+assets.image.page
+        fdb   assets.image.address
+
+        _ram.data.set #2            ; the buffer written
+        orcc  #$50                  ; the copy pushes through S
+        ldx   #image
+        jsr   DrawFullscreenImage
+        andcc #$AF
+```
+
+The copy costs about 58 000 cycles (lwasm listing : 152 cycles per 42 bytes,
+two banks), nearly three frames. The bench : `examples/fullscreen`.

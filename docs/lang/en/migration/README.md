@@ -117,6 +117,9 @@ practice; this is a reading order, not a schedule.
     loses it](checkpoint-refresh-cells.md) — the checkpoint refresh cells,
     and the general rule for every committed generated file the build
     absorbs.
+21c. [A v1 act's `backgroundImage` becomes `<png2bin buffer="fullscreen">`](background-image.md) —
+    the picture `DrawFullscreenImage` copies, converted by the builder, not
+    by a script.
 
 **Reading a v1 main loop** — what to port, and what existed only for v1.
 

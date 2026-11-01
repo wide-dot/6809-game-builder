@@ -470,7 +470,7 @@ public final class Handlers {
 			.req("filename", STRING, "input .png")
 			.opt("gendir", STRING, "where the generated binaries go, source tree if omitted")
 			.opt("videomode", STRING, "t0, t1, t1s, t2, bm16, bm4s (t1s under the name gfxcomp uses), c2, c4, c16 — the pixel layout")
-			.opt("buffer", STRING, "none, vscroll, vscrolltile, hscroll — engine buffer built on top")
+			.opt("buffer", STRING, "none, vscroll, vscrolltile, hscroll, fullscreen — engine buffer built on top. fullscreen : a 160x200 bm16 picture as the 16 000 bytes DrawFullscreenImage copies (both planes, climbing the screen), declared once with plane 0")
 			.opt("guardcolor", INT, "hscroll only : the colour the wrapped bytes are refilled with")
 			.opt("plane", INT, "which memory plane this declaration yields")
 			.opt("part", INT, "which part, when maxsize split the plane")

@@ -170,7 +170,11 @@ la description de la PR en garde la trace.
   28/10/2026),
   `examples/periodicband` (une bande qui répète tous les 48 px, dessinée à
   ses 48 phases sur un fond qu'elle n'utilise pas : 48/48 captures exactes
-  sous toje, `ci/toje-bench/periodicband_ut.py`, depuis le 30/10/2026).
+  sous toje, `ci/toje-bench/periodicband_ut.py`, depuis le 30/10/2026),
+  `examples/fullscreen` (une mire 160x200 convertie par `<png2bin
+  buffer="fullscreen">` et copiée par `DrawFullscreenImage` dans les deux
+  tampons : les deux captures exactes sous toje,
+  `ci/toje-bench/fullscreen_ut.py`, depuis le 01/11/2026).
 - **État de validation au 13/08/2026** : le corpus compte **15 configs et
   63 images** (11 exemples dont collection/stacked-overflow/hscroll/
   tilescroll/objects/sprites, plus `games/r-type` — sorti du moteur le
@@ -1016,6 +1020,19 @@ dans 144 px (autre géométrie : erreur d'assemblage nommée). Banc
 `examples/periodicband` 48/48, JUnit au modèle des lectures du runtime,
 corpus identique à l'octet (116 images). r-type stage 5 : tuiles 36 000 →
 ~17 900 cycles par rendu. Manuel : `tilemaps.md`, *A periodic band*.
+
+## L'image plein écran : `<png2bin buffer="fullscreen">` (01/11/2026)
+
+Le format que `DrawFullscreenImage` copie (importé 1:1 le 07/10 pour Sonic 2)
+est produit par le builder : `buffer="fullscreen"` sur un `<png2bin>` bm16
+160x200 donne les 16 000 octets, blocs de 7 octets d'une banque du dernier au
+premier (`PULU`/`PSHS` remontant), la banque `$C000` d'abord. Les deux plans
+y sont : déclaré une fois, plan 0. Octets identiques à ceux de
+`PngToBottomUpB16Bin` de la v1 (JUnit `FullscreenTest`, la boucle v1 recopiée
+sur la même mire). Copie ~58 000 cycles (listing). Le portage Python de
+Sonic 2 (`tools/gen_v2.py`, `bottom_up_b16`) est l'écart que ce buffer
+remplace. Cas : [`background-image.md`](docs/lang/en/migration/background-image.md) ;
+manuel : readme de png2bin ; banc `examples/fullscreen`.
 
 ## Fidélité arcade de R-Type
 
