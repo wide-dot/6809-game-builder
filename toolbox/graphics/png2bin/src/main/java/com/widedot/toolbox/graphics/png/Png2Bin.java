@@ -98,6 +98,8 @@ public class Png2Bin {
 	 *         Buffer other than NONE is asked for, each of them also has its
 	 *         buffer written alongside, under the same name plus a suffix.
 	 */
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 	public List<String> convert(File pngFile, String outputDir) throws Exception {
 
 		if (pngFile == null || !pngFile.exists() || pngFile.isDirectory()) {

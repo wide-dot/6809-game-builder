@@ -42,7 +42,9 @@ public class FullscreenTest {
 	}
 
 	private File png(byte[] px, int w, int h) throws Exception {
-		byte[] r = new byte[17], g = new byte[17], b = new byte[17];
+		byte[] r = new byte[17];
+		byte[] g = new byte[17];
+		byte[] b = new byte[17];
 		for (int i = 0; i < 17; i++) { r[i] = (byte) (i * 15); g[i] = (byte) (255 - i * 15); b[i] = (byte) (i * 7); }
 		BufferedImage im = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_INDEXED, new IndexColorModel(8, 17, r, g, b));
 		im.getRaster().setDataElements(0, 0, w, h, px);
@@ -51,10 +53,12 @@ public class FullscreenTest {
 		return f;
 	}
 
-	/** v1's PngToBottomUpB16Bin, its conversion loop as it is */
+	/** v1's PngToBottomUpB16Bin, its conversion loop as it is (the declarations one a line) */
 	private static byte[] v1(byte[] pixels) {
-		int width = 160, height = 200;
-		int i, j;
+		int width = 160;
+		int height = 200;
+		int i;
+		int j;
 		byte[] pixelsAB = new byte[16000];
 		for (i = (width*height)-1, j = 0; i >= 28; i -= 28) {
 			pixelsAB[j]   = (byte)((pixels[i-27]-1) << 4 | (pixels[i-26]-1) & 0x0F );

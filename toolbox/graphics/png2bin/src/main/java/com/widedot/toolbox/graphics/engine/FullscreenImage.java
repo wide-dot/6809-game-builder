@@ -27,7 +27,8 @@ public final class FullscreenImage {
 		return out;
 	}
 
-	private static void climb(byte[] plane, byte[] out, int o) {
+	private static void climb(byte[] plane, byte[] out, int start) {
+		int o = start;
 		int top = BANK;
 		while (top >= BLOCK) {
 			System.arraycopy(plane, top - BLOCK, out, o, BLOCK);

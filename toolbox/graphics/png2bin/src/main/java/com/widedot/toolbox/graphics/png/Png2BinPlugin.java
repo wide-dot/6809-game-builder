@@ -76,6 +76,8 @@ public class Png2BinPlugin {
 		return m;
 	}
 
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 	public static ObjectDataInterface getObject(ImmutableNode node, BuildContext ctx) throws Exception {
 
 		String filename   = Attribute.getString(node, ctx, "filename");
