@@ -29,6 +29,10 @@ Two cautions, both learned on machine :
   cleared, so a swap can never leave the next music unfolding shifted by
   one byte.
 
+The TO8's built-in 6-bit DAC (`$E7CD`) shares its bits 2 and 3 with pin 7
+of the joypad ports : a DAC resting with them at 0 makes a Mega Drive pad
+read left and right pressed. See [joypads and the DAC](joypad.md).
+
 The MPLUS expansion card benches (`examples/mplus`) additionally exercise
 PCM playback (`pcm` converter), MEA8000 speech synthesis and MIDI over the
 EF6850 ACIA — experimental, not required by any game port.

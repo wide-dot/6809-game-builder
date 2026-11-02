@@ -979,6 +979,18 @@ un toje dont le 6804 laisse CRC bit 0 au CPU et dont le 6846 lâche sa ligne
 IRQ quand CP1 n'est pas autorisé (wide-dot/toje#64) ; le toje publié 1.9.0
 échoue (le moniteur prend toutes les trames).
 
+## Manettes et CNA : le même port (02/11/2026)
+
+Les bits 2 et 3 du CNA (`$E7CD`) sont aussi la broche 7 des prises manette :
+le bouton B Thomson, le SELECT d'un pad Mega Drive. Un pad Mega Drive dont
+le SELECT est bas lit gauche ET droite enfoncés (sa marque
+d'identification). Un jeu qui joue le CNA avec ses lignes en sortie et qui
+le laisse au repos avec ces bits à 0 (un haut-parleur 1 bit en 0 / 63) fait
+marcher le joueur à gauche tout seul, sur machine seulement (vécu le
+02/11/2026 ; toje ne modélise pas SELECT). Règle et parades (niveaux
+`$0C` / `$3F`, repos sûr après chaque son, DDRB rendu à `$00`) :
+[`joypad.md`](docs/lang/en/joypad.md).
+
 ## Sauvegarde sur disquette : `writable` et `loader.file.save` (28/10/2026)
 
 `<file writable="true" codec="none">` : un fichier que le jeu réécrit sur
