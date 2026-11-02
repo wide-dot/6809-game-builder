@@ -113,40 +113,50 @@ final class Conversion {
 		double[] ds = new double[end - p];
 		for (int j : order) {
 			Color c = colours.get(j);
-			double[] lc = lab(c);
-			int n = 0;
-			for (int k : placed) {
-				if (!colours.get(k).equals(c)) {
-					ks[n] = k;
-					ds[n++] = Math.min(ciede2000(lc, lab(colours.get(k))), apart);
-				}
-			}
+			int n = distances(colours, c, placed, ks, ds);
 			boolean black = out[j][0] == 0 && out[j][1] == 0 && out[j][2] == 0;
 			if (!black && !far(exactTable[index(out[j])], ks, ds, n, out)) {
-				double[] target = target(c);
-				double cur = ciede2000(target, exactTable[index(out[j])]);
-				int best = -1;
-				double min = Double.POSITIVE_INFINITY;
-				for (int x = 0; x < 4096; x++) {
-					if (keepZeros && (c.getRed() == 0 && x >> 8 != 0 || c.getGreen() == 0 && (x >> 4 & 15) != 0
-					                  || c.getBlue() == 0 && (x & 15) != 0)) {
-						continue;
-					}
-					if (!far(exactTable[x], ks, ds, n, out)) {
-						continue;
-					}
-					double d = ciede2000(target, exactTable[x]);
-					if (d < min) {
-						min = d;
-						best = x;
-					}
-				}
-				if (best >= 0 && min <= cur + apart) {
-					out[j] = new int[] {best >> 8, (best >> 4) & 15, best & 15};
-				}
+				out[j] = searchApart(c, out[j], ks, ds, n, out);
 			}
 			placed.add(j);
 		}
+	}
+
+	/** the colours placed other than c, in ks, and the distance c keeps from each, in ds : how many */
+	private int distances(List<Color> colours, Color c, List<Integer> placed, int[] ks, double[] ds) {
+		double[] lc = lab(c);
+		int n = 0;
+		for (int k : placed) {
+			if (!colours.get(k).equals(c)) {
+				ks[n] = k;
+				ds[n++] = Math.min(ciede2000(lc, lab(colours.get(k))), apart);
+			}
+		}
+		return n;
+	}
+
+	/** c's levels nearest its target that keep the distances, if at most apart further than now's */
+	private int[] searchApart(Color c, int[] now, int[] ks, double[] ds, int n, int[][] out) {
+		double[] target = target(c);
+		double cur = ciede2000(target, exactTable[index(now)]);
+		int best = -1;
+		double min = Double.POSITIVE_INFINITY;
+		for (int x = 0; x < 4096; x++) {
+			if (zeroKept(c, x) && far(exactTable[x], ks, ds, n, out)) {
+				double d = ciede2000(target, exactTable[x]);
+				if (d < min) {
+					min = d;
+					best = x;
+				}
+			}
+		}
+		return best >= 0 && min <= cur + apart ? new int[] {best >> 8, (best >> 4) & 15, best & 15} : now;
+	}
+
+	/** levels x keep c's zero components at 0, or zeros are the search's */
+	private boolean zeroKept(Color c, int x) {
+		return !keepZeros || (c.getRed() != 0 || x >> 8 == 0) && (c.getGreen() != 0 || (x >> 4 & 15) == 0)
+		                     && (c.getBlue() != 0 || (x & 15) == 0);
 	}
 
 	/** at least ds[i] from the levels of colour ks[i], each of the n */

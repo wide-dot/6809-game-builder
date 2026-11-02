@@ -307,7 +307,7 @@ public class Png2PalPlugin {
 		} catch (NumberFormatException e) {
 			throw new Exception("png2pal : apart '" + apart + "' is not a distance", e);
 		}
-		if (!(d > 0)) {
+		if (Double.isNaN(d) || d <= 0) {
 			throw new Exception("png2pal : apart '" + apart + "' : a distance above 0");
 		}
 		return d;

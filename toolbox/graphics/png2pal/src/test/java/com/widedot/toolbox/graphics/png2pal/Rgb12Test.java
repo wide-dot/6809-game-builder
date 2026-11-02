@@ -99,7 +99,9 @@ public class Rgb12Test {
 		int changed = 0;
 		for (int i = 0; i < cs.size(); i++) {
 			java.awt.Color c = cs.get(i);
-			int g = (free[2 * i] >> 4) & 15, r = free[2 * i] & 15, b = free[2 * i + 1] & 15;   // GGGGRRRR, 0000BBBB
+			int g = (free[2 * i] >> 4) & 15;          // GGGGRRRR, 0000BBBB
+			int r = free[2 * i] & 15;
+			int b = free[2 * i + 1] & 15;
 			int want = (c.getGreen() == 0 ? 0 : g) << 4 | (c.getRed() == 0 ? 0 : r);
 			assertEquals(want, got[2 * i] & 0xFF, "colour " + i);
 			assertEquals(c.getBlue() == 0 ? 0 : b, got[2 * i + 1], "colour " + i);
