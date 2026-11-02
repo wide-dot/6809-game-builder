@@ -190,9 +190,11 @@ public class Image {
 	 * 4 = draw1/clear1 walk U row by row (LEAU, 5-bit offsets, D pairs, no
 	 * redundant AND), clear stores zeros ; 5 = bm4s draw lays half
 	 * transparent pairs with masks, a byte once (its whole pair taken from the
-	 * pattern code), U walked, the walk folded into the first LEAU.
+	 * pattern code), U walked, the walk folded into the first LEAU ; 6 =
+	 * planes=offset takes each plane's walk of U back (to the second plane,
+	 * folded into its first LEAU, and out).
 	 */
-	private static final String CACHE_VERSION = "5";
+	private static final String CACHE_VERSION = "6";
 
 	public String planes;
 

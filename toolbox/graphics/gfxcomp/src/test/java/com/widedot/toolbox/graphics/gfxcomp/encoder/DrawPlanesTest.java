@@ -10,11 +10,16 @@ import java.awt.image.IndexColorModel;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -33,6 +38,21 @@ import com.widedot.toolbox.graphics.gfxcomp.transformer.mirror.Mirror;
  * is why v1's HUD hand-wrote its twelve digits instead of generating them.
  */
 public class DrawPlanesTest {
+
+	/** where the routines under test are called, in the first plane */
+	private static final int ANCHOR = 0xC000 + 100 * 40 + 10;
+
+	// the code under test, not a previous run's : the cache keys on the
+	// pictures, not on the encoder
+	@BeforeEach
+	void noCache() {
+		System.setProperty("builder.cache", "off");
+	}
+
+	@AfterEach
+	void cacheBack() {
+		System.clearProperty("builder.cache");
+	}
 
 	/** an 8 bit indexed sprite, colour 0 transparent, a 2x2 block of colour 1 */
 	private static File sprite(Path dir, String name) throws Exception {
@@ -61,6 +81,109 @@ public class DrawPlanesTest {
 				Mirror.NONE, 0, Image.POSITION_CENTER, planes);
 		image.encode(dir.toString());
 		return Files.readString(dir.resolve(image.getFullName() + ".asm"));
+	}
+
+	/**
+	 * a mire w x h, colour 0 transparent : every pixel coloured from its
+	 * place, the top line left transparent or not, some pixels transparent
+	 * when holes
+	 */
+	private static File mire(Path dir, String name, int w, int h, boolean topLineTransparent, boolean holes) throws Exception {
+		byte[] r = new byte[17], g = new byte[17], b = new byte[17];
+		for (int i = 1; i < 17; i++) { r[i] = (byte) (i * 8); g[i] = (byte) (i * 4); b[i] = (byte) (i * 2); }
+		IndexColorModel cm = new IndexColorModel(8, 17, r, g, b, 0);
+		BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_INDEXED, cm);
+		for (int y = topLineTransparent ? 1 : 0; y < h; y++)
+			for (int x = 0; x < w; x++)
+				if (!holes || (x * 7 + y * 3) % 11 != 0)
+					img.getRaster().setSample(x, y, 0, 1 + (x * 3 + y * 5) % 16);
+		File file = dir.resolve(name + ".png").toFile();
+		ImageIO.write(img, "png", file);
+		return file;
+	}
+
+	private static String compile(Path dir, File png, String name, String position, String planes) throws Exception {
+		VideoMemory.memoryLinearBits = 4;
+		VideoMemory.memoryPlanarBits = 8;
+		VideoMemory.memoryLineBytes = 40;
+		VideoMemory.memoryNbPlanes = 2;
+		VideoMemory.memoryPlaneDistance = 8192;
+		Path out = dir.resolve(planes);
+		Image image = new Image(name, 0, png.getAbsolutePath(), Image.TYPE_DRAW,
+				Mirror.NONE, 0, position, planes);
+		image.encode(out.toString());
+		return Files.readString(out.resolve(image.getFullName() + ".asm"));
+	}
+
+	/**
+	 * the bytes a routine writes, U followed through what the draw encoder
+	 * emits (LEAU, PSHU, the second plane's LDU, ST n,U) from ANCHOR, the
+	 * second plane's pointer at ANCHOR - 8192 ; U where it ends, last
+	 */
+	private static List<Integer> writes(String asm) {
+		List<Integer> bytes = new ArrayList<Integer>();
+		int u = ANCHOR;
+		for (String line : asm.split("\n")) {
+			String op = line.trim().toUpperCase();
+			Matcher m;
+			if ((m = Pattern.compile("^LEAU\\s+(-?\\d+),U$").matcher(op)).matches()) {
+				u += Integer.parseInt(m.group(1));
+			} else if (op.equals("LDU <GLB_SCREEN_LOCATION_1")) {
+				u = ANCHOR - 8192;
+			} else if (op.startsWith("PSHU ")) {
+				for (String reg : op.substring(5).split(",")) {
+					int n = reg.trim().matches("CC|A|B|DP") ? 1 : 2;
+					for (int i = 0; i < n; i++) {
+						bytes.add(--u);
+					}
+				}
+			} else if ((m = Pattern.compile("^ST([ABDXYSU])\\s+(-?\\d*),U$").matcher(op)).matches()) {
+				int at = u + (m.group(2).isEmpty() ? 0 : Integer.parseInt(m.group(2)));
+				bytes.add(at);
+				if (!m.group(1).matches("[AB]")) {
+					bytes.add(at + 1);
+				}
+			} else if (op.matches(".*,(-{1,2}U|U\\+{1,2})$") || op.matches("^(LDU|LEAU|PULU|TFR|EXG)\\b.*")) {
+				throw new IllegalStateException("not followed : " + op);
+			}
+		}
+		Collections.sort(bytes);
+		bytes.add(u);
+		return bytes;
+	}
+
+	/**
+	 * Each plane's code walks U (LEAU, PSHU) and stops where its walk ends,
+	 * the anchor only by chance : the offset form has to take that walk back,
+	 * on its way to the second plane and on its way out. An image whose top
+	 * line is transparent ends its walk away from its top left (a HUD's
+	 * head : its second plane drawn 4 lines and a byte off, 31/10/2026) ; a
+	 * wide opaque one walks by PSHU. Both write, in the offset form, every
+	 * byte the pointer form writes and nothing else, and give U back.
+	 */
+	@Test
+	void theOffsetFormWritesWhereThePointerFormDoesAndGivesUBack(@TempDir Path dir) throws Exception {
+		Object[][] cases = {
+				{"head", mire(dir, "head", 8, 16, true, true), Image.POSITION_TOP_LEFT},
+				{"tall", mire(dir, "tall", 16, 40, true, true), Image.POSITION_CENTER},
+				{"wide", mire(dir, "wide", 64, 12, false, false), Image.POSITION_TOP_LEFT},
+		};
+		boolean walked = false;
+		boolean pushed = false;
+		for (Object[] c : cases) {
+			String pointer = compile(dir, (File) c[1], (String) c[0], (String) c[2], Image.PLANES_POINTER);
+			String offset = compile(dir, (File) c[1], (String) c[0], (String) c[2], Image.PLANES_OFFSET);
+			List<Integer> byPointer = writes(pointer);
+			List<Integer> byOffset = writes(offset);
+			assertEquals(ANCHOR, byOffset.remove(byOffset.size() - 1), c[0] + " : U given back\n" + offset);
+			byPointer.remove(byPointer.size() - 1);
+			assertEquals(byPointer, byOffset, c[0] + " : the same bytes\n" + offset);
+			List<Integer> first = writes(pointer.substring(0, pointer.indexOf("LDU <glb_screen_location_1")));
+			walked |= first.get(first.size() - 1) != ANCHOR;
+			pushed |= offset.contains("PSHU");
+		}
+		assertTrue(walked, "a case leaves its first plane away from the anchor");
+		assertTrue(pushed, "a case walks U by PSHU");
 	}
 
 	@Test
