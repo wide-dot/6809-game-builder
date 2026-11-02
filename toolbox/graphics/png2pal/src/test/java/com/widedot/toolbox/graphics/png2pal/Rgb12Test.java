@@ -158,4 +158,39 @@ public class Rgb12Test {
 		Exception e = assertThrows(Exception.class, () -> Png2PalPlugin.apart("0"));
 		assertTrue(e.getMessage().contains("above 0"), e.getMessage());
 	}
+
+	@Test
+	void theColoursSetAreSet() throws Exception {
+		// set : a colour given its TO8 colour, in every palette it is in ; the others the rules'
+		Png2PalPlugin.Options o = new Png2PalPlugin.Options();
+		o.lift = new double[] {5, 15, 42};
+		o.darkestBlack = true;
+		byte[] free = convert(o, 256);
+		java.util.List<java.awt.Color> cs = Png2PalPlugin.rgb12(resource("rgb12-mire.bin").toFile(), 16, 256);
+		int from = cs.get(17).getRGB() & 0xFFFFFF;
+		o.set = Png2PalPlugin.set(String.format("%06X:B80000", from));
+		byte[] got = convert(o, 256);
+		int set = 0;
+		for (int i = 0; i < cs.size(); i++) {
+			if ((cs.get(i).getRGB() & 0xFFFFFF) == from) {
+				assertEquals(0x06, got[2 * i], "colour " + i);       // GGGGRRRR : red level 6 (184, $B8)
+				assertEquals(0x00, got[2 * i + 1], "colour " + i);
+				set++;
+			} else {
+				assertEquals(free[2 * i], got[2 * i], "colour " + i);
+				assertEquals(free[2 * i + 1], got[2 * i + 1], "colour " + i);
+			}
+		}
+		assertTrue(set > 0);
+	}
+
+	@Test
+	void aSetOffTheLevelsIsRefused() throws Exception {
+		Png2PalPlugin.Options o = new Png2PalPlugin.Options();
+		o.set = Png2PalPlugin.set("662200:B90000");
+		Exception e = assertThrows(Exception.class, () -> convert(o, 256));
+		assertTrue(e.getMessage().contains("B9 is not a level"), e.getMessage());
+		assertThrows(Exception.class, () -> Png2PalPlugin.set("662200"));
+		assertThrows(Exception.class, () -> Png2PalPlugin.set("662200:B80000,662200:9E0000"));
+	}
 }

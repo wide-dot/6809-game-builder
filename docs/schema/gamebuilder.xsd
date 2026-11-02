@@ -2847,6 +2847,9 @@
       <xs:attribute name="apart" type="xs:string">
         <xs:annotation><xs:documentation>a CIEDE2000 distance (e.g. 6) : from the darkest colour of a palette up, a colour the search brought closer to one already placed than their own distance (at most this one) searched again among the levels that keep it, if one is at most this much further from its target. The search then runs on unrounded Lab values</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="set" type="xs:string">
+        <xs:annotation><xs:documentation>RRGGBB:RRGGBB,... : a colour, the TO8 colour it is given wherever it is, after the rules (the choices no rule makes) ; the TO8 colour made of the profile's levels</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 

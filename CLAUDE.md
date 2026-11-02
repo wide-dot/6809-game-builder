@@ -1072,6 +1072,11 @@ la tiennent, si l'un est au plus à 6 de plus de sa cible. Eau : 54 couleurs sur
 512 bougent d'un ou deux crans. Une règle d'ordre des clartés (un sombre reste
 plus sombre) a été essayée et écartée : elle se bat avec l'écart (le piton doit
 aussi rester plus sombre que le ciel).
+`set="RRGGBB:RRGGBB,..."` (02/11/2026) : les choix qu'aucune règle ne fait —
+une couleur reçoit sa couleur TO8 après les règles, dans toutes les palettes où
+elle est ; une couleur TO8 hors des niveaux du profil est refusée. Another
+World : le brun sombre des cheveux de Lester (`#662200`, `#772200`), ocre et
+aussi clair que le roux après les règles, mis à `#B80000`.
 
 ## Fidélité arcade de R-Type
 

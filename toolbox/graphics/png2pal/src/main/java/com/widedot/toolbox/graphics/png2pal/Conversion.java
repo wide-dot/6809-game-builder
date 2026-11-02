@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import com.widedot.m6809.util.color.LAB;
 
@@ -29,6 +30,8 @@ import com.widedot.m6809.util.color.LAB;
  * TO8's light levels, close as they are there, two darks a few levels apart
  * may land on the same step of one component.
  *
+ * And the choices no rule makes : set, a colour given its levels, wherever it is.
+ *
  * Without them, the search is the one png2pal always made (util's LAB : Lab
  * rounded to whole numbers, a fast atan2). With either, it is v1 Another
  * World's (choice D), exactly : Lab as computed with its sRGB matrix, and
@@ -40,11 +43,14 @@ final class Conversion {
 	private final boolean darkestBlack;
 	private final boolean keepZeros;        // a component at 0 stays at 0
 	private final double apart;             // the distance kept between two colours, 0 none
+	private final Map<Integer, int[]> set;  // a colour's RGB -> its levels, after the rules
 	private final boolean exact;            // v1's arithmetic
 	private final LAB[] table = new LAB[4096];
 	private final double[][] exactTable = new double[4096][];
 
-	Conversion(int[] profile, double[] lift, boolean darkestBlack, boolean keepZeros, double apart) {
+	Conversion(int[] profile, double[] lift, boolean darkestBlack, boolean keepZeros, double apart,
+	           Map<Integer, int[]> set) {
+		this.set = set;
 		this.lift = lift;
 		this.darkestBlack = darkestBlack;
 		this.keepZeros = keepZeros;
@@ -84,6 +90,12 @@ final class Conversion {
 			}
 			if (apart > 0) {
 				apart(colours, p, end, out);
+			}
+			for (int i = p; i < end; i++) {
+				int[] l = set.get(colours.get(i).getRGB() & 0xFFFFFF);
+				if (l != null) {
+					out[i] = l.clone();
+				}
 			}
 		}
 		return out;

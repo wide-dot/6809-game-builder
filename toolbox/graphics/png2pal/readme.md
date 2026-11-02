@@ -95,6 +95,7 @@ The plugin name is : png2pal
 | darkest     | keep                   | keep, black         | the darkest colour of each palette written black                |
 | zeros       | search                 | search, keep        | keep : a component at 0 in the colour stays at 0                |
 | apart       |                        | *distance*          | two colours of a palette kept apart (CIEDE2000)                 |
+| set         |                        | *RRGGBB:RRGGBB,...* | a colour given its TO8 colour, after the rules                  |
 
 <sup>1</sup> without extension
 <sup>2</sup> with mode specific extension (.asm or .bin)
@@ -147,6 +148,16 @@ than their own distance (6 at most) is searched again among the levels that keep
 distance to each one placed (its zero components kept with `zeros="keep"`), if one is at most
 6 further from its target ; else it stays : `#6161AB`, `#8F9ED4`. The water's 512 colours :
 54 moved, by a level or two.
+
+### The choices no rule makes : `set`
+
+`set="RRGGBB:RRGGBB,..."` gives a colour its TO8 colour, after the rules, wherever the colour
+is : in every palette of the table. The TO8 colour is made of the profile's levels (0, 97, 122,
+143, 158, 171, 184, 194, 204, 212, 219, 227, 235, 242, 250, 255 for `to`), another refused.
+Another World's : Lester's dark hair, `#662200` and `#772200`, came out ochre `#B87A00`,
+`#C27A00`, as light as the red hair beside them ; a rule keeping the darks darker fought
+`apart` (the rock peak must stay darker than the sky too) and did not give the red wanted.
+`set="662200:B80000,772200:B80000"` : a dark red, in the five palettes of his close-ups.
 
 ### Command line
 Command line use the same parameters as the ones used by plugin.
