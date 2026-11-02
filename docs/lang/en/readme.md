@@ -114,6 +114,8 @@ Platform distributions are then generated in `package/target` :
 
 [keyboard — the 6804's frames (TO8)][keyboard]
 
+[joypads and the DAC — one port for both (TO8)][joypad]
+
 [migrating from the first generation — the casebook][migration]
 
 ## Toolbox
@@ -143,6 +145,7 @@ Platform distributions are then generated in `package/target` :
 [interrupts]: interrupts.md
 [gfxlock]: gfxlock.md
 [keyboard]: keyboard.md
+[joypad]: joypad.md
 [migration]: migration/README.md
 [toolbox-reference]: toolbox.md
 [credits]: credits.md
