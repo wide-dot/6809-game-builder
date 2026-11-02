@@ -2844,6 +2844,9 @@
       <xs:attribute name="zeros" type="xs:string">
         <xs:annotation><xs:documentation>search (default) or keep : a component at 0 in the colour set to 0 in the levels the search found (a dark blue lifted stays a blue, not a violet)</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="apart" type="xs:string">
+        <xs:annotation><xs:documentation>a CIEDE2000 distance (e.g. 6) : from the darkest colour of a palette up, a colour the search brought closer to one already placed than their own distance (at most this one) searched again among the levels that keep it, if one is at most this much further from its target. The search then runs on unrounded Lab values</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 

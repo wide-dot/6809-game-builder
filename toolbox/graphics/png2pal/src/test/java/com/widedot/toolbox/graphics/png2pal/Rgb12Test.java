@@ -113,4 +113,49 @@ public class Rgb12Test {
 		Exception e = assertThrows(Exception.class, () -> Png2PalPlugin.keepZeros("black"));
 		assertTrue(e.getMessage().contains("[search, keep]"), e.getMessage());
 	}
+
+	@Test
+	void theColoursAreKeptApart() throws Exception {
+		// apart="6" : a colour the option moved is, from every darker colour of its palette, at
+		// least their original distance (6 at most) ; the others are the search's
+		Png2PalPlugin.Options o = new Png2PalPlugin.Options();
+		o.lift = new double[] {5, 15, 42};
+		o.darkestBlack = true;
+		o.keepZeros = true;
+		byte[] free = convert(o, 256);
+		o.apart = 6;
+		byte[] got = convert(o, 256);
+		java.util.List<java.awt.Color> cs = Png2PalPlugin.rgb12(resource("rgb12-mire.bin").toFile(), 16, 256);
+		int[] lv = {0, 97, 122, 143, 158, 171, 184, 194, 204, 212, 219, 227, 235, 242, 250, 255};
+		int moved = 0;
+		for (int p = 0; p < 256; p++) {
+			for (int j = p * 16; j < p * 16 + 16; j++) {
+				if (got[2 * j] == free[2 * j] && got[2 * j + 1] == free[2 * j + 1]) {
+					continue;
+				}
+				moved++;
+				java.awt.Color c = cs.get(j);
+				double[] lc = Conversion.lab(c.getRed(), c.getGreen(), c.getBlue());
+				double[] lt = Conversion.lab(lv[got[2 * j] & 15], lv[(got[2 * j] >> 4) & 15], lv[got[2 * j + 1] & 15]);
+				for (int k = p * 16; k < p * 16 + 16; k++) {
+					java.awt.Color d = cs.get(k);
+					double[] ld = Conversion.lab(d.getRed(), d.getGreen(), d.getBlue());
+					if (k == j || d.equals(c) || ld[0] > lc[0] || ld[0] == lc[0] && k > j) {
+						continue;                          // the darker ones only : placed before
+					}
+					double want = Math.min(Conversion.ciede2000(lc, ld), 6);
+					double[] lk = Conversion.lab(lv[got[2 * k] & 15], lv[(got[2 * k] >> 4) & 15], lv[got[2 * k + 1] & 15]);
+					assertTrue(Conversion.ciede2000(lt, lk) >= want, "palette " + p + " colours " + j + ", " + k);
+				}
+			}
+		}
+		assertTrue(moved > 0, "the mire has colours the search brings together");
+	}
+
+	@Test
+	void aBadApartIsRefused() {
+		assertThrows(Exception.class, () -> Png2PalPlugin.apart("far"));
+		Exception e = assertThrows(Exception.class, () -> Png2PalPlugin.apart("0"));
+		assertTrue(e.getMessage().contains("above 0"), e.getMessage());
+	}
 }

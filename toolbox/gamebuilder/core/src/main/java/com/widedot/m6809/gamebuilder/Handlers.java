@@ -296,7 +296,8 @@ public final class Handlers {
 			.opt("palettes", INT, "format rgb12 : how many palettes of colors words the file holds, converted one after the other into one table. Default 1")
 			.opt("lift", STRING, "black,from,floor in L* (e.g. 5,15,42) : the darks spread above the TO8's first level before the search, L* from..100 to floor..100, a colour at most black kept. The search then runs on unrounded Lab values")
 			.opt("darkest", STRING, "keep (default) or black : the darkest colour of each palette written black. With lift or darkest, the search runs on unrounded Lab values (v1 Another World's conversion)")
-			.opt("zeros", STRING, "search (default) or keep : a component at 0 in the colour set to 0 in the levels the search found (a dark blue lifted stays a blue, not a violet)"));
+			.opt("zeros", STRING, "search (default) or keep : a component at 0 in the colour set to 0 in the levels the search found (a dark blue lifted stays a blue, not a violet)")
+			.opt("apart", STRING, "a CIEDE2000 distance (e.g. 6) : from the darkest colour of a palette up, a colour the search brought closer to one already placed than their own distance (at most this one) searched again among the levels that keep it, if one is at most this much further from its target. The search then runs on unrounded Lab values"));
 		spec(element("txt2bas").doc("tokenize a BASIC text file")
 			.req("filename", STRING, "input text file")
 			.req("tokenset", STRING, "BASIC token set"));

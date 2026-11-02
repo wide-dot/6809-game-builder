@@ -45,6 +45,8 @@ public class Png2PalPlugin {
 		public boolean darkestBlack;
 		/** a component at 0 in the colour set to 0 in the levels found */
 		public boolean keepZeros;
+		/** the CIEDE2000 distance kept between two colours of a palette (Conversion), 0 none */
+		public double apart;
 	}
 
 	public static byte[] run(String symbol, String mode, int colors, int offset, String profile, String filename, String gensource) throws Exception {
@@ -67,7 +69,7 @@ public class Png2PalPlugin {
 		
 		log.debug("Process one or more PNG files to extract and convert indexed palette data.");
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
-		Conversion conversion = new Conversion(FileResourcesUtils.get(profile+".txt"), options.lift, options.darkestBlack, options.keepZeros);
+		Conversion conversion = new Conversion(FileResourcesUtils.get(profile+".txt"), options.lift, options.darkestBlack, options.keepZeros, options.apart);
 		
 		// process indexed colors of png files
 		File file = new File(filename);
@@ -225,7 +227,7 @@ public class Png2PalPlugin {
 		return bin;
 	}
 
-	/** format, palettes, lift, darkest, zeros : the element's attributes beyond the colours */
+	/** format, palettes, lift, darkest, zeros, apart : the element's attributes beyond the colours */
 	// the toolchain signals build errors with plain Exceptions
 	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 	static Options options(ImmutableNode node, BuildContext ctx) throws Exception {
@@ -241,6 +243,7 @@ public class Png2PalPlugin {
 		o.lift = lift(Attribute.getStringOpt(node, ctx, "lift"));
 		o.darkestBlack = darkestBlack(Attribute.getString(node, ctx, "darkest", "keep"));
 		o.keepZeros = keepZeros(Attribute.getString(node, ctx, "zeros", "search"));
+		o.apart = apart(Attribute.getStringOpt(node, ctx, "apart"));
 		return o;
 	}
 
@@ -282,6 +285,25 @@ public class Png2PalPlugin {
 			throw new Exception("png2pal : zeros '" + zeros + "' is not one of [search, keep]");
 		}
 		return z.equals("keep");
+	}
+
+	/** apart="distance" (CIEDE2000, above 0), 0 when absent */
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	static double apart(String apart) throws Exception {
+		if (apart == null) {
+			return 0;
+		}
+		double d;
+		try {
+			d = Double.parseDouble(apart.trim());
+		} catch (NumberFormatException e) {
+			throw new Exception("png2pal : apart '" + apart + "' is not a distance", e);
+		}
+		if (!(d > 0)) {
+			throw new Exception("png2pal : apart '" + apart + "' : a distance above 0");
+		}
+		return d;
 	}
 
 	/**

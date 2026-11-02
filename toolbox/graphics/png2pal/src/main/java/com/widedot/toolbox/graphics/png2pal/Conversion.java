@@ -1,6 +1,8 @@
 package com.widedot.toolbox.graphics.png2pal;
 
 import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import com.widedot.m6809.util.color.LAB;
@@ -20,6 +22,13 @@ import com.widedot.m6809.util.color.LAB;
  * reaches its lightness with red and green it does not have (violets, mauve
  * greys) ; its zero components kept, it stays a blue, darker.
  *
+ * And one for colours the search brings together : apart, from the darkest
+ * colour of a palette up, a colour closer to one already placed than their own
+ * distance (at most apart) searched again among the levels that keep those
+ * distances, if one is at most apart further from its target. Lifted into the
+ * TO8's light levels, close as they are there, two darks a few levels apart
+ * may land on the same step of one component.
+ *
  * Without them, the search is the one png2pal always made (util's LAB : Lab
  * rounded to whole numbers, a fast atan2). With either, it is v1 Another
  * World's (choice D), exactly : Lab as computed with its sRGB matrix, and
@@ -30,15 +39,17 @@ final class Conversion {
 	private final double[] lift;            // black, from, floor ; null : none
 	private final boolean darkestBlack;
 	private final boolean keepZeros;        // a component at 0 stays at 0
+	private final double apart;             // the distance kept between two colours, 0 none
 	private final boolean exact;            // v1's arithmetic
 	private final LAB[] table = new LAB[4096];
 	private final double[][] exactTable = new double[4096][];
 
-	Conversion(int[] profile, double[] lift, boolean darkestBlack, boolean keepZeros) {
+	Conversion(int[] profile, double[] lift, boolean darkestBlack, boolean keepZeros, double apart) {
 		this.lift = lift;
 		this.darkestBlack = darkestBlack;
 		this.keepZeros = keepZeros;
-		this.exact = lift != null || darkestBlack;
+		this.apart = apart;
+		this.exact = lift != null || darkestBlack || apart > 0;
 		for (int r = 0; r < 16; r++) {
 			for (int g = 0; g < 16; g++) {
 				for (int b = 0; b < 16; b++) {
@@ -71,8 +82,73 @@ final class Conversion {
 					                    c.getBlue() == 0 ? 0 : out[i][2]};
 				}
 			}
+			if (apart > 0) {
+				apart(colours, p, end, out);
+			}
 		}
 		return out;
+	}
+
+	/** the palette p..end-1 : its colours brought too close by the search set apart */
+	private void apart(List<Color> colours, int p, int end, int[][] out) {
+		List<Integer> order = new ArrayList<>();
+		for (int i = p; i < end; i++) {
+			order.add(i);
+		}
+		order.sort(Comparator.comparingDouble(i -> lab(colours.get(i))[0]));     // stable : the darkest first
+		List<Integer> placed = new ArrayList<>();
+		int[] ks = new int[end - p];
+		double[] ds = new double[end - p];
+		for (int j : order) {
+			Color c = colours.get(j);
+			double[] lc = lab(c);
+			int n = 0;
+			for (int k : placed) {
+				if (!colours.get(k).equals(c)) {
+					ks[n] = k;
+					ds[n++] = Math.min(ciede2000(lc, lab(colours.get(k))), apart);
+				}
+			}
+			boolean black = out[j][0] == 0 && out[j][1] == 0 && out[j][2] == 0;
+			if (!black && !far(exactTable[index(out[j])], ks, ds, n, out)) {
+				double[] target = target(c);
+				double cur = ciede2000(target, exactTable[index(out[j])]);
+				int best = -1;
+				double min = Double.POSITIVE_INFINITY;
+				for (int x = 0; x < 4096; x++) {
+					if (keepZeros && (c.getRed() == 0 && x >> 8 != 0 || c.getGreen() == 0 && (x >> 4 & 15) != 0
+					                  || c.getBlue() == 0 && (x & 15) != 0)) {
+						continue;
+					}
+					if (!far(exactTable[x], ks, ds, n, out)) {
+						continue;
+					}
+					double d = ciede2000(target, exactTable[x]);
+					if (d < min) {
+						min = d;
+						best = x;
+					}
+				}
+				if (best >= 0 && min <= cur + apart) {
+					out[j] = new int[] {best >> 8, (best >> 4) & 15, best & 15};
+				}
+			}
+			placed.add(j);
+		}
+	}
+
+	/** at least ds[i] from the levels of colour ks[i], each of the n */
+	private boolean far(double[] l, int[] ks, double[] ds, int n, int[][] out) {
+		for (int i = 0; i < n; i++) {
+			if (ciede2000(l, exactTable[index(out[ks[i]])]) < ds[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static int index(int[] levels) {
+		return levels[0] << 8 | levels[1] << 4 | levels[2];
 	}
 
 	private int[] nearest(Color c) {
@@ -89,12 +165,18 @@ final class Conversion {
 		return new int[] {best >> 8, (best >> 4) & 15, best & 15};
 	}
 
-	private int[] nearestExact(Color c) {
+	/** the Lab the search aims at : the colour's, lifted */
+	private double[] target(Color c) {
 		double[] target = lab(c);
 		if (lift != null && target[0] > lift[0]) {
 			target = new double[] {lift[2] + Math.max(0.0, target[0] - lift[1]) * (100 - lift[2]) / (100 - lift[1]),
 			                       target[1], target[2]};
 		}
+		return target;
+	}
+
+	private int[] nearestExact(Color c) {
+		double[] target = target(c);
 		int best = 0;
 		double min = Double.POSITIVE_INFINITY;
 		for (int j = 0; j < 4096; j++) {
