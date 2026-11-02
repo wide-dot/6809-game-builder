@@ -1057,6 +1057,26 @@ d'Another World. Avec l'une ou l'autre, Lab exact et CIEDE2000 à atan2 exact
 (le chemin par défaut, inchangé, arrondit Lab et prend l'atan2 rapide de
 `LAB`) : 4096/4096 couleurs identiques au code v1 (`Rgb12Test`, référence
 produite par `gen_rgb12_reference.py`). Manuel : readme de png2pal.
+`zeros="keep"` (02/11/2026) : après la recherche, une composante nulle dans la
+couleur est remise à 0 — un bleu sombre remonté par `lift` n'atteint sa clarté
+qu'avec du rouge et du vert qu'il n'a pas (violets, gris mauves de l'eau
+d'Another World) ; ainsi il reste bleu, plus sombre. Une recherche restreinte
+aux couleurs sans ces composantes a été écartée : elle pousse le bleu au maximum
+et confond des tons voisins. Défaut `search` : sortie inchangée (`Rgb12Test`).
+`apart="6"` (02/11/2026) : remontées dans les niveaux clairs du TO8, serrés
+(184, 194, 204…), deux couleurs sombres voisines finissent à un cran l'une de
+l'autre (la bande du fusil d'Another World, un piton devant sa falaise). Depuis
+la plus sombre, une couleur plus proche d'une couleur placée que leur distance
+d'origine (6 au plus, CIEDE2000) est recherchée de nouveau parmi les niveaux qui
+la tiennent, si l'un est au plus à 6 de plus de sa cible. Eau : 54 couleurs sur
+512 bougent d'un ou deux crans. Une règle d'ordre des clartés (un sombre reste
+plus sombre) a été essayée et écartée : elle se bat avec l'écart (le piton doit
+aussi rester plus sombre que le ciel).
+`set="RRGGBB:RRGGBB,..."` (02/11/2026) : les choix qu'aucune règle ne fait —
+une couleur reçoit sa couleur TO8 après les règles, dans toutes les palettes où
+elle est ; une couleur TO8 hors des niveaux du profil est refusée. Another
+World : le brun sombre des cheveux de Lester (`#662200`, `#772200`), ocre et
+aussi clair que le roux après les règles, mis à `#B80000`.
 
 ## Fidélité arcade de R-Type
 

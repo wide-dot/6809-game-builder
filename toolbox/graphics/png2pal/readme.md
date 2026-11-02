@@ -93,6 +93,9 @@ The plugin name is : png2pal
 | palettes    | 1                      | 1-n                 | rgb12 : palettes of *colors* words in the file, one table        |
 | lift        |                        | black,from,floor    | the darks spread above the TO8's first level (L*)               |
 | darkest     | keep                   | keep, black         | the darkest colour of each palette written black                |
+| zeros       | search                 | search, keep        | keep : a component at 0 in the colour stays at 0                |
+| apart       |                        | *distance*          | two colours of a palette kept apart (CIEDE2000)                 |
+| set         |                        | *RRGGBB:RRGGBB,...* | a colour given its TO8 colour, after the rules                  |
 
 <sup>1</sup> without extension
 <sup>2</sup> with mode specific extension (.asm or .bin)
@@ -124,6 +127,37 @@ are that port's, to the bit (`Rgb12Test`, against its code run on the 4096 colou
 <png2pal symbol="Pal_water" filename="data/res/026.bin" format="rgb12" palettes="32"
          lift="5,15,42" darkest="black"/>
 ```
+
+### A hue the search moves : `zeros`
+
+Lifted, a dark saturated colour may only reach its lightness with components it does not
+have : a dark blue `#000055` becomes the violet `#7A61B8`, the dark teal `#002244` a mauve
+grey `#61619E` (Another World's water). `zeros="keep"` sets to 0, after the search, each
+component that is 0 in the colour : `#0000B8`, `#00619E`. The colour gets darker and keeps
+its hue ; the other components are the search's. Over the water's 32 palettes it changes
+23 of them and makes no two colours of a palette equal that were not.
+
+### Colours the search brings together : `apart`
+
+Lifted into the TO8's light levels, close as they are there (184, 194, 204...), two darks
+a few levels apart may land on the same step of one component : Another World's gun band
+`#223366` on its body `#222244` became `#61619E` on `#61618F`, a rock peak `#556699` before
+its cliff `#445577` `#7A8FC2` before `#7A8FB8` (distance 1.9, 7.6 in the original). With
+`apart="6"`, from the darkest colour of a palette up, a colour closer to one already placed
+than their own distance (6 at most) is searched again among the levels that keep that
+distance to each one placed (its zero components kept with `zeros="keep"`), if one is at most
+6 further from its target ; else it stays : `#6161AB`, `#8F9ED4`. The water's 512 colours :
+54 moved, by a level or two.
+
+### The choices no rule makes : `set`
+
+`set="RRGGBB:RRGGBB,..."` gives a colour its TO8 colour, after the rules, wherever the colour
+is : in every palette of the table. The TO8 colour is made of the profile's levels (0, 97, 122,
+143, 158, 171, 184, 194, 204, 212, 219, 227, 235, 242, 250, 255 for `to`), another refused.
+Another World's : Lester's dark hair, `#662200` and `#772200`, came out ochre `#B87A00`,
+`#C27A00`, as light as the red hair beside them ; a rule keeping the darks darker fought
+`apart` (the rock peak must stay darker than the sky too) and did not give the red wanted.
+`set="662200:B80000,772200:B80000"` : a dark red, in the five palettes of his close-ups.
 
 ### Command line
 Command line use the same parameters as the ones used by plugin.

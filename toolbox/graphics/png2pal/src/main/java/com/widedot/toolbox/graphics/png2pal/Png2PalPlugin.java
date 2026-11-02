@@ -12,7 +12,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.awt.Color;
 import java.awt.image.ColorModel;
 import java.io.IOException;
@@ -43,6 +45,12 @@ public class Png2PalPlugin {
 		public double[] lift;
 		/** the darkest colour of each palette written black */
 		public boolean darkestBlack;
+		/** a component at 0 in the colour set to 0 in the levels found */
+		public boolean keepZeros;
+		/** the CIEDE2000 distance kept between two colours of a palette (Conversion), 0 none */
+		public double apart;
+		/** a colour's RGB -> the TO8 colour it is given, its RGB in the profile's levels */
+		public Map<Integer, Integer> set = new LinkedHashMap<>();
 	}
 
 	public static byte[] run(String symbol, String mode, int colors, int offset, String profile, String filename, String gensource) throws Exception {
@@ -65,7 +73,9 @@ public class Png2PalPlugin {
 		
 		log.debug("Process one or more PNG files to extract and convert indexed palette data.");
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
-		Conversion conversion = new Conversion(FileResourcesUtils.get(profile+".txt"), options.lift, options.darkestBlack);
+		int[] levels = FileResourcesUtils.get(profile+".txt");
+		Conversion conversion = new Conversion(levels, options.lift, options.darkestBlack, options.keepZeros, options.apart,
+		                                       setLevels(options.set, levels));
 		
 		// process indexed colors of png files
 		File file = new File(filename);
@@ -223,7 +233,7 @@ public class Png2PalPlugin {
 		return bin;
 	}
 
-	/** format, palettes, lift, darkest : the element's attributes beyond the colours */
+	/** format, palettes, lift, darkest, zeros, apart, set : the element's attributes beyond the colours */
 	// the toolchain signals build errors with plain Exceptions
 	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 	static Options options(ImmutableNode node, BuildContext ctx) throws Exception {
@@ -238,6 +248,9 @@ public class Png2PalPlugin {
 		}
 		o.lift = lift(Attribute.getStringOpt(node, ctx, "lift"));
 		o.darkestBlack = darkestBlack(Attribute.getString(node, ctx, "darkest", "keep"));
+		o.keepZeros = keepZeros(Attribute.getString(node, ctx, "zeros", "search"));
+		o.apart = apart(Attribute.getStringOpt(node, ctx, "apart"));
+		o.set = set(Attribute.getStringOpt(node, ctx, "set"));
 		return o;
 	}
 
@@ -268,6 +281,82 @@ public class Png2PalPlugin {
 			throw new Exception("png2pal : darkest '" + darkest + "' is not one of [keep, black]");
 		}
 		return d.equals("black");
+	}
+
+	/** zeros="search" or "keep" */
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	static boolean keepZeros(String zeros) throws Exception {
+		String z = zeros.toLowerCase();
+		if (!z.equals("search") && !z.equals("keep")) {
+			throw new Exception("png2pal : zeros '" + zeros + "' is not one of [search, keep]");
+		}
+		return z.equals("keep");
+	}
+
+	/** apart="distance" (CIEDE2000, above 0), 0 when absent */
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	static double apart(String apart) throws Exception {
+		if (apart == null) {
+			return 0;
+		}
+		double d;
+		try {
+			d = Double.parseDouble(apart.trim());
+		} catch (NumberFormatException e) {
+			throw new Exception("png2pal : apart '" + apart + "' is not a distance", e);
+		}
+		if (Double.isNaN(d) || d <= 0) {
+			throw new Exception("png2pal : apart '" + apart + "' : a distance above 0");
+		}
+		return d;
+	}
+
+	/** set="RRGGBB:RRGGBB,..." : a colour, the TO8 colour it is given ; empty when absent */
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	static Map<Integer, Integer> set(String set) throws Exception {
+		Map<Integer, Integer> out = new LinkedHashMap<>();
+		if (set == null) {
+			return out;
+		}
+		for (String pair : set.split(",")) {
+			String[] v = pair.trim().replace("#", "").split(":");
+			if (v.length != 2 || !v[0].matches("[0-9A-Fa-f]{6}") || !v[1].matches("[0-9A-Fa-f]{6}")) {
+				throw new Exception("png2pal : set '" + pair.trim() + "' is not RRGGBB:RRGGBB");
+			}
+			int from = Integer.parseInt(v[0], 16);
+			if (out.put(from, Integer.parseInt(v[1], 16)) != null) {
+				throw new Exception("png2pal : set gives " + v[0] + " twice");
+			}
+		}
+		return out;
+	}
+
+	/** set's TO8 colours as the profile's levels, one not made of them refused */
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	static Map<Integer, int[]> setLevels(Map<Integer, Integer> set, int[] levels) throws Exception {
+		Map<Integer, int[]> out = new LinkedHashMap<>();
+		for (Map.Entry<Integer, Integer> e : set.entrySet()) {
+			int[] l = new int[3];
+			for (int k = 0; k < 3; k++) {
+				int v = e.getValue() >> (16 - 8 * k) & 0xFF;
+				l[k] = -1;
+				for (int i = 0; i < levels.length; i++) {
+					if (levels[i] == v) {
+						l[k] = i;
+					}
+				}
+				if (l[k] < 0) {
+					throw new Exception(String.format("png2pal : set %06X:%06X : %02X is not a level of the TO8", e.getKey(),
+					                                  e.getValue(), v));
+				}
+			}
+			out.put(e.getKey(), l);
+		}
+		return out;
 	}
 
 	/**

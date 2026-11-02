@@ -85,4 +85,114 @@ public class Rgb12Test {
 			assertEquals(0, got[2 * dark + 1], "palette " + p);
 		}
 	}
+
+	@Test
+	void theZerosAreKept() throws Exception {
+		// zeros="keep" : the search's levels, a component at 0 in the colour set to 0
+		Png2PalPlugin.Options o = new Png2PalPlugin.Options();
+		o.lift = new double[] {5, 15, 42};
+		o.darkestBlack = true;
+		byte[] free = convert(o, 256);
+		o.keepZeros = true;
+		byte[] got = convert(o, 256);
+		java.util.List<java.awt.Color> cs = Png2PalPlugin.rgb12(resource("rgb12-mire.bin").toFile(), 16, 256);
+		int changed = 0;
+		for (int i = 0; i < cs.size(); i++) {
+			java.awt.Color c = cs.get(i);
+			int g = (free[2 * i] >> 4) & 15;          // GGGGRRRR, 0000BBBB
+			int r = free[2 * i] & 15;
+			int b = free[2 * i + 1] & 15;
+			int want = (c.getGreen() == 0 ? 0 : g) << 4 | (c.getRed() == 0 ? 0 : r);
+			assertEquals(want, got[2 * i] & 0xFF, "colour " + i);
+			assertEquals(c.getBlue() == 0 ? 0 : b, got[2 * i + 1], "colour " + i);
+			if (got[2 * i] != free[2 * i] || got[2 * i + 1] != free[2 * i + 1]) changed++;
+		}
+		assertTrue(changed > 0, "the mire has colours with a component at 0 the search lifts");
+	}
+
+	@Test
+	void anUnknownZerosIsRefused() {
+		Exception e = assertThrows(Exception.class, () -> Png2PalPlugin.keepZeros("black"));
+		assertTrue(e.getMessage().contains("[search, keep]"), e.getMessage());
+	}
+
+	@Test
+	void theColoursAreKeptApart() throws Exception {
+		// apart="6" : a colour the option moved is, from every darker colour of its palette, at
+		// least their original distance (6 at most) ; the others are the search's
+		Png2PalPlugin.Options o = new Png2PalPlugin.Options();
+		o.lift = new double[] {5, 15, 42};
+		o.darkestBlack = true;
+		o.keepZeros = true;
+		byte[] free = convert(o, 256);
+		o.apart = 6;
+		byte[] got = convert(o, 256);
+		java.util.List<java.awt.Color> cs = Png2PalPlugin.rgb12(resource("rgb12-mire.bin").toFile(), 16, 256);
+		int[] lv = {0, 97, 122, 143, 158, 171, 184, 194, 204, 212, 219, 227, 235, 242, 250, 255};
+		int moved = 0;
+		for (int p = 0; p < 256; p++) {
+			for (int j = p * 16; j < p * 16 + 16; j++) {
+				if (got[2 * j] == free[2 * j] && got[2 * j + 1] == free[2 * j + 1]) {
+					continue;
+				}
+				moved++;
+				java.awt.Color c = cs.get(j);
+				double[] lc = Conversion.lab(c.getRed(), c.getGreen(), c.getBlue());
+				double[] lt = Conversion.lab(lv[got[2 * j] & 15], lv[(got[2 * j] >> 4) & 15], lv[got[2 * j + 1] & 15]);
+				for (int k = p * 16; k < p * 16 + 16; k++) {
+					java.awt.Color d = cs.get(k);
+					double[] ld = Conversion.lab(d.getRed(), d.getGreen(), d.getBlue());
+					if (k == j || d.equals(c) || ld[0] > lc[0] || ld[0] == lc[0] && k > j) {
+						continue;                          // the darker ones only : placed before
+					}
+					double want = Math.min(Conversion.ciede2000(lc, ld), 6);
+					double[] lk = Conversion.lab(lv[got[2 * k] & 15], lv[(got[2 * k] >> 4) & 15], lv[got[2 * k + 1] & 15]);
+					assertTrue(Conversion.ciede2000(lt, lk) >= want, "palette " + p + " colours " + j + ", " + k);
+				}
+			}
+		}
+		assertTrue(moved > 0, "the mire has colours the search brings together");
+	}
+
+	@Test
+	void aBadApartIsRefused() {
+		assertThrows(Exception.class, () -> Png2PalPlugin.apart("far"));
+		Exception e = assertThrows(Exception.class, () -> Png2PalPlugin.apart("0"));
+		assertTrue(e.getMessage().contains("above 0"), e.getMessage());
+	}
+
+	@Test
+	void theColoursSetAreSet() throws Exception {
+		// set : a colour given its TO8 colour, in every palette it is in ; the others the rules'
+		Png2PalPlugin.Options o = new Png2PalPlugin.Options();
+		o.lift = new double[] {5, 15, 42};
+		o.darkestBlack = true;
+		byte[] free = convert(o, 256);
+		java.util.List<java.awt.Color> cs = Png2PalPlugin.rgb12(resource("rgb12-mire.bin").toFile(), 16, 256);
+		int from = cs.get(17).getRGB() & 0xFFFFFF;
+		o.set = Png2PalPlugin.set(String.format("%06X:B80000", from));
+		byte[] got = convert(o, 256);
+		int set = 0;
+		for (int i = 0; i < cs.size(); i++) {
+			if ((cs.get(i).getRGB() & 0xFFFFFF) == from) {
+				assertEquals(0x06, got[2 * i], "colour " + i);       // GGGGRRRR : red level 6 (184, $B8)
+				assertEquals(0x00, got[2 * i + 1], "colour " + i);
+				set++;
+			} else {
+				assertEquals(free[2 * i], got[2 * i], "colour " + i);
+				assertEquals(free[2 * i + 1], got[2 * i + 1], "colour " + i);
+			}
+		}
+		assertTrue(set > 0);
+	}
+
+	@Test
+	void aSetOffTheLevelsIsRefused() throws Exception {
+		Png2PalPlugin.Options o = new Png2PalPlugin.Options();
+		o.set = Png2PalPlugin.set("662200:B90000");
+		Exception e = assertThrows(Exception.class, () -> convert(o, 256));
+		assertTrue(e.getMessage().contains("B9 is not a level"), e.getMessage());
+		assertThrows(Exception.class, () -> Png2PalPlugin.set("662200"));
+		assertThrows(Exception.class, () -> Png2PalPlugin.set("662200:B80000,662200:9E0000"));
+	}
 }
