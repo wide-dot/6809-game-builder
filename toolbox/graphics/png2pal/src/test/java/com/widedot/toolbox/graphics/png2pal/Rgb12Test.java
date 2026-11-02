@@ -85,4 +85,32 @@ public class Rgb12Test {
 			assertEquals(0, got[2 * dark + 1], "palette " + p);
 		}
 	}
+
+	@Test
+	void theZerosAreKept() throws Exception {
+		// zeros="keep" : the search's levels, a component at 0 in the colour set to 0
+		Png2PalPlugin.Options o = new Png2PalPlugin.Options();
+		o.lift = new double[] {5, 15, 42};
+		o.darkestBlack = true;
+		byte[] free = convert(o, 256);
+		o.keepZeros = true;
+		byte[] got = convert(o, 256);
+		java.util.List<java.awt.Color> cs = Png2PalPlugin.rgb12(resource("rgb12-mire.bin").toFile(), 16, 256);
+		int changed = 0;
+		for (int i = 0; i < cs.size(); i++) {
+			java.awt.Color c = cs.get(i);
+			int g = (free[2 * i] >> 4) & 15, r = free[2 * i] & 15, b = free[2 * i + 1] & 15;   // GGGGRRRR, 0000BBBB
+			int want = (c.getGreen() == 0 ? 0 : g) << 4 | (c.getRed() == 0 ? 0 : r);
+			assertEquals(want, got[2 * i] & 0xFF, "colour " + i);
+			assertEquals(c.getBlue() == 0 ? 0 : b, got[2 * i + 1], "colour " + i);
+			if (got[2 * i] != free[2 * i] || got[2 * i + 1] != free[2 * i + 1]) changed++;
+		}
+		assertTrue(changed > 0, "the mire has colours with a component at 0 the search lifts");
+	}
+
+	@Test
+	void anUnknownZerosIsRefused() {
+		Exception e = assertThrows(Exception.class, () -> Png2PalPlugin.keepZeros("black"));
+		assertTrue(e.getMessage().contains("[search, keep]"), e.getMessage());
+	}
 }

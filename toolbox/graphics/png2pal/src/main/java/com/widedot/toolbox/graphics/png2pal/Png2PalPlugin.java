@@ -43,6 +43,8 @@ public class Png2PalPlugin {
 		public double[] lift;
 		/** the darkest colour of each palette written black */
 		public boolean darkestBlack;
+		/** a component at 0 in the colour set to 0 in the levels found */
+		public boolean keepZeros;
 	}
 
 	public static byte[] run(String symbol, String mode, int colors, int offset, String profile, String filename, String gensource) throws Exception {
@@ -65,7 +67,7 @@ public class Png2PalPlugin {
 		
 		log.debug("Process one or more PNG files to extract and convert indexed palette data.");
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
-		Conversion conversion = new Conversion(FileResourcesUtils.get(profile+".txt"), options.lift, options.darkestBlack);
+		Conversion conversion = new Conversion(FileResourcesUtils.get(profile+".txt"), options.lift, options.darkestBlack, options.keepZeros);
 		
 		// process indexed colors of png files
 		File file = new File(filename);
@@ -223,7 +225,7 @@ public class Png2PalPlugin {
 		return bin;
 	}
 
-	/** format, palettes, lift, darkest : the element's attributes beyond the colours */
+	/** format, palettes, lift, darkest, zeros : the element's attributes beyond the colours */
 	// the toolchain signals build errors with plain Exceptions
 	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 	static Options options(ImmutableNode node, BuildContext ctx) throws Exception {
@@ -238,6 +240,7 @@ public class Png2PalPlugin {
 		}
 		o.lift = lift(Attribute.getStringOpt(node, ctx, "lift"));
 		o.darkestBlack = darkestBlack(Attribute.getString(node, ctx, "darkest", "keep"));
+		o.keepZeros = keepZeros(Attribute.getString(node, ctx, "zeros", "search"));
 		return o;
 	}
 
@@ -268,6 +271,17 @@ public class Png2PalPlugin {
 			throw new Exception("png2pal : darkest '" + darkest + "' is not one of [keep, black]");
 		}
 		return d.equals("black");
+	}
+
+	/** zeros="search" or "keep" */
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	static boolean keepZeros(String zeros) throws Exception {
+		String z = zeros.toLowerCase();
+		if (!z.equals("search") && !z.equals("keep")) {
+			throw new Exception("png2pal : zeros '" + zeros + "' is not one of [search, keep]");
+		}
+		return z.equals("keep");
 	}
 
 	/**

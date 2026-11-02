@@ -2841,6 +2841,9 @@
       <xs:attribute name="darkest" type="xs:string">
         <xs:annotation><xs:documentation>keep (default) or black : the darkest colour of each palette written black. With lift or darkest, the search runs on unrounded Lab values (v1 Another World's conversion)</xs:documentation></xs:annotation>
       </xs:attribute>
+      <xs:attribute name="zeros" type="xs:string">
+        <xs:annotation><xs:documentation>search (default) or keep : a component at 0 in the colour set to 0 in the levels the search found (a dark blue lifted stays a blue, not a violet)</xs:documentation></xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 

@@ -93,6 +93,7 @@ The plugin name is : png2pal
 | palettes    | 1                      | 1-n                 | rgb12 : palettes of *colors* words in the file, one table        |
 | lift        |                        | black,from,floor    | the darks spread above the TO8's first level (L*)               |
 | darkest     | keep                   | keep, black         | the darkest colour of each palette written black                |
+| zeros       | search                 | search, keep        | keep : a component at 0 in the colour stays at 0                |
 
 <sup>1</sup> without extension
 <sup>2</sup> with mode specific extension (.asm or .bin)
@@ -124,6 +125,15 @@ are that port's, to the bit (`Rgb12Test`, against its code run on the 4096 colou
 <png2pal symbol="Pal_water" filename="data/res/026.bin" format="rgb12" palettes="32"
          lift="5,15,42" darkest="black"/>
 ```
+
+### A hue the search moves : `zeros`
+
+Lifted, a dark saturated colour may only reach its lightness with components it does not
+have : a dark blue `#000055` becomes the violet `#7A61B8`, the dark teal `#002244` a mauve
+grey `#61619E` (Another World's water). `zeros="keep"` sets to 0, after the search, each
+component that is 0 in the colour : `#0000B8`, `#00619E`. The colour gets darker and keeps
+its hue ; the other components are the search's. Over the water's 32 palettes it changes
+23 of them and makes no two colours of a palette equal that were not.
 
 ### Command line
 Command line use the same parameters as the ones used by plugin.

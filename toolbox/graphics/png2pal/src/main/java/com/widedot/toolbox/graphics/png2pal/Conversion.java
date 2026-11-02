@@ -15,6 +15,11 @@ import com.widedot.m6809.util.color.LAB;
  *   to floor..100, a colour at black (L* at most black) kept ;
  * - darkest black : the darkest colour of each palette written black.
  *
+ * And one for a hue the search moves : zeros keep, a component at 0 in the
+ * colour set to 0 in the levels found. Lifted, a dark saturated blue only
+ * reaches its lightness with red and green it does not have (violets, mauve
+ * greys) ; its zero components kept, it stays a blue, darker.
+ *
  * Without them, the search is the one png2pal always made (util's LAB : Lab
  * rounded to whole numbers, a fast atan2). With either, it is v1 Another
  * World's (choice D), exactly : Lab as computed with its sRGB matrix, and
@@ -24,13 +29,15 @@ final class Conversion {
 
 	private final double[] lift;            // black, from, floor ; null : none
 	private final boolean darkestBlack;
+	private final boolean keepZeros;        // a component at 0 stays at 0
 	private final boolean exact;            // v1's arithmetic
 	private final LAB[] table = new LAB[4096];
 	private final double[][] exactTable = new double[4096][];
 
-	Conversion(int[] profile, double[] lift, boolean darkestBlack) {
+	Conversion(int[] profile, double[] lift, boolean darkestBlack, boolean keepZeros) {
 		this.lift = lift;
 		this.darkestBlack = darkestBlack;
+		this.keepZeros = keepZeros;
 		this.exact = lift != null || darkestBlack;
 		for (int r = 0; r < 16; r++) {
 			for (int g = 0; g < 16; g++) {
@@ -59,6 +66,10 @@ final class Conversion {
 				Color c = colours.get(i);
 				out[i] = darkestBlack && lab(c)[0] == dark ? new int[] {0, 0, 0}
 				       : exact ? nearestExact(c) : nearest(c);
+				if (keepZeros) {
+					out[i] = new int[] {c.getRed() == 0 ? 0 : out[i][0], c.getGreen() == 0 ? 0 : out[i][1],
+					                    c.getBlue() == 0 ? 0 : out[i][2]};
+				}
 			}
 		}
 		return out;
