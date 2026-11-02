@@ -39,6 +39,9 @@ import com.widedot.toolbox.graphics.gfxcomp.transformer.mirror.Mirror;
  */
 public class DrawPlanesTest {
 
+	/** where the routines under test are called, in the first plane */
+	private static final int ANCHOR = 0xC000 + 100 * 40 + 10;
+
 	// the code under test, not a previous run's : the cache keys on the
 	// pictures, not on the encoder
 	@BeforeEach
@@ -112,8 +115,6 @@ public class DrawPlanesTest {
 		return Files.readString(out.resolve(image.getFullName() + ".asm"));
 	}
 
-	private static final int ANCHOR = 0xC000 + 100 * 40 + 10;
-
 	/**
 	 * the bytes a routine writes, U followed through what the draw encoder
 	 * emits (LEAU, PSHU, the second plane's LDU, ST n,U) from ANCHOR, the
@@ -167,7 +168,8 @@ public class DrawPlanesTest {
 				{"tall", mire(dir, "tall", 16, 40, true, true), Image.POSITION_CENTER},
 				{"wide", mire(dir, "wide", 64, 12, false, false), Image.POSITION_TOP_LEFT},
 		};
-		boolean walked = false, pushed = false;
+		boolean walked = false;
+		boolean pushed = false;
 		for (Object[] c : cases) {
 			String pointer = compile(dir, (File) c[1], (String) c[0], (String) c[2], Image.PLANES_POINTER);
 			String offset = compile(dir, (File) c[1], (String) c[0], (String) c[2], Image.PLANES_OFFSET);
