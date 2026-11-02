@@ -288,10 +288,19 @@ is the **caller's** business, not the image's :
 
 The default suits a sprite drawn once at a computed position. `offset` suits a
 caller drawing a **row** of them — a HUD advancing U by one byte between digits
-— which cannot afford to reload the plane pointer at every sprite. It applies
-to the `draw` encoder only : `bdraw` restores a background through its own
-cells and the compressed encoders stream, so neither addresses the planes this
-way, and asking for it there is an error rather than a silent no-op.
+— which cannot afford to reload the plane pointer at every sprite. Each
+plane's code walks U to reach its writes (`LEAU`, `PSHU`) and stops where its
+walk ends : the `LEAU` to the second plane takes the first plane's walk back
+with the plane distance (folded into the second plane's first `LEAU` when its
+code starts with one), and the `LEAU` out takes the second plane's walk back.
+Before 02/11/2026 both moved by the plane distance alone, right only for a
+sprite whose code never moves U (R-Type's 7 line digits) : a 16 line HUD head
+with a transparent top line drew its second plane 4 lines and a byte off.
+`offset` applies to the `draw` encoder only : `bdraw` restores a background
+through its own cells and the compressed encoders stream, so neither addresses
+the planes this way, and asking for it there is an error rather than a silent
+no-op. Any other move of U in the code (`LDU`, auto increment) is refused at
+compile time rather than given back wrong.
 
 `cursor` is a tile loop's : the loop walks a row of cells with Y on the first
 plane and points U at the second, the routine draws the second plane through

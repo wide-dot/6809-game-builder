@@ -71,6 +71,10 @@ public class SimpleAssemblyGenerator extends Encoder{
 	private int yReturnCycles;
 	private int yReturnSize;
 
+	/** planes=offset : the LEAU to the second plane (0 once folded into its code's first LEAU), and the one back */
+	private int toSecond;
+	private int fromSecond;
+
 	public SimpleAssemblyGenerator(Image img, String destDir, int alphaOption) throws Exception {
 		planes = img.planes;
 		spriteCenterEven = (img.getCoordinate() % 2) == 0;
@@ -148,6 +152,9 @@ public class SimpleAssemblyGenerator extends Encoder{
 
 		if (planesByCursor()) {
 			secondPlaneThroughY(img);
+		}
+		if (planesByOffset()) {
+			secondPlaneByOffset();
 		}
 
 		// Calcul des cycles et taille du code de cadre
@@ -542,6 +549,66 @@ public class SimpleAssemblyGenerator extends Encoder{
 		}
 	}
 
+	/**
+	 * planes=offset : each plane's code starts from its anchor and leaves U
+	 * where its walk ends (its LEAU, its PSHU), the image's anchor only by
+	 * chance. The LEAU to the second plane takes the first plane's walk back
+	 * with the plane distance, folded into the second plane's first LEAU when
+	 * its code starts with one, and the LEAU back takes the second plane's
+	 * walk back : U given back whatever the code did.
+	 */
+	// the toolchain signals build errors with plain Exceptions (48 throw sites)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	private void secondPlaneByOffset() throws Exception {
+		int moved1 = uMoved(spriteCode1);
+		int moved2 = uMoved(spriteCode2);
+		toSecond = -VideoMemory.memoryPlaneDistance - moved1;
+		fromSecond = VideoMemory.memoryPlaneDistance - moved2;
+		int[] leau = firstLeau(spriteCode2);
+		if (leau != null) {
+			int merged = toSecond + leau[1];
+			List<String> code = new ArrayList<String>(spriteCode2);
+			code.set(leau[0], code.get(leau[0]).replaceFirst("(?i)LEAU\\s+-?\\d+,U", merged == 0 ? "" : "LEAU " + merged + ",U"));
+			spriteCode2 = code;
+			cyclesSpriteCode2 += (merged == 0 ? 0 : leaCycles(merged)) - leaCycles(leau[1]);
+			sizeSpriteCode2 += (merged == 0 ? 0 : leaSize(merged)) - leaSize(leau[1]);
+			toSecond = 0;
+		}
+	}
+
+	/** how far a plane's code moves U ; any other move of U than LEAU, PSHU and PULU is refused */
+	// the toolchain signals build errors with plain Exceptions (48 throw sites)
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	private int uMoved(List<String> code) throws Exception {
+		int moved = 0;
+		for (String element : code) {
+			for (String line : element.split("\n")) {
+				String op = line.trim().toUpperCase();
+				Matcher m = LEAU.matcher(op);
+				if (m.matches()) {
+					moved += Integer.parseInt(m.group(1));
+				} else if (op.startsWith("PSHU ")) {
+					moved -= stackBytes(op.substring(5));
+				} else if (op.startsWith("PULU ")) {
+					moved += stackBytes(op.substring(5));
+				} else if (op.matches(".*,(-{1,2}U|U\\+{1,2})$") || op.matches("^(LDU|LEAU|TFR|EXG)\\b.*\\bU\\b.*")) {
+					throw new Exception("image " + name + " : planes=" + Image.PLANES_OFFSET
+							+ " gives U back, this code moves it in a way not counted : " + line.trim());
+				}
+			}
+		}
+		return moved;
+	}
+
+	/** the bytes a PSHU or PULU register list moves */
+	private static int stackBytes(String list) {
+		int bytes = 0;
+		for (String r : list.split(",")) {
+			bytes += r.trim().matches("CC|A|B|DP") ? 1 : 2;
+		}
+		return bytes;
+	}
+
 	/** an instruction that reads or writes X or Y, or pushes or pulls registers */
 	private static boolean usesXorY(String line) {
 		String op = line.trim().toUpperCase();
@@ -552,36 +619,34 @@ public class SimpleAssemblyGenerator extends Encoder{
 	public List<String> getCodeFrameDrawMid() {
 		List<String> asm = new ArrayList<String>();
 		if (planesByOffset()) {
-			asm.add("\n\tLEAU  -" + VideoMemory.memoryPlaneDistance + ",U");
+			if (toSecond != 0) {
+				asm.add("\n\tLEAU  " + toSecond + ",U");
+			}
 		} else if (!planesByCursor()) {
 			asm.add("\n\tLDU <glb_screen_location_1");
 		}
 		return asm;
 	}
 
-	public int getCodeFrameDrawMidCycles() {
-		int cycles = 0;
-		// LEAU n16,U : 4 base + 5 for the 16 bit offset indexing mode
-		if (!planesByCursor()) {
-			cycles += planesByOffset() ? 9 : Register.costDirectLD[Register.U];
+	public int getCodeFrameDrawMidCycles() throws Exception {
+		if (planesByOffset()) {
+			return toSecond == 0 ? 0 : leaCycles(toSecond);
 		}
-		return cycles;
+		return planesByCursor() ? 0 : Register.costDirectLD[Register.U];
 	}
 
-	public int getCodeFrameDrawMidSize() {
-		int size = 0;
-		// LEAU n16,U : opcode + postbyte + two offset bytes
-		if (!planesByCursor()) {
-			size += planesByOffset() ? 4 : Register.sizeDirectLD[Register.U];
+	public int getCodeFrameDrawMidSize() throws Exception {
+		if (planesByOffset()) {
+			return toSecond == 0 ? 0 : leaSize(toSecond);
 		}
-		return size;
+		return planesByCursor() ? 0 : Register.sizeDirectLD[Register.U];
 	}
 
 	public List<String> getCodeFrameDrawEnd() {
 		List<String> asm = new ArrayList<String>();
-		if (planesByOffset()) {
+		if (planesByOffset() && fromSecond != 0) {
 			// U is the caller's cursor over a row of sprites : give it back
-			asm.add("\tLEAU  " + VideoMemory.memoryPlaneDistance + ",U");
+			asm.add("\tLEAU  " + fromSecond + ",U");
 		}
 		if (planesByCursor() && yReturn != 0) {
 			asm.add("\tLEAY  " + yReturn + ",Y");
@@ -590,20 +655,20 @@ public class SimpleAssemblyGenerator extends Encoder{
 		return asm;
 	}
 
-	public int getCodeFrameDrawEndCycles() {
+	public int getCodeFrameDrawEndCycles() throws Exception {
 		int cycles = 0;
-		if (planesByOffset()) {
-			cycles += 9; // LEAU n16,U
+		if (planesByOffset() && fromSecond != 0) {
+			cycles += leaCycles(fromSecond);
 		}
 		cycles += yReturnCycles;
 		cycles += 5; // RTS
 		return cycles;
 	}
 
-	public int getCodeFrameDrawEndSize() {
+	public int getCodeFrameDrawEndSize() throws Exception {
 		int size = 0;
-		if (planesByOffset()) {
-			size += 4; // LEAU n16,U
+		if (planesByOffset() && fromSecond != 0) {
+			size += leaSize(fromSecond);
 		}
 		size += yReturnSize;
 		size += 1; // RTS
