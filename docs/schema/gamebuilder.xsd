@@ -2848,7 +2848,7 @@
         <xs:annotation><xs:documentation>a CIEDE2000 distance (e.g. 6) : from the darkest colour of a palette up, a colour the search brought closer to one already placed than their own distance (at most this one) searched again among the levels that keep it, if one is at most this much further from its target. The search then runs on unrounded Lab values</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="near" type="xs:string">
-        <xs:annotation><xs:documentation>a CIEDE2000 distance (e.g. 8) : with lift, a colour this close to its palette's darkest searched at its own lightness, not lifted (the darkest written black, the one beside it would jump to the floor). The search then runs on unrounded Lab values</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>a CIEDE2000 distance (e.g. 8), with darkest=black : a colour this close to its palette's darkest written black too (lifted, the one beside the black darkest would jump to the floor). The search then runs on unrounded Lab values</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="steps" type="xs:string">
         <xs:annotation><xs:documentation>step,darks,alike,move (e.g. 6,35,12,12) : among the darks (L* at most darks), a colour and one already placed whose TO8 colours are alike (CIEDE2000 under alike) kept their lifted lightness apart (at most step L*), searched again as apart does, if one is at most move further from its target (move then replaces apart's). The search then runs on unrounded Lab values</xs:documentation></xs:annotation>

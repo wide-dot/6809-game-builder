@@ -49,7 +49,7 @@ public class Png2PalPlugin {
 		public boolean keepZeros;
 		/** the CIEDE2000 distance kept between two colours of a palette (Conversion), 0 none */
 		public double apart;
-		/** a colour this close (CIEDE2000) to its palette's darkest searched unlifted, 0 none */
+		/** with darkestBlack, a colour this close (CIEDE2000) to its palette's darkest black too, 0 none */
 		public double near;
 		/** step, darks, alike, move : the darks' lightness kept apart (Conversion), null none */
 		public double[] steps;
@@ -78,6 +78,9 @@ public class Png2PalPlugin {
 		log.debug("Process one or more PNG files to extract and convert indexed palette data.");
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
 		int[] levels = FileResourcesUtils.get(profile+".txt");
+		if (options.near > 0 && !options.darkestBlack) {
+			throw new Exception("png2pal : near goes with darkest=\"black\"");
+		}
 		Conversion conversion = new Conversion(levels, options.lift, options.darkestBlack, options.keepZeros, options.apart,
 		                                       options.near, options.steps, setLevels(options.set, levels));
 		

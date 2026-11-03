@@ -81,7 +81,7 @@ def convert(pal):
 
     def target(i):
         t = labs[i]
-        if t[0] > LIFT[0] and not ciede2000(t, labs[dark]) <= NEAR:
+        if t[0] > LIFT[0]:
             t = (LIFT[2] + max(0.0, t[0] - LIFT[1]) * (100 - LIFT[2]) / (100 - LIFT[1]), t[1], t[2])
         return t
 
@@ -90,7 +90,7 @@ def convert(pal):
 
     out = []
     for i, c in enumerate(pal):
-        if labs[i][0] == labs[dark][0]:
+        if labs[i][0] == labs[dark][0] or ciede2000(labs[i], labs[dark]) <= NEAR:   # black, and near it
             out.append(0)
             continue
         t = target(i)

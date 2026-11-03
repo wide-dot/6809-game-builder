@@ -190,6 +190,10 @@ public class Rgb12Test {
 		assertThrows(Exception.class, () -> Png2PalPlugin.near("close"));
 		assertThrows(Exception.class, () -> Png2PalPlugin.near("0"));
 		assertThrows(Exception.class, () -> Png2PalPlugin.steps("6,35,12"));
+		Png2PalPlugin.Options o = new Png2PalPlugin.Options();
+		o.near = 8;
+		Exception n = assertThrows(Exception.class, () -> convert(o, 256));
+		assertTrue(n.getMessage().contains("near goes with darkest"), n.getMessage());
 		Exception e = assertThrows(Exception.class, () -> Png2PalPlugin.steps("6,135,12,12"));
 		assertTrue(e.getMessage().contains("darks in 0..100"), e.getMessage());
 	}
