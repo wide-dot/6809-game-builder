@@ -174,7 +174,11 @@ la description de la PR en garde la trace.
   `examples/fullscreen` (une mire 160x200 convertie par `<png2bin
   buffer="fullscreen">` et copiée par `DrawFullscreenImage` dans les deux
   tampons : les deux captures exactes sous toje,
-  `ci/toje-bench/fullscreen_ut.py`, depuis le 01/11/2026).
+  `ci/toje-bench/fullscreen_ut.py`, depuis le 01/11/2026),
+  `examples/stackcopy` (des blocs copiés par `stackcopy.run`, l'IRQ active,
+  vérifiés à l'octet avec 16 octets de part et d'autre, recouvrements
+  compris : 17/17 sous toje, aucune interruption avec S dans la fenêtre de
+  données, `ci/toje-bench/stackcopy_ut.py`, depuis le 03/11/2026).
 - **État de validation au 13/08/2026** : le corpus compte **15 configs et
   63 images** (11 exemples dont collection/stacked-overflow/hscroll/
   tilescroll/objects/sprites, plus `games/r-type` — sorti du moteur le
@@ -1045,6 +1049,22 @@ sur la même mire). Copie ~58 000 cycles (listing). Le portage Python de
 Sonic 2 (`tools/gen_v2.py`, `bottom_up_b16`) est l'écart que ce buffer
 remplace. Cas : [`background-image.md`](docs/lang/en/migration/background-image.md) ;
 manuel : readme de png2bin ; banc `examples/fullscreen`.
+
+## La copie par la pile : `stackcopy.run` (03/11/2026)
+
+Une image déjà en RAM (une page du jeu) copiée dans un tampon écran, entière
+ou décalée de quelques lignes (un défilement vertical) :
+`engine/graphics/draw/stackcopy.asm`, inclus à la demande. D octets de U
+vers Y, 7 par 7 (`pulu`/`pshs a,b,dp,x,y`, puis `leau -14,u` : les tirages
+montent, les poussées descendent), du dernier octet au premier : une
+destination au-dessus d'une source qui la recouvre est juste. S pointe dans
+la destination : l'IRQ est masquée par blocs de 252 octets (~1 100 cycles),
+S, DP et les masques de l'appelant rendus entre deux (un seul `andcc`, sinon
+une instruction démasquée attrapée par le banc). 4,44 cycles par octet sur
+8 000 (35 520, toje), contre ~5,4 pour `pulu d,x` / `std` / `stx` ;
+358 octets. Premier utilisateur : Another World (la cage d'ascenseur et la
+ville vue par la grille, deux pages du jeu de 400 lignes copiées décalées).
+Manuel [`stackcopy.md`](docs/lang/en/stackcopy.md), banc `examples/stackcopy`.
 
 ## Palettes de mots 12 bits et sombres remontés : `png2pal` (01/11/2026)
 
