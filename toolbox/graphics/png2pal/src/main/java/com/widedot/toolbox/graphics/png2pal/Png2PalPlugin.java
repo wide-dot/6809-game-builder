@@ -49,6 +49,10 @@ public class Png2PalPlugin {
 		public boolean keepZeros;
 		/** the CIEDE2000 distance kept between two colours of a palette (Conversion), 0 none */
 		public double apart;
+		/** a colour this close (CIEDE2000) to its palette's darkest searched unlifted, 0 none */
+		public double near;
+		/** step, darks, alike, move : the darks' lightness kept apart (Conversion), null none */
+		public double[] steps;
 		/** a colour's RGB -> the TO8 colour it is given, its RGB in the profile's levels */
 		public Map<Integer, Integer> set = new LinkedHashMap<>();
 	}
@@ -75,7 +79,7 @@ public class Png2PalPlugin {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
 		int[] levels = FileResourcesUtils.get(profile+".txt");
 		Conversion conversion = new Conversion(levels, options.lift, options.darkestBlack, options.keepZeros, options.apart,
-		                                       setLevels(options.set, levels));
+		                                       options.near, options.steps, setLevels(options.set, levels));
 		
 		// process indexed colors of png files
 		File file = new File(filename);
@@ -233,7 +237,7 @@ public class Png2PalPlugin {
 		return bin;
 	}
 
-	/** format, palettes, lift, darkest, zeros, apart, set : the element's attributes beyond the colours */
+	/** format, palettes, lift, darkest, zeros, apart, near, steps, set : the element's attributes beyond the colours */
 	// the toolchain signals build errors with plain Exceptions
 	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 	static Options options(ImmutableNode node, BuildContext ctx) throws Exception {
@@ -250,6 +254,8 @@ public class Png2PalPlugin {
 		o.darkestBlack = darkestBlack(Attribute.getString(node, ctx, "darkest", "keep"));
 		o.keepZeros = keepZeros(Attribute.getString(node, ctx, "zeros", "search"));
 		o.apart = apart(Attribute.getStringOpt(node, ctx, "apart"));
+		o.near = near(Attribute.getStringOpt(node, ctx, "near"));
+		o.steps = steps(Attribute.getStringOpt(node, ctx, "steps"));
 		o.set = set(Attribute.getStringOpt(node, ctx, "set"));
 		return o;
 	}
@@ -311,6 +317,50 @@ public class Png2PalPlugin {
 			throw new Exception("png2pal : apart '" + apart + "' : a distance above 0");
 		}
 		return d;
+	}
+
+	/** near="distance" (CIEDE2000, above 0), 0 when absent */
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	static double near(String near) throws Exception {
+		if (near == null) {
+			return 0;
+		}
+		double d;
+		try {
+			d = Double.parseDouble(near.trim());
+		} catch (NumberFormatException e) {
+			throw new Exception("png2pal : near '" + near + "' is not a distance", e);
+		}
+		if (Double.isNaN(d) || d <= 0) {
+			throw new Exception("png2pal : near '" + near + "' : a distance above 0");
+		}
+		return d;
+	}
+
+	/** steps="step,darks,alike,move" (L*, L*, CIEDE2000, CIEDE2000), null when absent */
+	// the toolchain signals build errors with plain Exceptions
+	@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
+	static double[] steps(String steps) throws Exception {
+		if (steps == null) {
+			return null;
+		}
+		String[] v = steps.split(",");
+		if (v.length != 4) {
+			throw new Exception("png2pal : steps '" + steps + "' is not step,darks,alike,move");
+		}
+		double[] s = new double[4];
+		try {
+			for (int i = 0; i < 4; i++) {
+				s[i] = Double.parseDouble(v[i].trim());
+			}
+		} catch (NumberFormatException e) {
+			throw new Exception("png2pal : steps '" + steps + "' is not step,darks,alike,move", e);
+		}
+		if (!(s[0] > 0 && s[1] > 0 && s[1] <= 100 && s[2] > 0 && s[3] >= 0)) {
+			throw new Exception("png2pal : steps '" + steps + "' : step, alike above 0, darks in 0..100, move at least 0");
+		}
+		return s;
 	}
 
 	/** set="RRGGBB:RRGGBB,..." : a colour, the TO8 colour it is given ; empty when absent */

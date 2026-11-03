@@ -162,6 +162,39 @@ public class Rgb12Test {
 	}
 
 	@Test
+	void theDarksAreNearAndStepped() throws Exception {
+		// near="8" steps="6,35,12,12" : the levels of gen_rgb12_darks_reference.py, png2pal's
+		// conversion written again in Python, to the bit
+		Png2PalPlugin.Options o = new Png2PalPlugin.Options();
+		o.lift = new double[] {5, 15, 42};
+		o.darkestBlack = true;
+		o.keepZeros = true;
+		o.apart = 6;
+		byte[] without = convert(o, 256);
+		o.near = 8;
+		o.steps = new double[] {6, 35, 12, 12};
+		byte[] got = convert(o, 256);
+		byte[] ref = Files.readAllBytes(resource("rgb12-mire-darks.ref"));
+		int differ = 0;
+		int changed = 0;
+		for (int i = 0; i < ref.length; i += 2) {
+			if (got[i] != ref[i] || got[i + 1] != ref[i + 1]) differ++;
+			if (got[i] != without[i] || got[i + 1] != without[i + 1]) changed++;
+		}
+		assertEquals(0, differ, differ + " colours of 4096 differ from the reference");
+		assertTrue(changed > 0, "the mire has darks the options change");
+	}
+
+	@Test
+	void aBadNearOrStepsIsRefused() {
+		assertThrows(Exception.class, () -> Png2PalPlugin.near("close"));
+		assertThrows(Exception.class, () -> Png2PalPlugin.near("0"));
+		assertThrows(Exception.class, () -> Png2PalPlugin.steps("6,35,12"));
+		Exception e = assertThrows(Exception.class, () -> Png2PalPlugin.steps("6,135,12,12"));
+		assertTrue(e.getMessage().contains("darks in 0..100"), e.getMessage());
+	}
+
+	@Test
 	void theColoursSetAreSet() throws Exception {
 		// set : a colour given its TO8 colour, in every palette it is in ; the others the rules'
 		Png2PalPlugin.Options o = new Png2PalPlugin.Options();
