@@ -254,22 +254,33 @@ YM2413_DrumModeOn
 ******************************************************************************
 
 InitMusicPlayback
+ IFNE sizeof{Track}-42
+        ERROR "the track clears push 42 bytes"
+ ENDC
         jsr   FMSilenceAll
         jsr   PSGSilenceAll
         ; V2-DEVIATION (06/10/2026) : the music tracks cleared, as the Z80
         ; driver's zInitMusicPlayback (v1 kept a previous song's loop counters,
         ; note fill, modulation, and its tracks the new one does not use) ;
         ; the channel and its note control (the drum mode's) kept
+        ; V2-DEVIATION (04/11/2026) : cleared by pushes (cycles), the same bytes
         pshs  x                        ; the song (PlayMusic)
-        ldx   #tracksStart
-@track  ldu   VoiceControl,x           ; VoiceControl and NoteControl
+        ldu   #tracksEnd               ; from the last track down, six bytes a push
+@track  ldd   VoiceControl-smps.track.size,u ; VoiceControl and NoteControl
+        pshs  d
         ldd   #0
-        ldy   #smps.track.size/2
-@clear  std   ,x++
-        leay  -1,y
-        bne   @clear
-        stu   VoiceControl-smps.track.size,x
-        cmpx  #tracksEnd
+        ldx   #0
+        ldy   #0
+        pshu  d,x,y
+        pshu  d,x,y
+        pshu  d,x,y
+        pshu  d,x,y
+        pshu  d,x,y
+        pshu  d,x,y
+        pshu  d,x,y                    ; 42 bytes : the track
+        puls  d
+        std   VoiceControl,u
+        cmpu  #tracksStart
         bne   @track
         puls  x,pc
 
@@ -434,6 +445,9 @@ MusicFrame
         ; zSFXPriority) : two requests a frame, SFXToPlay and SFXToPlay2, the
         ; higher priority's played unless the effect playing has a higher one
         ; (v1 played the last request)
+        ldb   Smps.SFXToPlay           ; V2-DEVIATION (04/11/2026) : no request, the queue as it is
+        orb   Smps.SFXToPlay2
+        beq   @a
         clra                           ; the effect chosen (0 : none)
         ldb   Smps.SFXPriorityVal
         stb   @prio
@@ -528,6 +542,13 @@ UpdateSound
 !
         lda   #$80
         sta   DoSFXFlag                ; Set zDoSFXFlag = 80h (updating sound effects)
+        lda   SFXFM3.PlaybackControl   ; V2-DEVIATION (04/11/2026) : none playing, the six tested at once
+        ora   SFXFM4.PlaybackControl
+        ora   SFXFM5.PlaybackControl
+        ora   SFXPSG1.PlaybackControl
+        ora   SFXPSG2.PlaybackControl
+        ora   SFXPSG3.PlaybackControl
+        bpl   @rts
         _UpdateTrack SFXFM3,FMUpdateTrack
         _UpdateTrack SFXFM4,FMUpdateTrack
         _UpdateTrack SFXFM5,FMUpdateTrack
@@ -672,7 +693,7 @@ FMSetFreq
         
 NoteFillUpdate
         lda   NoteFillTimeout,y        ; Get current note fill value
-        lbeq  DoModulation             ; If zero, return!
+        beq   DoModulation             ; If zero, return!
         dec   NoteFillTimeout,y        ; Decrement note fill
         bne   DoModulation             ; If not zero, return
         
@@ -730,19 +751,18 @@ FMUpdateFreqAndNoteOn
         stb   NoteControl,y
         stb   <YM2413.D   
         
-DoModulation
-        jsr   Modulation
-        bcs   FMUpdateFreq
-        rts
-
-* Modulation - a step of the track Y's modulation : C set when its
-* frequency moved
-Modulation
+DoModulation                           ; V2-DEVIATION (04/11/2026) : Modulation's tests before its call
         lda   PlaybackControl,y
-        bita  #$02                     ; Is bit 1 (02h) "track is at rest" set on playback?
-        bne   @no                      ; If so, quit
-        bita  #$08                     ; Is bit 3 (08h) "modulation on" set on playback?
-        beq   @no                      ; If not, quit
+        anda  #$0A                     ; modulation on (08h), not at rest (02h)
+        cmpa  #$08
+        bne   @rts
+        bsr   Modulation
+        bcs   FMUpdateFreq
+@rts    rts
+
+* Modulation - a step of the track Y's modulation, on and the track not at
+* rest : C set when its frequency moved
+Modulation
         lda   ModulationWait,y         ; 'ww' period of time before modulation starts
         beq   @c                       ; if zero, go to it!
         dec   ModulationWait,y         ; Otherwise, decrement timer
@@ -924,18 +944,10 @@ PSGUpdateFreq
 PSGUpdateVolFX
         lda   VoiceIndex,y
         beq   PSGDoModulation
-        ldb   Volume,y
-        stb   DynVol+1          
         bra   PSGFlutter
 
-VolEnvHold
-        lda   VolFlutter,y             ; This just decrements the flutter to keep it in place; no more volume changes in this list
-        suba  #2                       ; Put index back (before final volume value)
-        sta   VolFlutter,y             ; Loop back and update volume
-        
 PSGDoVolFX
         ldb   Volume,y
-        stb   DynVol+1
         lda   VoiceIndex,y
         beq   PSGUpdateVol             ; If tone is zero, jump to PSGUpdateVol
                 
@@ -943,25 +955,25 @@ PSGFlutter
         asla
         ldx   #PSG_FlutterTbl
         ldx   a,x
-        lda   VolFlutter,y
+        ldb   VolFlutter,y
         inc   VolFlutter,y        
-        lda   a,x
+@env    ldb   b,x
         bpl   @a
-        cmpa  #$80
-        beq   VolEnvHold
-@a      sta   @b
-        addb  #0
-@b      equ   *-1
-        stb   DynVol+1
+        cmpb  #$80
+        bne   @a
+        dec   VolFlutter,y             ; the list's end : the value before it held (V2-DEVIATION (04/11/2026) : in place)
+        ldb   VolFlutter,y             ; (its index kept in place, no more volume
+        decb                           ; changes in this list)
+        bra   @env
+@a      addb  Volume,y
                 
-PSGUpdateVol                
+PSGUpdateVol                           ; B : the volume (V2-DEVIATION (04/11/2026) : no longer DynVol's operand)
         lda   PlaybackControl,y
         bita  #$06                     ; If either bit 1 ("track in rest") and 2 ("SFX overriding this track"), quit!
         bne   PSGDoModulation          ; If so, branch           
         bita  #$10                     ; Is bit 4 (10h) "do not attack next note" set on playback?
         bne   @b                       ; If so, branch
-DynVol  ldb   #0                       ; (dynamic) volume
-        cmpb  #$10
+DynVol  cmpb  #$10
         blo   @a
         ldb   #$0F
 @a      addb  VoiceControl,y
@@ -974,9 +986,13 @@ DynVol  ldb   #0                       ; (dynamic) volume
         bne   DynVol                   ; If it's not zero, then just process normally
         
 PSGDoModulation
+        lda   PlaybackControl,y
+        anda  #$0A                     ; modulation on (08h), not at rest (02h)
+        cmpa  #$08
+        bne   @rts
         jsr   Modulation
         bcs   PSGUpdateFreq2
-        rts
+@rts    rts
 
 PSGUpdateFreq2
         ; V2-DEVIATION (06/10/2026) : the Z80 driver's zPSGUpdateFreq quits
@@ -1190,13 +1206,19 @@ PlaySound_main
         sta   PlaybackControl,y
         ldu   #SFXTrackOffs
         ldu   b,u                      ; u (ix) ptr to SFX Track
-        pshs  x,u                      ; clear SFX Track
-        ldx   #smps.track.size/2
+        pshs  x,y,u                    ; clear SFX Track, six bytes a push
+        leau  smps.track.size,u
         ldd   #0
-!       std   ,u++
-        leax  -1,x
-        bne   <
-        puls  x,u
+        ldx   #0
+        ldy   #0
+        pshu  d,x,y
+        pshu  d,x,y
+        pshu  d,x,y
+        pshu  d,x,y
+        pshu  d,x,y
+        pshu  d,x,y
+        pshu  d,x,y                    ; 42 bytes : the track
+        puls  x,y,u
 @dyna   ldd   #$0100                   ; (dynamic) TempoDivider
         sta   DurationTimeout,u        ; current duration timeout to 1 (will expire immediately and thus update)
         stb   TempoDivider,u
