@@ -1097,6 +1097,15 @@ une couleur reçoit sa couleur TO8 après les règles, dans toutes les palettes 
 elle est ; une couleur TO8 hors des niveaux du profil est refusée. Another
 World : le brun sombre des cheveux de Lester (`#662200`, `#772200`), ocre et
 aussi clair que le roux après les règles, mis à `#B80000`.
+`near` et `steps` (03/11/2026) : les sombres que le relèvement écrase. `near="8"`
+(avec `darkest="black"`) : une couleur à moins de 8 (CIEDE2000) de la plus sombre
+de sa palette est noire aussi (le mur de la cellule d'Another World, à 1 L* des
+barreaux noirs, sautait à L* 43 ; cherché à sa clarté, un bleu nuit saturé jugé
+moche : le TO8 n'a pas de gris sombre). `steps="6,35,12,12"` : parmi les sombres (L* ≤ 35), deux couleurs que le
+TO8 montre semblables (< 12) gardent leur écart de clarté relevé (6 au plus),
+recherchées comme par `apart` (déplacement 12) ; les clairs restent à la recherche
+(une marche y éclaircissait la peau en cascade). Référence Python au bit
+(`gen_rgb12_darks_reference.py`, mire de 4096 couleurs).
 
 ## Fidélité arcade de R-Type
 

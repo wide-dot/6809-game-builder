@@ -298,6 +298,8 @@ public final class Handlers {
 			.opt("darkest", STRING, "keep (default) or black : the darkest colour of each palette written black. With lift or darkest, the search runs on unrounded Lab values (v1 Another World's conversion)")
 			.opt("zeros", STRING, "search (default) or keep : a component at 0 in the colour set to 0 in the levels the search found (a dark blue lifted stays a blue, not a violet)")
 			.opt("apart", STRING, "a CIEDE2000 distance (e.g. 6) : from the darkest colour of a palette up, a colour the search brought closer to one already placed than their own distance (at most this one) searched again among the levels that keep it, if one is at most this much further from its target. The search then runs on unrounded Lab values")
+			.opt("near", STRING, "a CIEDE2000 distance (e.g. 8), with darkest=black : a colour this close to its palette's darkest written black too (lifted, the one beside the black darkest would jump to the floor). The search then runs on unrounded Lab values")
+			.opt("steps", STRING, "step,darks,alike,move (e.g. 6,35,12,12) : among the darks (L* at most darks), a colour and one already placed whose TO8 colours are alike (CIEDE2000 under alike) kept their lifted lightness apart (at most step L*), searched again as apart does, if one is at most move further from its target (move then replaces apart's). The search then runs on unrounded Lab values")
 			.opt("set", STRING, "RRGGBB:RRGGBB,... : a colour, the TO8 colour it is given wherever it is, after the rules (the choices no rule makes) ; the TO8 colour made of the profile's levels"));
 		spec(element("txt2bas").doc("tokenize a BASIC text file")
 			.req("filename", STRING, "input text file")

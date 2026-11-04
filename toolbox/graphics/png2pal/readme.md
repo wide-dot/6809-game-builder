@@ -95,6 +95,8 @@ The plugin name is : png2pal
 | darkest     | keep                   | keep, black         | the darkest colour of each palette written black                |
 | zeros       | search                 | search, keep        | keep : a component at 0 in the colour stays at 0                |
 | apart       |                        | *distance*          | two colours of a palette kept apart (CIEDE2000)                 |
+| near        |                        | *distance*          | with darkest black, a colour near the darkest black too         |
+| steps       |                        | step,darks,alike,move | the darks the TO8 shows alike kept a lightness apart          |
 | set         |                        | *RRGGBB:RRGGBB,...* | a colour given its TO8 colour, after the rules                  |
 
 <sup>1</sup> without extension
@@ -148,6 +150,30 @@ than their own distance (6 at most) is searched again among the levels that keep
 distance to each one placed (its zero components kept with `zeros="keep"`), if one is at most
 6 further from its target ; else it stays : `#6161AB`, `#8F9ED4`. The water's 512 colours :
 54 moved, by a level or two.
+
+### The darks the lift squeezes : `near` and `steps`
+
+Two darks of Another World's jail show what the lift does to the darks it squeezes. Its cell's
+bars `#222233` (L* 14) and wall `#222244` (L* 15) are one dark : the bars, the darkest, are
+written black, the wall is lifted to the floor, `#61618F` (L* 43), a jump of 43 for 1. The
+lift's floor `#332266` (L* 19) and `#443388` (L* 28) land on `#7A61AB` and `#7A61CC`, L* 46.5
+and 48.3 : `apart` holds (their distance is 6, by chroma), the eye sees one lavender.
+
+- `near="8"`, with `darkest="black"` : a colour within this CIEDE2000 distance of its
+  palette's darkest is written black too : the wall and the bars one dark again, the cell read
+  by its lighter posts. Searched at its own lightness instead, the wall came out a saturated
+  `#000061` : the TO8 has no dark grey, a dark below L* 41 is a blue, a red or a violet.
+- `steps="step,darks,alike,move"` : from the darkest colour of a palette up, a dark (L* at
+  most `darks`) whose TO8 colour is alike (CIEDE2000 under `alike`) one already placed and
+  closer in lightness than their lifted lightnesses (`step` at most) is searched again, as
+  `apart` does, among the levels that keep both rules, if one is at most `move` further from
+  its target (`move` replaces `apart`'s there). `steps="6,35,12,12"` : the floor `#8F7ACC`,
+  L* 56. The lights are left to the search, a step there would lighten what follows.
+
+The jail : 44 colours of 512 change, darks all ; the water 37 (`steps` alone : its vine's cave
+has a `#000033` beside its black `#000022`), its teal cave kept. Both are
+checked to the bit (`Rgb12Test`) against the conversion written again in Python
+(`src/test/resources/gen_rgb12_darks_reference.py`) on the 4096 colours of the mire.
 
 ### The choices no rule makes : `set`
 
