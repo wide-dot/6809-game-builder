@@ -182,6 +182,10 @@ ComputeTileBuffer
         rts
 
 FeedTileBuffer
+        ldx   glb_map_tiles_adr        ; the tile index, for LoadChunk's tiles
+        stx   LoadChunk.tilesAdr
+        lda   glb_map_tiles_pge
+        sta   LoadChunk.tilesPge
         lda   glb_map_pge
         _SetCartPageA                  ; the map descriptor
         ldu   glb_map_adr
@@ -394,11 +398,13 @@ LoadChunk.word                         ; a word cell : the chunk's bank its id >
 * LoadChunk - feeds TilemapBuffer.cols x .chunkRows tiles of the chunk at the
 * layout cell TilemapBuffer.layoutCell, from TilemapBuffer.chunkOffset in it,
 * to the buffer from TilemapBuffer.cell
+* V2-DEVIATION (05/11/2026) : the cell kept in Y, the tile index as
+* immediates (FeedTileBuffer), U no longer saved around a tile.
 * ---------------------------------------------------------------------------
 LoadChunk
-        ldd   <TilemapBuffer.cell
+        ldb   <TilemapBuffer.cell+1
         andb  #%10000000
-        std   LoadChunk.lineStart      ; the buffer row
+        stb   LoadChunk.lineStart      ; the buffer row
         ldb   <TilemapBuffer.cols      ; from a row's last cell to the next row's first
         lslb
         lslb
@@ -444,22 +450,13 @@ TilemapBuffer.chunkOffset equ *-2      ; (dynamic) its first tile
         beq   LoadChunk.end
  ENDC
         sta   <TilemapBuffer.rows
+        ldy   <TilemapBuffer.cell      ; the cell in Y through the chunk
 LoadChunk.tile
-        ldy   <TilemapBuffer.cell
         ldd   ,u++                     ; the tile entry
         bne   >
         std   ,y                       ; 0 : an empty cell
         bra   LoadChunk.next
-!       stu   @entry
-        sta   @high
- IFDEF TilemapBuffer.OPAQUE
-        anda  #%11111100               ; the flags : priority, solidity, opacity
- ELSE
-        anda  #%11111000               ; the flags : priority, solidity
- ENDC
-        sta   ,y
-        lda   #0
-@high   equ   *-1
+!       sta   ,y                       ; the flags, the index's bits cleared below
  IFDEF TilemapBuffer.OPAQUE
         anda  #%00000011               ; the tile index
  ELSE
@@ -469,28 +466,35 @@ LoadChunk.tile
         _lsld
         addd  #0
 @index  equ   *-2                      ; * 3 : its record
-        ldu   glb_map_tiles_adr
-        leau  d,u
-        lda   glb_map_tiles_pge
+        addd  #0
+LoadChunk.tilesAdr equ *-2             ; (dynamic, FeedTileBuffer) the tile index
+        tfr   d,x
+        lda   #0
+LoadChunk.tilesPge equ *-1             ; (dynamic, FeedTileBuffer)
         _SetCartPageA
-        pulu  a,x                      ; the routine's page and address
+        lda   ,x                       ; the routine's page and address
         sta   1,y
+        ldx   1,x
         stx   2,y
         lda   #0
 chk_idx_pge equ *-1                    ; (dynamic) the chunk's page
         _SetCartPageA
-        ldu   #0
-@entry  equ   *-2
+        lda   ,y
+ IFDEF TilemapBuffer.OPAQUE
+        anda  #%11111100               ; the flags : priority, solidity, opacity
+ ELSE
+        anda  #%11111000               ; the flags : priority, solidity
+ ENDC
+        sta   ,y
 LoadChunk.next
         dec   <TilemapBuffer.cols
         beq   LoadChunk.rowEnd
-        ldd   #4                       ; the next cell, in the row's ring
-        addd  <TilemapBuffer.cell
-        clra
+        tfr   y,d
+        addb  #4                       ; the next cell, in the row's ring
         andb  #%01111100
-        addd  #0
-LoadChunk.lineStart equ *-2
-        std   <TilemapBuffer.cell
+        orb   #0
+LoadChunk.lineStart equ *-1            ; (dynamic) the row's bit 7
+        tfr   d,y
  IFDEF T2
         jmp   LoadChunk.tile
  ELSE
@@ -499,6 +503,7 @@ LoadChunk.lineStart equ *-2
 LoadChunk.rowEnd
         dec   <TilemapBuffer.rows
         bne   LoadChunk.nextRow
+        sty   <TilemapBuffer.cell      ; the last cell, for the next chunk's
 LoadChunk.end
         lda   glb_map_chunk_pge
         _SetCartPageA                  ; the layout back
@@ -512,12 +517,13 @@ LoadChunk.row equ *-2                  ; (dynamic) the chunk row's first tile
         stu   LoadChunk.row
         ldd   #0
 LoadChunk.rowStep equ *-2              ; (dynamic)
+        sty   <TilemapBuffer.cell
         addd  <TilemapBuffer.cell
         anda  #%00000111
         adda  #tile_buffer/256
-        std   <TilemapBuffer.cell
+        tfr   d,y
         andb  #%10000000
-        std   LoadChunk.lineStart
+        stb   LoadChunk.lineStart
         jmp   LoadChunk.tile
 
 * ---------------------------------------------------------------------------
