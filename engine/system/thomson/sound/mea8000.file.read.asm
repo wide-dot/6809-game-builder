@@ -12,43 +12,38 @@ map.MEA8000.A EXTERNAL ; RCOM - command / status register
 ;   pitch    : 1 byte, starting pitch (Hz / 2)
 ;   frames   : 4 bytes each; frames with AMPL=0 are silence; the last frame is
 ;              the AMPL=0 dummy frame that lets the previous one play to its end
-; Protocol (TP101 fig. 19-20 and 28): STOP, pitch, every frame, then STOP once
-; the dummy frame has started. REQ is polled once per frame only: the chip
-; recovers within 3 us between the bytes of a frame, less than two stores.
-; Blocking: returns when the file has been played.
+; Protocol, the period player's: STOP, pitch, every byte after a REQ poll, and
+; no STOP at the end - the chip fades on the dummy frame and stops by itself
+; 16 ms after it started; the routine waits for that before returning. A STOP
+; sent as the dummy frame starts would race the chip's own clock, and the
+; chip's state would differ from one machine to the next.
+; Blocking: returns when the file has been played and the chip is at rest.
 ;
 ; input: [X] address of the speech file
 ; ----------------------------------------------------------------------------
 mea8000.file.read
-        pshs  d,x,u
+        pshs  d,x,y,u
         ldd   ,x
         leau  d,x             ; U = end of file
+        pshs  u               ; kept on the stack for the end test
         ldb   #$1A
         stb   map.MEA8000.A   ; STOP, slow-stop procedure, REQ pin disabled
         ldb   3,x             ; starting pitch (the free byte at 2,x is skipped)
         leax  4,x
-        stb   map.MEA8000.D
-@frame
-        stu   @end
-        cmpx  #0
-@end    equ   *-2
-        bhs   @last
-        bsr   @wait           ; ready for the next frame (up to 8 ms after the
-                              ; pitch, up to 64 ms after a frame)
-        ldd   ,x++
+        stb   map.MEA8000.D   ; accepted at once: the chip is stopped
+@byte   cmpx  ,s              ; end of the file?
+        bhs   @done
+        bsr   @wait
+        lda   ,x+
         sta   map.MEA8000.D
-        stb   map.MEA8000.D
-        ldd   ,x++
-        sta   map.MEA8000.D
-        stb   map.MEA8000.D
-        bra   @frame
-@last
-        bsr   @wait           ; the dummy frame has started: stop now
-        ldb   #$1A
-        stb   map.MEA8000.A
-        puls  d,x,u,pc
-@wait
-        tst   map.MEA8000.A   ; bit 7 = REQ, 1 when the chip accepts a byte
+        bra   @byte
+@done   bsr   @wait           ; the dummy frame has started
+        ldy   #3000           ; 24 ms (8 cycles per turn at 1 MHz): it plays
+@settle leay  -1,y            ; 8 ms, the chip fades 8 ms more and stops
+        bne   @settle
+        leas  2,s
+        puls  d,x,y,u,pc
+@wait   tst   map.MEA8000.A   ; REQ: bit 7 set when the chip accepts a byte
         bpl   @wait
         rts
 

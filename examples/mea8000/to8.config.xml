@@ -11,17 +11,26 @@
 
             <directory id="0" section="INDEX" gensymbols="gen/directories/00/entries.asm">
                 <default name="file.maxsize"      value="0x4000"/>
-                <default name="lwasm.format"      value="raw"/>
+                <default name="lwasm.format"      value="obj"/>
 
-                <!-- one file: the player and the speech file it plays -->
-                <file name="fileid.main" section="DATA" page="$01" address="$6100">
+                <!-- the player, a linked unit: the engine's sound routines are sections -->
+                <file name="fileid.main" section="DATA" linkdata="LINK" page="$01" address="$6100">
                     <lwasm gensource="gen/main.asm">
+                        <asm>speech.SIZE equ 1888</asm>
                         <asm filename="src/main.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- the sentence, one block in its own page, through the cartridge window -->
+                <file name="fileid.speech" section="DATA" page="$05" address="$0000">
+                    <lwasm format="raw" gensource="gen/speech.asm">
+                        <asm filename="src/speech.asm"/>
                     </lwasm>
                 </file>
 
                 <scene name="scenes.default" section="SCENE">
                     <load name="fileid.main"/>
+                    <load name="fileid.speech"/>
                 </scene>
 
             </directory>

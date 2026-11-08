@@ -163,6 +163,9 @@ la description de la PR en garde la trace.
   garde de la pile de sauvegarde, `guard="true"`, t43-t44, depuis le
   27/10/2026),
   `examples/mplus` (bancs de test carte son MPLUS : DAC, MIDI 6850, MEA8000, SN76489, YM2413),
+  `examples/mea8000` (une phrase dite par `mea8000.stream.read` depuis sa
+  propre page, témoins `$9C00`, banc `ci/toje-bench/mea8000_ut.py`, depuis le
+  08/11/2026),
   `examples/keyboard` (la trame du 6804 lue par `keyboard.fast`, banc
   `ci/toje-bench/keyboard_ut.py`, 13/13 sous toje corrigé),
   `examples/save` (un fichier `writable` réécrit par `loader.file.save` et
@@ -214,7 +217,18 @@ la description de la PR en garde la trace.
 
 ### 🚧 En cours / écrit mais non branché
 
-- **MEA8000** (synthèse vocale) : actif, banc de test dans `examples/mplus`.
+- **MEA8000** (synthèse vocale) : lecteurs du format d'époque dans
+  `engine/system/thomson/sound/` — `mea8000.file.read` (un fichier de parole,
+  protocole du lecteur d'époque : STOP, hauteur, chaque octet sur REQ, pas de
+  STOP final, le chip s'arrête seul — un STOP au démarrage de la trame de fin
+  fait une course avec l'horloge du chip, vérifié contre MAME échantillon par
+  échantillon le 12/09/2026) et `mea8000.stream.read` (08/11/2026 : un flux
+  plus long qu'une page, en blocs de 16 Ko coupés aux frontières de fichiers,
+  un par page RAM, mappés tour à tour dans la fenêtre cartouche ; table de
+  5 octets par bloc, 44 octets). Banc `examples/mea8000` +
+  `ci/toje-bench/mea8000_ut.py` (toje émule la carte parole) ; bancs MPLUS
+  dans `examples/mplus`. Les données sous droits (chansons) se construisent
+  hors dépôt avec le projet local `mea8000-disks`.
 - **MUCOM88/YM2608** (`engine/sound/mucom88/`, ~2900 l.) : écrit, non intégré —
   `ym2608.init/detect/reset` et le handler IRQ manquent ; `engine/pack/mub.asm` pointe
   vers de mauvais chemins. Non requis pour R-Type.
