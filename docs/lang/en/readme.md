@@ -58,6 +58,8 @@ boss included) ; the R-Type port on this generation already runs its stages
 - manage collisions (AABB and terrain)
 - display sprites by priority (compiled sprites, background erase)
 - display tilemaps : 1 px scroll on pre-buffered maps, looping band scroll
+- copy a block through the stack, the interrupts taken between blocks (a
+  picture in RAM copied or scrolled into a screen buffer)
 - camera / autoscroll, enemy waves
 - play audio with the ymm (YM2413) and vgc (SN76489) formats, sound FX
   under IRQ
@@ -112,6 +114,8 @@ Platform distributions are then generated in `package/target` :
 
 [gfxlock — the double buffer][gfxlock]
 
+[stackcopy — a block copied through the stack][stackcopy]
+
 [keyboard — the 6804's frames (TO8)][keyboard]
 
 [joypads and the DAC — one port for both (TO8)][joypad]
@@ -137,6 +141,7 @@ Platform distributions are then generated in `package/target` :
 [symbols]: symbols.md
 [groups]: groups.md
 [save]: save.md
+[stackcopy]: stackcopy.md
 [objects]: objects.md
 [sprites]: sprites.md
 [spritestream]: spritestream.md
