@@ -21,14 +21,24 @@
 *                     file, sharing this one's body
 * trashes   : d, x, y
 * V2-DEVIATION : ObjID unsigned (abx, past 127 objects) ; the flips merged
-* without self-modifying code ; the body shared with AnimateSpriteSync.
+* without self-modifying code ; the body shared with AnimateSpriteSync ; a
+* script still running read without its page (05/11/2026).
 * ---------------------------------------------------------------------------
 
  IFNDEF ANIMATE_SPRITE
 ANIMATE_SPRITE equ 1
 
 AnimateSprite
-        bsr   AnimateSprite.mount
+        ldx   anim,u
+        bmi   @mount                   ; an offset : resolved by the mount
+        cmpx  prev_anim,u
+        bne   @mount                   ; a new animation
+        dec   anim_frame_duration,u
+        bmi   @next
+        rts                            ; the image shown on : no page, no script read
+@next   bsr   AnimateSprite.mount      ; the same animation : Z set
+        bra   @load
+@mount  bsr   AnimateSprite.mount
         beq   @run
         lda   anim_flags,u
         anda  #anim_link_mask

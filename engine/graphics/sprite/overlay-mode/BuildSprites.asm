@@ -18,6 +18,9 @@
 * V2-DEVIATION (18/10/2026) : rewritten from v1's : one routine a step,
 * shared by the single and the multisprite paths (BuildSprites.pickRoutine, BuildSprites.drawPlayfield,
 * BuildSprites.drawAt) ; the dead no-range path and _mapping_frame are gone.
+* V2-DEVIATION (05/11/2026) : a playfield sprite is culled first
+* (BuildSprites.cullPlayfield), its variant picked once in the screen ; the
+* pass's bounds are the culling's immediates.
 * ---------------------------------------------------------------------------
 
 BuildSprites.centerParity       equ dp_engine    ; word - a byte with left zero pad byte
@@ -45,14 +48,19 @@ BuildSprites
         subd  <glb_camera_x_offset
         subd  <glb_camera_x_offset
         std   BuildSprites.xLow                        ; x + x1 below : out
+        std   BuildSprites.xLoopLow
         ldd   <glb_camera_x_pos
         addd  #160
         std   BuildSprites.xHigh                        ; x + x1 + x_size from : out
+        std   BuildSprites.xLoopHigh
         ldd   <glb_camera_y_pos
         subd  <glb_camera_y_offset
         std   BuildSprites.yLow                        ; y + y1 below : out ; y - BuildSprites.yLow : the screen line
+ IFNDEF BuildSprites.YWRAP
+        std   BuildSprites.yLine
         addd  #200
         std   BuildSprites.yHigh                        ; y + y1 + y_size from : out
+ ENDC
  IFDEF BuildSprites.FRONT_PASS
         tst   BuildSprites.front            ; V2-DEVIATION (07/10/2026) : priority 1 drawn by a pass of its own
         beq   @back
@@ -84,30 +92,25 @@ BuildSprites
         bne   @nextobject
         bita  #render_subobjects_mask
         lbne  @multisprite
-        ldx   image_set,u                   ; no image : nothing to draw
+        ldy   image_set,u                   ; no image : nothing to draw
         beq   @nextobject
         sta   <BuildSprites.flags
-        ldx   #Img_Page_Index               ; the image's page, then its set
+        ldx   #Img_Page_Index               ; the image's page, then its set (Y)
         ldb   id,u
         abx
         lda   ,x
         _SetCartPageA
-        ldx   image_set,u
-        ldd   image_x_size,x
+        ldd   image_x_size,y
         sta   <BuildSprites.xSize+1
         stb   <BuildSprites.ySize+1
-        ldb   image_center_offset,x
-        sex
-        std   <BuildSprites.centerParity
-        lda   <BuildSprites.flags                ; the subset of its mirrors
-        anda  #render_xmirror_mask|render_ymirror_mask
-        ldb   a,x
-        beq   @nextobject
-        leax  b,x
-        stx   <BuildSprites.subset
         lda   <BuildSprites.flags
         bita  #render_playfieldcoord_mask
         beq   @screen
+        anda  #render_xmirror_mask|render_ymirror_mask ; the subset of its mirrors
+        ldb   a,y
+        beq   @nextobject
+        leax  b,y
+        stx   <BuildSprites.subset
         ldd   y_pos,u
         std   <BuildSprites.y
         ldd   x_pos,u
@@ -115,11 +118,17 @@ BuildSprites
         andb  #$FE                          ; V2-DEVIATION (11/10/2026) : an even x, as the camera's
  ENDC
         std   <BuildSprites.x
-        subd  <glb_camera_x_pos             ; its parity picks the shifted variant
+        jsr   BuildSprites.cullPlayfield    ; V2-DEVIATION (05/11/2026) : the bounds first, the variant for a sprite drawn
+        bcs   @nextobject                   ; out of the screen
+        ldb   image_center_offset,y
+        sex
+        std   <BuildSprites.centerParity
+        ldx   <BuildSprites.subset
+        ldb   <BuildSprites.x+1
+        subb  <glb_camera_x_pos+1           ; its parity picks the shifted variant
         jsr   BuildSprites.pickRoutine
         beq   @nextobject
         jsr   BuildSprites.drawPlayfield
-        bcs   @nextobject                   ; out of the screen
 @drawn  lda   <BuildSprites.flags
         ora   #render_hide_mask             ; drawn : hidden until displayed again
         sta   render_flags,u
@@ -131,6 +140,15 @@ BuildSprites
 ; screen coordinates : the bounds in a shifted referential, one unsigned
 ; compare a pair (V2-DEVIATION 19/08/2026)
 @screen
+        ldb   image_center_offset,y
+        sex
+        std   <BuildSprites.centerParity
+        lda   <BuildSprites.flags                ; the subset of its mirrors
+        anda  #render_xmirror_mask|render_ymirror_mask
+        ldb   a,y
+        beq   @nextobject
+        leax  b,y
+        stx   <BuildSprites.subset
         ldb   x_pixel,u
         jsr   BuildSprites.pickRoutine
         beq   @nextobject
@@ -187,24 +205,20 @@ BuildSprites
         sta   render_flags,u
         sta   <BuildSprites.flags
         lda   mainspr_childsprites,u
-        beq   @nextobject
+        lbeq  @nextobject
         sta   <BuildSprites.children
         ldx   #Img_Page_Index
         ldb   id,u
         abx
         lda   ,x
         sta   <BuildSprites.imagePage
-        leay  sub2_x_pos,u
-@child  lda   <BuildSprites.imagePage                  ; again : the last draw changed the page
         _SetCartPageA
-        ldx   4,y                           ; the child's image set (0 : none)
+        leay  sub2_x_pos,u
+@child  ldx   4,y                           ; the child's image set (0 : none)
         beq   @nextchild
         ldd   image_x_size,x
         sta   <BuildSprites.xSize+1
         stb   <BuildSprites.ySize+1
-        ldb   image_center_offset,x
-        sex
-        std   <BuildSprites.centerParity
         ldb   ,x                            ; the unmirrored subset
         leax  b,x
         stx   <BuildSprites.subset
@@ -215,10 +229,20 @@ BuildSprites
         andb  #$FE                          ; V2-DEVIATION (11/10/2026) : an even x, as the camera's
  ENDC
         std   <BuildSprites.x
-        subd  <glb_camera_x_pos
+        jsr   BuildSprites.cullPlayfield    ; Y and U kept
+        bcs   @nextchild
+        ldx   4,y
+        ldb   image_center_offset,x
+        sex
+        std   <BuildSprites.centerParity
+        ldx   <BuildSprites.subset
+        ldb   <BuildSprites.x+1
+        subb  <glb_camera_x_pos+1
         jsr   BuildSprites.pickRoutine
         beq   @nextchild
-        jsr   BuildSprites.drawPlayfield              ; Y and U kept
+        jsr   BuildSprites.drawPlayfield    ; Y and U kept
+        lda   <BuildSprites.imagePage       ; again : the draw changed the page
+        _SetCartPageA
 @nextchild
         leay  next_subspr,y
         dec   <BuildSprites.children
@@ -261,63 +285,85 @@ BuildSprites.pickRoutine
 @none   rts
 
 * ---------------------------------------------------------------------------
-* BuildSprites.drawPlayfield - draws a sprite placed in playfield coordinates
-* input  : BuildSprites.x, BuildSprites.y, BuildSprites.subset, BuildSprites.xSize, BuildSprites.ySize,
-*          BuildSprites.centerParity, BuildSprites.flags, the routine (BuildSprites.pickRoutine)
-* output : C set when the sprite is out of the screen ; Y and U kept
+* BuildSprites.cullPlayfield - a sprite placed in playfield coordinates
+* against the pass's bounds
+* input  : X the subset, BuildSprites.x, BuildSprites.y, BuildSprites.xSize, BuildSprites.ySize,
+*          BuildSprites.flags
+* output : C set when the sprite is out of the screen ; else BuildSprites.y
+*          its screen line ; Y and U kept
 * ---------------------------------------------------------------------------
-BuildSprites.drawPlayfield
-        ldx   <BuildSprites.subset
-        ldb   image_subset_x1_offset,x
-        sex
-        std   <BuildSprites.x1
-        ldb   image_subset_y1_offset,x
-        sex
-        std   <BuildSprites.y1
+BuildSprites.cullPlayfield
         lda   <BuildSprites.flags
         bita  #render_xloop_mask
         beq   @xStrict
-        ldd   <BuildSprites.x                       ; V2-DEVIATION (31/08/2026) : xloop, overlapping the window is enough
-        addd  <BuildSprites.x1
-        cmpd  BuildSprites.xHigh
+        ldb   image_subset_x1_offset,x      ; V2-DEVIATION (31/08/2026) : xloop, overlapping the window is enough
+        sex
+        addd  <BuildSprites.x
+        cmpd  #0
+BuildSprites.xLoopHigh equ *-2              ; (dynamic) the pass's bounds
         bge   @out
         addd  <BuildSprites.xSize
-        cmpd  BuildSprites.xLow
+        cmpd  #0
+BuildSprites.xLoopLow equ *-2
         blt   @out
         bra   @yTests
 @xStrict
-        ldd   <BuildSprites.x
-        addd  <BuildSprites.x1
-        cmpd  BuildSprites.xLow
+        ldb   image_subset_x1_offset,x
+        sex
+        addd  <BuildSprites.x
+        cmpd  #0
+BuildSprites.xLow equ *-2                   ; (dynamic) x + x1 below : out
         blt   @out
         addd  <BuildSprites.xSize
-        cmpd  BuildSprites.xHigh
+        cmpd  #0
+BuildSprites.xHigh equ *-2                  ; (dynamic) x + x1 + x_size from : out
         bge   @out
 @yTests
  IFDEF BuildSprites.YWRAP
         ldd   <BuildSprites.y                       ; the screen line, signed round the
-        subd  BuildSprites.yLow                     ; playfield's height
+        subd  #0                                    ; playfield's height
+BuildSprites.yLow equ *-2                   ; (dynamic) y - BuildSprites.yLow : the screen line
         addd  #$400
         anda  BuildSprites.yWrapMask
         subd  #$400
         std   <BuildSprites.y
-        addd  <BuildSprites.y1
+        ldb   image_subset_y1_offset,x
+        sex
+        addd  <BuildSprites.y
         blt   @out
         addd  <BuildSprites.ySize
         cmpd  #200
         bge   @out
-        ldd   <BuildSprites.y
  ELSE
-        ldd   <BuildSprites.y
-        addd  <BuildSprites.y1
-        cmpd  BuildSprites.yLow
+        ldb   image_subset_y1_offset,x
+        sex
+        addd  <BuildSprites.y
+        cmpd  #0
+BuildSprites.yLow equ *-2                   ; (dynamic) y + y1 below : out
         blt   @out
         addd  <BuildSprites.ySize
-        cmpd  BuildSprites.yHigh
+        cmpd  #0
+BuildSprites.yHigh equ *-2                  ; (dynamic) y + y1 + y_size from : out
         bge   @out
         ldd   <BuildSprites.y                       ; the screen line
-        subd  BuildSprites.yLow
+        subd  #0
+BuildSprites.yLine equ *-2                  ; (dynamic) BuildSprites.yLow
+        std   <BuildSprites.y
  ENDC
+        andcc #$FE                          ; in
+        rts
+@out    orcc  #1                            ; out of the screen
+        rts
+
+* ---------------------------------------------------------------------------
+* BuildSprites.drawPlayfield - draws a sprite placed in playfield coordinates,
+* in the screen (BuildSprites.cullPlayfield)
+* input  : BuildSprites.x, BuildSprites.y the screen line, BuildSprites.centerParity,
+*          the routine (BuildSprites.pickRoutine)
+* output : Y and U kept
+* ---------------------------------------------------------------------------
+BuildSprites.drawPlayfield
+        ldd   <BuildSprites.y
         anda  #$28                          ; V2-DEVIATION : a negative line, 256 lines back
         sta   <BuildSprites.lineCorrection
  IFDEF BuildSprites.HALFLINE
@@ -337,12 +383,7 @@ BuildSprites.drawPlayfield
 @up     dec   @ypx
 !       tfr   b,a
         ldb   #0
-@ypx    equ   *-1
-        jsr   BuildSprites.drawAt
-        andcc #$FE                          ; drawn
-        rts
-@out    orcc  #1                            ; out of the screen
-        rts
+@ypx    equ   *-1                           ; and on into BuildSprites.drawAt
 
 * ---------------------------------------------------------------------------
 * BuildSprites.drawAt - draws the routine at a screen place
@@ -380,11 +421,6 @@ BuildSprites.drawAt
         jsr   [BuildSprites.drawRoutine]
         puls  y,u,pc
 
-; the pass's bounds, extended : dp_engine has no room left for them
-BuildSprites.xLow  fdb   0
-BuildSprites.xHigh  fdb   0
-BuildSprites.yLow  fdb   0
-BuildSprites.yHigh  fdb   0
  IFDEF BuildSprites.YWRAP
 BuildSprites.yWrapMask fcb $FF         ; the playfield's height : $07 2048 lines, wrapping
  ENDC

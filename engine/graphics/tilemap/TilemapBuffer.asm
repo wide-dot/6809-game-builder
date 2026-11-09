@@ -182,6 +182,10 @@ ComputeTileBuffer
         rts
 
 FeedTileBuffer
+        ldx   glb_map_tiles_adr        ; the tile index, for LoadChunk's tiles
+        stx   LoadChunk.tilesAdr
+        lda   glb_map_tiles_pge
+        sta   LoadChunk.tilesPge
         lda   glb_map_pge
         _SetCartPageA                  ; the map descriptor
         ldu   glb_map_adr
@@ -394,11 +398,13 @@ LoadChunk.word                         ; a word cell : the chunk's bank its id >
 * LoadChunk - feeds TilemapBuffer.cols x .chunkRows tiles of the chunk at the
 * layout cell TilemapBuffer.layoutCell, from TilemapBuffer.chunkOffset in it,
 * to the buffer from TilemapBuffer.cell
+* V2-DEVIATION (05/11/2026) : the cell kept in Y, the tile index as
+* immediates (FeedTileBuffer), U no longer saved around a tile.
 * ---------------------------------------------------------------------------
 LoadChunk
-        ldd   <TilemapBuffer.cell
+        ldb   <TilemapBuffer.cell+1
         andb  #%10000000
-        std   LoadChunk.lineStart      ; the buffer row
+        stb   LoadChunk.lineStart      ; the buffer row
         ldb   <TilemapBuffer.cols      ; from a row's last cell to the next row's first
         lslb
         lslb
@@ -444,22 +450,13 @@ TilemapBuffer.chunkOffset equ *-2      ; (dynamic) its first tile
         beq   LoadChunk.end
  ENDC
         sta   <TilemapBuffer.rows
+        ldy   <TilemapBuffer.cell      ; the cell in Y through the chunk
 LoadChunk.tile
-        ldy   <TilemapBuffer.cell
         ldd   ,u++                     ; the tile entry
         bne   >
         std   ,y                       ; 0 : an empty cell
         bra   LoadChunk.next
-!       stu   @entry
-        sta   @high
- IFDEF TilemapBuffer.OPAQUE
-        anda  #%11111100               ; the flags : priority, solidity, opacity
- ELSE
-        anda  #%11111000               ; the flags : priority, solidity
- ENDC
-        sta   ,y
-        lda   #0
-@high   equ   *-1
+!       sta   ,y                       ; the flags, the index's bits cleared below
  IFDEF TilemapBuffer.OPAQUE
         anda  #%00000011               ; the tile index
  ELSE
@@ -469,28 +466,35 @@ LoadChunk.tile
         _lsld
         addd  #0
 @index  equ   *-2                      ; * 3 : its record
-        ldu   glb_map_tiles_adr
-        leau  d,u
-        lda   glb_map_tiles_pge
+        addd  #0
+LoadChunk.tilesAdr equ *-2             ; (dynamic, FeedTileBuffer) the tile index
+        tfr   d,x
+        lda   #0
+LoadChunk.tilesPge equ *-1             ; (dynamic, FeedTileBuffer)
         _SetCartPageA
-        pulu  a,x                      ; the routine's page and address
+        lda   ,x                       ; the routine's page and address
         sta   1,y
+        ldx   1,x
         stx   2,y
         lda   #0
 chk_idx_pge equ *-1                    ; (dynamic) the chunk's page
         _SetCartPageA
-        ldu   #0
-@entry  equ   *-2
+        lda   ,y
+ IFDEF TilemapBuffer.OPAQUE
+        anda  #%11111100               ; the flags : priority, solidity, opacity
+ ELSE
+        anda  #%11111000               ; the flags : priority, solidity
+ ENDC
+        sta   ,y
 LoadChunk.next
         dec   <TilemapBuffer.cols
         beq   LoadChunk.rowEnd
-        ldd   #4                       ; the next cell, in the row's ring
-        addd  <TilemapBuffer.cell
-        clra
+        tfr   y,d
+        addb  #4                       ; the next cell, in the row's ring
         andb  #%01111100
-        addd  #0
-LoadChunk.lineStart equ *-2
-        std   <TilemapBuffer.cell
+        orb   #0
+LoadChunk.lineStart equ *-1            ; (dynamic) the row's bit 7
+        tfr   d,y
  IFDEF T2
         jmp   LoadChunk.tile
  ELSE
@@ -499,6 +503,7 @@ LoadChunk.lineStart equ *-2
 LoadChunk.rowEnd
         dec   <TilemapBuffer.rows
         bne   LoadChunk.nextRow
+        sty   <TilemapBuffer.cell      ; the last cell, for the next chunk's
 LoadChunk.end
         lda   glb_map_chunk_pge
         _SetCartPageA                  ; the layout back
@@ -512,12 +517,13 @@ LoadChunk.row equ *-2                  ; (dynamic) the chunk row's first tile
         stu   LoadChunk.row
         ldd   #0
 LoadChunk.rowStep equ *-2              ; (dynamic)
+        sty   <TilemapBuffer.cell
         addd  <TilemapBuffer.cell
         anda  #%00000111
         adda  #tile_buffer/256
-        std   <TilemapBuffer.cell
+        tfr   d,y
         andb  #%10000000
-        std   LoadChunk.lineStart
+        stb   LoadChunk.lineStart
         jmp   LoadChunk.tile
 
 * ---------------------------------------------------------------------------
@@ -526,6 +532,7 @@ LoadChunk.rowStep equ *-2              ; (dynamic)
 * the end an entry of page 0, pushed first), popped by
 * DrawHighPriorityBufferedTile. An IRQ or a call pushes below S, free there.
 * Nothing drawn when the camera did not move for this buffer.
+* V2-DEVIATION (05/11/2026) : the cells in groups of four, unrolled.
 * ---------------------------------------------------------------------------
 DrawBufferedTile
         lda   <glb_camera_move
@@ -584,8 +591,11 @@ DrawBufferedTile
 !       std   DBT_rowy
         ldd   <glb_screen_location_2
         subd  <glb_screen_location_1
-        std   DBT_delta
+        std   DBT_delta0
+        std   DBT_delta1
         std   DBT_delta2
+        std   DBT_delta3
+        std   DBT_deltaHigh
         ldb   <glb_camera_y_pos+1      ; the first cell in the buffer
         lda   #%00010000
         mul
@@ -602,60 +612,100 @@ DrawBufferedTile
         cmpb  <DBT_ncol
         blo   >
         ldb   <DBT_ncol
-!       stb   DBT_run1                 ; the cells up to it
+!       pshs  b                        ; the cells up to it (1 at least) : run 1
+        jsr   DBT_runSetup
+        sta   DBT_run1
+        stx   DBT_entry1
+        stb   DBT_adj1
+        puls  b                        ; and after it : run 2 (0 : none)
         negb
         addb  <DBT_ncol
-        stb   DBT_run2                 ; and after it
+        jsr   DBT_runSetup
+        sta   DBT_run2
+        stx   DBT_entry2
+        sex
+        subd  #128                     ; from its ring's start
+        std   DBT_adj2
         sts   DBT_sys
         lds   #tmb_hprio_top
         clrb                           ; the queue's end : page 0
         pshs  b,x,y
+        bra   DBT_lloop
+;
+; a cell drawn or queued, out of the unrolled run (X its group, Y its screen
+; address) ; back to the next cell
+DBT_cell macro
+DBT_f\1 bmi   DBT_h\1                  ; bit 7 : high priority
+        stb   $E7E6
+ IFNDEF TilemapBuffer.PLANES_CURSOR
+        sty   <glb_screen_location_1   ; plane 1
+ ENDC
+        leau  $1234,y                  ; plane 2 ; plane 1 in Y (TilemapBuffer.PLANES_CURSOR : moved on by the routine)
+DBT_delta\1 equ *-2
+        jsr   [\1*4+2,x]
+ IFNDEF TilemapBuffer.PLANES_CURSOR
+        leay  2,y
+ ENDC
+        bra   \2
+DBT_h\1
+ IFNE \1
+        leax  \1*4,x
+ ENDC
+        pshs  b,x,y                    ; page, cell, screen address
+ IFNE \1
+        leax  -\1*4,x
+ ENDC
+        leay  2,y
+        bra   \2
+        endm
+        DBT_cell 0,DBT_c1
+        DBT_cell 1,DBT_c2
 DBT_lloop
         ldx   #0
 DBT_row equ   *-2                      ; the row's first cell
+        leax  -100,x
+DBT_adj1 equ  *-1                      ; (dynamic) run 1 entered at its cells skipped
         ldy   #0
 DBT_rowy equ  *-2                      ; and screen address
         lda   #0
-DBT_run1 equ  *-1
-        sta   <DBT_ccpt
-        lda   #0
 DBT_run2 equ  *-1
         sta   <DBT_left
-DBT_cloop
-        ldd   ,x                       ; A the flags, B the page (0 : empty)
- IFDEF TilemapBuffer.OPAQUE
-        beq   DBT_next                 ; the background routine reads the opacity bit
- ELSE
-        beq   DBT_empty
+        lda   #0
+DBT_run1 equ  *-1
+        sta   <DBT_ccpt
+        jmp   DBT_c0
+DBT_entry1 equ *-2                     ; (dynamic) its first cell's
+;
+; a run of cells in groups of four, unrolled, entered at its first cell
+; (V2-DEVIATION 05/11/2026) : an empty cell 13 cycles
+DBT_test macro
+        bne   DBT_f\1
+ IFNDEF TilemapBuffer.OPAQUE
+        inc   <glb_alphaTiles          ; the background shows (TilemapBuffer.OPAQUE : the background routine reads the opacity bit)
  ENDC
-        bmi   DBT_high                 ; bit 7 : high priority
-        stb   $E7E6
- IFDEF TilemapBuffer.PLANES_CURSOR
-        leau  $1234,y                  ; plane 2 ; plane 1 in Y, moved on by the routine
-DBT_delta equ *-2
-        jsr   [2,x]
-        leax  4,x
-        dec   <DBT_ccpt
-        bne   DBT_cloop
-        bra   DBT_rowend
- ELSE
-        sty   <glb_screen_location_1   ; plane 1
-        leau  $1234,y                  ; plane 2
-DBT_delta equ *-2
-        jsr   [2,x]
- ENDC
-DBT_next
-        leax  4,x
         leay  2,y
+        endm
+DBT_c0  ldd   ,x                       ; A the flags, B the page (0 : empty)
+        DBT_test 0
+DBT_c1  ldd   4,x
+        DBT_test 1
+DBT_c2  ldd   8,x
+        DBT_test 2
+DBT_c3  ldd   12,x
+        DBT_test 3
+DBT_group
+        leax  16,x
         dec   <DBT_ccpt
-        bne   DBT_cloop
+        bne   DBT_c0
 DBT_rowend
         lda   <DBT_left                ; the row goes on from its ring's start
         beq   >
         sta   <DBT_ccpt
         clr   <DBT_left
-        leax  -128,x
-        bra   DBT_cloop
+        leax  -1000,x
+DBT_adj2 equ  *-2                      ; (dynamic) -128, run 2 entered at its cells skipped
+        jmp   DBT_c0
+DBT_entry2 equ *-2
 !       ldd   DBT_rowy                 ; the next row : 16 lines down
         addd  #40*16
         std   DBT_rowy
@@ -665,24 +715,33 @@ DBT_rowend
         adda  #tile_buffer/256
         std   DBT_row
         dec   <DBT_lcpt
-        bne   DBT_lloop
+        lbne  DBT_lloop
         sts   DBT_hiptr
         lds   #0
 DBT_sys equ   *-2
         rts
+        DBT_cell 2,DBT_c3
+        DBT_cell 3,DBT_group
 
-DBT_high
-        pshs  b,x,y                    ; page, cell, screen address
-        bra   DBT_next
+* a run of B cells : A its groups of four, X its entry, B -4 * the cells
+* skipped at it
+DBT_runSetup
+        tfr   b,a
+        adda  #3
+        lsra
+        lsra
+        negb
+        andb  #3
+        lslb
+        ldx   #DBT_entries
+        ldx   b,x
+        lslb
+        negb
+        rts
+DBT_entries fdb DBT_c0,DBT_c1,DBT_c2,DBT_c3
 
  IFDEF TilemapBuffer.SKIP_ROWS
 DBT_skiprows fcb 0                     ; the game's, each frame
- ENDC
-
- IFNDEF TilemapBuffer.OPAQUE
-DBT_empty
-        inc   <glb_alphaTiles          ; the background shows
-        bra   DBT_next
  ENDC
 
 DrawHighPriorityBufferedTile
@@ -696,7 +755,7 @@ DBT_hiptr equ *-2
         sty   <glb_screen_location_1
  ENDC
         leau  $1234,y
-DBT_delta2 equ *-2
+DBT_deltaHigh equ *-2
         jsr   [2,x]
 @entry  puls  b,x,y
         stb   $E7E6
