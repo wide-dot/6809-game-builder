@@ -12,6 +12,8 @@ import javax.imageio.ImageIO;
  * column, both nibbles of a byte the colour (a byte column of the screen is
  * 2 BM16 pixels of the same colour).
  */
+// the toolchain signals build errors with plain Exceptions
+@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 final class TextureEncoder {
 
 	/** the textures' colour indexes : [texture][column][row] */

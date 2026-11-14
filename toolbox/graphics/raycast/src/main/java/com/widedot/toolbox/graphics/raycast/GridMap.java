@@ -11,6 +11,8 @@ import javax.imageio.ImageIO;
  * indexed picture, a pixel a cell, the colour index the cell's value. Its
  * border must be walls : a ray always stops inside the grid.
  */
+// the toolchain signals build errors with plain Exceptions
+@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 final class GridMap {
 
 	final int width;
@@ -40,18 +42,21 @@ final class GridMap {
 		int[] cells = new int[w * h];
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < w; x++) {
-				int c = img.getRaster().getSample(x, y, 0);
-				if (c > textures) {
-					throw new Exception(file + " : cell (" + x + "," + y + ") is texture " + c + ", there are "
-							+ textures);
-				}
-				if (c == 0 && (x == 0 || y == 0 || x == w - 1 || y == h - 1)) {
-					throw new Exception(file + " : cell (" + x + "," + y + ") is empty on the map's border, a ray"
-							+ " would leave the map");
-				}
-				cells[y * w + x] = c;
+				boolean border = x == 0 || y == 0 || x == w - 1 || y == h - 1;
+				cells[y * w + x] = cell(file, img.getRaster().getSample(x, y, 0), x, y, border, textures);
 			}
 		}
 		return new GridMap(w, h, cells);
+	}
+
+	private static int cell(String file, int c, int x, int y, boolean border, int textures) throws Exception {
+		if (c > textures) {
+			throw new Exception(file + " : cell (" + x + "," + y + ") is texture " + c + ", there are " + textures);
+		}
+		if (c == 0 && border) {
+			throw new Exception(file + " : cell (" + x + "," + y + ") is empty on the map's border, a ray would"
+					+ " leave the map");
+		}
+		return c;
 	}
 }

@@ -25,8 +25,8 @@ class BenchReferenceTest {
 
 	/** the bench's sum : rotated left by a bit, plus the byte */
 	static int add(int sum, int b) {
-		sum = ((sum << 1) | (sum >>> 15)) & 0xFFFF;
-		return (sum + (b & 0xFF)) & 0xFFFF;
+		int rotated = ((sum << 1) | (sum >>> 15)) & 0xFFFF;
+		return (rotated + (b & 0xFF)) & 0xFFFF;
 	}
 
 	/** the bench's cameras, from the game mode's table : x, y, angle */

@@ -154,21 +154,35 @@ final class Sources {
 		sb.append(WALL).append(".textures EXTERNAL\n");
 		sb.append("_").append(RAY).append(".tables MACRO\n");
 		sb.append("* |rd| >> 4 -> 1/|rd|, 8.8 cells\n").append(RAY).append(".recip\n");
-		for (int i = 0; i < t.recip.length; i += 8) {
-			sb.append("        fdb   ");
-			for (int k = i; k < Math.min(t.recip.length, i + 8); k++) {
-				sb.append(k == i ? "" : ",").append(String.format("$%04X", t.recip[k]));
-			}
-			sb.append('\n');
-		}
+		rows(sb, "fdb", t.recip, t.recip.length, 8, "$%04X");
 		sb.append("* perp >> 2 -> the height's index\n").append(RAY).append(".nsamp\n");
-		for (int i = 0; i < RayTables.NLEN; i += 16) {
-			sb.append("        fcb   ");
-			for (int k = i; k < i + 16; k++) {
-				sb.append(k == i ? "" : ",").append(t.nsamp[k]);
+		rows(sb, "fcb", t.nsamp, RayTables.NLEN, 16, "%d");
+		scalers(sb, g, t, pageExpr);
+		sb.append("* texture number -> its address (the high byte is read : textures are at $xx00)\n");
+		sb.append(RAY).append(".textures\n        fdb   0\n");
+		for (int n = 0; n < textures; n++) {
+			sb.append("        fdb   ").append(WALL).append(".textures+").append(n * Geometry.TEX * Geometry.TEX).append('\n');
+		}
+		sb.append("* the map, ").append(map.width).append(" x ").append(map.height)
+				.append(", a cell = 0 or its texture number\n").append(RAY).append(".map\n");
+		rows(sb, "fcb", map.cells, map.cells.length, map.width, "%d");
+		sb.append(" ENDM\n");
+		return sb.toString();
+	}
+
+	/** count values, some a line */
+	private static void rows(StringBuilder sb, String directive, int[] values, int count, int perLine, String format) {
+		for (int i = 0; i < count; i += perLine) {
+			sb.append("        ").append(directive).append("   ");
+			for (int k = i; k < Math.min(count, i + perLine); k++) {
+				sb.append(k == i ? "" : ",").append(String.format(format, values[k]));
 			}
 			sb.append('\n');
 		}
+	}
+
+	/** a height's index -> its scaler : 4 bytes an entry, the page and the address the builder's */
+	private static void scalers(StringBuilder sb, Geometry g, RayTables t, String pageExpr) {
 		sb.append("* a height's index -> the scaler's page, the top row, its address (the\n");
 		sb.append("* height snapped to one a scaler exists for) : 4 bytes an entry\n").append(RAY).append(".scalers\n");
 		sb.append("        fcb   0,0\n        fdb   0\n");
@@ -178,21 +192,5 @@ final class Sources {
 					.append('\n');
 			sb.append("        fdb   ").append(scaler(h)).append('\n');
 		}
-		sb.append("* texture number -> its address (the high byte is read : textures are at $xx00)\n");
-		sb.append(RAY).append(".textures\n        fdb   0\n");
-		for (int n = 0; n < textures; n++) {
-			sb.append("        fdb   ").append(WALL).append(".textures+").append(n * Geometry.TEX * Geometry.TEX).append('\n');
-		}
-		sb.append("* the map, ").append(map.width).append(" x ").append(map.height)
-				.append(", a cell = 0 or its texture number\n").append(RAY).append(".map\n");
-		for (int y = 0; y < map.height; y++) {
-			sb.append("        fcb   ");
-			for (int x = 0; x < map.width; x++) {
-				sb.append(x == 0 ? "" : ",").append(map.cells[y * map.width + x]);
-			}
-			sb.append('\n');
-		}
-		sb.append(" ENDM\n");
-		return sb.toString();
 	}
 }

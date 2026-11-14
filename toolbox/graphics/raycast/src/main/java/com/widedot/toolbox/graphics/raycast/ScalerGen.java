@@ -16,6 +16,8 @@ import java.util.List;
  */
 final class ScalerGen {
 
+	private final Geometry g;
+
 	/** a routine : its height in rows, its source lines, its size in bytes */
 	static final class Routine {
 		final int height;
@@ -28,8 +30,6 @@ final class ScalerGen {
 			this.size = size;
 		}
 	}
-
-	private final Geometry g;
 
 	ScalerGen(Geometry g) {
 		this.g = g;
@@ -51,12 +51,20 @@ final class ScalerGen {
 
 	/** the routine of the walls h rows high */
 	Routine routine(int h) {
+		int y0 = Math.max(0, g.topRow(h));
+		List<int[]> runs = runs(h);
+		String[] load = new String[runs.size()];
+		char[] reg = new char[runs.size()];
+		registers(runs, load, reg);
+		return emit(h, y0, runs, load, reg);
+	}
+
+	/** the wall's rows in the view, as runs of one texel : texel, rows */
+	private List<int[]> runs(int h) {
 		int t = g.topRow(h);
 		int[] texel = g.texelRows(h);
-		int y0 = Math.max(0, t);
-		int y1 = Math.min(g.rows, t + h);
-		List<int[]> runs = new ArrayList<int[]>();           // texel, rows
-		for (int y = y0; y < y1; y++) {
+		List<int[]> runs = new ArrayList<int[]>();
+		for (int y = Math.max(0, t); y < Math.min(g.rows, t + h); y++) {
 			int tx = texel[y - t];
 			if (!runs.isEmpty() && runs.get(runs.size() - 1)[0] == tx) {
 				runs.get(runs.size() - 1)[1]++;
@@ -64,22 +72,27 @@ final class ScalerGen {
 				runs.add(new int[] { tx, 1 });
 			}
 		}
-		// which register holds each run, and where the loads go
-		String[] load = new String[runs.size()];
-		char[] reg = new char[runs.size()];
-		for (int i = 0; i < runs.size();) {
+		return runs;
+	}
+
+	/** which register holds each run, and where the loads go : two consecutive texels share an ldd */
+	private static void registers(List<int[]> runs, String[] load, char[] reg) {
+		int i = 0;
+		while (i < runs.size()) {
 			int tx = runs.get(i)[0];
+			reg[i] = 'a';
 			if (i + 1 < runs.size() && runs.get(i + 1)[0] == tx + 1) {
 				load[i] = "ldd";
-				reg[i] = 'a';
 				reg[i + 1] = 'b';
 				i += 2;
 			} else {
 				load[i] = "lda";
-				reg[i] = 'a';
 				i++;
 			}
 		}
+	}
+
+	private static Routine emit(int h, int y0, List<int[]> runs, String[] load, char[] reg) {
 		List<String> lines = new ArrayList<String>();
 		int first = (y0 + Geometry.BIAS) * Geometry.STRIDE;
 		lines.add("        leau  " + first + ",u");

@@ -31,6 +31,8 @@ import lombok.extern.slf4j.Slf4j;
  * shared by every form and by {@code <raycast>} : set it once with
  * {@code <default name="raycast.xxx">}.
  */
+// the toolchain signals build errors with plain Exceptions
+@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 @Slf4j
 public class WallscalerPlugin {
 

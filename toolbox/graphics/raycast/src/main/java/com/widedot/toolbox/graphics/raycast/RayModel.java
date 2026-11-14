@@ -28,6 +28,10 @@ package com.widedot.toolbox.graphics.raycast;
  */
 final class RayModel {
 
+	private final RayTables t;
+	private final GridMap map;
+	private final boolean pair;
+
 	/** a ray's hit */
 	static final class Hit {
 		int texture;
@@ -49,10 +53,6 @@ final class RayModel {
 		}
 	}
 
-	private final RayTables t;
-	private final GridMap map;
-	private final boolean pair;
-
 	RayModel(RayTables t, GridMap map, boolean pair) {
 		this.t = t;
 		this.map = map;
@@ -60,54 +60,62 @@ final class RayModel {
 	}
 
 	Hit cast(int px, int py, int rdx, int rdy) {
+		Hit h = walk(px, py, rdx, rdy);
+		h.u = column(h, px, py, rdx, rdy);
+		return h;
+	}
+
+	/** the first side distance : the cell fraction to the first line, times delta */
+	private static int first(int pos, int rd, int delta) {
+		int f = pos & 255;
+		return ((rd < 0 ? f : 256 - f) * delta) >> 8;
+	}
+
+	/** the DDA : the wall cell, the face, the perpendicular distance */
+	private Hit walk(int px, int py, int rdx, int rdy) {
 		// no clamp : the 6809 code has none, the table covers every ray of the view
 		int dx = t.recip[Math.abs(rdx) >> 4];
 		int dy = t.recip[Math.abs(rdy) >> 4];
-		int fx = px & 255;
-		int fy = py & 255;
-		int sx = ((rdx < 0 ? fx : 256 - fx) * dx) >> 8;
-		int sy = ((rdy < 0 ? fy : 256 - fy) * dy) >> 8;
+		int sx = first(px, rdx, dx);
+		int sy = first(py, rdy, dy);
 		int stx = rdx < 0 ? -1 : 1;
 		int sty = rdy < 0 ? -map.width : map.width;
-		int cell = (py >> 8) * map.width + (px >> 8);
-		int side;
-		while (true) {
+		Hit h = new Hit();
+		h.cell = (py >> 8) * map.width + (px >> 8);
+		do {
 			if (sx < sy) {
 				sx += dx;
-				cell += stx;
-				side = 0;
+				h.cell += stx;
+				h.side = 0;
 			} else {
 				sy += dy;
-				cell += sty;
-				side = 1;
+				h.cell += sty;
+				h.side = 1;
 			}
 			if (sx >= 65536 || sy >= 65536) {
 				throw new IllegalStateException("a side distance leaves 16 bits");
 			}
-			if (map.cells[cell] != 0) {
-				break;
-			}
-		}
-		int perp = Math.max(RayTables.PERP_MIN, side == 0 ? sx - dx : sy - dy);
-		int rd = side == 0 ? rdy : rdx;
-		int base = side == 0 ? py : px;
-		boolean mirror = side == 0 ? rdx < 0 : rdy > 0;
+		} while (map.cells[h.cell] == 0);
+		h.perp = Math.max(RayTables.PERP_MIN, h.side == 0 ? sx - dx : sy - dy);
+		h.texture = map.cells[h.cell];
+		return h;
+	}
+
+	/** the texture column of a hit, 0-63 */
+	private static int column(Hit h, int px, int py, int rdx, int rdy) {
+		int rd = h.side == 0 ? rdy : rdx;
+		int base = h.side == 0 ? py : px;
+		boolean mirror = h.side == 0 ? rdx < 0 : rdy > 0;
 		int r = Math.abs(rd) >> 7;
 		if (r > 255) {
 			throw new IllegalStateException("a ray's component leaves 8 bits");
 		}
-		int low = ((perp * r) >> 7) & 255;
+		int low = ((h.perp * r) >> 7) & 255;
 		if (rd < 0) {
 			low = (256 - low) & 255;
 		}
 		int u = ((base + low) & 255) >> 2;
-		Hit h = new Hit();
-		h.texture = map.cells[cell];
-		h.u = mirror ? 63 - u : u;
-		h.perp = perp;
-		h.cell = cell;
-		h.side = side;
-		return h;
+		return mirror ? 63 - u : u;
 	}
 
 	/** the frame seen from (px, py) 8.8 at angle a, textures at their address */

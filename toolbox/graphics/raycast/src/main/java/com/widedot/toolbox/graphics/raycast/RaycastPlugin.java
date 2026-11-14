@@ -27,6 +27,8 @@ import lombok.extern.slf4j.Slf4j;
  * The view is shared with {@code <wallscaler>} :
  * {@code <default name="raycast.xxx">}.
  */
+// the toolchain signals build errors with plain Exceptions
+@SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
 @Slf4j
 public class RaycastPlugin {
 
