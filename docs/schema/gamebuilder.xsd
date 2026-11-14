@@ -48,6 +48,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -67,6 +68,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
@@ -127,6 +129,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -146,6 +149,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
@@ -194,6 +198,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -213,6 +218,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string">
@@ -262,6 +268,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -281,6 +288,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="image" type="xs:string" use="required">
@@ -359,6 +367,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -378,6 +387,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string" use="required">
@@ -426,6 +436,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -445,6 +456,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="chunks" type="xs:string" use="required">
@@ -532,6 +544,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -551,6 +564,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
     </xs:complexType>
@@ -596,6 +610,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -615,6 +630,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
@@ -663,6 +679,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -682,6 +699,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
     </xs:complexType>
@@ -727,6 +745,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -746,6 +765,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="section" type="xs:string" use="required">
@@ -806,6 +826,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -825,6 +846,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
@@ -876,6 +898,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -895,6 +918,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="symbol" type="xs:string" use="required">
@@ -946,6 +970,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -965,6 +990,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="id" type="int6809" use="required">
@@ -1025,6 +1051,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -1044,6 +1071,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string">
@@ -1110,6 +1138,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -1129,6 +1158,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string" use="required">
@@ -1177,6 +1207,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -1196,6 +1227,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
@@ -1283,6 +1315,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -1302,6 +1335,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="model" type="xs:string" use="required">
@@ -1362,6 +1396,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -1381,6 +1416,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="image" type="xs:string" use="required">
@@ -1429,6 +1465,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -1448,6 +1485,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="gendir" type="xs:string" use="required">
@@ -1532,6 +1570,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -1551,6 +1590,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string" use="required">
@@ -1599,6 +1639,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -1618,6 +1659,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
@@ -1675,6 +1717,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -1694,6 +1737,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="dir" type="xs:string" use="required">
@@ -1766,6 +1810,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -1785,6 +1830,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
@@ -1839,6 +1885,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -1858,6 +1905,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string" use="required">
@@ -1906,6 +1954,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -1925,6 +1974,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
@@ -1973,6 +2023,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -1992,6 +2043,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="gensymbols" type="xs:string">
@@ -2043,6 +2095,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -2062,6 +2115,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="image" type="xs:string" use="required">
@@ -2137,6 +2191,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -2156,6 +2211,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
@@ -2204,6 +2260,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -2223,6 +2280,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="format" type="xs:string">
@@ -2277,6 +2335,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -2296,6 +2355,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
@@ -2347,6 +2407,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -2366,6 +2427,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string" use="required">
@@ -2438,6 +2500,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -2457,6 +2520,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string">
@@ -2511,6 +2575,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -2530,6 +2595,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="image" type="xs:string" use="required">
@@ -2602,6 +2668,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -2621,6 +2688,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string">
@@ -2675,6 +2743,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -2694,6 +2763,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string" use="required">
@@ -2784,6 +2854,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -2803,6 +2874,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string">
@@ -2853,6 +2925,123 @@
     </xs:complexType>
   </xs:element>
 
+  <!-- the tables of the engine's raycaster (engine/graphics/raycast) : form=tables (default), the raycaster unit's constants and tables, to assemble before the engine's raycast.unit.asm — the map, the distance and height tables, per height the scaler the builder placed ; form=angles, per angle the rays of the view, a file of its own (12 KB), exported raycast.angles. The view is shared with <wallscaler> : <default name="raycast.xxx"> -->
+  <xs:element name="raycast">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="composition"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="file"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="images"/>
+        <xs:element ref="imageset"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="periodicband"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
+        <xs:element ref="rect"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilecols"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="tilepatch"/>
+        <xs:element ref="tilereset"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
+        <xs:element ref="zone"/>
+      </xs:choice>
+      <xs:attribute name="form" type="xs:string">
+        <xs:annotation><xs:documentation>tables (default) or angles</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gensource" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>the generated source</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="map" type="xs:string">
+        <xs:annotation><xs:documentation>tables : the map, an indexed PNG, a pixel a cell — colour index 0 empty, n a wall of texture n ; walls on its border ; up to 255 cells a side</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="textures" type="xs:string">
+        <xs:annotation><xs:documentation>tables : the textures' picture, the one of &lt;wallscaler form=textures&gt; (how many there are)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="radius" type="xs:string">
+        <xs:annotation><xs:documentation>tables : the nearest the camera comes to a wall, in cells, for raycast.move. Default 0.3</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="pair" type="xs:boolean">
+        <xs:annotation><xs:documentation>tables : true (default), a ray for two columns — an odd column whose neighbours hit the same face of the same cell takes their mean ; false, a ray a column</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="cols" type="int6809">
+        <xs:annotation><xs:documentation>the view's byte columns (2 pixels each), even. Default 80 ; shared : &lt;default name="raycast.cols"&gt;, like every setting of the view below</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="rows" type="int6809">
+        <xs:annotation><xs:documentation>the view's rows, even, a multiple of the rows between two wall heights. Default 200</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="x" type="int6809">
+        <xs:annotation><xs:documentation>the view's left, in byte columns, even. Default 0</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="y" type="int6809">
+        <xs:annotation><xs:documentation>the view's top row. Default 0</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="lines" type="int6809">
+        <xs:annotation><xs:documentation>screen rows a wall sample, 1 to 8 : 2 (default) is a 2x2 pixel sample ; walls grow by lines rows (by 2 with lines=1)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="clipstep" type="int6809">
+        <xs:annotation><xs:documentation>above the view's rows (a wall seen from close, clipped to the view), a scaler every clipstep rows of height. Default 8</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="maxheight" type="int6809">
+        <xs:annotation><xs:documentation>the tallest wall drawn, in rows : the view's rows plus a multiple of clipstep. Default 2.2 times the rows</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="fov" type="xs:string">
+        <xs:annotation><xs:documentation>the horizontal field of view, degrees. Default 66</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="wall" type="xs:string">
+        <xs:annotation><xs:documentation>a wall's height in map cells. Default 0.75</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="ceil" type="int6809">
+        <xs:annotation><xs:documentation>colour index of the flat ceiling. Default 1</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="floor" type="int6809">
+        <xs:annotation><xs:documentation>colour index of the flat floor. Default 2</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
   <!-- one patchable rectangle of the map, inside <tilereset> -->
   <xs:element name="rect">
     <xs:complexType>
@@ -2893,6 +3082,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -2912,6 +3102,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="col" type="int6809" use="required">
@@ -2969,6 +3160,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -2988,6 +3180,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
@@ -3051,6 +3244,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -3070,6 +3264,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
@@ -3130,6 +3325,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -3149,6 +3345,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string" use="required">
@@ -3200,6 +3397,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -3219,6 +3417,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
@@ -3273,6 +3472,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -3292,6 +3492,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string" use="required">
@@ -3343,6 +3544,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -3362,6 +3564,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
@@ -3419,6 +3622,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -3438,6 +3642,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
@@ -3492,6 +3697,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -3511,6 +3717,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="gendir" type="xs:string">
@@ -3598,6 +3805,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -3617,6 +3825,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string" use="required">
@@ -3665,6 +3874,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -3684,6 +3894,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="map" type="xs:string" use="required">
@@ -3765,6 +3976,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -3784,6 +3996,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="map" type="xs:string" use="required">
@@ -3850,6 +4063,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -3869,6 +4083,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="map" type="xs:string" use="required">
@@ -3983,6 +4198,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -4002,6 +4218,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="map" type="xs:string" use="required">
@@ -4077,6 +4294,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -4096,6 +4314,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string" use="required">
@@ -4147,6 +4366,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -4166,6 +4386,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="name" type="xs:string">
@@ -4226,6 +4447,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -4245,6 +4467,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string">
@@ -4296,6 +4519,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -4315,6 +4539,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string">
@@ -4366,6 +4591,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -4385,6 +4611,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="filename" type="xs:string">
@@ -4398,6 +4625,117 @@
       </xs:attribute>
       <xs:attribute name="dac2drum" type="xs:string">
         <xs:annotation><xs:documentation>map DAC samples to drums</xs:documentation></xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- textured wall columns drawn by compiled scalers (BM16), for the engine's engine/graphics/raycast : form=scalers, a routine a wall height (in an arena collection each routine is a part the packer places, in an <lwasm> gensource includes them) ; form=columns, the columns unit's constants and macros, to assemble before the engine's wallscaler.columns.asm ; form=textures, an indexed picture as texture columns, exported wallscaler.textures ; form=consts, the view's constants for the game's code. The view is shared by every form and by <raycast> : set it once with <default name="raycast.xxx"> -->
+  <xs:element name="wallscaler">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="animation"/>
+        <xs:element ref="arena"/>
+        <xs:element ref="asm"/>
+        <xs:element ref="backlines"/>
+        <xs:element ref="bin"/>
+        <xs:element ref="chunkmap"/>
+        <xs:element ref="cksumfd640"/>
+        <xs:element ref="composition"/>
+        <xs:element ref="configuration"/>
+        <xs:element ref="data"/>
+        <xs:element ref="default"/>
+        <xs:element ref="define"/>
+        <xs:element ref="directory"/>
+        <xs:element ref="encoder"/>
+        <xs:element ref="fd"/>
+        <xs:element ref="file"/>
+        <xs:element ref="floppydisk"/>
+        <xs:element ref="frame"/>
+        <xs:element ref="gfxcomp"/>
+        <xs:element ref="hfe"/>
+        <xs:element ref="image"/>
+        <xs:element ref="images"/>
+        <xs:element ref="imageset"/>
+        <xs:element ref="includebin"/>
+        <xs:element ref="label"/>
+        <xs:element ref="layout"/>
+        <xs:element ref="leanscroll"/>
+        <xs:element ref="load"/>
+        <xs:element ref="lwasm"/>
+        <xs:element ref="machine"/>
+        <xs:element ref="mscroll"/>
+        <xs:element ref="pcm"/>
+        <xs:element ref="periodicband"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="png2bin"/>
+        <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
+        <xs:element ref="rect"/>
+        <xs:element ref="region"/>
+        <xs:element ref="reserved"/>
+        <xs:element ref="sap"/>
+        <xs:element ref="scene"/>
+        <xs:element ref="sd"/>
+        <xs:element ref="section"/>
+        <xs:element ref="sprite"/>
+        <xs:element ref="spritestream"/>
+        <xs:element ref="target"/>
+        <xs:element ref="tilecols"/>
+        <xs:element ref="tilemap"/>
+        <xs:element ref="tilepatch"/>
+        <xs:element ref="tilereset"/>
+        <xs:element ref="txt2bas"/>
+        <xs:element ref="unit"/>
+        <xs:element ref="vgm2sfx"/>
+        <xs:element ref="vgm2vgc"/>
+        <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
+        <xs:element ref="zone"/>
+      </xs:choice>
+      <xs:attribute name="form" type="xs:string" use="required">
+        <xs:annotation><xs:documentation>scalers, columns, textures or consts</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gendir" type="xs:string">
+        <xs:annotation><xs:documentation>scalers : directory receiving one source a routine (wallscaler.h&lt;rows&gt;)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="gensource" type="xs:string">
+        <xs:annotation><xs:documentation>the generated source (scalers : in an &lt;lwasm&gt;, the source including them)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="filename" type="xs:string">
+        <xs:annotation><xs:documentation>textures : an indexed PNG 64 pixels high, a texture every 64 pixels of its width, colours 0 to 15</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="cols" type="int6809">
+        <xs:annotation><xs:documentation>the view's byte columns (2 pixels each), even. Default 80 ; shared : &lt;default name="raycast.cols"&gt;, like every setting of the view below</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="rows" type="int6809">
+        <xs:annotation><xs:documentation>the view's rows, even, a multiple of the rows between two wall heights. Default 200</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="x" type="int6809">
+        <xs:annotation><xs:documentation>the view's left, in byte columns, even. Default 0</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="y" type="int6809">
+        <xs:annotation><xs:documentation>the view's top row. Default 0</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="lines" type="int6809">
+        <xs:annotation><xs:documentation>screen rows a wall sample, 1 to 8 : 2 (default) is a 2x2 pixel sample ; walls grow by lines rows (by 2 with lines=1)</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="clipstep" type="int6809">
+        <xs:annotation><xs:documentation>above the view's rows (a wall seen from close, clipped to the view), a scaler every clipstep rows of height. Default 8</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="maxheight" type="int6809">
+        <xs:annotation><xs:documentation>the tallest wall drawn, in rows : the view's rows plus a multiple of clipstep. Default 2.2 times the rows</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="fov" type="xs:string">
+        <xs:annotation><xs:documentation>the horizontal field of view, degrees. Default 66</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="wall" type="xs:string">
+        <xs:annotation><xs:documentation>a wall's height in map cells. Default 0.75</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="ceil" type="int6809">
+        <xs:annotation><xs:documentation>colour index of the flat ceiling. Default 1</xs:documentation></xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="floor" type="int6809">
+        <xs:annotation><xs:documentation>colour index of the flat floor. Default 2</xs:documentation></xs:annotation>
       </xs:attribute>
     </xs:complexType>
   </xs:element>
@@ -4442,6 +4780,7 @@
         <xs:element ref="phoneme"/>
         <xs:element ref="png2bin"/>
         <xs:element ref="png2pal"/>
+        <xs:element ref="raycast"/>
         <xs:element ref="rect"/>
         <xs:element ref="region"/>
         <xs:element ref="reserved"/>
@@ -4461,6 +4800,7 @@
         <xs:element ref="vgm2sfx"/>
         <xs:element ref="vgm2vgc"/>
         <xs:element ref="vgm2ymm"/>
+        <xs:element ref="wallscaler"/>
         <xs:element ref="zone"/>
       </xs:choice>
       <xs:attribute name="page" type="int6809" use="required">

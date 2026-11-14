@@ -191,6 +191,7 @@
 		<module>./toolbox/graphics/tilemap/chunkmap</module>
 		<module>./toolbox/graphics/backlines</module>
 		<module>./toolbox/graphics/spritestream</module>
+		<module>./toolbox/graphics/raycast</module>
 		<module>./toolbox/graphics/gfxcomp</module>
 		<module>./toolbox/graphics/png2bin</module>
 		<module>./toolbox/graphics/png2pal</module>
