@@ -356,6 +356,9 @@ public final class Handlers {
 		FILES.put("imageset", com.widedot.toolbox.graphics.gfxcomp.ImagesetPlugin::getFile);
 		FILES.put("spritestream", com.widedot.toolbox.graphics.spritestream.SpritestreamPlugin::getFile);
 		PARTS.put("spritestream", com.widedot.toolbox.graphics.spritestream.SpritestreamPlugin::getParts);
+		FILES.put("wallscaler", com.widedot.toolbox.graphics.raycast.WallscalerPlugin::getFile);
+		PARTS.put("wallscaler", com.widedot.toolbox.graphics.raycast.WallscalerPlugin::getParts);
+		FILES.put("raycast", com.widedot.toolbox.graphics.raycast.RaycastPlugin::getFile);
 		FILES.put("animation", AnimationPlugin::getFile);
 		// also an object : inside <lwasm> a linkable table, as file content
 		// a loadable 32 byte file
@@ -398,6 +401,40 @@ public final class Handlers {
 			.req("name", STRING, "sprite name : its record is adr_<name>")
 			.req("filename", STRING, "the picture : indexed PNG, 0 transparent, 1 to 4 the bm4s colours, column 0 at pixel 0 of a screen byte ; an even width when mirrorable")
 			.opt("shifted", STRING, "the same picture moved right by 2 pixels (2 transparent columns on its left) : drawn at the odd 2 pixel steps"));
+		spec(element("wallscaler").doc("textured wall columns drawn by compiled scalers (BM16), for the engine's engine/graphics/raycast : form=scalers, a routine a wall height (in an arena collection each routine is a part the packer places, in an <lwasm> gensource includes them) ; form=columns, the columns unit's constants and macros, to assemble before the engine's wallscaler.columns.asm ; form=textures, an indexed picture as texture columns, exported wallscaler.textures ; form=consts, the view's constants for the game's code. The view is shared by every form and by <raycast> : set it once with <default name=\"raycast.xxx\">")
+			.req("form", STRING, "scalers, columns, textures or consts")
+			.opt("gendir", STRING, "scalers : directory receiving one source a routine (wallscaler.h<rows>)")
+			.opt("gensource", STRING, "the generated source (scalers : in an <lwasm>, the source including them)")
+			.opt("filename", STRING, "textures : an indexed PNG 64 pixels high, a texture every 64 pixels of its width, colours 0 to 15")
+			.opt("cols", INT, "the view's byte columns (2 pixels each), even. Default 80 ; shared : <default name=\"raycast.cols\">, like every setting of the view below")
+			.opt("rows", INT, "the view's rows, even, a multiple of the rows between two wall heights. Default 200")
+			.opt("x", INT, "the view's left, in byte columns, even. Default 0")
+			.opt("y", INT, "the view's top row. Default 0")
+			.opt("lines", INT, "screen rows a wall sample, 1 to 8 : 2 (default) is a 2x2 pixel sample ; walls grow by lines rows (by 2 with lines=1)")
+			.opt("clipstep", INT, "above the view's rows (a wall seen from close, clipped to the view), a scaler every clipstep rows of height. Default 8")
+			.opt("maxheight", INT, "the tallest wall drawn, in rows : the view's rows plus a multiple of clipstep. Default 2.2 times the rows")
+			.opt("fov", STRING, "the horizontal field of view, degrees. Default 66")
+			.opt("wall", STRING, "a wall's height in map cells. Default 0.75")
+			.opt("ceil", INT, "colour index of the flat ceiling. Default 1")
+			.opt("floor", INT, "colour index of the flat floor. Default 2"));
+		spec(element("raycast").doc("the tables of the engine's raycaster (engine/graphics/raycast) : form=tables (default), the raycaster unit's constants and tables, to assemble before the engine's raycast.unit.asm — the map, the distance and height tables, per height the scaler the builder placed ; form=angles, per angle the rays of the view, a file of its own (12 KB), exported raycast.angles. The view is shared with <wallscaler> : <default name=\"raycast.xxx\">")
+			.opt("form", STRING, "tables (default) or angles")
+			.req("gensource", STRING, "the generated source")
+			.opt("map", STRING, "tables : the map, an indexed PNG, a pixel a cell — colour index 0 empty, n a wall of texture n ; walls on its border ; up to 255 cells a side")
+			.opt("textures", STRING, "tables : the textures' picture, the one of <wallscaler form=textures> (how many there are)")
+			.opt("radius", STRING, "tables : the nearest the camera comes to a wall, in cells, for raycast.move. Default 0.3")
+			.opt("pair", BOOL, "tables : true (default), a ray for two columns — an odd column whose neighbours hit the same face of the same cell takes their mean ; false, a ray a column")
+			.opt("cols", INT, "the view's byte columns (2 pixels each), even. Default 80 ; shared : <default name=\"raycast.cols\">, like every setting of the view below")
+			.opt("rows", INT, "the view's rows, even, a multiple of the rows between two wall heights. Default 200")
+			.opt("x", INT, "the view's left, in byte columns, even. Default 0")
+			.opt("y", INT, "the view's top row. Default 0")
+			.opt("lines", INT, "screen rows a wall sample, 1 to 8 : 2 (default) is a 2x2 pixel sample ; walls grow by lines rows (by 2 with lines=1)")
+			.opt("clipstep", INT, "above the view's rows (a wall seen from close, clipped to the view), a scaler every clipstep rows of height. Default 8")
+			.opt("maxheight", INT, "the tallest wall drawn, in rows : the view's rows plus a multiple of clipstep. Default 2.2 times the rows")
+			.opt("fov", STRING, "the horizontal field of view, degrees. Default 66")
+			.opt("wall", STRING, "a wall's height in map cells. Default 0.75")
+			.opt("ceil", INT, "colour index of the flat ceiling. Default 1")
+			.opt("floor", INT, "colour index of the flat floor. Default 2"));
 		spec(element("tilemap").doc("generate the page/address table of a tile index map, baked in a .static section")
 			.req("map", STRING, "tile index .bin (leanscroll output), big endian, column major")
 			.req("label", STRING, "label of the generated table")

@@ -1,0 +1,16 @@
+; The bench's witnesses (ci/toje-bench/bench.py, docs/lang/en/benches.md)
+;   $9BF0  $A5 written by the bench : run the sequence
+;   $9C00  $CA once the game mode runs
+;   +1     the number of tests
+;   +2     $0D once the sequence completed
+;   +3     a byte a test ($01 : pass), then a word a test (its sum)
+; Tests : per camera its descriptors' sum then the view's sum (16 cameras),
+; then what is outside the view, intact.
+
+bench.TESTS   equ 33
+bench.go      equ $9BF0
+bench.magic   equ $9C00
+bench.tests   equ $9C01
+bench.done    equ $9C02
+bench.results equ $9C03
+bench.sums    equ bench.results+bench.TESTS

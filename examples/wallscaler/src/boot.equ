@@ -1,0 +1,11 @@
+; The loading bar : its colours (EF9369 entries, GGGGRRRR then 0000BBBB) and
+; its place. Shared by bootfade.asm and main.asm.
+
+boot.TRACK_GR equ $55                      ; entry 1 : the bar's track, grey
+boot.TRACK_B  equ $05
+boot.BAR_GR   equ $9F                      ; entry 2 : the bar, orange
+boot.BAR_B    equ $00
+
+boot.BAR_WIDTH  equ 64                     ; pixels (a multiple of 4)
+boot.BAR_HEIGHT equ 1                      ; a thin bar
+boot.BAR_ADDR   equ 99*40+(160-boot.BAR_WIDTH)/8  ; the screen's middle
