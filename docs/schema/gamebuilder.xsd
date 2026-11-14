@@ -3019,7 +3019,7 @@
         <xs:annotation><xs:documentation>the view's top row. Default 0</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="lines" type="int6809">
-        <xs:annotation><xs:documentation>screen rows a wall sample, 1 to 8 : 2 (default) is a 2x2 pixel sample ; walls grow by lines rows (by 2 with lines=1)</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>screen rows a wall sample, 1 to 8 : 1 (default) is a texel a row, 2 a 2x2 pixel sample ; walls grow by lines rows (by 2 with lines=1)</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="clipstep" type="int6809">
         <xs:annotation><xs:documentation>above the view's rows (a wall seen from close, clipped to the view), a scaler every clipstep rows of height. Default 8</xs:documentation></xs:annotation>
@@ -4717,7 +4717,7 @@
         <xs:annotation><xs:documentation>the view's top row. Default 0</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="lines" type="int6809">
-        <xs:annotation><xs:documentation>screen rows a wall sample, 1 to 8 : 2 (default) is a 2x2 pixel sample ; walls grow by lines rows (by 2 with lines=1)</xs:documentation></xs:annotation>
+        <xs:annotation><xs:documentation>screen rows a wall sample, 1 to 8 : 1 (default) is a texel a row, 2 a 2x2 pixel sample ; walls grow by lines rows (by 2 with lines=1)</xs:documentation></xs:annotation>
       </xs:attribute>
       <xs:attribute name="clipstep" type="int6809">
         <xs:annotation><xs:documentation>above the view's rows (a wall seen from close, clipped to the view), a scaler every clipstep rows of height. Default 8</xs:documentation></xs:annotation>

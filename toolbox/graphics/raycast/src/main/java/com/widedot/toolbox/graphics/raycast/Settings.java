@@ -52,7 +52,7 @@ final class Settings {
 	}
 
 	static Settings of(ImmutableNode node, BuildContext ctx) throws Exception {
-		int lines = integer(node, ctx, "lines", 2);
+		int lines = integer(node, ctx, "lines", 1);
 		if (lines < 1 || lines > 8) {
 			throw new Exception("lines : " + lines + " screen rows a wall sample, 1 to 8");
 		}

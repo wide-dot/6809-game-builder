@@ -27,7 +27,7 @@ class RayModelTest {
 
 	@Test
 	void everyColumnSeesAWall() {
-		for (Geometry g : new Geometry[] { Views.whole(), Views.small(), Views.fine() }) {
+		for (Geometry g : new Geometry[] { Views.whole(), Views.small(), Views.other() }) {
 			RayTables t = new RayTables(g);
 			RayModel model = new RayModel(t, room(), false);
 			for (int a = 0; a < RayTables.ANGLES; a += 7) {

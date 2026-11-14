@@ -107,7 +107,7 @@ class BenchReferenceTest {
 		List<String> exp = new ArrayList<String>();
 		exp.addAll(model("to8", Views.whole(), true, example));
 		exp.addAll(model("to8-view", Views.small(), true, example));
-		exp.addAll(model("to8-fine", Views.fine(), false, example));
+		exp.addAll(model("to8-other", Views.other(), false, example));
 		List<String> got = Files.readAllLines(ref);
 		assertEquals(exp.size(), got.size(), "tests");
 		for (int i = 0; i < exp.size(); i++) {

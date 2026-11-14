@@ -45,6 +45,6 @@ class GeometryTest {
 		for (int h : g.heights()) {
 			bytes += gen.routine(h).size;
 		}
-		assertEquals(64472, bytes);
+		assertEquals(65329, bytes);
 	}
 }

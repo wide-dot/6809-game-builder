@@ -23,7 +23,7 @@ java -Dbasedir=../.. -cp "../../repo/*" com.widedot.m6809.gamebuilder.MainComman
 |---|---|
 | `dist/to8.fd` | the whole screen, 80 x 200, the default settings |
 | `dist/to8-view.fd` | 64 x 128 in the middle of the screen, a test card around it |
-| `dist/to8-fine.fd` | the same view with `lines` 1, `clipstep` 4, `fov` 90, `wall` 1.0, `pair` false |
+| `dist/to8-other.fd` | the same view with `lines` 2, `clipstep` 4, `fov` 90, `wall` 1.0, `pair` false |
 
 ## Bench
 
@@ -38,12 +38,12 @@ the builder's model.
 
 Result (toje, 14/11/2026) : 33/33 on the three disks.
 
-| | `to8.fd` | `to8-view.fd` | `to8-fine.fd` |
+| | `to8.fd` | `to8-view.fd` | `to8-other.fd` |
 |---|---|---|---|
 | `raycast.cast`, cycles | 44 400 | 36 400 | 50 500 |
-| `wallscaler.draw`, cycles | 53 500 | 33 700 | 37 100 |
-| frames a second | 9.3 (6.2 - 12.5) | 12.1 (10.0 - 16.5) | 10.0 (8.2 - 12.5) |
-| scalers | 64 472 bytes, 4 pages | 27 952, 2 pages | 38 374, 3 pages |
+| `wallscaler.draw`, cycles | 56 300 | 36 100 | 34 700 |
+| frames a second | 9.2 (6.2 - 10.0) | 11.7 (10.0 - 12.5) | 10.8 (8.2 - 12.5) |
+| scalers | 65 329 bytes, 5 pages | 28 811, 2 pages | 37 510, 3 pages |
 
 ## Pictures
 

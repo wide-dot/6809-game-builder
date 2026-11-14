@@ -26,7 +26,7 @@ import com.widedot.m6809.util.ThirdPartyTools;
  */
 class ScalerTest {
 
-	static final Geometry[] VIEWS = { Views.whole(), Views.small(), Views.fine(),
+	static final Geometry[] VIEWS = { Views.whole(), Views.small(), Views.other(),
 			new Geometry(40, 96, 20, 52, 4, 16, 192, 90, 1.0) };
 
 	static final Pattern INS = Pattern.compile("\\s+(\\w+)\\s+(-?\\d+)?,([xu])");
