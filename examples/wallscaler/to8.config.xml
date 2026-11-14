@@ -1,0 +1,477 @@
+<configuration>
+    <!-- A maze walked with the joypad, on engine/graphics/raycast. Three      -->
+    <!-- targets, three views : fd, fd-view, fd-fine.                          -->
+    <target name="fd">
+        <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+        <default name="machine.definitions" value="engine/config/machine.xml"/>
+        <machine name="to8"/>
+
+        <floppydisk model="fd640">
+
+            <section name="SCENE" track="0" face="1" sector="16"/>
+            <section name="DATA"  track="1" face="0" sector="1"/>
+
+            <!-- the columns unit : one copy in each half of the video half
+                 page (gfxlock mounts the half of the buffer it draws) ; the
+                 scalers : wherever the builder ranges them in these pages -->
+            <layout>
+                <region name="columns.half0" page="$00" slice="0" address="$4000" size="$2000"/>
+                <region name="columns.half1" page="$00" slice="1" address="$4000" size="$2000"/>
+                <arena name="walls">
+                    <zone page="$05" address="$0000" size="$4000"/>
+                    <zone page="$06" address="$0000" size="$4000"/>
+                    <zone page="$07" address="$0000" size="$4000"/>
+                    <zone page="$08" address="$0000" size="$4000"/>
+                </arena>
+            </layout>
+
+            <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
+                <default name="lwasm.format"     value="obj"/>
+
+                <define symbol="loader.PAGE" value="4"/>
+                <define symbol="loader.ADDRESS" value="$A000"/>
+
+                <!-- The view : the whole screen (the defaults), its ceiling
+                     and floor colours -->
+                <default name="raycast.ceil"  value="1"/>
+                <default name="raycast.floor" value="2"/>
+
+                <!-- The compiled scalers : a routine a wall height, ranged by
+                     the builder in the arena                                -->
+                <!-- ******************************************************* -->
+                <file name="walls.scalers" linkdata="LINK" arena="walls" gendir="gen/walls">
+                    <wallscaler form="scalers" gendir="gen/walls/scalers" gensource="gen/walls/scalers/includes.asm"/>
+                </file>
+
+                <!-- The raycaster : code, tables, map ; its angles          -->
+                <!-- ******************************************************* -->
+                <file name="walls.raycast" linkdata="LINK" bake="all" page="$09" address="$0000">
+                    <lwasm gensource="gen/walls/raycast.asm">
+                        <raycast map="src/map.png" textures="src/textures.png" gensource="gen/walls/tables.asm"/>
+                        <asm filename="engine/graphics/raycast/raycast.unit.asm"/>
+                    </lwasm>
+                </file>
+                <file name="walls.angles" linkdata="LINK" page="$0A" address="$0000">
+                    <lwasm gensource="gen/walls/angles-file.asm">
+                        <raycast form="angles" gensource="gen/walls/angles.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- The textures, resident : the scalers read them          -->
+                <!-- ******************************************************* -->
+                <file name="walls.textures" linkdata="LINK" page="$01" address="$7800">
+                    <lwasm gensource="gen/walls/textures-file.asm">
+                        <wallscaler form="textures" filename="src/textures.png" gensource="gen/walls/textures.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- The columns unit, one copy a half                        -->
+                <!-- ******************************************************* -->
+                <file name="walls.half0" linkdata="LINK" bake="auto" region="columns.half0">
+                    <lwasm gensource="gen/walls/half0.asm">
+                        <wallscaler form="columns" gensource="gen/walls/columns.asm"/>
+                        <asm filename="engine/graphics/raycast/wallscaler.columns.asm"/>
+                    </lwasm>
+                </file>
+                <file name="walls.half1" linkdata="LINK" bake="auto" region="columns.half1">
+                    <lwasm gensource="gen/walls/half1.asm">
+                        <wallscaler form="columns" gensource="gen/walls/columns.asm"/>
+                        <asm filename="engine/graphics/raycast/wallscaler.columns.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Game mode -->
+                <!-- ******************************************************* -->
+                <file name="assets.gm.main" linkdata="LINK" bake="auto" page="$01" address="$6100">
+                    <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <wallscaler form="consts" gensource="gen/walls/consts.asm"/>
+                        <asm filename="src/main.asm"/>
+                        <png2pal symbol="Pal_wall" filename="src/textures.png" offset="0"/>
+                    </lwasm>
+                </file>
+
+                <!-- The boot : the loader's default scene fades the TO8 menu
+                     to black, shows a thin loading bar, then loads
+                     scenes.main over itself (src/bootfade.asm) -->
+                <!-- ******************************************************* -->
+                <file name="boot.fade" page="$01" address="$6100">
+                    <lwasm format="raw" gensource="gen/boot/bootfade.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="engine/system/to8/map.const.asm"/>
+                        <asm filename="engine/system/to8/ram/ram.macro.asm"/>
+                        <asm filename="engine/system/thomson/graphics/mode/gfxmode.macro.asm"/>
+                        <asm filename="engine/system/thomson/bootloader/loader.const.asm"/>
+                        <asm filename="src/boot.equ"/>
+                        <asm filename="src/bootfade.asm"/>
+                    </lwasm>
+                </file>
+                <scene name="scenes.fade" section="DATA" gensource="gen/scenes/fade-scene.asm">
+                    <load name="boot.fade"/>
+                </scene>
+
+                <scene name="scenes.main" section="SCENE" gensource="gen/scenes/main.asm">
+                    <load name="assets.gm.main"/>
+                    <load name="walls.textures"/>
+                    <load name="walls.half0"/>
+                    <load name="walls.half1"/>
+                    <load name="walls.scalers"/>
+                    <load name="walls.raycast"/>
+                    <load name="walls.angles"/>
+                </scene>
+
+            </directory>
+
+            <!-- Boot loader -->
+            <!-- *********************************************************** -->
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$1000"/>
+            <define symbol="boot.CHECK_MEMORY_EXT"/>
+
+            <data section="LOADER">
+                <lwasm format="raw" gensource="gen/bootloader/loader.asm">
+                    <asm filename="gen/directories/disk0/entries.asm"/>
+                    <asm filename="gen/directories/locations.asm"/>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ $6100</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.fade</asm>
+                    <asm filename="engine/system/to8/bootloader/loader.asm"/>
+                </lwasm>
+            </data>
+
+            <data section="BOOT" maxsize="0x100">
+                <cksumfd640>
+                    <lwasm format="raw">
+                        <asm filename="engine/system/to8/bootloader/boot.asm"/>
+                    </lwasm>
+                </cksumfd640>
+            </data>
+
+            <fd  filename="to8.fd"/>
+        </floppydisk>
+    </target>
+
+    <!-- The same game in a smaller view : fewer wall heights (fewer scalers),
+         fewer columns (fewer rays), the screen around it left alone.        -->
+    <target name="fd-view">
+        <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+        <default name="machine.definitions" value="engine/config/machine.xml"/>
+        <machine name="to8"/>
+
+        <floppydisk model="fd640">
+
+            <section name="SCENE" track="0" face="1" sector="16"/>
+            <section name="DATA"  track="1" face="0" sector="1"/>
+
+            <!-- the columns unit : one copy in each half of the video half
+                 page (gfxlock mounts the half of the buffer it draws) ; the
+                 scalers : wherever the builder ranges them in these pages -->
+            <layout>
+                <region name="columns.half0" page="$00" slice="0" address="$4000" size="$2000"/>
+                <region name="columns.half1" page="$00" slice="1" address="$4000" size="$2000"/>
+                <arena name="walls">
+                    <zone page="$05" address="$0000" size="$4000"/>
+                    <zone page="$06" address="$0000" size="$4000"/>
+                    <zone page="$07" address="$0000" size="$4000"/>
+                    <zone page="$08" address="$0000" size="$4000"/>
+                </arena>
+            </layout>
+
+            <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
+                <default name="lwasm.format"     value="obj"/>
+
+                <define symbol="loader.PAGE" value="4"/>
+                <define symbol="loader.ADDRESS" value="$A000"/>
+
+                <!-- The view : 128 x 128 pixels in the middle of the screen,
+                     the rest is the game's (a test card here) -->
+                <default name="raycast.cols"  value="64"/>
+                <default name="raycast.rows"  value="128"/>
+                <default name="raycast.x"     value="8"/>
+                <default name="raycast.y"     value="36"/>
+                <default name="raycast.ceil"  value="1"/>
+                <default name="raycast.floor" value="2"/>
+
+                <!-- The compiled scalers : a routine a wall height, ranged by
+                     the builder in the arena                                -->
+                <!-- ******************************************************* -->
+                <file name="walls.scalers" linkdata="LINK" arena="walls" gendir="gen/walls">
+                    <wallscaler form="scalers" gendir="gen/walls/scalers" gensource="gen/walls/scalers/includes.asm"/>
+                </file>
+
+                <!-- The raycaster : code, tables, map ; its angles          -->
+                <!-- ******************************************************* -->
+                <file name="walls.raycast" linkdata="LINK" bake="all" page="$09" address="$0000">
+                    <lwasm gensource="gen/walls/raycast.asm">
+                        <raycast map="src/map.png" textures="src/textures.png" gensource="gen/walls/tables.asm"/>
+                        <asm filename="engine/graphics/raycast/raycast.unit.asm"/>
+                    </lwasm>
+                </file>
+                <file name="walls.angles" linkdata="LINK" page="$0A" address="$0000">
+                    <lwasm gensource="gen/walls/angles-file.asm">
+                        <raycast form="angles" gensource="gen/walls/angles.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- The textures, resident : the scalers read them          -->
+                <!-- ******************************************************* -->
+                <file name="walls.textures" linkdata="LINK" page="$01" address="$7800">
+                    <lwasm gensource="gen/walls/textures-file.asm">
+                        <wallscaler form="textures" filename="src/textures.png" gensource="gen/walls/textures.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- The columns unit, one copy a half                        -->
+                <!-- ******************************************************* -->
+                <file name="walls.half0" linkdata="LINK" bake="auto" region="columns.half0">
+                    <lwasm gensource="gen/walls/half0.asm">
+                        <wallscaler form="columns" gensource="gen/walls/columns.asm"/>
+                        <asm filename="engine/graphics/raycast/wallscaler.columns.asm"/>
+                    </lwasm>
+                </file>
+                <file name="walls.half1" linkdata="LINK" bake="auto" region="columns.half1">
+                    <lwasm gensource="gen/walls/half1.asm">
+                        <wallscaler form="columns" gensource="gen/walls/columns.asm"/>
+                        <asm filename="engine/graphics/raycast/wallscaler.columns.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Game mode -->
+                <!-- ******************************************************* -->
+                <file name="assets.gm.main" linkdata="LINK" bake="auto" page="$01" address="$6100">
+                    <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <wallscaler form="consts" gensource="gen/walls/consts.asm"/>
+                        <asm filename="src/main.asm"/>
+                        <png2pal symbol="Pal_wall" filename="src/textures.png" offset="0"/>
+                    </lwasm>
+                </file>
+
+                <!-- The boot : the loader's default scene fades the TO8 menu
+                     to black, shows a thin loading bar, then loads
+                     scenes.main over itself (src/bootfade.asm) -->
+                <!-- ******************************************************* -->
+                <file name="boot.fade" page="$01" address="$6100">
+                    <lwasm format="raw" gensource="gen/boot/bootfade.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="engine/system/to8/map.const.asm"/>
+                        <asm filename="engine/system/to8/ram/ram.macro.asm"/>
+                        <asm filename="engine/system/thomson/graphics/mode/gfxmode.macro.asm"/>
+                        <asm filename="engine/system/thomson/bootloader/loader.const.asm"/>
+                        <asm filename="src/boot.equ"/>
+                        <asm filename="src/bootfade.asm"/>
+                    </lwasm>
+                </file>
+                <scene name="scenes.fade" section="DATA" gensource="gen/scenes/fade-scene.asm">
+                    <load name="boot.fade"/>
+                </scene>
+
+                <scene name="scenes.main" section="SCENE" gensource="gen/scenes/main.asm">
+                    <load name="assets.gm.main"/>
+                    <load name="walls.textures"/>
+                    <load name="walls.half0"/>
+                    <load name="walls.half1"/>
+                    <load name="walls.scalers"/>
+                    <load name="walls.raycast"/>
+                    <load name="walls.angles"/>
+                </scene>
+
+            </directory>
+
+            <!-- Boot loader -->
+            <!-- *********************************************************** -->
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$1000"/>
+            <define symbol="boot.CHECK_MEMORY_EXT"/>
+
+            <data section="LOADER">
+                <lwasm format="raw" gensource="gen/bootloader/loader.asm">
+                    <asm filename="gen/directories/disk0/entries.asm"/>
+                    <asm filename="gen/directories/locations.asm"/>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ $6100</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.fade</asm>
+                    <asm filename="engine/system/to8/bootloader/loader.asm"/>
+                </lwasm>
+            </data>
+
+            <data section="BOOT" maxsize="0x100">
+                <cksumfd640>
+                    <lwasm format="raw">
+                        <asm filename="engine/system/to8/bootloader/boot.asm"/>
+                    </lwasm>
+                </cksumfd640>
+            </data>
+
+            <fd  filename="to8-view.fd"/>
+        </floppydisk>
+    </target>
+
+    <!-- The other settings, in the same small view : a texel a screen row, a
+         scaler every 4 rows above the view, a wider field, taller walls, a
+         ray a column.                                                        -->
+    <target name="fd-fine">
+        <default name="floppydisk.storage" value="engine/config/storage.xml"/>
+        <default name="machine.definitions" value="engine/config/machine.xml"/>
+        <machine name="to8"/>
+
+        <floppydisk model="fd640">
+
+            <section name="SCENE" track="0" face="1" sector="16"/>
+            <section name="DATA"  track="1" face="0" sector="1"/>
+
+            <!-- the columns unit : one copy in each half of the video half
+                 page (gfxlock mounts the half of the buffer it draws) ; the
+                 scalers : wherever the builder ranges them in these pages -->
+            <layout>
+                <region name="columns.half0" page="$00" slice="0" address="$4000" size="$2000"/>
+                <region name="columns.half1" page="$00" slice="1" address="$4000" size="$2000"/>
+                <arena name="walls">
+                    <zone page="$05" address="$0000" size="$4000"/>
+                    <zone page="$06" address="$0000" size="$4000"/>
+                    <zone page="$07" address="$0000" size="$4000"/>
+                    <zone page="$08" address="$0000" size="$4000"/>
+                </arena>
+            </layout>
+
+            <directory id="0" section="INDEX" gensymbols="gen/directories/disk0/entries.asm">
+                <default name="file.section" value="DATA"/>
+                <default name="file.maxsize" value="0x4000"/>
+                <default name="lwasm.format"     value="obj"/>
+
+                <define symbol="loader.PAGE" value="4"/>
+                <define symbol="loader.ADDRESS" value="$A000"/>
+
+                <!-- The view : 128 x 128 pixels in the middle of the screen,
+                     the rest is the game's (a test card here) -->
+                <default name="raycast.cols"  value="64"/>
+                <default name="raycast.rows"  value="128"/>
+                <default name="raycast.x"     value="8"/>
+                <default name="raycast.y"     value="36"/>
+                <default name="raycast.lines"    value="1"/>
+                <default name="raycast.clipstep" value="4"/>
+                <default name="raycast.fov"      value="90"/>
+                <default name="raycast.wall"     value="1.0"/>
+                <default name="raycast.pair"     value="false"/>
+                <default name="raycast.ceil"  value="1"/>
+                <default name="raycast.floor" value="2"/>
+
+                <!-- The compiled scalers : a routine a wall height, ranged by
+                     the builder in the arena                                -->
+                <!-- ******************************************************* -->
+                <file name="walls.scalers" linkdata="LINK" arena="walls" gendir="gen/walls">
+                    <wallscaler form="scalers" gendir="gen/walls/scalers" gensource="gen/walls/scalers/includes.asm"/>
+                </file>
+
+                <!-- The raycaster : code, tables, map ; its angles          -->
+                <!-- ******************************************************* -->
+                <file name="walls.raycast" linkdata="LINK" bake="all" page="$09" address="$0000">
+                    <lwasm gensource="gen/walls/raycast.asm">
+                        <raycast map="src/map.png" textures="src/textures.png" gensource="gen/walls/tables.asm"/>
+                        <asm filename="engine/graphics/raycast/raycast.unit.asm"/>
+                    </lwasm>
+                </file>
+                <file name="walls.angles" linkdata="LINK" page="$0A" address="$0000">
+                    <lwasm gensource="gen/walls/angles-file.asm">
+                        <raycast form="angles" gensource="gen/walls/angles.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- The textures, resident : the scalers read them          -->
+                <!-- ******************************************************* -->
+                <file name="walls.textures" linkdata="LINK" page="$01" address="$7800">
+                    <lwasm gensource="gen/walls/textures-file.asm">
+                        <wallscaler form="textures" filename="src/textures.png" gensource="gen/walls/textures.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- The columns unit, one copy a half                        -->
+                <!-- ******************************************************* -->
+                <file name="walls.half0" linkdata="LINK" bake="auto" region="columns.half0">
+                    <lwasm gensource="gen/walls/half0.asm">
+                        <wallscaler form="columns" gensource="gen/walls/columns.asm"/>
+                        <asm filename="engine/graphics/raycast/wallscaler.columns.asm"/>
+                    </lwasm>
+                </file>
+                <file name="walls.half1" linkdata="LINK" bake="auto" region="columns.half1">
+                    <lwasm gensource="gen/walls/half1.asm">
+                        <wallscaler form="columns" gensource="gen/walls/columns.asm"/>
+                        <asm filename="engine/graphics/raycast/wallscaler.columns.asm"/>
+                    </lwasm>
+                </file>
+
+                <!-- Game mode -->
+                <!-- ******************************************************* -->
+                <file name="assets.gm.main" linkdata="LINK" bake="auto" page="$01" address="$6100">
+                    <lwasm gensource="gen/assets/game-modes/to8/main/main.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <wallscaler form="consts" gensource="gen/walls/consts.asm"/>
+                        <asm filename="src/main.asm"/>
+                        <png2pal symbol="Pal_wall" filename="src/textures.png" offset="0"/>
+                    </lwasm>
+                </file>
+
+                <!-- The boot : the loader's default scene fades the TO8 menu
+                     to black, shows a thin loading bar, then loads
+                     scenes.main over itself (src/bootfade.asm) -->
+                <!-- ******************************************************* -->
+                <file name="boot.fade" page="$01" address="$6100">
+                    <lwasm format="raw" gensource="gen/boot/bootfade.asm">
+                        <asm filename="gen/directories/disk0/entries.asm"/>
+                        <asm filename="engine/system/to8/map.const.asm"/>
+                        <asm filename="engine/system/to8/ram/ram.macro.asm"/>
+                        <asm filename="engine/system/thomson/graphics/mode/gfxmode.macro.asm"/>
+                        <asm filename="engine/system/thomson/bootloader/loader.const.asm"/>
+                        <asm filename="src/boot.equ"/>
+                        <asm filename="src/bootfade.asm"/>
+                    </lwasm>
+                </file>
+                <scene name="scenes.fade" section="DATA" gensource="gen/scenes/fade-scene.asm">
+                    <load name="boot.fade"/>
+                </scene>
+
+                <scene name="scenes.main" section="SCENE" gensource="gen/scenes/main.asm">
+                    <load name="assets.gm.main"/>
+                    <load name="walls.textures"/>
+                    <load name="walls.half0"/>
+                    <load name="walls.half1"/>
+                    <load name="walls.scalers"/>
+                    <load name="walls.raycast"/>
+                    <load name="walls.angles"/>
+                </scene>
+
+            </directory>
+
+            <!-- Boot loader -->
+            <!-- *********************************************************** -->
+            <define symbol="loader.DEFAULT_DYNAMIC_MEMORY_SIZE" value="$1000"/>
+            <define symbol="boot.CHECK_MEMORY_EXT"/>
+
+            <data section="LOADER">
+                <lwasm format="raw" gensource="gen/bootloader/loader.asm">
+                    <asm filename="gen/directories/disk0/entries.asm"/>
+                    <asm filename="gen/directories/locations.asm"/>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_DIR_ID    equ 0</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_PAGE equ 1</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_EXEC_ADDR equ $6100</asm>
+                    <asm xml:space="preserve">loader.DEFAULT_SCENE_FILE_ID   equ scenes.fade</asm>
+                    <asm filename="engine/system/to8/bootloader/loader.asm"/>
+                </lwasm>
+            </data>
+
+            <data section="BOOT" maxsize="0x100">
+                <cksumfd640>
+                    <lwasm format="raw">
+                        <asm filename="engine/system/to8/bootloader/boot.asm"/>
+                    </lwasm>
+                </cksumfd640>
+            </data>
+
+            <fd  filename="to8-fine.fd"/>
+        </floppydisk>
+    </target>
+</configuration>
