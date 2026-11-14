@@ -26,7 +26,7 @@ Set once with `<default name="raycast.xxx">` : every `<wallscaler>` and
 | `cols` | 80 | byte columns (2 pixels each), even |
 | `rows` | 200 | even, a multiple of the rows between two wall heights |
 | `x`, `y` | 0, 0 | the view's top left : `x` in byte columns (even), `y` in rows |
-| `lines` | 2 | screen rows a wall sample : 2 is a 2x2 pixel sample, 1 a texel a row, 4 coarser |
+| `lines` | 1 | screen rows a wall sample : 1 is a texel a row, 2 a 2x2 pixel sample, 4 coarser |
 | `clipstep` | 8 | above `rows` (a wall clipped by the view), a scaler every `clipstep` rows of height |
 | `maxheight` | 2.2 x `rows` | the tallest wall drawn : `rows` plus a multiple of `clipstep` |
 | `fov` | 66 | horizontal field of view, degrees (10 to 110) |
@@ -57,6 +57,7 @@ a wall of texture n. Up to 255 cells a side, walls all along its border.
         <zone page="$06" address="$0000" size="$4000"/>
         <zone page="$07" address="$0000" size="$4000"/>
         <zone page="$08" address="$0000" size="$4000"/>
+        <zone page="$0B" address="$0000" size="$4000"/>
     </arena>
 </layout>
 
@@ -105,7 +106,7 @@ In an `<lwasm>`, the generated element comes before the engine's file.
 
 | file | where | why |
 |---|---|---|
-| scalers | an arena of pages under the cart window | the builder ranges the routines ; the zones are a budget (4 pages for the whole screen, 2 for 64 x 128) |
+| scalers | an arena of pages under the cart window | the builder ranges the routines ; the zones are a budget (5 pages for the whole screen, 2 for 64 x 128) |
 | raycaster's unit | an address `$xx00` of a cart page | its variables are in the direct page |
 | angles | a cart page | 12 KB |
 | textures | resident (`$6000-$9FFF`), at an address `$xx00` | read while a scaler's page fills the cart window |
@@ -169,14 +170,14 @@ call `wallscaler.draw` without the raycaster ; a scaler is exported as
 Under toje, `examples/wallscaler`, 16 cameras, the 50 Hz interrupt
 included.
 
-| | 80 x 200 | 64 x 128 | 64 x 128, `lines` 1, `pair` false, `fov` 90 |
+| | 80 x 200 | 64 x 128 | 64 x 128, `lines` 2, `clipstep` 4, `pair` false, `fov` 90, `wall` 1.0 |
 |---|---|---|---|
-| scalers | 64 472 bytes, 4 pages | 27 952, 2 pages | 38 374, 3 pages |
+| scalers | 65 329 bytes, 5 pages | 28 811, 2 pages | 37 510, 3 pages |
 | raycaster's unit | 6 925 bytes | 6 605 | 7 021 |
 | columns unit, a half | 2 853 bytes | 2 101 | 2 101 |
 | `raycast.cast`, cycles | 44 400 (34 300 - 55 400) | 36 400 (27 700 - 46 200) | 50 500 (42 300 - 57 900) |
-| `wallscaler.draw`, cycles | 53 500 (26 600 - 109 500) | 33 700 (17 300 - 58 600) | 37 100 (21 100 - 59 300) |
-| frames a second | 9.3 (6.2 - 12.5) | 12.1 (10.0 - 16.5) | 10.0 (8.2 - 12.5) |
+| `wallscaler.draw`, cycles | 56 300 (30 400 - 109 500) | 36 100 (20 300 - 58 600) | 34 700 (17 900 - 59 300) |
+| frames a second | 9.2 (6.2 - 10.0) | 11.7 (10.0 - 12.5) | 10.8 (8.2 - 12.5) |
 
 Whatever the view : the angles 12 288 bytes, a texture 4 096 bytes, the
 resident part about 200 bytes plus 6 bytes a column.
@@ -184,6 +185,9 @@ resident part about 200 bytes plus 6 bytes a column.
 A ray : about 700 cycles. A column : 41 cycles plus its scaler, 5 cycles a
 row written. A wall that got shorter : about 125 cycles plus 16 a row
 uncovered on each side.
+
+`lines` 2 loads a texel for two rows : on the whole screen the draw takes
+5 % less (53 500 cycles), nothing less once a wall is over 128 rows.
 
 ## Limits
 

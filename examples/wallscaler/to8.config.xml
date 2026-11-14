@@ -1,6 +1,6 @@
 <configuration>
     <!-- A maze walked with the joypad, on engine/graphics/raycast. Three      -->
-    <!-- targets, three views : fd, fd-view, fd-fine.                          -->
+    <!-- targets, three views : fd, fd-view, fd-other.                         -->
     <target name="fd">
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
         <default name="machine.definitions" value="engine/config/machine.xml"/>
@@ -22,6 +22,7 @@
                     <zone page="$06" address="$0000" size="$4000"/>
                     <zone page="$07" address="$0000" size="$4000"/>
                     <zone page="$08" address="$0000" size="$4000"/>
+                    <zone page="$0B" address="$0000" size="$4000"/>
                 </arena>
             </layout>
 
@@ -176,6 +177,7 @@
                     <zone page="$06" address="$0000" size="$4000"/>
                     <zone page="$07" address="$0000" size="$4000"/>
                     <zone page="$08" address="$0000" size="$4000"/>
+                    <zone page="$0B" address="$0000" size="$4000"/>
                 </arena>
             </layout>
 
@@ -311,10 +313,10 @@
         </floppydisk>
     </target>
 
-    <!-- The other settings, in the same small view : a texel a screen row, a
-         scaler every 4 rows above the view, a wider field, taller walls, a
-         ray a column.                                                        -->
-    <target name="fd-fine">
+    <!-- The other settings, in the same small view : two screen rows a wall
+         sample, a scaler every 4 rows above the view, a wider field, taller
+         walls, a ray a column.                                               -->
+    <target name="fd-other">
         <default name="floppydisk.storage" value="engine/config/storage.xml"/>
         <default name="machine.definitions" value="engine/config/machine.xml"/>
         <machine name="to8"/>
@@ -335,6 +337,7 @@
                     <zone page="$06" address="$0000" size="$4000"/>
                     <zone page="$07" address="$0000" size="$4000"/>
                     <zone page="$08" address="$0000" size="$4000"/>
+                    <zone page="$0B" address="$0000" size="$4000"/>
                 </arena>
             </layout>
 
@@ -352,7 +355,7 @@
                 <default name="raycast.rows"  value="128"/>
                 <default name="raycast.x"     value="8"/>
                 <default name="raycast.y"     value="36"/>
-                <default name="raycast.lines"    value="1"/>
+                <default name="raycast.lines"    value="2"/>
                 <default name="raycast.clipstep" value="4"/>
                 <default name="raycast.fov"      value="90"/>
                 <default name="raycast.wall"     value="1.0"/>
@@ -471,7 +474,7 @@
                 </cksumfd640>
             </data>
 
-            <fd  filename="to8-fine.fd"/>
+            <fd  filename="to8-other.fd"/>
         </floppydisk>
     </target>
 </configuration>
