@@ -106,6 +106,8 @@ Platform distributions are then generated in `package/target` :
 
 [sprite streams][spritestream]
 
+[raycasting : textured walls][raycast]
+
 [tilemaps][tilemaps]
 
 [audio][audio]
@@ -145,6 +147,7 @@ Platform distributions are then generated in `package/target` :
 [objects]: objects.md
 [sprites]: sprites.md
 [spritestream]: spritestream.md
+[raycast]: raycast.md
 [tilemaps]: tilemaps.md
 [audio]: audio.md
 [interrupts]: interrupts.md

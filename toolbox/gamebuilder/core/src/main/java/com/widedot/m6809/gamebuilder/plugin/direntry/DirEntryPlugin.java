@@ -177,7 +177,7 @@ public class DirEntryPlugin {
 			return hit;
 		}
 		com.widedot.m6809.gamebuilder.spi.cache.BuildCache.Entry entry =
-				com.widedot.m6809.gamebuilder.spi.cache.BuildCache.entry("zx0", "1").keyBytes(bin);
+				com.widedot.m6809.gamebuilder.spi.cache.BuildCache.entry("zx0", "2").keyBytes(bin);
 		hit = entry.findBlob();
 		if (hit == null) {
 			int[] delta = { 0 };
@@ -187,7 +187,7 @@ public class DirEntryPlugin {
 			// stay the format constant the 6809 decompressor expects
 			byte[] cbin = new Compressor().compress(
 					new Optimizer().optimize(sbin, 0, Main.MAX_OFFSET_ZX0, ZX0_THREADS, false),
-					bin, 0, false, false, delta);
+					sbin, 0, false, false, delta);   // the delta is measured on what is compressed
 			hit = new byte[1 + cbin.length];
 			hit[0] = (byte) delta[0];
 			System.arraycopy(cbin, 0, hit, 1, cbin.length);

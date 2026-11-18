@@ -14,7 +14,8 @@
 *                                          cleared : DeleteObject_All)
 * V2-DEVIATION (18/10/2026) : rewritten from v1's : priority 0 also clears
 * rsv_priority (re-displayed at the same priority, the object stayed out of
-* the lists), Y kept, the unlink shared with DeleteObject.
+* the lists), Y kept, the unlink shared with DeleteObject ; Y pushed only
+* when the lists change (05/11/2026).
 * ---------------------------------------------------------------------------
 
 Tbl_Priority_First_Entry      fill  0,2+(nb_priority_levels*2) ; a priority's first object (entry 0 unused)
@@ -30,16 +31,17 @@ DisplaySprite_ClearAll                 ; the lists persist across frames : a
 
 DisplaySprite_priority
 DisplaySprite3
-        pshs  d,x,y,u
+        pshs  d,x
         bra   @start
 DisplaySprite_x
 DisplaySprite2
-        pshs  d,x,y,u
+        pshs  u
         tfr   x,u
-        bra   >
+        bsr   DisplaySprite
+        puls  u,pc
 DisplaySprite
-        pshs  d,x,y,u
-!       ldx   image_set,u                   ; no image : nothing to display
+        pshs  d,x                           ; Y saved on the list's change only
+        ldx   image_set,u                   ; no image : nothing to display
         beq   @rts
         lda   priority,u
 @start  ldb   render_flags,u
@@ -47,12 +49,13 @@ DisplaySprite
         stb   render_flags,u
         cmpa  rsv_priority,u
         beq   @rts                          ; already in that list
+        pshs  y
         tst   rsv_priority,u
         beq   @link
         jsr   DisplaySprite.unlink          ; out of its list
 @link   sta   rsv_priority,u
         tsta
-        beq   @rts                          ; priority 0 : out of the lists
+        beq   @out                          ; priority 0 : out of the lists
         asla
         ldy   #Tbl_Priority_Last_Entry      ; at the end of the new one
         ldx   a,y                           ; its last object
@@ -62,13 +65,14 @@ DisplaySprite
         stu   a,y
         stx   rsv_priority_prev_obj,u       ; X = 0
         stx   rsv_priority_next_obj,u
-@rts    puls  d,x,y,u,pc
+@out    puls  y
+@rts    puls  d,x,pc
 @append stu   rsv_priority_next_obj,x
         stx   rsv_priority_prev_obj,u
         stu   a,y
         ldx   #0
         stx   rsv_priority_next_obj,u
-        puls  d,x,y,u,pc
+        bra   @out
 
 * ---------------------------------------------------------------------------
 * DisplaySprite.unlink - takes object U out of the list of its rsv_priority

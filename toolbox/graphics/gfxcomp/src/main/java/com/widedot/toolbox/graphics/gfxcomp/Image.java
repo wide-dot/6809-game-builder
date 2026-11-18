@@ -299,6 +299,7 @@ public class Image {
 			position = known(imageName, "position", encoderPosition, positionId, "");
 			planes = encoderPlanes;
 			checkPlanes(imageName, encoderType);
+			boolean mirrored = false;
 			if (VideoMode.BM4S.equals(VideoMemory.videoMode)) {
 				// the 320 pixel 4 colour picture becomes the 160 pixel BM16
 				// one that draws it in $41 : everything below is unchanged
@@ -310,7 +311,11 @@ public class Image {
 				// pixel apart (the other encoders, a mirror and the halfline
 				// option do not carry it : refused there)
 				boolean halves = type == TYPE_DRAW_INT && mirror == Mirror.NONE_INT && !halfline;
-				BufferedImage source = image;
+				// the mirror runs on the 320 pixel source : run on the packed
+				// picture it would reverse the order of the pairs but not the
+				// two pixels of each pair (left << 2 | right)
+				BufferedImage source = Mirror.transform(image, mirror);
+				mirrored = true;
 				image = PixelPairs.pack(source, imageFile, halves);
 				if (halves) {
 					halfImage = PixelPairs.halves(source);
@@ -336,7 +341,9 @@ public class Image {
 			// makes a shifted variant declare the geometry of the unshifted
 			// one, which the imageset needs — it keeps a single x1/y1 for the
 			// whole mirror group.
-		image = Mirror.transform(image, mirror);
+		if (!mirrored) {
+			image = Mirror.transform(image, mirror);
+		}
 		if (halfline) {
 			clearOddRows();
 		}

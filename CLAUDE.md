@@ -178,7 +178,9 @@ la description de la PR en garde la trace.
   `examples/stackcopy` (des blocs copiés par `stackcopy.run`, l'IRQ active,
   vérifiés à l'octet avec 16 octets de part et d'autre, recouvrements
   compris : 17/17 sous toje, aucune interruption avec S dans la fenêtre de
-  données, `ci/toje-bench/stackcopy_ut.py`, depuis le 03/11/2026).
+  données, `ci/toje-bench/stackcopy_ut.py`, depuis le 03/11/2026),
+  `examples/wallscaler` (le raycasting : un labyrinthe parcouru à la
+  manette, trois cibles, 33/33 chacune contre `bench.ref`).
 - **État de validation au 13/08/2026** : le corpus compte **15 configs et
   63 images** (11 exemples dont collection/stacked-overflow/hscroll/
   tilescroll/objects/sprites, plus `games/r-type` — sorti du moteur le
@@ -1106,6 +1108,35 @@ TO8 montre semblables (< 12) gardent leur écart de clarté relevé (6 au plus),
 recherchées comme par `apart` (déplacement 12) ; les clairs restent à la recherche
 (une marche y éclaircissait la peau en cascade). Référence Python au bit
 (`gen_rgb12_darks_reference.py`, mire de 4096 couleurs).
+
+## Le raycasting : `<wallscaler>` + `<raycast>`
+
+Une vue à la première personne d'une carte en grille (murs texturés,
+plafond et sol unis) en BM16, colonnes d'un octet. Le raycaster écrit 6
+octets par colonne d'écran ; un scaler compilé par hauteur de mur les
+dessine. Manuel : [`raycast.md`](docs/lang/en/raycast.md).
+
+- Builder : `toolbox/graphics/raycast`, éléments `<wallscaler
+  form=scalers|columns|textures|consts>` et `<raycast [form=angles]>` ; la
+  vue se règle une fois par `<default name="raycast.xxx">`.
+- Runtime : `engine/graphics/raycast/` — `wallscaler.asm` et `raycast.asm`
+  (résidents), `wallscaler.columns.asm` (une copie par moitié de la
+  demi-page vidéo), `raycast.unit.asm` (une page cartouche, à une adresse
+  `$xx00`).
+- Les scalers sont une collection d'arène, la table du raycaster est cuite
+  (`bake="all"`) : aucune adresse en dur.
+- Banc : `examples/wallscaler`, trois cibles ; `BenchReferenceTest` refait
+  ses sommes à partir de `RayModel`.
+
+Règles à connaître en y touchant :
+
+- en format objet, le builder ne reloge pas une référence interne 8 bits
+  (`lda <label`) : les variables en page directe d'une unité sont des `equ` ;
+- `SETDP` est refusé en format objet : forcer l'accès direct par `<` ;
+- `wallscaler.draw` écrase les descripteurs : les lire entre le cast et le
+  draw ;
+- les cibles d'un config partagent `gen/` : les `.lwmap` sont ceux de la
+  dernière cible construite.
 
 ## Fidélité arcade de R-Type
 
