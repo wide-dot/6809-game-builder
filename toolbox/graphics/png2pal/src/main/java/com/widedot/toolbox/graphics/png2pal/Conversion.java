@@ -30,6 +30,14 @@ import com.widedot.m6809.util.color.LAB;
  * TO8's light levels, close as they are there, two darks a few levels apart
  * may land on the same step of one component.
  *
+ * And two for the darks the lift squeezes : near, with darkest black, a colour
+ * that close to its palette's darkest written black too (lifted to the floor, the
+ * one beside the black darkest jumped 40 L*, where they were one dark) ;
+ * steps, among the darks, a colour and one already placed the TO8 shows alike
+ * kept their lifted lightness apart (at most a step), searched again as apart
+ * does : lifted from L* 15..30 to 42..52, where the TO8 has few colours of a
+ * hue, two darks find levels a lightness or two apart, told apart by chroma alone.
+ *
  * And the choices no rule makes : set, a colour given its levels, wherever it is.
  *
  * Without them, the search is the one png2pal always made (util's LAB : Lab
@@ -43,19 +51,23 @@ final class Conversion {
 	private final boolean darkestBlack;
 	private final boolean keepZeros;        // a component at 0 stays at 0
 	private final double apart;             // the distance kept between two colours, 0 none
+	private final double near;              // a colour this close to the darkest black too, 0 none
+	private final double[] steps;           // step, darks (L* at most), alike, move ; null : none
 	private final Map<Integer, int[]> set;  // a colour's RGB -> its levels, after the rules
 	private final boolean exact;            // v1's arithmetic
 	private final LAB[] table = new LAB[4096];
 	private final double[][] exactTable = new double[4096][];
 
 	Conversion(int[] profile, double[] lift, boolean darkestBlack, boolean keepZeros, double apart,
-	           Map<Integer, int[]> set) {
+	           double near, double[] steps, Map<Integer, int[]> set) {
 		this.set = set;
 		this.lift = lift;
 		this.darkestBlack = darkestBlack;
 		this.keepZeros = keepZeros;
 		this.apart = apart;
-		this.exact = lift != null || darkestBlack || apart > 0;
+		this.near = near;
+		this.steps = steps;
+		this.exact = lift != null || darkestBlack || apart > 0 || near > 0 || steps != null;
 		for (int r = 0; r < 16; r++) {
 			for (int g = 0; g < 16; g++) {
 				for (int b = 0; b < 16; b++) {
@@ -75,20 +87,17 @@ final class Conversion {
 		int[][] out = new int[colours.size()][];
 		for (int p = 0; p < colours.size(); p += colors) {
 			int end = Math.min(p + colors, colours.size());
-			double dark = Double.POSITIVE_INFINITY;
-			for (int i = p; i < end; i++) {
-				dark = Math.min(dark, lab(colours.get(i))[0]);
-			}
+			double[] dark = darkest(colours, p, end);
 			for (int i = p; i < end; i++) {
 				Color c = colours.get(i);
-				out[i] = darkestBlack && lab(c)[0] == dark ? new int[] {0, 0, 0}
-				       : exact ? nearestExact(c) : nearest(c);
+				out[i] = darkestBlack && (lab(c)[0] == dark[0] || near > 0 && ciede2000(lab(c), dark) <= near)
+				       ? new int[] {0, 0, 0} : exact ? nearestExact(c) : nearest(c);
 				if (keepZeros) {
 					out[i] = new int[] {c.getRed() == 0 ? 0 : out[i][0], c.getGreen() == 0 ? 0 : out[i][1],
 					                    c.getBlue() == 0 ? 0 : out[i][2]};
 				}
 			}
-			if (apart > 0) {
+			if (apart > 0 || steps != null) {
 				apart(colours, p, end, out);
 			}
 			for (int i = p; i < end; i++) {
@@ -101,6 +110,18 @@ final class Conversion {
 		return out;
 	}
 
+	/** the Lab of the palette p..end-1's darkest colour, the first of them */
+	private static double[] darkest(List<Color> colours, int p, int end) {
+		double[] dark = lab(colours.get(p));
+		for (int i = p + 1; i < end; i++) {
+			double[] l = lab(colours.get(i));
+			if (l[0] < dark[0]) {
+				dark = l;
+			}
+		}
+		return dark;
+	}
+
 	/** the palette p..end-1 : its colours brought too close by the search set apart */
 	private void apart(List<Color> colours, int p, int end, int[][] out) {
 		List<Integer> order = new ArrayList<>();
@@ -110,7 +131,7 @@ final class Conversion {
 		order.sort(Comparator.comparingDouble(i -> lab(colours.get(i))[0]));     // stable : the darkest first
 		List<Integer> placed = new ArrayList<>();
 		int[] ks = new int[end - p];
-		double[] ds = new double[end - p];
+		double[][] ds = new double[2][end - p];
 		for (int j : order) {
 			Color c = colours.get(j);
 			int n = distances(colours, c, placed, ks, ds);
@@ -122,21 +143,26 @@ final class Conversion {
 		}
 	}
 
-	/** the colours placed other than c, in ks, and the distance c keeps from each, in ds : how many */
-	private int distances(List<Color> colours, Color c, List<Integer> placed, int[] ks, double[] ds) {
+	/**
+	 * the colours placed other than c, in ks, the distance c keeps from each, in ds[0], and the
+	 * lightness, in ds[1] (steps, 0 none) : how many
+	 */
+	private int distances(List<Color> colours, Color c, List<Integer> placed, int[] ks, double[][] ds) {
 		double[] lc = lab(c);
+		boolean stepped = steps != null && lc[0] <= steps[1];
 		int n = 0;
 		for (int k : placed) {
 			if (!colours.get(k).equals(c)) {
 				ks[n] = k;
-				ds[n++] = Math.min(ciede2000(lc, lab(colours.get(k))), apart);
+				ds[0][n] = Math.min(ciede2000(lc, lab(colours.get(k))), apart);
+				ds[1][n++] = stepped ? Math.min(steps[0], Math.abs(target(c)[0] - target(colours.get(k))[0])) : 0;
 			}
 		}
 		return n;
 	}
 
-	/** c's levels nearest its target that keep the distances, if at most apart further than now's */
-	private int[] searchApart(Color c, int[] now, int[] ks, double[] ds, int n, int[][] out) {
+	/** c's levels nearest its target that keep the distances, if at most apart (steps' move) further than now's */
+	private int[] searchApart(Color c, int[] now, int[] ks, double[][] ds, int n, int[][] out) {
 		double[] target = target(c);
 		double cur = ciede2000(target, exactTable[index(now)]);
 		int best = -1;
@@ -150,7 +176,8 @@ final class Conversion {
 				}
 			}
 		}
-		return best >= 0 && min <= cur + apart ? new int[] {best >> 8, (best >> 4) & 15, best & 15} : now;
+		double move = steps != null ? steps[3] : apart;
+		return best >= 0 && min <= cur + move ? new int[] {best >> 8, (best >> 4) & 15, best & 15} : now;
 	}
 
 	/** levels x keep c's zero components at 0, or zeros are the search's */
@@ -159,10 +186,15 @@ final class Conversion {
 		                     && (c.getBlue() != 0 || (x & 15) == 0);
 	}
 
-	/** at least ds[i] from the levels of colour ks[i], each of the n */
-	private boolean far(double[] l, int[] ks, double[] ds, int n, int[][] out) {
+	/**
+	 * at least ds[0][i] from the levels of colour ks[i], each of the n, and, alike (steps), at least
+	 * ds[1][i] lighter or darker
+	 */
+	private boolean far(double[] l, int[] ks, double[][] ds, int n, int[][] out) {
 		for (int i = 0; i < n; i++) {
-			if (ciede2000(l, exactTable[index(out[ks[i]])]) < ds[i]) {
+			double[] lk = exactTable[index(out[ks[i]])];
+			double d = ciede2000(l, lk);
+			if (d < ds[0][i] || Math.abs(l[0] - lk[0]) < ds[1][i] && d < steps[2]) {
 				return false;
 			}
 		}
