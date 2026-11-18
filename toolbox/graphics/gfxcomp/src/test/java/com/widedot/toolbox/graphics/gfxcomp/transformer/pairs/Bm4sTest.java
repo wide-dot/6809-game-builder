@@ -133,10 +133,16 @@ public class Bm4sTest {
 
 	/** the code a picture compiles to with an encoder, in a directory of its own */
 	private static String compile(Path dir, BufferedImage img, String encoder, int shift) throws Exception {
+		return compile(dir, img, encoder, Mirror.NONE, shift);
+	}
+
+	/** the same, with a mirror */
+	private static String compile(Path dir, BufferedImage img, String encoder, String mirror, int shift)
+			throws Exception {
 		Files.createDirectories(dir);
 		File png = dir.resolve("pat.png").toFile();
 		ImageIO.write(img, "png", png);
-		Image image = new Image("pat", 0, png.getAbsolutePath(), encoder, Mirror.NONE, shift, Image.POSITION_CENTER);
+		Image image = new Image("pat", 0, png.getAbsolutePath(), encoder, mirror, shift, Image.POSITION_CENTER);
 		image.encode(dir.toString());
 		StringBuilder code = new StringBuilder();
 		try (java.util.stream.Stream<Path> files = Files.list(dir)) {
@@ -189,5 +195,36 @@ public class Bm4sTest {
 		VideoMemory.videoMode = VideoMode.BM16;
 		String wrong = compile(dir.resolve("control-bm16"), picture(swapped), Image.TYPE_DRAW, 0);
 		assertTrue(!bm4s.equals(wrong), "swapped pairs must not compile to the same code");
+	}
+
+	@Test
+	void aBm4sMirrorReversesThePixelsNotOnlyThePairs(@TempDir Path dir) throws Exception {
+		// 8x2 at 320, no symmetric pair : a mirror that only reversed the
+		// order of the pairs would keep (l, r) where the true mirror has (r, l)
+		int[][] src = {
+			{1, 2, 3, 4, 2, 4, 1, 3},
+			{4, 3, 0, 0, 2, 1, 3, 1},
+		};
+		int[][] flipped = new int[src.length][src[0].length];
+		for (int y = 0; y < src.length; y++) {
+			for (int x = 0; x < src[y].length; x++) {
+				flipped[y][x] = src[y][src[y].length - 1 - x];
+			}
+		}
+		VideoMemory.videoMode = VideoMode.BM4S;
+		for (String encoder : new String[] {Image.TYPE_DRAW, Image.TYPE_BDRAW}) {
+			for (int shift = 0; shift < 2; shift++) {
+				String mirrored = compile(dir.resolve(encoder + shift + "-x"), picture(src), encoder, Mirror.X, shift);
+				String flippedCode = compile(dir.resolve(encoder + shift + "-n"), picture(flipped), encoder,
+						Mirror.NONE, shift);
+				// the variant key (mirror letter first) names the code : X.. against N..
+				String x = Mirror.label[Mirror.X_INT];
+				String n = Mirror.label[Mirror.NONE_INT];
+				String key = Image.variantKey(Image.typeId.get(encoder), Mirror.X_INT, shift);
+				String keyN = n + key.substring(x.length());
+				assertTrue(mirrored.contains(key), "no " + key + " code\n" + mirrored);
+				assertEquals(flippedCode, mirrored.replace(key, keyN), encoder + " shift " + shift);
+			}
+		}
 	}
 }
